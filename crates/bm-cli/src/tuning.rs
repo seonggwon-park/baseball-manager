@@ -1,0 +1,159 @@
+//! Command-line overrides of model constants (`--set name=value`), used while calibrating.
+
+use bm_engine::{Level, ModelParams};
+use bm_physics::units::MPH;
+use bm_physics::BallSpec;
+
+pub struct Tuning {
+    pub params: ModelParams,
+    pub level: Level,
+    pub ball: BallSpec,
+}
+
+macro_rules! set_scalar {
+    ($obj:expr, $key:expr, $v:expr, [$($f:ident),* $(,)?]) => {
+        match $key { $( stringify!($f) => { $obj.$f = $v; true } )* _ => false }
+    };
+}
+
+impl Tuning {
+    pub fn new() -> Self {
+        Tuning { params: ModelParams::default(), level: Level::mlb(), ball: BallSpec::mlb() }
+    }
+
+    pub fn set(&mut self, key: &str, v: f64) -> Result<(), String> {
+        let p = &mut self.params;
+        if set_scalar!(
+            p,
+            key,
+            v,
+            [
+                target_sd_x,
+                target_sd_z,
+                wild_fraction,
+                wild_factor,
+                release_sd_side,
+                release_sd_height,
+                fatigue_speed,
+                fatigue_command,
+                ump_bias,
+                ump_scale,
+                swing_d0,
+                swing_d0_one_strike,
+                swing_d0_two_strikes,
+                drag_jitter,
+                swing_width,
+                recognition_sd,
+                fooled_recognition,
+                noise_residual,
+                expect_mix,
+                recognition_scale,
+                recognition_time_scale,
+                ride_bias,
+                ride_reference,
+                misread_rate,
+                misread_factor,
+                barrel_outside_gain2,
+                reach_limit,
+                ref_plate_speed,
+                timing_speed_exp,
+                barrel_speed_exp,
+                tracking_residual,
+                barrel_outside_gain,
+                barrel_outside_offset,
+                height_bias,
+                bat_tilt_mid,
+                bat_tilt_slope,
+                plan_angle_per_m,
+                swing_radius,
+                bat_speed_depth_gain,
+                contact_depth,
+                max_bat_angle,
+                fooled_speed_loss,
+                fooled_time,
+                off_end_gain,
+                reach_per_m,
+                partial_swing_rate,
+                partial_two_strike_gain,
+                partial_fooled_rate,
+                partial_speed_min,
+                foul_tip_catch,
+                foul_tip_angle,
+                two_strike_speed,
+                two_strike_precision,
+                batter_body_x,
+                hbp_width,
+                hbp_no_evade,
+                wild_pitch_prob,
+                catch_height,
+                catch_margin_scale,
+                catch_margin_bias,
+                redirect_delay,
+                field_height,
+                gather_time,
+                force_margin,
+                advance_left_side,
+                feed_transfer,
+                pivot_time,
+                error_ground,
+                error_fly,
+                error_throw,
+                wall_play_delay,
+                tag_time,
+                play_noise,
+                throw_slop,
+                throw_drag,
+                infield_reach,
+                box_delay_right,
+                box_delay_left,
+                turn_length,
+                slide_time,
+                read_margin,
+                read_time,
+                read_hang_share,
+                advance_margin,
+                steal_margin,
+                steal_rate,
+            ]
+        ) {
+            return Ok(());
+        }
+        let l = &mut self.level;
+        let parts: Vec<&str> = key.split('.').collect();
+        match parts.as_slice() {
+            ["swing_base", b, s] => p.swing_base[idx(b, 4)?][idx(s, 3)?] = v,
+            ["zone_intent", b, s] => p.zone_intent[idx(b, 4)?][idx(s, 3)?] = v,
+            ["fastball_bias", b, s] => p.fastball_bias[idx(b, 4)?][idx(s, 3)?] = v,
+            ["lv", "velocity_mph"] => l.velocity = v * MPH,
+            ["lv", "bat_speed_mph"] => l.bat_speed = v * MPH,
+            ["lv", "precision"] => l.precision = v,
+            ["lv", "command"] => l.command = v,
+            ["lv", "timing_sd"] => l.timing_sd = v,
+            ["lv", "barrel_sd"] => l.barrel_sd = v,
+            ["lv", "barrel_aim"] => l.barrel_aim = v,
+            ["lv", "attack_mean_deg"] => l.attack_mean = v.to_radians(),
+            ["lv", "attack_spread_deg"] => l.attack_spread = v.to_radians(),
+            ["lv", "attack_sd_deg"] => l.attack_sd = v.to_radians(),
+            ["lv", "eye"] => l.eye = v,
+            ["lv", "perception_sd"] => l.perception_sd = v,
+            ["lv", "reach_sd"] => l.reach_sd = v,
+            ["lv", "bat_speed_sd_mph"] => l.bat_speed_sd = v * MPH,
+            ["lv", "timing_bias"] => l.timing_bias = v,
+            ["bat", "ex"] => l.bat.tangential_cor = v,
+            ["bat", "mu"] => l.bat.friction = v,
+            ["bat", "falloff"] => l.bat.cor_falloff = v,
+            ["bat", "floor"] => l.bat.cor_floor = v,
+            ["bat", "bpf"] => l.bat.bpf = v,
+            ["bat", "obliq"] => l.bat.cor_obliquity = v,
+            ["bat", "sweet"] => l.bat.sweet_spot_from_tip = v,
+            ["ball", "cor_ref"] => self.ball.cor_ref = v,
+            ["ball", "cor_slope_per_mph"] => self.ball.cor_slope = v / MPH,
+            _ => return Err(format!("unknown setting '{key}'")),
+        }
+        Ok(())
+    }
+}
+
+fn idx(s: &str, n: usize) -> Result<usize, String> {
+    s.parse::<usize>().ok().filter(|&i| i < n).ok_or_else(|| format!("index '{s}' out of range 0..{n}"))
+}

@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  lint-and-test:
+    name: fmt, clippy, tests (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the stable toolchain
+        run: |
+          rustup update stable --no-self-update
+          rustup default stable
+          rustup component add rustfmt clippy
+      - name: Format
+        run: cargo fmt --all -- --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Tests
+        run: cargo test --workspace
+      - name: Smoke-test the CLI
+        run: |
+          cargo run --release --bin bm -- game --seed 7
+          cargo run --release --bin bm -- validate --games 500 --seed 1
+
+  windows:
+    name: build and tests (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the stable toolchain
+        run: |
+          rustup update stable --no-self-update
+          rustup default stable
+      - name: Build
+        run: cargo build --workspace --release
+      - name: Tests
+        run: cargo test --workspace
+      - name: Smoke-test the CLI
+        run: cargo run --release --bin bm -- game --seed 7
