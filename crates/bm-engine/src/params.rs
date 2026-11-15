@@ -175,6 +175,11 @@ pub struct ModelParams {
     /// (Statcast: 22.3 % of two-strike swings miss against 23.8 % with no strikes,
     /// although far more of them are at pitches outside the zone).
     pub piece_two_strikes: f64,
+    /// Speed against accuracy: the barrel error grows as (bat speed / `effort_ref`) to
+    /// the power `effort_exp` (Statcast: exit velocity over the squared-up maximum
+    /// averages 0.84 for swings of 66-74 mph and 0.80 for swings of 78 mph and more).
+    pub effort_ref: f64,
+    pub effort_exp: f64,
     /// Swing-to-swing scatter of the barrel's direction that the depth of contact does
     /// not explain, rad (Statcast: 5.6-6.0 deg), and of the tilt of the swing plane
     /// at a given pitch height, rad (Statcast: 5.6 deg).
@@ -392,6 +397,8 @@ impl Default for ModelParams {
             piece_depth: 0.37,
             piece_centre: 0.15,
             piece_two_strikes: 1.33,
+            effort_ref: 72.0 * MPH,
+            effort_exp: 0.0,
             direction_sd: 0.115,
             bat_tilt_sd: 0.098,
             chop_foul_dist: 3.0,

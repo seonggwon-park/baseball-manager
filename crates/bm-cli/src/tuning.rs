@@ -99,6 +99,7 @@ impl Tuning {
                 off_end_linear,
                 off_end_max,
                 contact_along,
+                effort_exp,
                 direction_sd,
                 bat_tilt_sd,
                 chop_foul_dist,

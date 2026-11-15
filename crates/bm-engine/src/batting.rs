@@ -346,7 +346,9 @@ pub fn swing(
     let d_act = zone.signed_distance(f.plate_pos.x, f.plate_pos.z, env.ball.radius);
     let d_out = (d_act + p.barrel_outside_offset).max(0.0);
     let loc_gain = 1.0 + p.barrel_outside_gain * d_out + p.barrel_outside_gain2 * d_out * d_out;
-    let offset = rng.gauss(batter.barrel_aim, batter.barrel_sd * speed_ratio.powf(p.barrel_speed_exp) * loc_gain * prec)
+    // The harder the swing, the less exactly the barrel is placed.
+    let effort = (bat_speed / p.effort_ref).powf(p.effort_exp);
+    let offset = rng.gauss(batter.barrel_aim, batter.barrel_sd * speed_ratio.powf(p.barrel_speed_exp) * loc_gain * prec * effort)
         - p.tracking_residual * per.bias_z
         - p.noise_residual * (per.perceived_z - f.plate_pos.z - per.bias_z)
         + p.height_bias * (f.plate_pos.z - zone.mid())
