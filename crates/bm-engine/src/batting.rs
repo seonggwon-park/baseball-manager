@@ -29,6 +29,25 @@ pub struct BattedInfo {
     pub attack_angle: f64,
     /// The ball was bunted.
     pub bunt: bool,
+    /// Where and how the barrel met the ball.
+    pub shape: SwingShape,
+}
+
+/// Geometry of a swing where the barrel crossed the path of the ball.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct SwingShape {
+    /// Bat speed at the sweet spot, m/s.
+    pub bat_speed: f64,
+    /// Contact point ahead (+) or behind (-) the batter's usual one, m.
+    pub depth: f64,
+    /// Horizontal direction of the barrel's travel, rad (+ = toward the pull side).
+    pub direction: f64,
+    /// Speed of the ball off the bat, m/s, and its elevation above the horizontal, rad,
+    /// whichever way it went; zero when the bat missed.
+    pub exit_speed: f64,
+    pub elevation: f64,
+    /// Where the ball met the bat, m from the end of the barrel; zero when the bat missed.
+    pub along: f64,
 }
 
 /// What the batter has been told to do with the pitch.
@@ -75,11 +94,11 @@ pub enum Swing {
     /// The batter did not offer.
     Take,
     /// Swing and miss.
-    Whiff { bat_speed: f64, miss: Miss },
+    Whiff { shape: SwingShape, miss: Miss },
     /// Tipped straight back; a strike if the catcher holds it.
-    FoulTip { caught: bool, bat_speed: f64 },
+    FoulTip { caught: bool, shape: SwingShape },
     /// Fouled backward out of play.
-    FoulBack { bat_speed: f64 },
+    FoulBack { shape: SwingShape },
     /// Ball put in the air or on the ground in front of the plate (fair or foul to be decided).
     Batted { state: BallState, info: BattedInfo },
 }
@@ -204,8 +223,9 @@ pub fn bunt(env: &MatchEnv, batter: &BatterProfile, zone: &StrikeZone, thrown: &
     }
     let speed_ratio = f.plate_vel.norm() / p.ref_plate_speed;
     let push = (rng.gauss(p.bunt_push + if for_hit { p.bunt_hit_push } else { 0.0 }, p.bunt_push_sd)).max(0.0);
+    let shape = SwingShape { bat_speed: push, ..Default::default() };
     if rng.chance((p.bunt_miss * err * speed_ratio).min(0.9)) {
-        return Swing::Whiff { bat_speed: push, miss: Miss::Under };
+        return Swing::Whiff { shape, miss: Miss::Under };
     }
     let offset = rng.gauss(p.bunt_aim, p.bunt_offset_sd * err * speed_ratio);
     let along = rng.gauss(p.bunt_along, p.bunt_along_sd).clamp(0.01, 0.45);
@@ -220,14 +240,14 @@ pub fn bunt(env: &MatchEnv, batter: &BatterProfile, zone: &StrikeZone, thrown: &
     let ball_pos = f.plate_pos + vel * tau;
     let contact = Contact { ball_vel: vel, ball_spin: f.spin, bat_axis: axis, bat_vel: normal * push, offset, dist_from_tip: along };
     match collide(&env.ball, &batter.bat, &contact) {
-        Err(_) => Swing::Whiff { bat_speed: push, miss: if offset < 0.0 { Miss::Over } else { Miss::Under } },
+        Err(_) => Swing::Whiff { shape, miss: if offset < 0.0 { Miss::Over } else { Miss::Under } },
         Ok(res) => {
             if res.vel.y <= 0.5 {
                 let cos_defl = res.vel.normalized().dot(vel.normalized());
                 if cos_defl > p.foul_tip_angle.cos() {
-                    Swing::FoulTip { caught: rng.chance(p.foul_tip_catch), bat_speed: push }
+                    Swing::FoulTip { caught: rng.chance(p.foul_tip_catch), shape }
                 } else {
-                    Swing::FoulBack { bat_speed: push }
+                    Swing::FoulBack { shape }
                 }
             } else {
                 let (wb, ws, _) = spin_components(res.vel, res.spin);
@@ -240,6 +260,7 @@ pub fn bunt(env: &MatchEnv, batter: &BatterProfile, zone: &StrikeZone, thrown: &
                     bat_speed: push,
                     attack_angle: 0.0,
                     bunt: true,
+                    shape,
                 };
                 Swing::Batted { state: BallState::new(ball_pos, res.vel, res.spin), info }
             }
@@ -271,29 +292,38 @@ pub fn swing(
     // ---- timing ----
     let dt_raw = expected.time - f.time;
     let dt_bias = (1.0 - per.recognition) * dt_raw / (1.0 + dt_raw.abs() / p.recognition_time_scale);
-    let dt = batter.timing_bias + dt_bias + rng.gauss(0.0, batter.timing_sd * speed_ratio.powf(p.timing_speed_exp) * prec);
     let fooled = (dt_bias.abs() / p.fooled_time).min(1.0);
     let mut bat_speed = rng.gauss(batter.bat_speed, batter.bat_speed_sd) * (1.0 - p.fooled_speed_loss * fooled * fooled);
     if two {
         bat_speed *= p.two_strike_speed;
     }
-    // Partial swings: check swings, defensive two-strike hacks, swings the batter gives up on.
-    if rng.chance((p.partial_swing_rate * if two { p.partial_two_strike_gain } else { 1.0 } + p.partial_fooled_rate * fooled).min(0.9)) {
+    // Partial swings: check swings, defensive two-strike hacks, swings the batter gives
+    // up on. The barrel is not delivered properly, so they rarely square the ball up.
+    let partial = rng.chance((p.partial_swing_rate * if two { p.partial_two_strike_gain } else { 1.0 } + p.partial_fooled_rate * fooled).min(0.9));
+    if partial {
         bat_speed *= rng.range(p.partial_speed_min, 0.92);
     }
+    let prec = prec * if partial { p.partial_precision } else { 1.0 };
     bat_speed = bat_speed.max(8.0);
+    let dt = batter.timing_bias + dt_bias + rng.gauss(0.0, batter.timing_sd * speed_ratio.powf(p.timing_speed_exp) * prec);
 
-    // Horizontal bat angle at contact (positive = barrel ahead of the hands = pull side).
+    // ---- depth of contact and direction of the barrel ----
+    // A swing that is early meets the ball further out in front: ball and barrel
+    // close on each other at v_plate + bat_speed.
     let inside = -out * f.plate_pos.x;
-    let omega = bat_speed / p.swing_radius;
-    let theta = p.plan_angle_per_m * inside - v_plate / (v_plate + bat_speed) * omega * dt;
-    if theta.abs() > p.max_bat_angle {
-        return Swing::Whiff { bat_speed, miss: if theta > 0.0 { Miss::Early } else { Miss::Late } };
+    let dy = -(v_plate * bat_speed / (v_plate + bat_speed)) * dt;
+    // The barrel turns toward the pull side as it travels forward, by one radian per
+    // `swing_arc_radius` of depth (Statcast: 1.26 deg per inch), and a little with the
+    // pitch's location.
+    let theta = p.plan_angle_per_m * inside + (dy / p.swing_arc_radius).atan() + rng.gauss(0.0, p.direction_sd);
+    if dy.abs() > p.max_depth || theta.abs() > p.max_bat_angle {
+        let shape = SwingShape { bat_speed, depth: dy.clamp(-1.5, 1.5), direction: theta, ..Default::default() };
+        return Swing::Whiff { shape, miss: if dy > 0.0 { Miss::Early } else { Miss::Late } };
     }
-    let dy = p.swing_radius * theta.tan();
     // The barrel is still accelerating through the hitting zone: contact out in front
-    // is made with more bat speed than contact deep in the zone.
-    let bat_speed = bat_speed * (1.0 + p.bat_speed_depth_gain * dy.clamp(-0.6, 0.6));
+    // is made with more bat speed than contact deep in the zone, up to a point.
+    let bat_speed = bat_speed * (1.0 + p.bat_speed_depth_gain * dy.clamp(-0.6, p.bat_speed_depth_cap));
+    let mut shape = SwingShape { bat_speed, depth: dy, direction: theta, ..Default::default() };
     let y_c = p.contact_depth + dy;
 
     // Ball at the contact depth (straight-line extrapolation over well under a metre).
@@ -304,10 +334,15 @@ pub fn swing(
 
     // ---- swing plane and vertical offset between ball and barrel ----
     // The barrel moves in a plane that is tilted sideways (barrel below the hands) and
-    // pitched upward toward the pitcher by the batter's attack angle. A pitch travelling
-    // in that plane can be met at any depth; the mismatch between the pitch's descent
-    // and the plane's pitch turns a timing error into a vertical miss.
+    // pitched upward toward the pitcher by the batter's attack angle. Two things turn a
+    // timing error into a vertical miss: the mismatch between the pitch's descent and
+    // the plane's pitch, and the arc of the swing itself, whose low point is where the
+    // batter meant to meet the ball, so that the barrel rides up over the ball when
+    // contact is early or late.
     let plane_pitch = rng.gauss(batter.attack_angle, batter.attack_sd);
+    let tilt = (p.bat_tilt_mid + p.bat_tilt_slope * (zone.mid() - f.plate_pos.z) + rng.gauss(0.0, p.bat_tilt_sd)).clamp(0.12, 0.95);
+    let (behind, ahead) = ((p.arc_centre - dy).max(0.0), (dy - p.arc_early_from).max(0.0));
+    let arc_rise = 0.5 * tilt.sin() / p.swing_arc_radius * (p.arc_scale * behind * behind + p.arc_scale_early * ahead * ahead);
     let d_act = zone.signed_distance(f.plate_pos.x, f.plate_pos.z, env.ball.radius);
     let d_out = (d_act + p.barrel_outside_offset).max(0.0);
     let loc_gain = 1.0 + p.barrel_outside_gain * d_out + p.barrel_outside_gain2 * d_out * d_out;
@@ -316,47 +351,95 @@ pub fn swing(
         - p.noise_residual * (per.perceived_z - f.plate_pos.z - per.bias_z)
         + p.height_bias * (f.plate_pos.z - zone.mid())
         + if matches!(thrown.kind, PitchKind::FourSeam | PitchKind::Sinker) { p.ride_bias * (f.move_z - p.ride_reference) } else { 0.0 }
-        + (descent.tan() - plane_pitch.tan()) * dy;
+        + (descent.tan() - plane_pitch.tan()) * dy
+        - arc_rise;
 
     // ---- where along the bat ----
     let inside_perceived = -out * per.perceived_x;
     // Beyond his reach the batter can no longer bring the barrel to the ball.
     let beyond = (-inside - p.reach_limit).max(0.0);
-    // A straight pitch crosses a bat that is turned by `theta` further from the hands
-    // (toward the end of the bat) than it crosses a square bat; the hands make up for
-    // part of that.
-    let off_end = p.off_end_gain * p.swing_radius * (1.0 / theta.cos().max(0.3) - 1.0);
-    let along = bat.sweet_spot_from_tip + p.reach_per_m * inside - beyond - off_end
+    // The bat sweeps about a point near the body, so a ball met early is met further
+    // out along the bat, toward its end, and loses much of its speed there (Statcast:
+    // exit velocity 85 mph at 10-17 in out in front and 72 mph beyond that, against 91
+    // at the usual depth). Met late, the hands are still ahead of the barrel and the
+    // ball stays near the sweet spot (88 mph at 15-25 in deep).
+    let off_end =
+        if theta > 0.0 { p.off_end_gain } else { p.off_end_late } * p.pivot_radius * (1.0 / theta.cos().max(0.3) - 1.0) + p.off_end_linear * theta.max(0.0);
+    // The batter still gets the last few centimetres of the barrel to the ball.
+    let off_end = p.off_end_max * (1.0 - (-off_end / p.off_end_max).exp());
+    let along = bat.sweet_spot_from_tip + p.contact_along + p.reach_per_m * inside - beyond - off_end
         + p.tracking_residual * (inside - inside_perceived)
         + rng.gauss(0.0, batter.reach_sd);
-    if !(-0.01..=0.60).contains(&along) {
-        return Swing::Whiff { bat_speed, miss: if along < 0.0 { Miss::OffTheEnd } else { Miss::Jammed } };
+    if along > 0.60 {
+        return Swing::Whiff { shape, miss: Miss::Jammed };
+    }
+    if along < -0.5 * env.ball.radius {
+        return Swing::Whiff { shape, miss: Miss::OffTheEnd };
+    }
+    if along < 0.0 {
+        // The ball catches the very end of the bat and squirts away foul.
+        shape.exit_speed = 0.6 * v_plate;
+        shape.elevation = rng.range(-0.6, 0.6);
+        return Swing::FoulBack { shape };
     }
     let along = along.max(0.005);
 
     // ---- bat geometry ----
-    let tilt = (p.bat_tilt_mid + p.bat_tilt_slope * (zone.mid() - f.plate_pos.z)).clamp(0.12, 0.95);
     let e1 = Vec3::new(0.0, plane_pitch.cos(), plane_pitch.sin());
-    let lateral = Vec3::new(out * tilt.cos(), 0.0, -tilt.sin());
-    let e2 = (lateral - e1 * lateral.dot(e1)).normalized();
+    let across = |tilt: f64| {
+        let lateral = Vec3::new(out * tilt.cos(), 0.0, -tilt.sin());
+        (lateral - e1 * lateral.dot(e1)).normalized()
+    };
+    // The sweet spot travels in the tilted swing plane.
     let (sth, cth) = theta.sin_cos();
-    let axis = e2 * cth + e1 * sth;
-    let forward = e1 * cth - e2 * sth;
+    let forward = e1 * cth - across(tilt) * sth;
+    // The barrel does not travel exactly square to the bat: the hands are still moving
+    // forward, so the bat faces further round than its sweet spot is heading, and it
+    // turns faster than the direction of its travel does. The wrists roll over before
+    // the bat can face much further round than `face_max`.
+    let face = p.face_max * ((p.face_gain * theta + rng.gauss(p.face_lead, p.face_sd)) / p.face_max).tanh();
+    let (sf, cf) = face.sin_cos();
+    // As they roll over, the bat itself levels out: balls met far out in front no
+    // longer go the way a tilted bat sends them (Statcast: at the usual depth topped
+    // balls are pulled 30 deg and balls hit under go 20 deg the other way; 10-25 in out
+    // in front both stay within 4-30 deg of the pull side).
+    let rolled = ((theta - p.roll_from) / p.roll_span).clamp(0.0, 1.0);
+    let axis = across(tilt * (1.0 - p.roll_flatten * rolled)) * cf + e1 * sf;
     let attack = forward.z.clamp(-1.0, 1.0).asin();
     let point_speed = bat_speed * ((p.swing_radius + (bat.sweet_spot_from_tip - along)) / p.swing_radius).max(0.2);
     let bat_vel = forward * point_speed;
 
-    let contact = Contact { ball_vel: vel, ball_spin: f.spin, bat_axis: axis, bat_vel, offset, dist_from_tip: along };
-    match collide(&env.ball, bat, &contact) {
-        Err(_) => Swing::Whiff { bat_speed, miss: if offset < 0.0 { Miss::Over } else { Miss::Under } },
+    let mut contact = Contact { ball_vel: vel, ball_spin: f.spin, bat_axis: axis, bat_vel, offset, dist_from_tip: along };
+    let mut result = collide(&env.ball, bat, &contact);
+    if result.is_err() {
+        // Getting a piece of it. With well-timed swings, batters foul the ball off far
+        // more often and miss far less often than any smooth spread of the barrel's
+        // height allows: at every distance, near misses are about a third as common as
+        // the spread of contact heights implies (Statcast bat tracking, 2025). A share
+        // of the swings that would pass over or under the ball therefore graze it.
+        let limit = env.ball.radius + bat.radius_at(along);
+        let on_time = (-0.5 * ((dy - p.piece_centre) / p.piece_depth).powi(2)).exp();
+        let protect = if two { p.piece_two_strikes } else { 1.0 };
+        if offset.abs() - limit < p.piece_reach && rng.chance((p.piece_rate * protect * on_time).min(0.95)) {
+            // Mostly the thinnest of contact.
+            let u = rng.f64();
+            contact.offset = offset.signum() * (limit - 0.0002 - p.piece_band * u * u);
+            result = collide(&env.ball, bat, &contact);
+        }
+    }
+    match result {
+        Err(_) => Swing::Whiff { shape, miss: if offset < 0.0 { Miss::Over } else { Miss::Under } },
         Ok(res) => {
+            shape.along = along;
+            shape.exit_speed = res.vel.norm();
+            shape.elevation = (res.vel.z / shape.exit_speed.max(1e-9)).clamp(-1.0, 1.0).asin();
             if res.vel.y <= 0.5 {
                 // Deflected backward: a tip if it barely changed direction.
                 let cos_defl = res.vel.normalized().dot(vel.normalized());
                 if cos_defl > p.foul_tip_angle.cos() {
-                    Swing::FoulTip { caught: rng.chance(p.foul_tip_catch), bat_speed }
+                    Swing::FoulTip { caught: rng.chance(p.foul_tip_catch), shape }
                 } else {
-                    Swing::FoulBack { bat_speed }
+                    Swing::FoulBack { shape }
                 }
             } else {
                 let (wb, ws, _) = spin_components(res.vel, res.spin);
@@ -369,6 +452,7 @@ pub fn swing(
                     bat_speed,
                     attack_angle: attack,
                     bunt: false,
+                    shape,
                 };
                 Swing::Batted { state: BallState::new(ball_pos, res.vel, res.spin), info }
             }
@@ -442,6 +526,75 @@ mod tests {
         assert!(whiff > 0.15 && whiff < 0.36, "whiff per swing {whiff}");
         assert!(ev > 78.0 && ev < 96.0, "mean exit velocity {ev}");
         assert!(la > 0.0 && la < 30.0, "mean launch angle {la}");
+    }
+
+    /// Swings of the average matchup: geometry, outcome (0 miss, 1 foul tip or foul
+    /// back, 2 put in front of the plate) and pull-side spray of the batted ones, rad.
+    fn shapes(env: &MatchEnv, n: usize, seed: u64) -> Vec<(SwingShape, u8, f64)> {
+        let batter = BatterProfile::league_average(Hand::Right);
+        let pitcher = PitcherProfile::league_average(Hand::Right);
+        let mut st = PitcherState::new(&pitcher, env);
+        let zone = StrikeZone::for_batter(batter.height, &env.rules);
+        let mut rng = Rng::new(seed);
+        let mut w = [0.0; MAX_PITCHES];
+        let mut out = Vec::new();
+        for i in 0..n {
+            let (balls, strikes) = (i % 3, i % 2);
+            let k = selection_weights(&pitcher, batter.hand, balls, strikes, &env.params, &mut w);
+            let exp = expectation(&pitcher, &st, &w[..k], env.params.expect_mix);
+            let choice = choose_pitch(&pitcher, batter.hand, &zone, balls, strikes, &w[..k], &env.params, &mut rng);
+            st.pitch_count = 30;
+            let thrown = throw_pitch(&pitcher, &mut st, &choice, env, &mut rng);
+            match respond(env, &batter, &zone, balls, strikes, &thrown, &exp, &mut rng) {
+                Swing::Take => {}
+                Swing::Whiff { shape, .. } => out.push((shape, 0, 0.0)),
+                Swing::FoulTip { shape, .. } | Swing::FoulBack { shape } => out.push((shape, 1, 0.0)),
+                Swing::Batted { info, .. } => out.push((info.shape, 2, info.spray * batter.hand.pull_sign())),
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn the_barrel_turns_as_contact_moves_forward() {
+        // Statcast: 1.26 deg of attack direction per inch of contact depth across
+        // batters, 1.44 within a batter.
+        let env = MatchEnv::neutral_mlb();
+        let batted: Vec<_> = shapes(&env, 40_000, 5).into_iter().filter(|s| s.1 == 2).collect();
+        let n = batted.len() as f64;
+        let (mx, my) = (batted.iter().map(|s| s.0.depth).sum::<f64>() / n, batted.iter().map(|s| s.0.direction).sum::<f64>() / n);
+        let sxy: f64 = batted.iter().map(|s| (s.0.depth - mx) * (s.0.direction - my)).sum();
+        let sxx: f64 = batted.iter().map(|s| (s.0.depth - mx).powi(2)).sum();
+        let deg_per_inch = (sxy / sxx).to_degrees() * 0.0254;
+        assert!((1.0..1.7).contains(&deg_per_inch), "direction per inch of depth {deg_per_inch}");
+        // Balls met out in front are pulled, balls met deep go the other way.
+        let mean = |f: &dyn Fn(f64) -> bool| {
+            let v: Vec<f64> = batted.iter().filter(|s| f(s.0.depth)).map(|s| s.2).collect();
+            (v.iter().sum::<f64>() / v.len() as f64).to_degrees()
+        };
+        let (front, deep) = (mean(&|d| d > 0.15), mean(&|d| d < -0.15));
+        assert!(front > deep + 15.0, "spray out in front {front}, deep {deep}");
+        // The ball is met a little under its centre and somewhere on the barrel.
+        assert!(batted.iter().all(|s| s.0.along > 0.0 && s.0.exit_speed > 0.0));
+    }
+
+    #[test]
+    fn batters_get_a_piece_of_near_misses() {
+        // Statcast: of the swings that are on time, 7 % miss and 35 % are fouled off.
+        let on_time = |env: &MatchEnv| {
+            let all: Vec<_> = shapes(env, 40_000, 9).into_iter().filter(|s| s.0.depth.abs() < 0.10 && s.0.direction.abs() < 0.09).collect();
+            let n = all.len() as f64;
+            (all.iter().filter(|s| s.1 == 0).count() as f64 / n, all.iter().filter(|s| s.1 == 2).count() as f64 / n)
+        };
+        let env = MatchEnv::neutral_mlb();
+        let (miss, front) = on_time(&env);
+        assert!((0.04..0.16).contains(&miss), "share of well-timed swings that miss {miss}");
+        assert!((0.55..0.85).contains(&front), "share of well-timed swings put in front of the plate {front}");
+        let mut rigid = MatchEnv::neutral_mlb();
+        rigid.params.piece_rate = 0.0;
+        let (miss_rigid, front_rigid) = on_time(&rigid);
+        assert!(miss_rigid > miss + 0.05, "without the rule {miss_rigid}, with it {miss}");
+        assert!((front_rigid - front).abs() < 0.03, "the rule turns misses into fouls, not into fair balls");
     }
 
     #[test]

@@ -4,7 +4,7 @@
 //! positioning), an AI manager for the decisions nobody else makes, and the box
 //! score.
 
-use crate::batting::{respond_with, Approach, BattedInfo, Miss, Swing};
+use crate::batting::{respond_with, Approach, BattedInfo, Miss, Swing, SwingShape};
 use crate::fielding::{alignment, move_time, Alignment, InfieldDepth, OutfieldDepth, C, P};
 use crate::params::ModelParams;
 use crate::pitching::{choose_pitch, expectation, selection_weights, throw_pitch, MatchEnv, PitcherState, Thrown, MAX_PITCHES};
@@ -133,6 +133,8 @@ pub struct PitchEvent<'a> {
     pub swung: bool,
     pub result: PitchResult,
     pub bat_speed: Option<f64>,
+    /// Geometry of the swing, when there was one.
+    pub swing: Option<SwingShape>,
     /// Why the swing missed, for swinging strikes.
     pub miss: Option<Miss>,
     pub batted: Option<&'a BattedInfo>,
@@ -1281,6 +1283,7 @@ impl GameSim {
             swung: true,
             result: PitchResult::Ball,
             bat_speed: None,
+            swing: None,
             miss: None,
             batted: None,
             path: None,
@@ -1318,18 +1321,20 @@ impl GameSim {
                 live_ball = true;
                 obs.pitch(&ev);
             }
-            Swing::Whiff { bat_speed, miss } => {
+            Swing::Whiff { shape, miss } => {
                 pa.strikes += 1;
                 line.strikes += 1;
                 ev.result = PitchResult::SwingingStrike;
-                ev.bat_speed = Some(bat_speed);
+                ev.bat_speed = Some(shape.bat_speed);
+                ev.swing = Some(shape);
                 ev.miss = Some(miss);
                 live_ball = true;
                 obs.pitch(&ev);
             }
-            Swing::FoulTip { caught, bat_speed } => {
+            Swing::FoulTip { caught, shape } => {
                 line.strikes += 1;
-                ev.bat_speed = Some(bat_speed);
+                ev.bat_speed = Some(shape.bat_speed);
+                ev.swing = Some(shape);
                 if caught {
                     pa.strikes += 1;
                     ev.result = PitchResult::FoulTip;
@@ -1339,15 +1344,17 @@ impl GameSim {
                 }
                 obs.pitch(&ev);
             }
-            Swing::FoulBack { bat_speed } => {
+            Swing::FoulBack { shape } => {
                 line.strikes += 1;
                 foul(&mut pa.strikes);
                 ev.result = PitchResult::Foul;
-                ev.bat_speed = Some(bat_speed);
+                ev.bat_speed = Some(shape.bat_speed);
+                ev.swing = Some(shape);
                 obs.pitch(&ev);
             }
             Swing::Batted { state, info } => {
                 line.strikes += 1;
+                ev.swing = Some(info.shape);
                 // A ball hit low and well outside the lines is foul without any play on it.
                 if info.spray.abs() > OBVIOUS_FOUL_SPRAY && info.launch_angle < OBVIOUS_FOUL_LAUNCH {
                     foul(&mut pa.strikes);
@@ -1361,6 +1368,15 @@ impl GameSim {
                     sim.dt = BATTED_DT;
                     sim.sample_dt = BATTED_SAMPLE_DT;
                     sim.run(state, &mut self.path);
+                    // A ball chopped straight down often comes off the plate, the box or the batter foul.
+                    let chopped = !info.bunt && self.path.landing.is_some_and(|l| l.pos.horiz() < params.chop_foul_dist);
+                    if chopped && rng.chance(params.chop_foul_prob) {
+                        foul(&mut pa.strikes);
+                        ev.result = PitchResult::Foul;
+                        ev.bat_speed = Some(info.bat_speed);
+                        obs.pitch(&ev);
+                        return true;
+                    }
                     // Runners sent on a hit-and-run are in full stride at contact.
                     let mut running = [0.0; 3];
                     if hit_and_run {

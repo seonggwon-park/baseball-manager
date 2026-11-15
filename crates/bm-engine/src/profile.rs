@@ -301,24 +301,28 @@ impl PitcherProfile {
     }
 }
 
+/// Bat speed, m/s, and barrel error, m, of the average hitter of the generated MLB population.
+pub const AVERAGE_BAT_SPEED: f64 = 73.1 * MPH;
+pub const AVERAGE_BARREL_SD: f64 = 0.047;
+
 impl BatterProfile {
     pub fn league_average(hand: Hand) -> Self {
         BatterProfile {
             hand,
             height: 1.855,
-            bat_speed: 71.9 * MPH,
+            bat_speed: AVERAGE_BAT_SPEED,
             bat_speed_sd: 2.8 * MPH,
             attack_angle: 9.5f64.to_radians(),
-            attack_sd: 2.5f64.to_radians(),
-            timing_sd: 0.0175,
-            barrel_sd: 0.019,
-            barrel_aim: 0.0155,
-            reach_sd: 0.06,
+            attack_sd: 6.1f64.to_radians(),
+            timing_sd: 0.0138,
+            barrel_sd: AVERAGE_BARREL_SD,
+            barrel_aim: 0.012,
+            reach_sd: 0.065,
             eye: 0.62,
             perception_sd: 0.065,
             chase: 0.0,
             aggression: 1.0,
-            timing_bias: -0.006,
+            timing_bias: 0.0002,
             sprint: 27.0 * FT,
             accel: 4.9,
             baserunning: 0.5,
@@ -331,7 +335,7 @@ impl BatterProfile {
     /// Rough offensive value used by the AI manager to compare hitters: bat speed,
     /// barrel control and pitch recognition (about 1.0 for an average hitter).
     pub fn quality(&self) -> f64 {
-        self.bat_speed / (71.9 * MPH) - 0.6 * self.barrel_sd / 0.034 + 0.5 * self.eye + 0.03
+        self.bat_speed / AVERAGE_BAT_SPEED - 0.335 * self.barrel_sd / AVERAGE_BARREL_SD + 0.5 * self.eye + 0.03
     }
 }
 

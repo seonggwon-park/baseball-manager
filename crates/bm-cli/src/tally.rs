@@ -102,6 +102,140 @@ impl Efficiency {
     }
 }
 
+/// Running sums for a straight-line fit of y on x.
+#[derive(Clone, Copy, Default)]
+pub struct Fit {
+    pub n: f64,
+    sx: f64,
+    sy: f64,
+    sxx: f64,
+    sxy: f64,
+    syy: f64,
+}
+
+impl Fit {
+    pub fn add(&mut self, x: f64, y: f64) {
+        self.n += 1.0;
+        self.sx += x;
+        self.sy += y;
+        self.sxx += x * x;
+        self.sxy += x * y;
+        self.syy += y * y;
+    }
+    fn merge(&mut self, o: &Fit) {
+        self.n += o.n;
+        self.sx += o.sx;
+        self.sy += o.sy;
+        self.sxx += o.sxx;
+        self.sxy += o.sxy;
+        self.syy += o.syy;
+    }
+    pub fn slope(&self) -> f64 {
+        (self.n * self.sxy - self.sx * self.sy) / (self.n * self.sxx - self.sx * self.sx)
+    }
+    pub fn r(&self) -> f64 {
+        (self.n * self.sxy - self.sx * self.sy) / ((self.n * self.sxx - self.sx * self.sx) * (self.n * self.syy - self.sy * self.sy)).sqrt()
+    }
+}
+
+/// Edges of the contact-depth bins, inches ahead of the batter's usual contact point.
+pub const DEPTH_EDGES: [f64; 11] = [-60.0, -25.0, -15.0, -8.0, -3.0, 1.0, 5.0, 10.0, 17.0, 25.0, 60.0];
+pub const ND: usize = DEPTH_EDGES.len() - 1;
+
+/// Swing geometry (full swings, 60 mph and up, bunts excluded), for comparison with
+/// Statcast bat tracking. Outcome index: 0 = whiff, 1 = foul, 2 = in play.
+#[derive(Clone, Copy, Default)]
+pub struct SwingGeo {
+    /// All swings and those under 60 mph, by outcome.
+    pub all: [f64; 3],
+    pub slow: [f64; 3],
+    pub speed: [Mean; 3],
+    /// Contact depth, inches.
+    pub depth: [Mean; 3],
+    /// Direction of the barrel's travel, degrees toward the pull side.
+    pub direction: [Mean; 3],
+    pub attack: Mean,
+    /// Fits on balls in play: bat speed, attack angle and direction on depth; pull-side
+    /// spray on direction; depth, direction and spray on the inside location (in).
+    pub fits: [Fit; 7],
+    /// Outcomes by depth bin, and for balls in play: bat speed, attack angle, direction,
+    /// launch angle, exit velocity, efficiency, pull-side spray.
+    pub by_depth: [[f64; 3]; ND],
+    pub depth_bip: [[Mean; 8]; ND],
+    /// By launch-angle class (GB, LD, FB, PU): pull-side spray, direction, depth, attack angle.
+    pub by_la: [[Mean; 4]; 4],
+    pub spray: Mean,
+    /// Well-timed swings (within 4 in of the usual depth and 5 deg of the usual
+    /// direction): all, misses, caught tips; and by elevation of the ball off the bat:
+    /// fouls and balls in play with their exit velocity.
+    /// All swings by strikes: miss, caught tip, foul, in play, swings under 60 mph; and the bat speed.
+    pub by_strikes: [[f64; 5]; 3],
+    pub speed_by_strikes: [Mean; 3],
+    pub centred: [f64; 3],
+    /// Well-timed swings at pitches well inside the zone, on its edge and outside it: miss, foul, in play.
+    pub centred_zone: [[f64; 3]; 3],
+    /// The same three classes of location for all full swings, by depth bin.
+    pub depth_zone: [[[f64; 3]; 3]; ND],
+    /// Well-timed misses by cause.
+    pub centred_miss: [f64; 6],
+    pub centred_foul: [Mean; NE],
+    pub centred_bip: [Mean; NE],
+}
+
+/// Edges of the elevation bins of well-timed contact, deg.
+pub const ELEV_EDGES: [f64; 15] = [-90.0, -60.0, -40.0, -25.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 91.0];
+pub const NE: usize = ELEV_EDGES.len() - 1;
+
+impl SwingGeo {
+    fn merge(&mut self, o: &SwingGeo) {
+        for i in 0..3 {
+            self.all[i] += o.all[i];
+            self.slow[i] += o.slow[i];
+            self.speed[i].merge(&o.speed[i]);
+            self.depth[i].merge(&o.depth[i]);
+            self.direction[i].merge(&o.direction[i]);
+        }
+        self.attack.merge(&o.attack);
+        self.spray.merge(&o.spray);
+        for i in 0..3 {
+            for k in 0..5 {
+                self.by_strikes[i][k] += o.by_strikes[i][k];
+            }
+            self.speed_by_strikes[i].merge(&o.speed_by_strikes[i]);
+            self.centred[i] += o.centred[i];
+            for z in 0..3 {
+                self.centred_zone[z][i] += o.centred_zone[z][i];
+                for d in 0..ND {
+                    self.depth_zone[d][z][i] += o.depth_zone[d][z][i];
+                }
+            }
+        }
+        for i in 0..6 {
+            self.centred_miss[i] += o.centred_miss[i];
+        }
+        for i in 0..NE {
+            self.centred_foul[i].merge(&o.centred_foul[i]);
+            self.centred_bip[i].merge(&o.centred_bip[i]);
+        }
+        for (a, b) in self.fits.iter_mut().zip(&o.fits) {
+            a.merge(b);
+        }
+        for i in 0..ND {
+            for k in 0..3 {
+                self.by_depth[i][k] += o.by_depth[i][k];
+            }
+            for k in 0..8 {
+                self.depth_bip[i][k].merge(&o.depth_bip[i][k]);
+            }
+        }
+        for i in 0..4 {
+            for k in 0..4 {
+                self.by_la[i][k].merge(&o.by_la[i][k]);
+            }
+        }
+    }
+}
+
 /// Counts of the things managers call for.
 #[derive(Clone, Copy, Default)]
 pub struct Tactics {
@@ -281,6 +415,7 @@ pub struct Tally {
     pub outs_in_play: f64,
     pub pa_pitches: f64,
     pub tactics: Tactics,
+    pub geo: SwingGeo,
     pub sb: f64,
     pub cs: f64,
     pub wp: f64,
@@ -380,6 +515,7 @@ impl Default for Tally {
             outs_in_play: 0.0,
             pa_pitches: 0.0,
             tactics: Tactics::default(),
+            geo: SwingGeo::default(),
             sb: 0.0,
             cs: 0.0,
             wp: 0.0,
@@ -524,6 +660,7 @@ impl Tally {
         self.bat_speed_all.merge(&o.bat_speed_all);
         self.bat_speed_bip.merge(&o.bat_speed_bip);
         self.tactics.merge(&o.tactics);
+        self.geo.merge(&o.geo);
         self.eff_all.merge(&o.eff_all);
         for (a, b) in self.eff_la.iter_mut().zip(&o.eff_la) {
             a.merge(b);
@@ -721,6 +858,92 @@ impl Observer for Tally {
             }
         } else if e.approach == Approach::HitAndRun {
             self.tactics.hit_and_run_pitches += 1.0;
+        }
+        if let (Some(shape), false) = (e.swing, e.approach.is_bunt()) {
+            let outcome = match e.result {
+                PitchResult::SwingingStrike | PitchResult::FoulTip => 0,
+                PitchResult::Foul => 1,
+                _ => 2,
+            };
+            let g = &mut self.geo;
+            let mph = shape.bat_speed / MPH;
+            g.all[outcome] += 1.0;
+            let s = e.strikes.min(2) as usize;
+            g.by_strikes[s][match e.result {
+                PitchResult::SwingingStrike => 0,
+                PitchResult::FoulTip => 1,
+                PitchResult::Foul => 2,
+                _ => 3,
+            }] += 1.0;
+            g.speed_by_strikes[s].add(mph);
+            if mph < 60.0 {
+                g.by_strikes[s][4] += 1.0;
+            }
+            if mph < 60.0 {
+                g.slow[outcome] += 1.0;
+            } else {
+                let depth = shape.depth / INCH;
+                let dir = shape.direction.to_degrees();
+                g.speed[outcome].add(mph);
+                g.depth[outcome].add(depth);
+                g.direction[outcome].add(dir);
+                let bin_i = bin(&DEPTH_EDGES, depth);
+                // Ball centre more than 8.5 cm inside the edge of the zone, within 3.7 cm of leaving it, or beyond.
+                let zone = if e.zone_distance < -0.085 {
+                    0
+                } else if e.zone_distance <= -0.037 {
+                    1
+                } else {
+                    2
+                };
+                if let Some(i) = bin_i {
+                    g.by_depth[i][outcome] += 1.0;
+                    g.depth_zone[i][zone][outcome] += 1.0;
+                }
+                if depth.abs() < 4.0 && dir.abs() < 5.0 {
+                    g.centred[0] += 1.0;
+                    g.centred_zone[zone][outcome] += 1.0;
+                    if let Some(m) = e.miss {
+                        g.centred_miss[m as usize] += 1.0;
+                    }
+                    match e.result {
+                        PitchResult::SwingingStrike => g.centred[1] += 1.0,
+                        PitchResult::FoulTip => g.centred[2] += 1.0,
+                        _ => {
+                            if let Some(i) = bin(&ELEV_EDGES, shape.elevation.to_degrees()) {
+                                let c = if outcome == 1 { &mut g.centred_foul[i] } else { &mut g.centred_bip[i] };
+                                c.add(shape.exit_speed / MPH);
+                            }
+                        }
+                    }
+                }
+                if let (2, Some(info)) = (outcome, e.batted) {
+                    let pull = e.batter_hand.pull_sign();
+                    let spray = info.spray.to_degrees() * pull;
+                    let inside = e.thrown.flight.plate_pos.x * pull / INCH;
+                    let (ev, la, attack) = (info.exit_speed / MPH, info.launch_angle.to_degrees(), info.attack_angle.to_degrees());
+                    let ratio = ev / (1.23 * mph + 0.23 * e.thrown.flight.plate_vel.norm() / MPH);
+                    g.attack.add(attack);
+                    g.spray.add(spray);
+                    g.fits[0].add(depth, mph);
+                    g.fits[1].add(depth, attack);
+                    g.fits[2].add(depth, dir);
+                    g.fits[3].add(dir, spray);
+                    g.fits[4].add(inside, depth);
+                    g.fits[5].add(inside, dir);
+                    g.fits[6].add(inside, spray);
+                    if let Some(i) = bin_i {
+                        for (k, v) in [mph, attack, dir, la, ev, ratio, spray, shape.along / INCH].into_iter().enumerate() {
+                            g.depth_bip[i][k].add(v);
+                        }
+                    }
+                    let c = &mut g.by_la[bb_type(la)];
+                    c[0].add(spray);
+                    c[1].add(dir);
+                    c[2].add(depth);
+                    c[3].add(attack);
+                }
+            }
         }
         let d_in = e.zone_distance / INCH;
         let inz = e.zone_distance <= 0.0;

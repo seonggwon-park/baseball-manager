@@ -51,12 +51,14 @@ impl BallSpec {
     /// `1.23 * bat speed + 0.23 * pitch speed at the plate`, a collision efficiency
     /// of 0.23 relative to the bat speed it measures about 6 in from the tip.
     ///
-    /// The slope used here gives e = 0.49 at a closing speed of 157 mph (collision
-    /// efficiency 0.21 at the sweet spot), between the two. With the measured
-    /// distribution of bat speeds it puts the 95th percentile of exit velocity
-    /// within 1 mph of 2025 Statcast. Whether the gap to the laboratory value comes
-    /// from today's ball or from how bat speed is measured is not resolved here;
-    /// `docs/validation` tracks exit velocity against the squared-up maximum.
+    /// The slope used here gives e = 0.51 at a closing speed of 157 mph, which is a
+    /// collision efficiency of 0.23 at the sweet spot of the bat in `BatSpec::mlb_wood`:
+    /// the best swings of the simulation then reach Statcast's squared-up maximum, as
+    /// the best swings in the tracking data do by definition. With the measured
+    /// distribution of bat speeds the whole distribution of exit velocity over that
+    /// maximum follows 2025 Statcast (`docs/validation`). Whether the gap to the
+    /// laboratory value comes from today's ball or from how bat speed is measured is
+    /// not resolved here.
     pub fn mlb() -> Self {
         BallSpec {
             mass: 5.125 * OZ,
@@ -64,7 +66,7 @@ impl BallSpec {
             inertia_factor: 0.4,
             cor_ref: 0.55,
             cor_ref_speed: 60.0 * MPH,
-            cor_slope: -0.06 / (97.0 * MPH),
+            cor_slope: -0.04 / (97.0 * MPH),
         }
     }
 
@@ -175,7 +177,11 @@ mod tests {
     fn cor_speed_dependence() {
         let b = BallSpec::mlb();
         assert!((b.cor_at(60.0 * MPH) - 0.55).abs() < 1e-12);
-        assert!((b.cor_at(157.0 * MPH) - 0.49).abs() < 1e-12);
+        assert!((b.cor_at(157.0 * MPH) - 0.51).abs() < 1e-12);
+        // Collision efficiency 0.23 at the sweet spot, as in Statcast's squared-up maximum.
+        let bat = crate::bat::BatSpec::mlb_wood();
+        let q = bat.collision_efficiency(&b, bat.sweet_spot_from_tip, 157.0 * MPH);
+        assert!((q - 0.23).abs() < 0.01, "{q}");
     }
 
     #[test]

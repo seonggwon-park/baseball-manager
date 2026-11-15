@@ -6,7 +6,9 @@
 
 use crate::fielding::{B1, B2, B3, C, CF, LF, P, RF, SS};
 use crate::game::Team;
-use crate::profile::{BatterProfile, CatcherProfile, FielderProfile, Hand, PitchDef, PitchKind, PitchShape, PitcherProfile, Player, NO_POSITION};
+use crate::profile::{
+    BatterProfile, CatcherProfile, FielderProfile, Hand, PitchDef, PitchKind, PitchShape, PitcherProfile, Player, AVERAGE_BAT_SPEED, NO_POSITION,
+};
 use crate::rng::Rng;
 use bm_physics::units::{FT, INCH, MPH, RPM};
 use bm_physics::BatSpec;
@@ -79,7 +81,7 @@ pub fn random_batter(rng: &mut Rng, id: u32, level: &Level) -> Player {
     let batter = BatterProfile {
         hand,
         height: rng.gauss_clamped(1.855, 0.055, 1.68, 2.03),
-        bat_speed: rng.gauss_clamped(71.9, 2.6, 63.0, 81.0) * MPH + level.bat_speed,
+        bat_speed: AVERAGE_BAT_SPEED + rng.gauss_clamped(0.0, 2.6, -8.9, 9.1) * MPH + level.bat_speed,
         bat_speed_sd: level.bat_speed_sd,
         attack_angle: rng.gauss_clamped(level.attack_mean, level.attack_spread, level.attack_mean - 0.2, level.attack_mean + 0.2),
         attack_sd: level.attack_sd,
@@ -293,10 +295,7 @@ impl Club {
         }
         // Batting order: best bats first (bat speed and barrel control), pitcher or weakest last.
         let mut order: Vec<usize> = if dh { (0..9).collect() } else { (0..8).collect() };
-        let quality = |i: usize| {
-            let b = &players[i].batter;
-            b.bat_speed / (71.9 * MPH) - b.barrel_sd / 0.034 * 0.6 + b.eye * 0.5
-        };
+        let quality = |i: usize| players[i].batter.quality();
         order.sort_by(|&a, &b| quality(b).partial_cmp(&quality(a)).unwrap_or(std::cmp::Ordering::Equal));
         if !dh {
             order.push(sp);

@@ -911,6 +911,7 @@ mod tests {
                 bat_speed: 32.0,
                 attack_angle: 0.17,
                 bunt: false,
+                shape: Default::default(),
             };
             let inp = PlayInput {
                 env: &self.env,

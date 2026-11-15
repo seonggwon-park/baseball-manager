@@ -6,9 +6,9 @@ use crate::view::*;
 use bm_engine::fielding::{B1, B2, B3, C, POSITION_CODES, SS};
 use bm_engine::profile::NO_POSITION;
 use bm_engine::{
-    Alignment, Approach, Auto, BatLine, Club, DefenseOrders, GameEvent, GameSim, Hand, InfieldDepth, Level, MatchEnv, Miss, ModelParams, Observer,
-    OffenseOrders, OrderError, OutfieldDepth, PaEvent, PaOutcome, PitchEvent, PitchLine, PitchResult, PlayKind, Player, Rng, Rules, Shift, StealOrder, Step,
-    Substitution, Team, ZoneCall,
+    Alignment, Approach, Auto, BatLine, BatterProfile, Club, DefenseOrders, GameEvent, GameSim, Hand, InfieldDepth, Level, MatchEnv, Miss, ModelParams,
+    Observer, OffenseOrders, OrderError, OutfieldDepth, PaEvent, PaOutcome, PitchEvent, PitchLine, PitchResult, PlayKind, Player, Rng, Rules, Shift,
+    StealOrder, Step, Substitution, Team, ZoneCall,
 };
 use bm_physics::units::{FT, INCH, MPH, RPM};
 use bm_physics::{Atmosphere, Park, PathEnd, Vec3, Wind};
@@ -226,9 +226,11 @@ fn rating(z: f64) -> u8 {
 fn player_view(idx: usize, p: &Player, name: Localized, number: u8) -> PlayerView {
     let b = &p.batter;
     let f = &p.fielder;
+    // Spreads of the generated population: 12 % in barrel control, 10 % in timing, 2.6 mph in bat speed.
+    let avg = BatterProfile::league_average(b.hand);
     let batting = BattingRatings {
-        contact: rating(-0.6 * (b.barrel_sd - 0.0191) / 0.0023 - 0.4 * (b.timing_sd - 0.0175) / 0.00175),
-        power: rating((b.bat_speed / MPH - 71.9) / 2.6),
+        contact: rating(-0.6 * (b.barrel_sd / avg.barrel_sd - 1.0) / 0.12 - 0.4 * (b.timing_sd / avg.timing_sd - 1.0) / 0.10),
+        power: rating((b.bat_speed - avg.bat_speed) / (2.6 * MPH)),
         eye: rating((b.eye - 0.62) / 0.07),
         speed: rating((b.sprint / FT - 27.0) / 1.5),
         bunt: rating((b.bunt - 0.5) / 0.18),

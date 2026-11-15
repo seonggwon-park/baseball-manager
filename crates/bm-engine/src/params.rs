@@ -117,8 +117,75 @@ pub struct ModelParams {
     pub partial_fooled_rate: f64,
     pub partial_speed_min: f64,
     /// Share of the geometric off-the-end shift of a mistimed swing that the hands do
-    /// not compensate (0..1).
+    /// not compensate (0..1), for contact out in front and for contact deep in the zone,
+    /// and the distance from the point the bat sweeps about to the sweet spot, m.
     pub off_end_gain: f64,
+    pub off_end_late: f64,
+    pub pivot_radius: f64,
+    /// Further shift toward the end of the bat per radian that the barrel has come round, m.
+    pub off_end_linear: f64,
+    /// The shift toward the end of the bat levels off at this distance, m.
+    pub off_end_max: f64,
+    /// The way the bat faces: its turn per radian of the direction its sweet spot is
+    /// heading (Statcast: the spray of balls in play moves 1.7 deg per inch of contact
+    /// depth, the direction of the barrel's travel 1.26-1.44), how much further round
+    /// it faces at the usual contact point, rad, and the swing-to-swing scatter of that.
+    pub face_gain: f64,
+    pub face_lead: f64,
+    pub face_sd: f64,
+    /// Limit of the angle the bat can face away from square at contact, rad.
+    pub face_max: f64,
+    /// Rolling over: the tilt of the bat falls by the fraction `roll_flatten` as the
+    /// direction of the barrel's travel goes from `roll_from` to `roll_from + roll_span`, rad.
+    pub roll_from: f64,
+    pub roll_span: f64,
+    pub roll_flatten: f64,
+    /// Distance the barrel travels forward while it turns by one radian, m. Statcast's
+    /// attack direction changes by 1.26 deg per inch of contact depth.
+    pub swing_arc_radius: f64,
+    /// How far the barrel rides up over the ball when contact is made away from where
+    /// the swing is on the plane of the pitch, as a fraction of the rise of a point
+    /// swept round a fixed centre in the tilted swing plane: for contact deeper than
+    /// `arc_centre` (m in front of the usual contact point) and for contact further
+    /// out in front than `arc_early_from`. Fitted to the launch angle by depth of
+    /// contact (Statcast, depth relative to the batter's usual one: 17-20 deg from 3 in
+    /// deep to 17 in out in front, -18 deg at 15-25 in deep, -3 deg beyond 17 in out
+    /// in front).
+    pub arc_scale: f64,
+    pub arc_scale_early: f64,
+    pub arc_centre: f64,
+    pub arc_early_from: f64,
+    /// Contact further than this from the intended depth is a clean miss, m.
+    pub max_depth: f64,
+    /// Depth out in front beyond which the barrel gains no more speed, m.
+    pub bat_speed_depth_cap: f64,
+    /// Multiplier on the timing and barrel errors of a partial swing.
+    pub partial_precision: f64,
+    /// Getting a piece of it: share of the swings passing over or under the ball by less
+    /// than `piece_reach` (m, surface to surface) that graze it instead, and the depth
+    /// of that grazing contact, m.
+    pub piece_rate: f64,
+    pub piece_reach: f64,
+    pub piece_band: f64,
+    /// Mistiming, as depth of contact, at which that share has fallen to 61 %, m.
+    pub piece_depth: f64,
+    /// Depth of contact at which batters miss least, m in front of the usual one.
+    pub piece_centre: f64,
+    /// Multiplier on that share with two strikes, when batters protect the plate
+    /// (Statcast: 22.3 % of two-strike swings miss against 23.8 % with no strikes,
+    /// although far more of them are at pitches outside the zone).
+    pub piece_two_strikes: f64,
+    /// Swing-to-swing scatter of the barrel's direction that the depth of contact does
+    /// not explain, rad (Statcast: 5.6-6.0 deg), and of the tilt of the swing plane
+    /// at a given pitch height, rad (Statcast: 5.6 deg).
+    pub direction_sd: f64,
+    pub bat_tilt_sd: f64,
+    /// A swung-on ball driven into the ground within this distance of the plate is
+    /// often foul (off the plate, the dirt of the box or the batter): distance, m, and probability.
+    pub chop_foul_dist: f64,
+    pub chop_foul_prob: f64,
+    /// Where along the bat the batter means to meet the ball, m toward the hands from the sweet spot.
+    pub contact_along: f64,
     /// Jam / reach: shift of the contact point along the bat per metre of location, m/m.
     pub reach_per_m: f64,
     /// Fraction of a ball tipped straight back that the catcher holds.
@@ -270,7 +337,7 @@ impl Default for ModelParams {
             fooled_recognition: 0.5,
             noise_residual: 0.05,
             recognition_scale: 0.8,
-            recognition_time_scale: 0.04,
+            recognition_time_scale: 0.13,
             ride_bias: 0.068,
             ride_reference: 0.36,
             expect_mix: 0.0,
@@ -278,33 +345,63 @@ impl Default for ModelParams {
             misread_factor: 2.5,
 
             ref_plate_speed: 86.0 * MPH,
-            timing_speed_exp: 1.0,
-            barrel_speed_exp: 1.0,
-            tracking_residual: 0.30,
-            barrel_outside_gain: 14.0,
-            barrel_outside_gain2: 60.0,
+            timing_speed_exp: 2.0,
+            barrel_speed_exp: 2.0,
+            tracking_residual: 0.15,
+            barrel_outside_gain: 8.0,
+            barrel_outside_gain2: 70.0,
             barrel_outside_offset: 0.03,
             reach_limit: 0.40,
-            height_bias: 0.035,
+            height_bias: 0.047,
             bat_tilt_mid: 32.0f64.to_radians(),
             bat_tilt_slope: 0.50,
-            plan_angle_per_m: 0.9,
+            plan_angle_per_m: 0.2,
             swing_radius: 0.63,
-            bat_speed_depth_gain: 0.15,
+            bat_speed_depth_gain: 0.115,
             contact_depth: 0.90,
             max_bat_angle: 1.05,
-            fooled_speed_loss: 0.35,
+            fooled_speed_loss: 0.25,
             fooled_time: 0.045,
-            partial_swing_rate: 0.08,
-            partial_two_strike_gain: 2.0,
-            partial_fooled_rate: 0.35,
+            partial_swing_rate: 0.05,
+            partial_two_strike_gain: 1.5,
+            partial_fooled_rate: 0.12,
             partial_speed_min: 0.55,
-            off_end_gain: 0.10,
+            off_end_gain: 1.0,
+            off_end_late: 0.1,
+            pivot_radius: 1.81,
+            off_end_linear: 0.04,
+            off_end_max: 0.11,
+            face_gain: 1.35,
+            face_lead: 0.15,
+            face_sd: 0.105,
+            face_max: 0.4,
+            roll_from: 0.12,
+            roll_span: 0.25,
+            roll_flatten: 0.9,
+            swing_arc_radius: 1.0,
+            arc_scale: 0.14,
+            arc_scale_early: 1.0,
+            arc_centre: 0.11,
+            arc_early_from: 0.25,
+            max_depth: 0.90,
+            bat_speed_depth_cap: 0.15,
+            partial_precision: 1.5,
+            piece_rate: 0.75,
+            piece_reach: 0.04,
+            piece_band: 0.022,
+            piece_depth: 0.37,
+            piece_centre: 0.15,
+            piece_two_strikes: 1.33,
+            direction_sd: 0.115,
+            bat_tilt_sd: 0.098,
+            chop_foul_dist: 3.0,
+            chop_foul_prob: 0.38,
+            contact_along: 0.025,
             reach_per_m: 0.15,
             foul_tip_catch: 0.55,
-            foul_tip_angle: 0.22,
-            two_strike_speed: 0.97,
-            two_strike_precision: 0.88,
+            foul_tip_angle: 0.3,
+            two_strike_speed: 0.98,
+            two_strike_precision: 0.82,
 
             batter_body_x: 0.63,
             hbp_width: 0.045,

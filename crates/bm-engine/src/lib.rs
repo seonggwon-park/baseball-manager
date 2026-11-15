@@ -11,7 +11,7 @@ pub mod profile;
 pub mod rng;
 pub mod rules;
 
-pub use batting::{Approach, BattedInfo, Miss, Swing};
+pub use batting::{Approach, BattedInfo, Miss, Swing, SwingShape};
 pub use fielding::{Alignment, InfieldDepth, OutfieldDepth, Shift};
 pub use game::{
     play_game, play_game_styled, Auto, BatLine, DefenseOrders, GameEvent, GameResult, GameSim, ManagerStyle, NoObserver, Observer, OffenseOrders, OrderError,

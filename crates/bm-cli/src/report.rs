@@ -8,7 +8,7 @@
 // The tables below pair simulated arrays with constant target arrays by index.
 #![allow(clippy::needless_range_loop)]
 
-use crate::tally::{Tally, CALL_EDGES, DIST_EDGES, EFF_BAT_EDGES, EFF_LA_EDGES, NB, NC};
+use crate::tally::{Tally, CALL_EDGES, DEPTH_EDGES, DIST_EDGES, EFF_BAT_EDGES, EFF_LA_EDGES, ELEV_EDGES, NB, NC, ND, NE};
 use bm_engine::PitchKind;
 
 pub struct Row {
@@ -369,6 +369,285 @@ pub fn print(t: &Tally) {
             m[4],
             e.percentile(0.99),
             m[5]
+        );
+    }
+
+    header("Swing geometry: full swings of 60 mph and up (Statcast bat tracking)");
+    let g = &t.geo;
+    let slow_all = pct(g.slow.iter().sum::<f64>(), g.all.iter().sum::<f64>());
+    line("swings under 60 mph, % of all swings", slow_all, 6.9, 2);
+    line("   ... of swings and misses", pct(g.slow[0], g.all[0]), 13.3, 2);
+    line("   ... of fouls", pct(g.slow[1], g.all[1]), 6.1, 2);
+    line("   ... of balls in play", pct(g.slow[2], g.all[2]), 3.5, 2);
+    // MLB by strikes: miss %, caught tip %, foul %, in play %, bat speed, share under 60 mph.
+    const STRIKES_MLB: [[f64; 6]; 3] = [[23.8, 2.2, 37.0, 37.0, 71.0, 5.3], [23.5, 2.1, 37.3, 37.1, 70.3, 6.0], [22.3, 2.4, 38.6, 36.7, 68.7, 8.8]];
+    for s in 0..3 {
+        let c = &g.by_strikes[s];
+        let n: f64 = c[..4].iter().sum();
+        let m = &STRIKES_MLB[s];
+        println!(
+            "  swings with {} strikes: miss {:5.1}/{:5.1}  caught tip {:4.1}/{:4.1}  foul {:5.1}/{:5.1}  in play {:5.1}/{:5.1}  bat speed {:5.1}/{:5.1}  under 60 mph {:4.1}/{:4.1} %",
+            s,
+            pct(c[0], n),
+            m[0],
+            pct(c[1], n),
+            m[1],
+            pct(c[2], n),
+            m[2],
+            pct(c[3], n),
+            m[3],
+            g.speed_by_strikes[s].mean(),
+            m[4],
+            pct(c[4], n),
+            m[5]
+        );
+    }
+    // MLB: bat speed mean and SD, depth SD (in), direction SD (deg) for whiffs, fouls, balls in play.
+    const GEO_MLB: [[f64; 4]; 3] = [[71.54, 4.73, 15.49, 24.72], [71.11, 4.86, 10.38, 17.19], [72.01, 4.71, 7.69, 12.00]];
+    for (i, name) in ["swing and miss", "foul", "in play"].iter().enumerate() {
+        println!(
+            "  {:<15} bat speed {:5.2}/{:5.2} (SD {:4.2}/{:4.2})  depth mean {:5.1} in, SD {:5.2}/{:5.2}  direction mean {:5.1}, SD {:5.2}/{:5.2} deg",
+            name,
+            g.speed[i].mean(),
+            GEO_MLB[i][0],
+            g.speed[i].sd(),
+            GEO_MLB[i][1],
+            g.depth[i].mean(),
+            g.depth[i].sd(),
+            GEO_MLB[i][2],
+            g.direction[i].mean(),
+            g.direction[i].sd(),
+            GEO_MLB[i][3]
+        );
+    }
+    line("attack angle on balls in play, deg", g.attack.mean(), 8.78, 2);
+    line("attack angle SD", g.attack.sd(), 8.36, 2);
+    line("pull-side spray off the bat, mean deg", g.spray.mean(), 5.6, 2);
+    line("pull-side spray SD", g.spray.sd(), 31.6, 2);
+    // (label, MLB slope, MLB r)
+    const FITS_MLB: [(&str, f64, f64); 7] = [
+        ("bat speed (mph) per inch of depth", 0.168, 0.27),
+        ("attack angle (deg) per inch of depth", 0.706, 0.65),
+        ("direction toward pull (deg) per inch of depth", 1.264, 0.81),
+        ("pull-side spray per degree of direction", 1.09, 0.41),
+        ("depth (in) per inch of inside location", 0.000, 0.00),
+        ("direction (deg) per inch of inside location", 0.218, 0.11),
+        ("pull-side spray (deg) per inch of inside location", 0.790, 0.15),
+    ];
+    println!("  fits on balls in play: slope sim / MLB (correlation sim / MLB)");
+    for (f, (label, slope, r)) in g.fits.iter().zip(&FITS_MLB) {
+        println!("    {:<52} {:7.3} / {:6.3}   (r {:5.2} / {:4.2})", label, f.slope(), slope, f.r(), r);
+    }
+    // MLB by depth bin: whiff %, foul %, in play %; balls in play: bat speed, attack angle, direction to pull,
+    // launch angle, exit velocity, efficiency, pull-side spray (NaN where the sample is too small).
+    const NA: f64 = f64::NAN;
+    const DEPTH_MLB: [[f64; 10]; ND] = [
+        [60.1, 37.3, 2.6, NA, NA, NA, NA, NA, NA, NA],
+        [35.7, 51.1, 13.2, 67.9, -5.9, -23.1, -13.9, 88.2, 0.855, -23.6],
+        [20.4, 50.5, 29.1, 69.6, 0.1, -14.7, 0.8, 88.3, 0.841, -13.4],
+        [12.6, 43.1, 44.3, 71.1, 5.2, -7.2, 11.3, 89.4, 0.838, -4.2],
+        [9.4, 38.4, 52.2, 72.1, 8.5, -1.3, 15.5, 91.2, 0.846, 4.6],
+        [9.9, 35.5, 54.6, 72.9, 11.4, 3.7, 19.3, 92.0, 0.849, 12.3],
+        [15.9, 37.8, 46.2, 73.4, 13.8, 8.8, 20.5, 91.3, 0.840, 19.3],
+        [31.2, 42.3, 26.5, 73.4, 16.6, 15.1, 18.4, 84.9, 0.785, 23.5],
+        [60.2, 29.4, 10.3, 73.4, 20.1, 23.6, 1.8, 72.1, 0.670, 16.1],
+        [91.6, 6.2, 2.2, NA, NA, NA, NA, NA, NA, NA],
+    ];
+    println!("  by contact depth (in, relative to the usual contact point; MLB bins relative to 30 in): sim / MLB");
+    println!(
+        "    depth          whiff %      foul %     in play %   | in play: bat speed    attack      direction   launch      EV          efficiency    spray"
+    );
+    for i in 0..ND {
+        let n: f64 = g.by_depth[i].iter().sum();
+        let b = &g.depth_bip[i];
+        let m = &DEPTH_MLB[i];
+        println!(
+            "    [{:3.0},{:3.0})  {:5.1}/{:5.1}  {:5.1}/{:5.1}  {:5.1}/{:5.1}   | {:5.1}/{:5.1}  {:5.1}/{:5.1}  {:5.1}/{:5.1}  {:5.1}/{:5.1}  {:5.1}/{:5.1}  {:.3}/{:.3}  {:5.1}/{:5.1}   (share of swings {:4.1} %, {:4.1} in from the end of the bat)",
+            DEPTH_EDGES[i],
+            DEPTH_EDGES[i + 1],
+            pct(g.by_depth[i][0], n),
+            m[0],
+            pct(g.by_depth[i][1], n),
+            m[1],
+            pct(g.by_depth[i][2], n),
+            m[2],
+            b[0].mean(),
+            m[3],
+            b[1].mean(),
+            m[4],
+            b[2].mean(),
+            m[5],
+            b[3].mean(),
+            m[6],
+            b[4].mean(),
+            m[7],
+            b[5].mean(),
+            m[8],
+            b[6].mean(),
+            m[9],
+            pct(n, g.all.iter().sum::<f64>() - g.slow.iter().sum::<f64>()),
+            b[7].mean()
+        );
+    }
+    // MLB by depth bin and location class: miss (with caught tips) %, foul %, in play %.
+    const DEPTH_ZONE_MLB: [[[f64; 3]; 3]; ND] = [
+        [[54.0, 42.9, 3.2], [67.4, 30.2, 2.3], [71.8, 24.7, 3.5]],
+        [[36.1, 52.5, 11.5], [43.2, 48.7, 8.1], [50.6, 41.8, 7.6]],
+        [[20.9, 50.6, 28.5], [25.7, 50.0, 24.3], [31.2, 44.4, 24.4]],
+        [[10.2, 43.0, 46.8], [13.6, 40.9, 45.5], [19.5, 37.8, 42.7]],
+        [[7.0, 32.8, 60.2], [7.4, 33.8, 58.8], [15.7, 36.0, 48.3]],
+        [[5.1, 29.7, 65.2], [5.8, 33.5, 60.7], [18.0, 38.7, 43.3]],
+        [[5.6, 35.1, 59.3], [9.8, 42.9, 47.3], [29.7, 39.7, 30.6]],
+        [[14.9, 51.9, 33.2], [26.9, 46.5, 26.6], [52.7, 33.5, 13.8]],
+        [[50.6, 37.1, 12.2], [55.9, 33.4, 10.7], [79.1, 16.3, 4.6]],
+        [[92.6, 4.1, 3.4], [98.6, 1.4, 0.0], [96.6, 2.1, 1.3]],
+    ];
+    // MLB: share of full swings, miss %, foul %, in play %, share of the class's swings more than 10 in early.
+    const ZONE_MLB: [[f64; 5]; 3] = [[46.6, 13.9, 40.5, 45.7, 13.2], [16.2, 19.4, 40.7, 39.9, 16.3], [37.2, 36.3, 35.4, 28.3, 26.3]];
+    println!("  by location of the pitch (sim / MLB): miss % / foul % / in play % by depth of contact");
+    let full: f64 = g.all.iter().sum::<f64>() - g.slow.iter().sum::<f64>();
+    for z in 0..3 {
+        let mut tot = [0.0; 3];
+        let mut early = 0.0;
+        for i in 0..ND {
+            for k in 0..3 {
+                tot[k] += g.depth_zone[i][z][k];
+                if DEPTH_EDGES[i] >= 10.0 {
+                    early += g.depth_zone[i][z][k];
+                }
+            }
+        }
+        let n: f64 = tot.iter().sum();
+        let m = &ZONE_MLB[z];
+        println!(
+            "    pitch {:<21} share {:4.1}/{:4.1}   miss {:5.1}/{:5.1}   foul {:5.1}/{:5.1}   in play {:5.1}/{:5.1}   more than 10 in early {:4.1}/{:4.1} %",
+            ZONE_NAMES[z],
+            pct(n, full),
+            m[0],
+            pct(tot[0], n),
+            m[1],
+            pct(tot[1], n),
+            m[2],
+            pct(tot[2], n),
+            m[3],
+            pct(early, n),
+            m[4]
+        );
+    }
+    for i in 0..ND {
+        let mut row = String::new();
+        for z in 0..3 {
+            let c = &g.depth_zone[i][z];
+            let n: f64 = c.iter().sum();
+            let m = &DEPTH_ZONE_MLB[i][z];
+            row.push_str(&format!("   {:4.0}/{:4.0} {:4.0}/{:4.0} {:4.0}/{:4.0}", pct(c[0], n), m[0], pct(c[1], n), m[1], pct(c[2], n), m[2]));
+        }
+        println!("    [{:3.0},{:3.0}){}", DEPTH_EDGES[i], DEPTH_EDGES[i + 1], row);
+    }
+    // MLB, swings within 4 in of the batter's usual depth and 5 deg of his usual direction (7150 swings):
+    // by elevation of the ball off the bat: fouls % of swings and EV, in play % of swings and EV.
+    const CENTRED_MLB: [[f64; 4]; NE] = [
+        [0.1, 56.7, 0.1, NA],
+        [2.6, 67.0, 0.7, 70.0],
+        [2.6, 75.0, 2.1, 81.7],
+        [1.4, 77.4, 5.2, 89.7],
+        [0.2, 71.6, 6.6, 94.2],
+        [0.6, 75.5, 7.6, 96.7],
+        [1.5, 75.2, 8.3, 96.3],
+        [1.6, 71.6, 9.4, 95.3],
+        [2.1, 69.6, 6.9, 91.9],
+        [2.9, 71.6, 4.3, 88.6],
+        [4.7, 73.9, 3.2, 85.9],
+        [4.9, 76.4, 2.3, 82.5],
+        [2.8, 76.1, 0.9, 76.9],
+        [0.6, 76.3, 0.3, 77.3],
+    ];
+    let cn = g.centred[0];
+    let fouls: f64 = g.centred_foul.iter().map(|m| m.n).sum();
+    let bip: f64 = g.centred_bip.iter().map(|m| m.n).sum();
+    println!(
+        "  well-timed swings (within 4 in of the usual depth and 5 deg of the usual direction), {:.1} % of full swings: sim / MLB",
+        pct(cn, g.all.iter().sum::<f64>() - g.slow.iter().sum::<f64>())
+    );
+    println!(
+        "    swing and miss {:5.1}/{:5.1}   foul, with caught tips {:5.1}/{:5.1}   in play {:5.1}/{:5.1}   (caught tips {:4.1}/{:4.1}; MLB fouls without launch data 4.4)",
+        pct(g.centred[1], cn),
+        7.2,
+        pct(fouls + g.centred[2], cn),
+        34.6,
+        pct(bip, cn),
+        58.2,
+        pct(g.centred[2], cn),
+        1.6
+    );
+    // MLB: share of well-timed swings, miss (with caught tips) %, foul %, in play %.
+    const ZONE_NAMES: [&str; 3] = ["well inside the zone", "on the edge", "outside the zone"];
+    const CENTRED_ZONE_MLB: [[f64; 4]; 3] = [[53.7, 6.4, 32.1, 61.6], [16.4, 6.8, 34.0, 59.2], [29.9, 14.3, 34.3, 51.5]];
+    for z in 0..3 {
+        let c = &g.centred_zone[z];
+        let n: f64 = c.iter().sum();
+        let m = &CENTRED_ZONE_MLB[z];
+        println!(
+            "    pitch {:<21} share {:4.1}/{:4.1}   swing and miss {:5.1}/{:5.1}   foul {:5.1}/{:5.1}   in play {:5.1}/{:5.1}",
+            ZONE_NAMES[z],
+            pct(n, cn),
+            m[0],
+            pct(c[0], n),
+            m[1],
+            pct(c[1], n),
+            m[2],
+            pct(c[2], n),
+            m[3]
+        );
+    }
+    let cm = &g.centred_miss;
+    let cmn: f64 = cm.iter().sum::<f64>().max(1.0);
+    println!(
+        "    well-timed misses by cause: early {:.1} %, late {:.1} %, off the end {:.1} %, jammed {:.1} %, over the ball {:.1} %, under the ball {:.1} %",
+        pct(cm[0], cmn),
+        pct(cm[1], cmn),
+        pct(cm[2], cmn),
+        pct(cm[3], cmn),
+        pct(cm[4], cmn),
+        pct(cm[5], cmn)
+    );
+    println!("    elevation off the bat      fouls, % of swings (EV, mph)        in play, % of swings (EV, mph)");
+    for i in 0..NE {
+        let m = &CENTRED_MLB[i];
+        println!(
+            "    [{:3.0},{:3.0})   {:5.1}/{:5.1}  ({:5.1}/{:5.1})   {:5.1}/{:5.1}  ({:5.1}/{:5.1})",
+            ELEV_EDGES[i],
+            ELEV_EDGES[i + 1],
+            pct(g.centred_foul[i].n, cn),
+            m[0],
+            g.centred_foul[i].mean(),
+            m[1],
+            pct(g.centred_bip[i].n, cn),
+            m[2],
+            g.centred_bip[i].mean(),
+            m[3]
+        );
+    }
+    // MLB by launch-angle class: pull-side spray mean and SD, direction to pull, depth relative to 30 in, attack angle.
+    const LA_MLB: [[f64; 5]; 4] =
+        [[16.14, 27.35, 2.60, -1.1, 6.9], [5.82, 25.92, 1.05, -0.1, 8.5], [-2.30, 25.22, -1.81, 1.3, 10.5], [-19.24, 47.57, -6.32, 3.3, 13.0]];
+    println!("  by launch-angle class (sim / MLB): pull-side spray mean and SD, direction, depth, attack angle");
+    for (i, name) in ["GB", "LD", "FB", "PU"].iter().enumerate() {
+        let c = &g.by_la[i];
+        let m = &LA_MLB[i];
+        println!(
+            "    {}  spray {:6.1}/{:6.1} (SD {:4.1}/{:4.1})  direction {:5.1}/{:5.1}  depth {:5.1}/{:5.1} in  attack {:5.1}/{:5.1}",
+            name,
+            c[0].mean(),
+            m[0],
+            c[0].sd(),
+            m[1],
+            c[1].mean(),
+            m[2],
+            c[2].mean(),
+            m[3],
+            c[3].mean(),
+            m[4]
         );
     }
 
