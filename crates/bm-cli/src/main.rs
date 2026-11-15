@@ -2,6 +2,7 @@
 //!
 //! ```text
 //! bm validate [--games N] [--seed S] [--threads T] [--clubs K]   compare simulated aggregates with MLB 2025
+//!             [--style none|mlb] [--set name=value]               AI manager preset, model constants
 //! bm game [--seed S]                                              play one game and print the box score
 //! bm bench [--games N]                                            measure simulation speed
 //! ```
@@ -10,7 +11,7 @@ mod report;
 mod tally;
 mod tuning;
 
-use bm_engine::{play_game, Club, GameResult, Level, MatchEnv, NoObserver, Rng, Rules};
+use bm_engine::{play_game_styled, Club, GameResult, Level, ManagerStyle, MatchEnv, NoObserver, Rng, Rules};
 use bm_physics::{Atmosphere, Park, Wind};
 use std::time::Instant;
 use tally::Tally;
@@ -45,6 +46,16 @@ fn parse_args() -> Args {
             "--seed" => a.seed = v.parse().expect("--seed S"),
             "--threads" => a.threads = v.parse::<usize>().expect("--threads T").max(1),
             "--clubs" => a.clubs = v.parse::<usize>().expect("--clubs K").max(2),
+            "--style" => {
+                a.tuning.style = match v.as_str() {
+                    "none" => ManagerStyle::none(),
+                    "mlb" => ManagerStyle::mlb(),
+                    other => {
+                        eprintln!("unknown style {other}; use none | mlb");
+                        std::process::exit(2);
+                    }
+                }
+            }
             "--set" => {
                 let (name, value) = v.split_once('=').expect("--set name=value");
                 let value: f64 = value.parse().expect("--set name=value needs a number");
@@ -77,7 +88,7 @@ fn pick_pair(rng: &mut Rng, n: usize) -> (usize, usize) {
 }
 
 /// Run `games` games on `threads` threads, feeding every event to a [`Tally`].
-fn simulate(env: &MatchEnv, clubs: &[Club], games: usize, seed: u64, threads: usize, observe: bool) -> Tally {
+fn simulate(env: &MatchEnv, clubs: &[Club], style: ManagerStyle, games: usize, seed: u64, threads: usize, observe: bool) -> Tally {
     let per = games.div_ceil(threads);
     let mut master = Rng::new(seed);
     let seeds: Vec<Rng> = (0..threads).map(|_| master.fork()).collect();
@@ -95,8 +106,12 @@ fn simulate(env: &MatchEnv, clubs: &[Club], games: usize, seed: u64, threads: us
                         let (a, h) = pick_pair(&mut rng, clubs.len());
                         let away = clubs[a].team_for_game(rng.below(5), dh);
                         let home = clubs[h].team_for_game(rng.below(5), dh);
-                        let res =
-                            if observe { play_game(env, &away, &home, &mut rng, &mut t) } else { play_game(env, &away, &home, &mut rng, &mut NoObserver) };
+                        let styles = [style; 2];
+                        let res = if observe {
+                            play_game_styled(env, &away, &home, styles, &mut rng, &mut t)
+                        } else {
+                            play_game_styled(env, &away, &home, styles, &mut rng, &mut NoObserver)
+                        };
                         t.games += 1.0;
                         t.team_games += 2.0;
                         t.innings += res.innings as f64;
@@ -185,7 +200,7 @@ fn main() {
         "validate" => {
             let clubs = make_clubs(args.clubs, args.seed, level);
             let start = Instant::now();
-            let t = simulate(&env, &clubs, args.games, args.seed, args.threads, true);
+            let t = simulate(&env, &clubs, args.tuning.style, args.games, args.seed, args.threads, true);
             let secs = start.elapsed().as_secs_f64();
             println!(
                 "Simulated {:.0} games ({:.0} pitches) in {:.2} s on {} threads: {:.0} games/s, {:.1} ms per game per thread",
@@ -202,7 +217,7 @@ fn main() {
             let clubs = make_clubs(args.clubs, args.seed, level);
             for threads in [1, args.threads] {
                 let start = Instant::now();
-                let t = simulate(&env, &clubs, args.games, args.seed, threads, false);
+                let t = simulate(&env, &clubs, args.tuning.style, args.games, args.seed, threads, false);
                 let secs = start.elapsed().as_secs_f64();
                 println!(
                     "{threads} thread(s): {:.0} games in {:.2} s = {:.0} games/s ({:.2} ms per game per thread)",
@@ -258,7 +273,7 @@ fn main() {
             let mut rng = Rng::new(args.seed);
             let away = clubs[0].team_for_game(0, env.rules.dh);
             let home = clubs[1].team_for_game(0, env.rules.dh);
-            let res = play_game(&env, &away, &home, &mut rng, &mut NoObserver);
+            let res = play_game_styled(&env, &away, &home, [args.tuning.style; 2], &mut rng, &mut NoObserver);
             print_box(&res);
         }
         other => {

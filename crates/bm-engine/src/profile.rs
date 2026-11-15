@@ -216,6 +216,8 @@ pub struct BatterProfile {
     pub baserunning: f64,
     /// Inclination and ability to steal, 0..=1.
     pub steal: f64,
+    /// Bunting skill, 0..=1 (0.5 = average position player).
+    pub bunt: f64,
     pub bat: BatSpec,
 }
 
@@ -253,10 +255,15 @@ pub struct CatcherProfile {
     pub framing: f64,
 }
 
+/// Position code for a player without a defensive position (designated hitter, utility).
+pub const NO_POSITION: usize = 9;
+
 /// A player as used by the engine.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Player {
     pub id: u32,
+    /// Primary position: an index into the defensive alignment (0 = P ... 8 = RF) or `NO_POSITION`.
+    pub position: usize,
     pub batter: BatterProfile,
     pub fielder: FielderProfile,
     pub pitcher: Option<PitcherProfile>,
@@ -316,8 +323,15 @@ impl BatterProfile {
             accel: 4.9,
             baserunning: 0.5,
             steal: 0.3,
+            bunt: 0.5,
             bat: BatSpec::mlb_wood(),
         }
+    }
+
+    /// Rough offensive value used by the AI manager to compare hitters: bat speed,
+    /// barrel control and pitch recognition (about 1.0 for an average hitter).
+    pub fn quality(&self) -> f64 {
+        self.bat_speed / (71.9 * MPH) - 0.6 * self.barrel_sd / 0.034 + 0.5 * self.eye + 0.03
     }
 }
 
@@ -348,6 +362,7 @@ impl Player {
     pub fn league_average(id: u32, bats: Hand) -> Self {
         Player {
             id,
+            position: NO_POSITION,
             batter: BatterProfile::league_average(bats),
             fielder: FielderProfile::league_average(),
             pitcher: None,
@@ -357,6 +372,7 @@ impl Player {
 
     pub fn league_average_pitcher(id: u32, throws: Hand) -> Self {
         let mut p = Player::league_average(id, throws);
+        p.position = 0;
         p.pitcher = Some(PitcherProfile::league_average(throws));
         // Pitchers hit and field like non-specialists.
         p.batter.bat_speed *= 0.93;

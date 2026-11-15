@@ -1,15 +1,18 @@
 //! The game: a state machine advanced one pitch at a time (innings, plate
-//! appearances, pitch-by-pitch resolution), substitutions by a simple AI manager,
-//! and the box score.
+//! appearances, pitch-by-pitch resolution), the orders a manager can give
+//! (substitutions, bunts, steals, hit-and-run, intentional walks, defensive
+//! positioning), an AI manager for the decisions nobody else makes, and the box
+//! score.
 
-use crate::batting::{respond, BattedInfo, Miss, Swing};
-use crate::fielding::{move_time, standard_alignment, C, P};
+use crate::batting::{respond_with, Approach, BattedInfo, Miss, Swing};
+use crate::fielding::{alignment, move_time, Alignment, InfieldDepth, OutfieldDepth, C, P};
 use crate::params::ModelParams;
 use crate::pitching::{choose_pitch, expectation, selection_weights, throw_pitch, MatchEnv, PitcherState, Thrown, MAX_PITCHES};
 use crate::play::{resolve, PlayInput, PlayKind, PlayResult, Runner};
 use crate::profile::{CatcherProfile, FielderProfile, Hand, PitcherProfile, Player};
 use crate::rng::{sigmoid, Rng};
 use crate::rules::StrikeZone;
+use bm_physics::units::FT;
 use bm_physics::{BattedPath, BattedSim, Vec3, BASE_PATH};
 use std::sync::Arc;
 
@@ -31,6 +34,8 @@ pub struct Team {
     pub defense: [usize; 9],
     /// Relievers in the order they are used; the last one is the closer.
     pub bullpen: Vec<usize>,
+    /// Position players who do not start.
+    pub bench: Vec<usize>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -42,9 +47,11 @@ pub struct BatLine {
     pub triples: u16,
     pub hr: u16,
     pub bb: u16,
+    pub ibb: u16,
     pub hbp: u16,
     pub so: u16,
     pub sf: u16,
+    pub sh: u16,
     pub gidp: u16,
     pub r: u16,
     pub rbi: u16,
@@ -61,6 +68,7 @@ pub struct PitchLine {
     pub r: u16,
     pub er: u16,
     pub bb: u16,
+    pub ibb: u16,
     pub so: u16,
     pub hr: u16,
     pub hbp: u16,
@@ -111,12 +119,17 @@ pub struct PitchEvent<'a> {
     pub balls: u8,
     pub strikes: u8,
     pub outs: u8,
+    /// Player indices in the batting and the fielding team.
+    pub batter: usize,
+    pub pitcher: usize,
     pub pitcher_hand: Hand,
     pub batter_hand: Hand,
     pub thrown: &'a Thrown,
     pub zone: StrikeZone,
     /// Signed distance outside the rulebook zone, m.
     pub zone_distance: f64,
+    /// What the batter was trying to do.
+    pub approach: Approach,
     pub swung: bool,
     pub result: PitchResult,
     pub bat_speed: Option<f64>,
@@ -125,6 +138,8 @@ pub struct PitchEvent<'a> {
     pub batted: Option<&'a BattedInfo>,
     pub path: Option<&'a BattedPath>,
     pub play: Option<&'a PlayResult>,
+    /// Where the fielders stood.
+    pub positions: &'a [Vec3; 9],
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -144,6 +159,8 @@ pub struct PaEvent {
     pub batter: usize,
     pub pitcher: usize,
     pub outcome: PaOutcome,
+    /// The walk was intentional.
+    pub intentional: bool,
     pub rbi: u8,
     pub runs: u8,
     pub outs_made: u8,
@@ -157,6 +174,50 @@ pub struct PaEvent {
     pub ground_ball: bool,
 }
 
+/// Things that happen between pitches.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum GameEvent {
+    HalfInning {
+        inning: u8,
+        top: bool,
+    },
+    PitchingChange {
+        team: usize,
+        player: usize,
+        replaced: usize,
+    },
+    PinchHitter {
+        team: usize,
+        player: usize,
+        replaced: usize,
+    },
+    PinchRunner {
+        team: usize,
+        player: usize,
+        replaced: usize,
+        base: u8,
+    },
+    DefensiveChange {
+        team: usize,
+        player: usize,
+        replaced: usize,
+        position: usize,
+    },
+    IntentionalWalk {
+        team: usize,
+        batter: usize,
+    },
+    /// `team` is the batting team; `to_base` 2 or 3.
+    Steal {
+        team: usize,
+        runner: usize,
+        to_base: u8,
+        safe: bool,
+    },
+    WildPitch,
+    GameOver,
+}
+
 /// Receives the stream of events of a game.
 pub trait Observer {
     fn pitch(&mut self, _e: &PitchEvent) {}
@@ -164,11 +225,151 @@ pub trait Observer {
     fn steal(&mut self, _success: bool) {}
     fn wild_pitch(&mut self) {}
     fn pitching_change(&mut self, _team: usize, _player: usize) {}
+    fn event(&mut self, _e: &GameEvent) {}
 }
 
 /// Observer that ignores everything.
 pub struct NoObserver;
 impl Observer for NoObserver {}
+
+/// Tendencies of the AI manager. Rates are probabilities per opportunity, before
+/// the situation and the players involved are taken into account.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ManagerStyle {
+    pub sac_bunt: f64,
+    pub bunt_for_hit: f64,
+    pub hit_and_run: f64,
+    pub intentional_walk: f64,
+    pub pinch_hit: f64,
+    pub pinch_run: f64,
+    /// Plays the infield in, at double-play depth, or the outfield deep when the situation calls for it.
+    pub situational_defence: bool,
+}
+
+impl ManagerStyle {
+    /// A manager who never calls anything: every batter hits away against a standard defence.
+    pub const fn none() -> Self {
+        ManagerStyle { sac_bunt: 0.0, bunt_for_hit: 0.0, hit_and_run: 0.0, intentional_walk: 0.0, pinch_hit: 0.0, pinch_run: 0.0, situational_defence: false }
+    }
+
+    /// Calibrated to the 2025 MLB frequencies of sacrifice bunts (0.115 per team
+    /// game) and intentional walks (0.114 per team game).
+    pub const fn mlb() -> Self {
+        ManagerStyle {
+            sac_bunt: 0.70,
+            bunt_for_hit: 0.15,
+            hit_and_run: 0.03,
+            intentional_walk: 0.45,
+            pinch_hit: 0.5,
+            pinch_run: 0.5,
+            situational_defence: true,
+        }
+    }
+}
+
+impl Default for ManagerStyle {
+    fn default() -> Self {
+        ManagerStyle::mlb()
+    }
+}
+
+/// Which decisions the AI manager makes for a team (the rest are left to whoever
+/// gives the orders).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Auto {
+    pub pitching: bool,
+    pub bench: bool,
+    pub offense: bool,
+    pub defense: bool,
+}
+
+impl Auto {
+    pub const ALL: Auto = Auto { pitching: true, bench: true, offense: true, defense: true };
+    pub const NONE: Auto = Auto { pitching: false, bench: false, offense: false, defense: false };
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum StealOrder {
+    /// The runner decides for himself.
+    #[default]
+    Auto,
+    /// Stay put.
+    Hold,
+    /// Go on the next pitch.
+    Go,
+}
+
+/// Orders to the batting side. They stand until the plate appearance ends, except
+/// `StealOrder::Go`, which is for one pitch.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct OffenseOrders {
+    /// `None` leaves it to the bench (the AI manager if it runs the offence, otherwise hit away).
+    pub approach: Option<Approach>,
+    /// Which side to bunt to; `None` = the usual side for the situation.
+    pub bunt_toward_third: Option<bool>,
+    pub steal: StealOrder,
+}
+
+/// Orders to the fielding side. They stand until the plate appearance ends.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct DefenseOrders {
+    /// `None` leaves the positioning to the bench.
+    pub alignment: Option<Alignment>,
+    /// Put the batter on first base.
+    pub intentional_walk: bool,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Substitution {
+    /// New pitcher, for the team in the field.
+    Pitcher { player: usize },
+    /// Bats for the hitter who is due up.
+    PinchHitter { player: usize },
+    /// Runs for the runner on `base` (1..=3).
+    PinchRunner { base: usize, player: usize },
+    /// Takes over a defensive position (1 = C ... 8 = RF) and the batting-order spot of the player who leaves.
+    Fielder { position: usize, player: usize },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OrderError {
+    GameOver,
+    /// Substitutions are made between plate appearances.
+    PlateAppearanceInProgress,
+    /// The team is not on the right side of the ball for this move.
+    WrongSide,
+    /// The player has already been in the game or is not on the roster.
+    PlayerUnavailable,
+    /// The player cannot pitch.
+    NotAPitcher,
+    /// The current pitcher has not yet faced the required number of batters.
+    PitcherMustFaceMoreBatters,
+    /// Nobody to replace there.
+    NothingToReplace,
+}
+
+/// A snapshot of the game for whoever has to make the next decision.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Situation {
+    pub inning: u8,
+    pub top: bool,
+    pub outs: u8,
+    pub balls: u8,
+    pub strikes: u8,
+    pub score: [u32; 2],
+    /// Player indices (in the batting team) of the runners on first, second, third.
+    pub bases: [Option<usize>; 3],
+    /// Team at bat and team in the field (0 = away, 1 = home).
+    pub batting: usize,
+    pub fielding: usize,
+    /// The batter (or the hitter due up) and the pitcher.
+    pub batter: usize,
+    pub pitcher: usize,
+    pub pitch_count: u32,
+    /// A plate appearance is under way (substitutions have to wait).
+    pub in_plate_appearance: bool,
+    pub over: bool,
+}
 
 struct Side {
     team: Arc<Team>,
@@ -179,13 +380,15 @@ struct Side {
     catcher: CatcherProfile,
     pitcher: usize,
     pitcher_state: PitcherState,
-    bullpen_used: usize,
-    closer_used: bool,
+    /// Players who have been in the game.
+    used: Vec<bool>,
     is_starter: bool,
     cur_bf: u32,
     cur_runs: u32,
     cur_inning_runs: u32,
     cur_inning_bf: u32,
+    /// A half inning has ended since the current pitcher came in.
+    finished_inning: bool,
     entry_lead: i32,
     box_score: TeamBox,
 }
@@ -201,6 +404,10 @@ impl Side {
             TeamBox { batting: vec![BatLine::default(); team.players.len()], pitching: vec![PitchLine::default(); team.players.len()], ..Default::default() };
         box_score.pitching[pitcher].started = true;
         box_score.pitching[pitcher].appeared = true;
+        let mut used = vec![false; team.players.len()];
+        for &i in team.lineup.iter().chain(team.defense.iter()) {
+            used[i] = true;
+        }
         Side {
             lineup: team.lineup,
             order: 0,
@@ -209,22 +416,45 @@ impl Side {
             catcher: team.players[team.defense[C]].catcher,
             pitcher,
             pitcher_state: PitcherState::new(profile_of(&team, pitcher), env),
-            bullpen_used: 0,
-            closer_used: false,
+            used,
             is_starter: true,
             cur_bf: 0,
             cur_runs: 0,
             cur_inning_runs: 0,
             cur_inning_bf: 0,
+            finished_inning: false,
             entry_lead: 0,
             box_score,
             team,
         }
     }
+
+    /// The AI's next reliever: the closer in a save situation, otherwise the first
+    /// unused arm in bullpen order, the closer last.
+    fn next_reliever(&self, save_spot: bool) -> Option<usize> {
+        let pen = &self.team.bullpen;
+        let (&closer, rest) = pen.split_last()?;
+        if save_spot && !self.used[closer] {
+            return Some(closer);
+        }
+        rest.iter().copied().find(|&i| !self.used[i]).or((!self.used[closer]).then_some(closer))
+    }
 }
 
 fn profile_of(team: &Team, idx: usize) -> &PitcherProfile {
     team.players[idx].pitcher.as_ref().expect("player used as a pitcher has a pitching profile")
+}
+
+/// A runner leaving with the pitch.
+#[derive(Clone, Copy)]
+struct Stealing {
+    runner: Runner,
+    /// Base he leaves: 0 = first, 1 = second.
+    from: usize,
+    /// A runner on first follows him (double steal).
+    with_trail: bool,
+    /// Extra time before he gets going (hit-and-run), s.
+    late: f64,
 }
 
 /// The plate appearance in progress.
@@ -236,15 +466,23 @@ struct Pa {
     box_delay: f64,
     bases_before: u8,
     outs_before: u8,
+    /// The first baseman holds a runner on.
+    hold_first: bool,
     positions: [Vec3; 9],
     balls: usize,
     strikes: usize,
     pitches: u8,
     /// `None` while the plate appearance is still going on.
     outcome: Option<PaOutcome>,
+    intentional: bool,
     rbi: u8,
     ground_ball: bool,
     score_before: u32,
+    /// What the AI manager decided to do with this hitter (`None` = not decided yet).
+    ai_plan: Option<Approach>,
+    /// Side the AI manager wants a bunt on.
+    ai_bunt_third: bool,
+    ai_walk_checked: bool,
 }
 
 /// What a call to [`GameSim::step`] did.
@@ -252,6 +490,10 @@ struct Pa {
 pub enum Step {
     /// A pitch was thrown (and everything that followed from it was resolved).
     Pitch,
+    /// The batter was walked intentionally; no pitch was thrown.
+    IntentionalWalk,
+    /// The AI manager made a substitution; the other side may want to answer before the next pitch.
+    Change,
     /// The game is over; nothing happened.
     GameOver,
 }
@@ -260,7 +502,10 @@ pub enum Step {
 pub struct GameSim {
     env: Arc<MatchEnv>,
     sides: [Side; 2],
-    positions: [Vec3; 9],
+    auto: [Auto; 2],
+    style: [ManagerStyle; 2],
+    offense_orders: OffenseOrders,
+    defense_orders: DefenseOrders,
     inning: u8,
     top: bool,
     outs: u8,
@@ -275,12 +520,21 @@ pub struct GameSim {
     pa: Option<Pa>,
     /// The current half inning has started.
     half_open: bool,
+    /// The AI managers have had their say before the next plate appearance.
+    defence_checked: bool,
+    offence_checked: bool,
     result: Option<GameResult>,
 }
 
-/// Play one game from start to finish. `away` bats first.
+/// Play one game from start to finish with the default AI managers. `away` bats first.
 pub fn play_game<O: Observer>(env: &MatchEnv, away: &Team, home: &Team, rng: &mut Rng, obs: &mut O) -> GameResult {
+    play_game_styled(env, away, home, [ManagerStyle::default(); 2], rng, obs)
+}
+
+/// Play one game from start to finish with the given AI managers.
+pub fn play_game_styled<O: Observer>(env: &MatchEnv, away: &Team, home: &Team, style: [ManagerStyle; 2], rng: &mut Rng, obs: &mut O) -> GameResult {
     let mut g = GameSim::new(Arc::new(env.clone()), Arc::new(away.clone()), Arc::new(home.clone()));
+    g.style = style;
     while !g.is_over() {
         g.step(rng, obs);
     }
@@ -293,7 +547,10 @@ impl GameSim {
         GameSim {
             env,
             sides,
-            positions: standard_alignment(),
+            auto: [Auto::ALL; 2],
+            style: [ManagerStyle::default(); 2],
+            offense_orders: OffenseOrders::default(),
+            defense_orders: DefenseOrders::default(),
             inning: 1,
             top: true,
             outs: 0,
@@ -306,9 +563,13 @@ impl GameSim {
             loss_candidate: None,
             pa: None,
             half_open: false,
+            defence_checked: false,
+            offence_checked: false,
             result: None,
         }
     }
+
+    // ---- read access ----
 
     pub fn is_over(&self) -> bool {
         self.result.is_some()
@@ -324,35 +585,295 @@ impl GameSim {
         self.result.expect("the game is over")
     }
 
-    /// Throw the next pitch and resolve everything that follows from it.
+    pub fn env(&self) -> &MatchEnv {
+        &self.env
+    }
+
+    pub fn team(&self, team: usize) -> &Team {
+        &self.sides[team].team
+    }
+
+    /// Current batting order of a team.
+    pub fn lineup(&self, team: usize) -> &[usize; 9] {
+        &self.sides[team].lineup
+    }
+
+    /// Slot in the batting order of the next hitter of a team.
+    pub fn batting_slot(&self, team: usize) -> usize {
+        self.sides[team].order
+    }
+
+    /// Current fielders of a team by position.
+    pub fn defense(&self, team: usize) -> &[usize; 9] {
+        &self.sides[team].defense
+    }
+
+    /// True for every player of a team who has been in the game.
+    pub fn used(&self, team: usize) -> &[bool] {
+        &self.sides[team].used
+    }
+
+    pub fn box_score(&self, team: usize) -> &TeamBox {
+        &self.sides[team].box_score
+    }
+
+    pub fn line_score(&self) -> &[[u8; 2]] {
+        &self.line_score
+    }
+
+    /// Pitches thrown by the current pitcher of a team.
+    pub fn pitch_count(&self, team: usize) -> u32 {
+        self.sides[team].pitcher_state.pitch_count
+    }
+
+    pub fn situation(&self) -> Situation {
+        let (bat, fld) = self.sides_now();
+        let s = &self.sides[bat];
+        let (balls, strikes, batter) = match &self.pa {
+            Some(pa) => (pa.balls as u8, pa.strikes as u8, pa.batter_idx),
+            None => (0, 0, s.lineup[s.order]),
+        };
+        // Between half innings the bases and the out count still show the half that just ended.
+        let fresh = !self.half_open;
+        Situation {
+            inning: self.inning,
+            top: self.top,
+            outs: if fresh { 0 } else { self.outs },
+            balls,
+            strikes,
+            score: self.score,
+            bases: if fresh { [None; 3] } else { [self.bases[0].map(|r| r.player), self.bases[1].map(|r| r.player), self.bases[2].map(|r| r.player)] },
+            batting: bat,
+            fielding: fld,
+            batter,
+            pitcher: self.sides[fld].pitcher,
+            pitch_count: self.sides[fld].pitcher_state.pitch_count,
+            in_plate_appearance: self.pa.is_some(),
+            over: self.result.is_some(),
+        }
+    }
+
+    /// Where the fielders will stand for the next pitch.
+    pub fn positions(&self) -> [Vec3; 9] {
+        let (bat, fld) = self.sides_now();
+        let s = &self.sides[bat];
+        let batter = &s.team.players[self.pa.as_ref().map_or(s.lineup[s.order], |pa| pa.batter_idx)].batter;
+        let hold = self.pa.as_ref().map_or(self.half_open && self.bases[0].is_some() && self.bases[1].is_none(), |pa| pa.hold_first);
+        let bunt = self.offense_orders.approach == Some(Approach::SacrificeBunt);
+        let set = self.defense_orders.alignment.unwrap_or_else(|| if self.half_open { self.ai_alignment(bat, fld) } else { Alignment::default() });
+        alignment(&set, batter.hand.pull_sign(), hold, bunt, self.env.rules.shift_restricted)
+    }
+
+    // ---- orders ----
+
+    /// Choose which decisions the AI manager makes for a team.
+    pub fn set_auto(&mut self, team: usize, auto: Auto) {
+        self.auto[team] = auto;
+    }
+
+    pub fn set_style(&mut self, team: usize, style: ManagerStyle) {
+        self.style[team] = style;
+    }
+
+    /// Orders for the team at bat (see [`OffenseOrders`]).
+    pub fn set_offense_orders(&mut self, orders: OffenseOrders) {
+        self.offense_orders = orders;
+    }
+
+    /// Orders for the team in the field (see [`DefenseOrders`]).
+    pub fn set_defense_orders(&mut self, orders: DefenseOrders) {
+        self.defense_orders = orders;
+    }
+
+    /// The fielding team must bring in a pitcher before play can go on (a pinch
+    /// hitter batted for the pitcher). `step` picks one itself if nobody does.
+    pub fn needs_pitcher(&self, team: usize) -> bool {
+        let s = &self.sides[team];
+        s.team.players[s.defense[P]].pitcher.is_none()
+    }
+
+    /// Can the current pitcher of a team be taken out now?
+    pub fn pitcher_removable(&self, team: usize) -> bool {
+        let s = &self.sides[team];
+        s.cur_bf >= self.env.rules.min_batters_faced as u32 || s.finished_inning || self.needs_pitcher(team)
+    }
+
+    /// Make a substitution. Only between plate appearances.
+    pub fn substitute<O: Observer>(&mut self, team: usize, sub: Substitution, obs: &mut O) -> Result<(), OrderError> {
+        if self.result.is_some() {
+            return Err(OrderError::GameOver);
+        }
+        if self.pa.is_some() {
+            return Err(OrderError::PlateAppearanceInProgress);
+        }
+        let (bat, fld) = self.sides_now();
+        let available = |s: &Side, player: usize| player < s.used.len() && !s.used[player];
+        match sub {
+            Substitution::Pitcher { player } => {
+                if team != fld {
+                    return Err(OrderError::WrongSide);
+                }
+                if !available(&self.sides[team], player) {
+                    return Err(OrderError::PlayerUnavailable);
+                }
+                if self.sides[team].team.players[player].pitcher.is_none() {
+                    return Err(OrderError::NotAPitcher);
+                }
+                if !self.pitcher_removable(team) {
+                    return Err(OrderError::PitcherMustFaceMoreBatters);
+                }
+                self.change_pitcher(team, player, obs);
+            }
+            Substitution::PinchHitter { player } => {
+                if team != bat {
+                    return Err(OrderError::WrongSide);
+                }
+                if !available(&self.sides[team], player) {
+                    return Err(OrderError::PlayerUnavailable);
+                }
+                let old = self.sides[team].lineup[self.sides[team].order];
+                self.replace_player(team, old, player);
+                obs.event(&GameEvent::PinchHitter { team, player, replaced: old });
+            }
+            Substitution::PinchRunner { base, player } => {
+                if team != bat {
+                    return Err(OrderError::WrongSide);
+                }
+                if !available(&self.sides[team], player) {
+                    return Err(OrderError::PlayerUnavailable);
+                }
+                if !(1..=3).contains(&base) || !self.half_open {
+                    return Err(OrderError::NothingToReplace);
+                }
+                let Some(old) = self.bases[base - 1] else { return Err(OrderError::NothingToReplace) };
+                self.replace_player(team, old.player, player);
+                let b = &self.sides[team].team.players[player].batter;
+                self.bases[base - 1] = Some(Runner { player, sprint: b.sprint, accel: b.accel, aggr: b.baserunning, ..old });
+                obs.event(&GameEvent::PinchRunner { team, player, replaced: old.player, base: base as u8 });
+            }
+            Substitution::Fielder { position, player } => {
+                if team != fld {
+                    return Err(OrderError::WrongSide);
+                }
+                if !(1..=8).contains(&position) {
+                    return Err(OrderError::NothingToReplace);
+                }
+                if !available(&self.sides[team], player) {
+                    return Err(OrderError::PlayerUnavailable);
+                }
+                let old = self.sides[team].defense[position];
+                self.replace_player(team, old, player);
+                obs.event(&GameEvent::DefensiveChange { team, player, replaced: old, position });
+            }
+        }
+        Ok(())
+    }
+
+    /// `new` takes over the batting-order spot and the defensive position of `old`.
+    fn replace_player(&mut self, team: usize, old: usize, new: usize) {
+        let s = &mut self.sides[team];
+        s.used[new] = true;
+        for slot in s.lineup.iter_mut() {
+            if *slot == old {
+                *slot = new;
+            }
+        }
+        if let Some(pos) = s.defense.iter().position(|&d| d == old) {
+            s.defense[pos] = new;
+            s.fielders[pos] = s.team.players[new].fielder;
+            if pos == C {
+                s.catcher = s.team.players[new].catcher;
+            }
+        }
+    }
+
+    fn change_pitcher<O: Observer>(&mut self, team: usize, new_idx: usize, obs: &mut O) {
+        let lead = self.score[team] as i32 - self.score[1 - team] as i32;
+        let env = Arc::clone(&self.env);
+        let s = &mut self.sides[team];
+        let old = s.defense[P];
+        s.used[new_idx] = true;
+        s.pitcher = new_idx;
+        s.defense[P] = new_idx;
+        s.fielders[P] = s.team.players[new_idx].fielder;
+        s.pitcher_state = PitcherState::new(profile_of(&s.team, new_idx), &env);
+        s.is_starter = false;
+        s.cur_bf = 0;
+        s.cur_runs = 0;
+        s.cur_inning_runs = 0;
+        s.finished_inning = false;
+        s.entry_lead = lead;
+        s.box_score.pitching[new_idx].appeared = true;
+        // Without a DH the new pitcher takes over the old pitcher's spot in the order.
+        for slot in s.lineup.iter_mut() {
+            if *slot == old {
+                *slot = new_idx;
+            }
+        }
+        obs.pitching_change(team, new_idx);
+        obs.event(&GameEvent::PitchingChange { team, player: new_idx, replaced: old });
+    }
+
+    #[inline]
+    fn sides_now(&self) -> (usize, usize) {
+        if self.top {
+            (0, 1)
+        } else {
+            (1, 0)
+        }
+    }
+
+    // ---- the game ----
+
+    /// Advance the game: throw the next pitch and resolve everything that follows
+    /// from it, or let an AI manager make a move first.
     pub fn step<O: Observer>(&mut self, rng: &mut Rng, obs: &mut O) -> Step {
         if self.result.is_some() {
             return Step::GameOver;
         }
         if !self.half_open {
-            self.open_half();
+            self.open_half(obs);
         }
-        let (bat, fld) = if self.top { (0, 1) } else { (1, 0) };
+        let (bat, fld) = self.sides_now();
         if self.pa.is_none() {
-            self.consider_pitching_change(fld, bat, obs);
+            // The managers move before the plate appearance, the defence first; after
+            // each move the other side gets the chance to answer.
+            if !self.defence_checked {
+                self.defence_checked = true;
+                if self.ai_pitching(fld, bat, obs) {
+                    return Step::Change;
+                }
+            }
+            if !self.offence_checked {
+                self.offence_checked = true;
+                if self.ai_bench(bat, fld, rng, obs) {
+                    return Step::Change;
+                }
+            }
             self.begin_pa(bat, fld);
         }
-        self.pitch(bat, fld, rng, obs);
-        if self.pa.as_ref().is_some_and(|pa| pa.outcome.is_some()) || self.outs >= 3 {
+        let thrown = self.pitch(bat, fld, rng, obs);
+        // The home side wins the moment it goes ahead in the last inning, even in the
+        // middle of a plate appearance (a wild pitch, say).
+        let walk_off = !self.top && self.inning >= self.env.rules.innings && self.score[1] > self.score[0];
+        if self.pa.as_ref().is_some_and(|pa| pa.outcome.is_some()) || self.outs >= 3 || walk_off {
             self.end_pa(bat, fld, obs);
-            let walk_off = !self.top && self.inning >= self.env.rules.innings && self.score[1] > self.score[0];
             if self.outs >= 3 || walk_off {
-                self.close_half(bat);
+                self.close_half(bat, fld, obs);
             }
         }
-        Step::Pitch
+        if thrown {
+            Step::Pitch
+        } else {
+            Step::IntentionalWalk
+        }
     }
 
-    fn open_half(&mut self) {
+    fn open_half<O: Observer>(&mut self, obs: &mut O) {
         if self.top {
             self.line_score.push([0, 0]);
         }
-        let (bat, fld) = if self.top { (0, 1) } else { (1, 0) };
+        let (bat, fld) = self.sides_now();
         self.outs = 0;
         self.bases = [None; 3];
         self.phantom_outs = 0;
@@ -366,11 +887,13 @@ impl GameSim {
                 Some(Runner { player: idx, sprint: b.sprint, accel: b.accel, aggr: b.baserunning, pitcher: self.sides[fld].pitcher, earned: false });
         }
         self.half_open = true;
+        obs.event(&GameEvent::HalfInning { inning: self.inning, top: self.top });
     }
 
     /// The half inning is over: move on to the next one, or end the game.
-    fn close_half(&mut self, bat: usize) {
+    fn close_half<O: Observer>(&mut self, bat: usize, fld: usize, obs: &mut O) {
         self.sides[bat].box_score.left_on_base += self.bases.iter().flatten().count() as u32;
+        self.sides[fld].finished_inning = true;
         self.half_open = false;
         let (innings, max_innings) = (self.env.rules.innings, self.env.rules.max_innings);
         if self.top {
@@ -384,6 +907,7 @@ impl GameSim {
         let finished = self.inning >= innings && (decided || max_innings.is_some_and(|m| self.inning >= m));
         if finished || self.inning >= 60 {
             self.result = Some(self.finish());
+            obs.event(&GameEvent::GameOver);
             return;
         }
         self.inning += 1;
@@ -419,15 +943,27 @@ impl GameSim {
         GameResult { score: self.score, innings: self.inning, line_score: self.line_score.clone(), boxes, win, loss, save }
     }
 
-    fn consider_pitching_change<O: Observer>(&mut self, fld: usize, bat: usize, obs: &mut O) {
+    // ---- AI manager ----
+
+    /// Pitching change by the AI manager (or forced, when the pitcher's spot holds a
+    /// pinch hitter). Returns true if a new pitcher came in.
+    fn ai_pitching<O: Observer>(&mut self, fld: usize, bat: usize, obs: &mut O) -> bool {
         let lead = self.score[fld] as i32 - self.score[bat] as i32;
+        let save_spot = self.inning >= self.env.rules.innings && (1..=3).contains(&lead);
+        if self.needs_pitcher(fld) {
+            let Some(new_idx) = self.sides[fld].next_reliever(save_spot) else { return false };
+            self.change_pitcher(fld, new_idx, obs);
+            return true;
+        }
+        if !self.auto[fld].pitching {
+            return false;
+        }
         let runners = self.bases.iter().flatten().count();
         let inning = self.inning;
-        let outs = self.outs;
         let s = &self.sides[fld];
         let stamina = profile_of(&s.team, s.pitcher).stamina;
         let pc = s.pitcher_state.pitch_count as f64;
-        let fresh_inning = outs == 0 && s.cur_inning_bf == 0;
+        let fresh_inning = self.outs == 0 && s.cur_inning_bf == 0;
         let want = if s.is_starter {
             pc >= stamina + 12.0
                 || (pc >= stamina - 5.0 && (fresh_inning || runners >= 2))
@@ -438,49 +974,175 @@ impl GameSim {
             s.cur_bf >= 3 && (pc >= stamina + 5.0 || (fresh_inning && pc >= 12.0) || s.cur_inning_runs >= 3)
         };
         if !want {
-            return;
+            return false;
         }
-        let pen = &s.team.bullpen;
-        if pen.is_empty() {
-            return;
+        let Some(new_idx) = s.next_reliever(save_spot) else { return false };
+        self.change_pitcher(fld, new_idx, obs);
+        true
+    }
+
+    /// Pinch hitters and pinch runners by the AI manager. Returns true if it made a move.
+    fn ai_bench<O: Observer>(&mut self, bat: usize, fld: usize, rng: &mut Rng, obs: &mut O) -> bool {
+        let style = self.style[bat];
+        if !self.auto[bat].bench || (style.pinch_hit <= 0.0 && style.pinch_run <= 0.0) {
+            return false;
         }
-        let closer = pen.len() - 1;
-        let save_spot = inning >= self.env.rules.innings && (1..=3).contains(&lead);
-        let next = if save_spot && !s.closer_used {
-            Some(closer)
-        } else if s.bullpen_used < closer {
-            Some(s.bullpen_used)
-        } else if !s.closer_used {
-            Some(closer)
-        } else {
-            None
-        };
-        let Some(slot) = next else { return };
-        let new_idx = pen[slot];
-        let s = &mut self.sides[fld];
-        if slot == closer {
-            s.closer_used = true;
-        } else {
-            s.bullpen_used = slot + 1;
+        let s = &self.sides[bat];
+        let team = Arc::clone(&s.team);
+        let free: Vec<usize> = team.bench.iter().copied().filter(|&i| !s.used[i]).collect();
+        if free.is_empty() {
+            return false;
         }
-        let old = s.pitcher;
-        s.pitcher = new_idx;
-        s.defense[P] = new_idx;
-        s.fielders[P] = s.team.players[new_idx].fielder;
-        s.pitcher_state = PitcherState::new(profile_of(&s.team, new_idx), &self.env);
-        s.is_starter = false;
-        s.cur_bf = 0;
-        s.cur_runs = 0;
-        s.cur_inning_runs = 0;
-        s.entry_lead = lead;
-        s.box_score.pitching[new_idx].appeared = true;
-        // Without a DH the new pitcher takes over the old pitcher's spot in the order.
-        for slot in s.lineup.iter_mut() {
-            if *slot == old {
-                *slot = new_idx;
+        let diff = self.score[bat] as i32 - self.score[fld] as i32;
+        let runners = self.bases.iter().flatten().count();
+        // Pinch hitter: late, the game within reach, and a clearly better bat on the bench.
+        if style.pinch_hit > 0.0 && self.inning >= 7 && (-3..=1).contains(&diff) && (runners > 0 || diff < 0) {
+            let throws = profile_of(&self.sides[fld].team, self.sides[fld].pitcher).hand;
+            let value = |i: usize| {
+                let b = &team.players[i].batter;
+                b.quality() + if b.hand != throws { 0.02 } else { -0.02 }
+            };
+            let due = s.lineup[s.order];
+            let best = free.iter().copied().max_by(|&a, &b| value(a).partial_cmp(&value(b)).unwrap_or(std::cmp::Ordering::Equal));
+            if let Some(best) = best {
+                if value(best) > value(due) + 0.08
+                    && rng.chance(style.pinch_hit)
+                    && self.substitute(bat, Substitution::PinchHitter { player: best }, obs).is_ok()
+                {
+                    return true;
+                }
             }
         }
-        obs.pitching_change(fld, new_idx);
+        // Pinch runner: the tying or go-ahead run is on base late and he is slow.
+        if style.pinch_run > 0.0 && self.inning >= 8 && (-1..=0).contains(&diff) {
+            let fastest = free
+                .iter()
+                .copied()
+                .max_by(|&a, &b| team.players[a].batter.sprint.partial_cmp(&team.players[b].batter.sprint).unwrap_or(std::cmp::Ordering::Equal));
+            if let Some(fastest) = fastest {
+                let speed = team.players[fastest].batter.sprint;
+                for base in [2usize, 1] {
+                    let Some(r) = self.bases[base - 1] else { continue };
+                    if r.sprint < 26.2 * FT && speed > r.sprint + 2.0 * FT && rng.chance(style.pinch_run) {
+                        return self.substitute(bat, Substitution::PinchRunner { base, player: fastest }, obs).is_ok();
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    /// What the AI manager has the batter do on this pitch.
+    fn ai_approach(&self, pa: &mut Pa, bat: usize, fld: usize, rng: &mut Rng) -> Approach {
+        let style = &self.style[bat];
+        let batter = &self.sides[bat].team.players[pa.batter_idx].batter;
+        let diff = self.score[bat] as i32 - self.score[fld] as i32;
+        let (r1, r2, r3) = (self.bases[0].is_some(), self.bases[1].is_some(), self.bases[2].is_some());
+        let plan = match pa.ai_plan {
+            Some(plan) => plan,
+            None => {
+                let mut plan = Approach::Normal;
+                if style.sac_bunt > 0.0 && self.outs == 0 && (r1 || r2) && !r3 && diff.abs() <= 2 {
+                    // Sacrifice: nobody out, a runner to move up, a close game and a hitter
+                    // who is not expected to do damage.
+                    let weak = sigmoid((0.97 - batter.quality()) / 0.05);
+                    let late = if self.inning >= 7 {
+                        1.0
+                    } else if self.inning >= 4 {
+                        0.5
+                    } else {
+                        0.25
+                    };
+                    let close = if diff.abs() <= 1 { 1.0 } else { 0.5 };
+                    if rng.chance((style.sac_bunt * weak * late * close * (0.5 + batter.bunt)).min(0.95)) {
+                        plan = Approach::SacrificeBunt;
+                    }
+                } else if style.bunt_for_hit > 0.0 && !r1 && !r2 && !r3 && self.outs < 2 {
+                    // Bunting for a hit is for quick runners who can handle the bat.
+                    let speed = ((batter.sprint / FT - 28.0) / 1.5).clamp(0.0, 1.5);
+                    let prob = style.bunt_for_hit * speed * (0.5 + batter.bunt);
+                    if prob > 0.0 && rng.chance(prob.min(0.5)) {
+                        plan = Approach::BuntForHit;
+                    }
+                }
+                if plan.is_bunt() {
+                    // Most bunts go to the third-base side.
+                    pa.ai_bunt_third = rng.chance(0.7);
+                }
+                pa.ai_plan = Some(plan);
+                plan
+            }
+        };
+        if plan.is_bunt() {
+            // A foul bunt with two strikes is a strikeout, and a bunt for a hit only works as a surprise.
+            if pa.strikes >= 2 || (plan == Approach::BuntForHit && pa.pitches >= 1) {
+                return Approach::Normal;
+            }
+            return plan;
+        }
+        // Hit and run: a runner on first only, fewer than two outs, a count in which the
+        // pitcher has to throw a strike, and a hitter who makes contact.
+        if style.hit_and_run > 0.0 && r1 && !r2 && !r3 && self.outs < 2 && matches!((pa.balls, pa.strikes), (1, 0) | (2, 0) | (2, 1) | (1, 1) | (3, 1)) {
+            let contact = sigmoid((0.019 - batter.barrel_sd) / 0.002);
+            if rng.chance((style.hit_and_run * contact).min(0.5)) {
+                return Approach::HitAndRun;
+            }
+        }
+        Approach::Normal
+    }
+
+    /// Defensive set-up chosen by the AI manager for the situation.
+    fn ai_alignment(&self, bat: usize, fld: usize) -> Alignment {
+        let mut a = Alignment::default();
+        if !self.style[fld].situational_defence {
+            return a;
+        }
+        let lead = self.score[fld] as i32 - self.score[bat] as i32;
+        let innings = self.env.rules.innings;
+        let (r1, r3) = (self.bases[0].is_some(), self.bases[2].is_some());
+        let last_chance = !self.top && self.inning >= innings && lead == 0;
+        if r3 && self.outs < 2 && (last_chance || (self.inning + 1 >= innings && (0..=1).contains(&lead))) {
+            // The run on third decides the game: cut it off at the plate.
+            a.infield = InfieldDepth::In;
+            if last_chance {
+                a.outfield = OutfieldDepth::Shallow;
+            }
+        } else if r1 && self.outs < 2 {
+            a.infield = InfieldDepth::DoublePlay;
+        }
+        if self.inning >= innings && (1..=2).contains(&lead) && a.outfield == OutfieldDepth::Normal {
+            a.outfield = OutfieldDepth::Deep;
+        }
+        a
+    }
+
+    /// Does the AI manager walk this hitter on purpose?
+    fn ai_walk(&self, pa: &Pa, bat: usize, fld: usize, rng: &mut Rng) -> bool {
+        let style = &self.style[fld];
+        if style.intentional_walk <= 0.0 || self.bases[0].is_some() || (self.bases[1].is_none() && self.bases[2].is_none()) {
+            return false;
+        }
+        let lead = self.score[fld] as i32 - self.score[bat] as i32;
+        let innings = self.env.rules.innings;
+        if self.inning + 2 < innings || !(-1..=2).contains(&lead) {
+            return false;
+        }
+        let s = &self.sides[bat];
+        let quality = |i: usize| s.team.players[i].batter.quality();
+        let gap = quality(pa.batter_idx) - quality(s.lineup[(s.order + 1) % 9]);
+        // Walk a dangerous hitter to get to a weaker one; more readily with two outs
+        // (any out ends the inning) or to set up a force when the winning run is on third.
+        let winning_run = !self.top && self.inning >= innings && lead == 0 && self.bases[2].is_some() && self.outs < 2;
+        let situation = if winning_run {
+            1.6
+        } else if self.outs == 2 {
+            1.0
+        } else if self.outs == 1 {
+            0.7
+        } else {
+            0.3
+        };
+        rng.chance((style.intentional_walk * situation * sigmoid((gap - 0.04) / 0.04)).min(0.95))
     }
 
     fn bases_bits(&self) -> u8 {
@@ -498,12 +1160,7 @@ impl GameSim {
             Hand::Right => params.box_delay_right,
             Hand::Left => params.box_delay_left,
         };
-        // With a runner on first and second base open the first baseman holds him on,
-        // which opens the hole on the right side.
-        let mut positions = self.positions;
-        if self.bases[0].is_some() && self.bases[1].is_none() {
-            positions[crate::fielding::B1] = Vec3::new(20.4, 22.4, 0.0);
-        }
+        let hold_first = self.bases[0].is_some() && self.bases[1].is_none();
         self.pa = Some(Pa {
             batter_idx,
             pitcher_idx,
@@ -512,25 +1169,32 @@ impl GameSim {
             box_delay,
             bases_before: self.bases_bits(),
             outs_before: self.outs,
-            positions,
+            hold_first,
+            positions: [Vec3::ZERO; 9],
             balls: 0,
             strikes: 0,
             pitches: 0,
             outcome: None,
+            intentional: false,
             rbi: 0,
             ground_ball: false,
             score_before: self.score[bat],
+            ai_plan: None,
+            ai_bunt_third: true,
+            ai_walk_checked: false,
         });
     }
 
-    /// One pitch of the current plate appearance.
-    fn pitch<O: Observer>(&mut self, bat: usize, fld: usize, rng: &mut Rng, obs: &mut O) {
+    /// One pitch of the current plate appearance. Returns false if no pitch was
+    /// thrown (intentional walk).
+    fn pitch<O: Observer>(&mut self, bat: usize, fld: usize, rng: &mut Rng, obs: &mut O) -> bool {
         let mut pa = self.pa.take().expect("a plate appearance is in progress");
-        self.pitch_inner(&mut pa, bat, fld, rng, obs);
+        let thrown = self.pitch_inner(&mut pa, bat, fld, rng, obs);
         self.pa = Some(pa);
+        thrown
     }
 
-    fn pitch_inner<O: Observer>(&mut self, pa: &mut Pa, bat: usize, fld: usize, rng: &mut Rng, obs: &mut O) {
+    fn pitch_inner<O: Observer>(&mut self, pa: &mut Pa, bat: usize, fld: usize, rng: &mut Rng, obs: &mut O) -> bool {
         let env = Arc::clone(&self.env);
         let env = &*env;
         let params = &env.params;
@@ -543,14 +1207,56 @@ impl GameSim {
         let zone = pa.zone;
         let catcher = self.sides[fld].catcher;
         let (balls, strikes) = (pa.balls, pa.strikes);
-        let mut w = [0.0; MAX_PITCHES];
 
+        // ---- orders for this pitch ----
+        let defense = self.defense_orders;
+        let mut walk = defense.intentional_walk;
+        if !walk && self.auto[fld].defense && !pa.ai_walk_checked {
+            pa.ai_walk_checked = true;
+            walk = self.ai_walk(pa, bat, fld, rng);
+        }
+        if walk {
+            pa.outcome = Some(PaOutcome::Walk);
+            pa.intentional = true;
+            obs.event(&GameEvent::IntentionalWalk { team: fld, batter: batter_idx });
+            return false;
+        }
+        let offense = self.offense_orders;
+        let approach = match offense.approach {
+            Some(a) => a,
+            None if self.auto[bat].offense => self.ai_approach(pa, bat, fld, rng),
+            None => Approach::Normal,
+        };
+        let toward_third = offense.bunt_toward_third.unwrap_or(pa.ai_bunt_third);
+        let set = match defense.alignment {
+            Some(a) => a,
+            None if self.auto[fld].defense => self.ai_alignment(bat, fld),
+            None => Alignment::default(),
+        };
+        // With a runner on first and second base open the first baseman holds him on,
+        // which opens the hole on the right side.
+        pa.hold_first = self.bases[0].is_some() && self.bases[1].is_none();
+        pa.positions = alignment(&set, batter.hand.pull_sign(), pa.hold_first, approach == Approach::SacrificeBunt, env.rules.shift_restricted);
+
+        let mut w = [0.0; MAX_PITCHES];
         let n = selection_weights(pprof, batter.hand, balls, strikes, params, &mut w);
         let exp = expectation(pprof, &self.sides[fld].pitcher_state, &w[..n], params.expect_mix);
         let choice = choose_pitch(pprof, batter.hand, &zone, balls, strikes, &w[..n], params, rng);
         let thrown = throw_pitch(pprof, &mut self.sides[fld].pitcher_state, &choice, env, rng);
         pa.pitches = pa.pitches.saturating_add(1);
-        let stealing = self.steal_decision(bat, pprof, &catcher, rng);
+
+        // ---- runners leaving with the pitch ----
+        let hit_and_run = approach == Approach::HitAndRun;
+        let stealing = match offense.steal {
+            StealOrder::Hold if !hit_and_run => None,
+            StealOrder::Go | StealOrder::Hold => self.send_runner(if hit_and_run { params.hit_and_run_jump } else { 0.0 }),
+            StealOrder::Auto if hit_and_run => self.send_runner(params.hit_and_run_jump),
+            StealOrder::Auto => self.steal_decision(bat, pprof, &catcher, rng),
+        };
+        if offense.steal == StealOrder::Go {
+            self.offense_orders.steal = StealOrder::Auto;
+        }
+
         let f = thrown.flight;
         let zone_distance = zone.signed_distance(f.plate_pos.x, f.plate_pos.z, env.ball.radius);
         let mut ev = PitchEvent {
@@ -559,11 +1265,14 @@ impl GameSim {
             balls: balls as u8,
             strikes: strikes as u8,
             outs: self.outs,
+            batter: batter_idx,
+            pitcher: pitcher_idx,
             pitcher_hand: pprof.hand,
             batter_hand: batter.hand,
             thrown: &thrown,
             zone,
             zone_distance,
+            approach,
             swung: true,
             result: PitchResult::Ball,
             bat_speed: None,
@@ -571,11 +1280,18 @@ impl GameSim {
             batted: None,
             path: None,
             play: None,
+            positions: &pa.positions,
         };
         let line = &mut self.sides[fld].box_score.pitching[pitcher_idx];
         line.pitches += 1;
 
-        let sw = respond(env, batter, &zone, balls, strikes, &thrown, &exp, rng);
+        // A foul is a strike unless the batter already has two; a foul bunt with two strikes is strike three.
+        let foul = |strikes: &mut usize| {
+            if *strikes < 2 || approach.is_bunt() {
+                *strikes += 1;
+            }
+        };
+        let sw = respond_with(env, batter, &zone, balls, strikes, &thrown, &exp, approach, toward_third, rng);
         let mut live_ball = false; // pitch not put in play or fouled: steals and wild pitches can happen
         match sw {
             Swing::Take => {
@@ -584,7 +1300,7 @@ impl GameSim {
                     ev.result = PitchResult::HitByPitch;
                     obs.pitch(&ev);
                     pa.outcome = Some(PaOutcome::HitByPitch);
-                    return;
+                    return true;
                 }
                 if zone.called_strike(&env.rules, params, f.plate_pos, f.plate_vel, env.ball.radius, catcher.framing, rng.f64()) {
                     pa.strikes += 1;
@@ -613,18 +1329,14 @@ impl GameSim {
                     pa.strikes += 1;
                     ev.result = PitchResult::FoulTip;
                 } else {
-                    if pa.strikes < 2 {
-                        pa.strikes += 1;
-                    }
+                    foul(&mut pa.strikes);
                     ev.result = PitchResult::Foul;
                 }
                 obs.pitch(&ev);
             }
             Swing::FoulBack { bat_speed } => {
                 line.strikes += 1;
-                if pa.strikes < 2 {
-                    pa.strikes += 1;
-                }
+                foul(&mut pa.strikes);
                 ev.result = PitchResult::Foul;
                 ev.bat_speed = Some(bat_speed);
                 obs.pitch(&ev);
@@ -633,63 +1345,79 @@ impl GameSim {
                 line.strikes += 1;
                 // A ball hit low and well outside the lines is foul without any play on it.
                 if info.spray.abs() > OBVIOUS_FOUL_SPRAY && info.launch_angle < OBVIOUS_FOUL_LAUNCH {
-                    if pa.strikes < 2 {
-                        pa.strikes += 1;
-                    }
+                    foul(&mut pa.strikes);
                     ev.result = PitchResult::Foul;
                     ev.bat_speed = Some(info.bat_speed);
                     obs.pitch(&ev);
-                    return;
-                }
-                let mut flight = env.batted_flight;
-                flight.aero.cd0 = (flight.aero.cd0 + rng.gauss(0.0, params.drag_jitter)).max(0.15);
-                let mut sim = BattedSim::new(&flight, &env.ball, &env.park);
-                sim.dt = BATTED_DT;
-                sim.sample_dt = BATTED_SAMPLE_DT;
-                sim.run(state, &mut self.path);
-                let inp = PlayInput {
-                    env,
-                    path: &self.path,
-                    info: &info,
-                    fielders: &self.sides[fld].fielders,
-                    positions: &pa.positions,
-                    bases: self.bases,
-                    batter: pa.me,
-                    box_delay: pa.box_delay,
-                    outs: self.outs,
-                };
-                let res = resolve(&inp, rng);
-                ev.bat_speed = Some(info.bat_speed);
-                ev.batted = Some(&info);
-                ev.path = Some(&self.path);
-                ev.play = Some(&res);
-                if res.kind == PlayKind::Foul {
-                    if pa.strikes < 2 {
-                        pa.strikes += 1;
-                    }
-                    ev.result = PitchResult::Foul;
-                    obs.pitch(&ev);
                 } else {
-                    ev.result = PitchResult::InPlay;
-                    obs.pitch(&ev);
-                    pa.outcome = Some(PaOutcome::Play(res.kind));
-                    pa.ground_ball = self.path.landing.is_some_and(|l| l.t < 0.9 && l.pos.horiz() < 45.0);
-                    pa.rbi = res.rbi;
-                    self.apply_play(bat, fld, batter_idx, pitcher_idx, &res);
+                    let mut flight = env.batted_flight;
+                    flight.aero.cd0 = (flight.aero.cd0 + rng.gauss(0.0, params.drag_jitter)).max(0.15);
+                    let mut sim = BattedSim::new(&flight, &env.ball, &env.park);
+                    sim.dt = BATTED_DT;
+                    sim.sample_dt = BATTED_SAMPLE_DT;
+                    sim.run(state, &mut self.path);
+                    // Runners sent on a hit-and-run are in full stride at contact.
+                    let mut running = [0.0; 3];
+                    if hit_and_run {
+                        if let Some(st) = stealing {
+                            let skill = bat_team.players[st.runner.player].batter.steal;
+                            let head = (pprof.time_to_plate - steal_jump(skill) - st.late).max(0.0);
+                            running[st.from] = head;
+                            if st.with_trail {
+                                running[0] = head;
+                            }
+                        }
+                    }
+                    let box_delay = match approach {
+                        Approach::BuntForHit => (pa.box_delay - params.bunt_hit_jump).max(0.0),
+                        Approach::SacrificeBunt => pa.box_delay + 0.10,
+                        _ => pa.box_delay,
+                    };
+                    let inp = PlayInput {
+                        env,
+                        path: &self.path,
+                        info: &info,
+                        fielders: &self.sides[fld].fielders,
+                        positions: &pa.positions,
+                        bases: self.bases,
+                        batter: pa.me,
+                        box_delay,
+                        outs: self.outs,
+                        running,
+                        infield_in: set.infield == InfieldDepth::In,
+                    };
+                    let res = resolve(&inp, rng);
+                    ev.bat_speed = Some(info.bat_speed);
+                    ev.batted = Some(&info);
+                    ev.path = Some(&self.path);
+                    ev.play = Some(&res);
+                    if res.kind == PlayKind::Foul {
+                        foul(&mut pa.strikes);
+                        ev.result = PitchResult::Foul;
+                        obs.pitch(&ev);
+                    } else {
+                        ev.result = PitchResult::InPlay;
+                        obs.pitch(&ev);
+                        pa.outcome = Some(PaOutcome::Play(res.kind));
+                        pa.ground_ball = self.path.landing.is_some_and(|l| l.t < 0.9 && l.pos.horiz() < 45.0);
+                        pa.rbi = res.rbi;
+                        self.apply_play(bat, fld, batter_idx, pitcher_idx, &res);
+                        return true;
+                    }
                 }
-                return;
             }
         }
 
         // Strike three with two outs ends the inning before anything happens on the bases.
         let inning_over = pa.strikes >= 3 && self.outs >= 2;
         if live_ball && !inning_over && self.bases.iter().any(|b| b.is_some()) {
-            if let Some(runner) = stealing {
-                self.resolve_steal(bat, fld, runner, pprof, &catcher, &thrown, rng, obs);
+            if let Some(st) = stealing {
+                self.resolve_steal(bat, fld, st, pprof, &catcher, &thrown, rng, obs);
             } else if is_wild(f.plate_pos) && rng.chance((params.wild_pitch_prob * catcher.blocking).min(0.9)) {
                 self.sides[fld].box_score.pitching[pitcher_idx].wp += 1;
                 self.advance_all_one(bat, fld);
                 obs.wild_pitch();
+                obs.event(&GameEvent::WildPitch);
             }
         }
         if pa.strikes >= 3 {
@@ -697,11 +1425,16 @@ impl GameSim {
         } else if pa.balls >= 4 {
             pa.outcome = Some(PaOutcome::Walk);
         }
+        true
     }
 
     /// Book-keeping at the end of a plate appearance.
     fn end_pa<O: Observer>(&mut self, bat: usize, fld: usize, obs: &mut O) {
         let pa = self.pa.take().expect("a plate appearance is in progress");
+        self.offense_orders = OffenseOrders::default();
+        self.defense_orders = DefenseOrders::default();
+        self.defence_checked = false;
+        self.offence_checked = false;
         let outcome = pa.outcome.unwrap_or(PaOutcome::Interrupted);
         let (batter_idx, pitcher_idx) = (pa.batter_idx, pa.pitcher_idx);
         let mut rbi = pa.rbi;
@@ -724,6 +1457,10 @@ impl GameSim {
                 if outcome == PaOutcome::Walk {
                     bl.bb += 1;
                     pl.bb += 1;
+                    if pa.intentional {
+                        bl.ibb += 1;
+                        pl.ibb += 1;
+                    }
                 } else {
                     bl.hbp += 1;
                     pl.hbp += 1;
@@ -748,6 +1485,7 @@ impl GameSim {
             batter: batter_idx,
             pitcher: pitcher_idx,
             outcome,
+            intentional: pa.intentional,
             rbi,
             runs,
             outs_made: self.outs - pa.outs_before,
@@ -796,10 +1534,10 @@ impl GameSim {
         {
             let bl = &mut self.sides[bat].box_score.batting[batter_idx];
             bl.pa += 1;
-            if res.kind != PlayKind::SacFly {
-                bl.ab += 1;
-            } else {
-                bl.sf += 1;
+            match res.kind {
+                PlayKind::SacFly => bl.sf += 1,
+                PlayKind::SacBunt => bl.sh += 1,
+                _ => bl.ab += 1,
             }
             bl.rbi += res.rbi as u16;
             match res.kind {
@@ -874,17 +1612,34 @@ impl GameSim {
         self.bases[1] = self.bases[0].take();
     }
 
-    /// Does the runner on first go on this pitch?
-    fn steal_decision(&self, bat: usize, pitcher: &PitcherProfile, catcher: &CatcherProfile, rng: &mut Rng) -> Option<Runner> {
-        let p = &self.env.params;
-        let runner = self.bases[0]?;
-        if self.bases[1].is_some() {
-            return None;
+    /// The lead runner who can steal, sent by the bench.
+    fn send_runner(&self, late: f64) -> Option<Stealing> {
+        match self.bases {
+            [trail, Some(r), None] => Some(Stealing { runner: r, from: 1, with_trail: trail.is_some(), late }),
+            [Some(r), None, _] => Some(Stealing { runner: r, from: 0, with_trail: false, late }),
+            _ => None,
         }
-        let skill = self.sides[bat].team.players[runner.player].batter.steal;
-        let margin = steal_defence_time(p, pitcher, catcher) - steal_run_time(p, &runner, skill);
-        let prob = p.steal_rate * skill * sigmoid((margin - p.steal_margin) / 0.06);
-        rng.chance(prob).then_some(runner)
+    }
+
+    /// Does a runner decide to go on this pitch?
+    fn steal_decision(&self, bat: usize, pitcher: &PitcherProfile, catcher: &CatcherProfile, rng: &mut Rng) -> Option<Stealing> {
+        let p = &self.env.params;
+        let team = &self.sides[bat].team;
+        if let (Some(runner), None) = (self.bases[0], self.bases[1]) {
+            let skill = team.players[runner.player].batter.steal;
+            let margin = steal_defence_time(p, pitcher, catcher, 0) - steal_run_time(p, &runner, skill, 0);
+            let prob = p.steal_rate * skill * sigmoid((margin - p.steal_margin) / 0.06);
+            return rng.chance(prob).then_some(Stealing { runner, from: 0, with_trail: false, late: 0.0 });
+        }
+        if p.steal_third_rate > 0.0 {
+            if let [None, Some(runner), None] = self.bases {
+                let skill = team.players[runner.player].batter.steal;
+                let margin = steal_defence_time(p, pitcher, catcher, 1) - steal_run_time(p, &runner, skill, 1);
+                let prob = p.steal_rate * p.steal_third_rate * skill * sigmoid((margin - p.steal_margin - p.steal_third_margin) / 0.06);
+                return rng.chance(prob).then_some(Stealing { runner, from: 1, with_trail: false, late: 0.0 });
+            }
+        }
+        None
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -892,7 +1647,7 @@ impl GameSim {
         &mut self,
         bat: usize,
         fld: usize,
-        runner: Runner,
+        st: Stealing,
         pitcher: &PitcherProfile,
         catcher: &CatcherProfile,
         thrown: &Thrown,
@@ -901,16 +1656,17 @@ impl GameSim {
     ) {
         let env = Arc::clone(&self.env);
         let p = &env.params;
+        let runner = st.runner;
         let skill = self.sides[bat].team.players[runner.player].batter.steal;
         // Slow pitches and pitches in the dirt give the runner more time.
         let v = thrown.flight.plate_vel.norm();
         let pitch_penalty = (p.ref_plate_speed - v).max(0.0) * 0.012 + if thrown.flight.plate_pos.z < 0.35 { 0.10 } else { 0.0 };
-        let defence = steal_defence_time(p, pitcher, catcher) + pitch_penalty + rng.gauss(0.0, 0.07);
-        let run = steal_run_time(p, &runner, skill) + rng.gauss(0.0, 0.06);
-        self.bases[0] = None;
+        let defence = steal_defence_time(p, pitcher, catcher, st.from) + pitch_penalty + rng.gauss(0.0, 0.07);
+        let run = steal_run_time(p, &runner, skill, st.from) + st.late + rng.gauss(0.0, 0.06);
+        self.bases[st.from] = None;
         let safe = run < defence;
         if safe {
-            self.bases[1] = Some(runner);
+            self.bases[st.from + 1] = Some(runner);
             self.sides[bat].box_score.batting[runner.player].sb += 1;
         } else {
             self.outs += 1;
@@ -919,20 +1675,35 @@ impl GameSim {
             let pidx = self.sides[fld].pitcher;
             self.sides[fld].box_score.pitching[pidx].outs += 1;
         }
+        // On a double steal the throw goes to third and the trailing runner takes second.
+        if st.with_trail && self.outs < 3 {
+            if let Some(trail) = self.bases[0].take() {
+                self.bases[1] = Some(trail);
+                self.sides[bat].box_score.batting[trail.player].sb += 1;
+            }
+        }
         obs.steal(safe);
+        obs.event(&GameEvent::Steal { team: bat, runner: runner.player, to_base: st.from as u8 + 2, safe });
     }
 }
 
-fn steal_defence_time(p: &ModelParams, pitcher: &PitcherProfile, catcher: &CatcherProfile) -> f64 {
-    pitcher.time_to_plate + catcher.pop_time + p.tag_time
+/// Time from the pitcher's first move until the tag is applied at the base
+/// (`from`: 0 = steal of second, 1 = steal of third).
+fn steal_defence_time(p: &ModelParams, pitcher: &PitcherProfile, catcher: &CatcherProfile, from: usize) -> f64 {
+    pitcher.time_to_plate + catcher.pop_time * if from == 1 { p.pop_third_factor } else { 1.0 } + p.tag_time
 }
 
-fn steal_run_time(p: &ModelParams, runner: &Runner, skill: f64) -> f64 {
+/// Reaction of a base stealer to the pitcher's first move, s.
+fn steal_jump(skill: f64) -> f64 {
+    0.24 - 0.08 * skill
+}
+
+fn steal_run_time(p: &ModelParams, runner: &Runner, skill: f64, from: usize) -> f64 {
     // Reaction to the pitcher's first move, then a sprint from the lead to a slide
     // that reaches the bag about 1.8 m early.
-    let jump = 0.24 - 0.08 * skill;
-    let lead = p.lead[0] + 0.3 + 0.6 * skill;
-    jump + move_time(BASE_PATH - lead - 1.8, runner.accel * 1.1, runner.sprint * 0.98)
+    // Nobody holds a runner on second, so he can stretch his lead as the pitcher comes set.
+    let lead = p.lead[from] + 0.3 + 0.6 * skill + if from == 1 { 1.2 } else { 0.0 };
+    steal_jump(skill) + move_time(BASE_PATH - lead - 1.8, runner.accel * 1.1, runner.sprint * 0.98)
 }
 
 /// Pitch that the catcher may fail to stop (in the dirt, far outside, or over his head).
@@ -1039,9 +1810,10 @@ mod tests {
                 assert_eq!(sum(|b| b.pa), audit.pa[t]);
                 assert_eq!(psum(|p| p.bf), audit.pa[t]);
                 assert_eq!(psum(|p| p.pitches), audit.pitches[1 - t]);
-                // Plate appearances are at bats plus walks, hit batters and sacrifice flies.
+                // Plate appearances are at bats plus walks, hit batters and sacrifices.
                 for b in &bat.batting {
-                    assert_eq!(b.pa, b.ab + b.bb + b.hbp + b.sf);
+                    assert_eq!(b.pa, b.ab + b.bb + b.hbp + b.sf + b.sh);
+                    assert!(b.ibb <= b.bb);
                     assert!(b.h <= b.ab && b.doubles + b.triples + b.hr <= b.h);
                 }
                 assert!(psum(|p| p.er) <= psum(|p| p.r));
@@ -1089,6 +1861,232 @@ mod tests {
         }
         assert!(long > 20, "some games should go to extra innings: {long}");
         assert!(ties >= 1 && ties < long, "ties {ties} of {long} extra-inning games");
+    }
+
+    fn sim(seed: u64) -> GameSim {
+        let (a, h) = clubs(seed);
+        GameSim::new(Arc::new(MatchEnv::neutral_mlb()), Arc::new(a.team_for_game(0, true)), Arc::new(h.team_for_game(0, true)))
+    }
+
+    /// Put a runner from the batting order on a base (test set-up).
+    fn place_runner(g: &mut GameSim, base: usize, slot: usize) -> usize {
+        let idx = g.sides[0].lineup[slot];
+        let b = &g.sides[0].team.players[idx].batter;
+        g.bases[base - 1] = Some(Runner { player: idx, sprint: b.sprint, accel: b.accel, aggr: b.baserunning, pitcher: g.sides[1].pitcher, earned: true });
+        idx
+    }
+
+    #[test]
+    fn stepping_a_game_matches_playing_it_through() {
+        let env = MatchEnv::neutral_mlb();
+        let (a, h) = clubs(5);
+        let (away, home) = (a.team_for_game(0, true), h.team_for_game(1, true));
+        let whole = play_game(&env, &away, &home, &mut Rng::new(42), &mut NoObserver);
+        let mut g = GameSim::new(Arc::new(env), Arc::new(away), Arc::new(home));
+        let mut rng = Rng::new(42);
+        let mut steps = 0;
+        while !g.is_over() {
+            let before = g.situation();
+            assert!(!before.over);
+            g.step(&mut rng, &mut NoObserver);
+            steps += 1;
+            assert!(steps < 2000);
+        }
+        assert_eq!(g.step(&mut rng, &mut NoObserver), Step::GameOver);
+        let res = g.result().unwrap();
+        assert_eq!(res.score, whole.score);
+        assert_eq!(res.line_score, whole.line_score);
+        assert_eq!(res.boxes[0].batting, whole.boxes[0].batting);
+        assert_eq!(g.situation().score, whole.score);
+    }
+
+    #[test]
+    fn intentional_walk_on_order() {
+        let mut g = sim(3);
+        let mut rng = Rng::new(1);
+        g.set_auto(1, Auto::NONE);
+        g.set_defense_orders(DefenseOrders { intentional_walk: true, ..Default::default() });
+        assert_eq!(g.step(&mut rng, &mut NoObserver), Step::IntentionalWalk);
+        let s = g.situation();
+        let leadoff = g.lineup(0)[0];
+        assert_eq!(s.bases, [Some(leadoff), None, None]);
+        assert_eq!(g.pitch_count(1), 0);
+        let line = g.box_score(0).batting[leadoff];
+        assert_eq!((line.pa, line.ab, line.bb, line.ibb), (1, 0, 1, 1));
+        // The order does not carry over to the next hitter.
+        assert_eq!(g.step(&mut rng, &mut NoObserver), Step::Pitch);
+    }
+
+    #[test]
+    fn substitutions_follow_the_rules() {
+        let mut g = sim(4);
+        let mut rng = Rng::new(2);
+        let obs = &mut NoObserver;
+        let bench = g.team(0).bench.clone();
+        let pen = g.team(1).bullpen.clone();
+        assert!(bench.len() >= 3 && pen.len() >= 3);
+        // The starter has not faced anybody yet (three-batter minimum under MLB rules).
+        assert_eq!(g.substitute(1, Substitution::Pitcher { player: pen[0] }, obs), Err(OrderError::PitcherMustFaceMoreBatters));
+        // The fielding side cannot send up a pinch hitter, nor the batting side a pitcher.
+        assert_eq!(g.substitute(1, Substitution::PinchHitter { player: g.team(1).bench[0] }, obs), Err(OrderError::WrongSide));
+        assert_eq!(g.substitute(0, Substitution::Pitcher { player: g.team(0).bullpen[0] }, obs), Err(OrderError::WrongSide));
+        // A position player cannot be brought in to pitch.
+        assert_eq!(g.substitute(1, Substitution::Pitcher { player: g.team(1).bench[0] }, obs), Err(OrderError::NotAPitcher));
+        // Pinch hitter for the lead-off man: he takes the spot in the order and the position.
+        let leadoff = g.lineup(0)[0];
+        let pos = g.defense(0).iter().position(|&d| d == leadoff);
+        assert_eq!(g.substitute(0, Substitution::PinchHitter { player: bench[0] }, obs), Ok(()));
+        assert_eq!(g.lineup(0)[0], bench[0]);
+        if let Some(pos) = pos {
+            assert_eq!(g.defense(0)[pos], bench[0]);
+        }
+        assert_eq!(g.situation().batter, bench[0]);
+        // Nobody comes back, and nobody enters twice.
+        assert_eq!(g.substitute(0, Substitution::PinchHitter { player: leadoff }, obs), Err(OrderError::PlayerUnavailable));
+        assert_eq!(g.substitute(0, Substitution::PinchHitter { player: bench[0] }, obs), Err(OrderError::PlayerUnavailable));
+        // No substitutions in the middle of a plate appearance.
+        g.set_auto(0, Auto::NONE);
+        g.set_auto(1, Auto::NONE);
+        g.set_offense_orders(OffenseOrders { approach: Some(Approach::Take), ..Default::default() });
+        g.step(&mut rng, obs);
+        assert!(g.situation().in_plate_appearance);
+        assert_eq!(g.substitute(0, Substitution::PinchHitter { player: bench[1] }, obs), Err(OrderError::PlateAppearanceInProgress));
+        // Play until the starter has faced three batters; then he can be replaced.
+        while g.sides[1].cur_bf < 3 || g.situation().in_plate_appearance {
+            g.step(&mut rng, obs);
+        }
+        if g.situation().fielding == 1 {
+            let old = g.situation().pitcher;
+            assert_eq!(g.substitute(1, Substitution::Pitcher { player: pen[1] }, obs), Ok(()));
+            assert_eq!(g.situation().pitcher, pen[1]);
+            assert_eq!(g.defense(1)[P], pen[1]);
+            assert!(g.used(1)[old] && g.used(1)[pen[1]]);
+            assert_eq!(g.pitch_count(1), 0);
+            // The new man has to face three batters too.
+            assert_eq!(g.substitute(1, Substitution::Pitcher { player: pen[2] }, obs), Err(OrderError::PitcherMustFaceMoreBatters));
+        }
+    }
+
+    #[test]
+    fn pinch_runner_takes_the_base() {
+        let mut g = sim(6);
+        let obs = &mut NoObserver;
+        g.open_half(obs);
+        let slow = place_runner(&mut g, 1, 4);
+        let bench = g.team(0).bench.clone();
+        assert_eq!(g.substitute(0, Substitution::PinchRunner { base: 2, player: bench[0] }, obs), Err(OrderError::NothingToReplace));
+        assert_eq!(g.substitute(0, Substitution::PinchRunner { base: 1, player: bench[2] }, obs), Ok(()));
+        assert_eq!(g.situation().bases[0], Some(bench[2]));
+        assert!(!g.lineup(0).contains(&slow) && g.lineup(0).contains(&bench[2]));
+    }
+
+    #[test]
+    fn sacrifice_bunt_moves_the_runner_up() {
+        let (mut moved, mut sacrifices, mut trials) = (0, 0, 0);
+        for seed in 0..300u64 {
+            let mut g = sim(7);
+            let obs = &mut NoObserver;
+            let mut rng = Rng::new(1000 + seed);
+            g.set_auto(0, Auto::NONE);
+            g.open_half(obs);
+            let runner = place_runner(&mut g, 1, 8);
+            let batter = g.situation().batter;
+            loop {
+                g.set_offense_orders(OffenseOrders { approach: Some(Approach::SacrificeBunt), ..Default::default() });
+                g.step(&mut rng, obs);
+                if !g.situation().in_plate_appearance {
+                    break;
+                }
+            }
+            trials += 1;
+            let s = g.situation();
+            if s.bases[1] == Some(runner) || s.bases[2] == Some(runner) {
+                moved += 1;
+            }
+            let line = g.box_score(0).batting[batter];
+            sacrifices += line.sh as u32;
+            // A sacrifice is not an at bat.
+            assert_eq!(line.pa, line.ab + line.bb + line.hbp + line.sh);
+        }
+        let (moved, sacrifices) = (moved as f64 / trials as f64, sacrifices as f64 / trials as f64);
+        assert!(moved > 0.55, "runner advanced in {moved} of the bunt attempts");
+        assert!(sacrifices > 0.35 && sacrifices < moved + 1e-9, "sacrifices {sacrifices}");
+    }
+
+    #[test]
+    fn steal_and_hold_orders_are_obeyed() {
+        let (mut attempts, mut held) = (0, 0);
+        for seed in 0..200u64 {
+            for go in [true, false] {
+                let mut g = sim(8);
+                let obs = &mut NoObserver;
+                let mut rng = Rng::new(50 + seed);
+                g.set_auto(0, Auto::NONE);
+                g.open_half(obs);
+                let runner = place_runner(&mut g, 1, 0);
+                g.sides[0].order = 3;
+                let order = if go { StealOrder::Go } else { StealOrder::Hold };
+                g.set_offense_orders(OffenseOrders { approach: Some(Approach::Take), steal: order, ..Default::default() });
+                g.step(&mut rng, obs);
+                let line = g.box_score(0).batting[runner];
+                if go {
+                    attempts += (line.sb + line.cs) as u32;
+                } else {
+                    assert_eq!(line.sb + line.cs, 0);
+                    held += 1;
+                }
+            }
+        }
+        // The batter takes, so every pitch that does not hit him is a live ball.
+        assert!(attempts > 190, "steal attempts on order: {attempts} of 200");
+        assert_eq!(held, 200);
+    }
+
+    #[test]
+    fn full_games_with_every_tactic_keep_the_books_straight() {
+        // A manager who calls for everything all the time stresses the bookkeeping.
+        let env = MatchEnv::neutral_mlb();
+        let wild = ManagerStyle {
+            sac_bunt: 3.0,
+            bunt_for_hit: 1.0,
+            hit_and_run: 2.0,
+            intentional_walk: 2.0,
+            pinch_hit: 1.0,
+            pinch_run: 1.0,
+            situational_defence: true,
+        };
+        let (a, h) = clubs(12);
+        let mut rng = Rng::new(77);
+        let (mut sh, mut ibb, mut subs) = (0u32, 0u32, 0u32);
+        struct Subs(u32);
+        impl Observer for Subs {
+            fn event(&mut self, e: &GameEvent) {
+                if matches!(e, GameEvent::PinchHitter { .. } | GameEvent::PinchRunner { .. }) {
+                    self.0 += 1;
+                }
+            }
+        }
+        for game in 0..60 {
+            let mut o = Subs(0);
+            let res = play_game_styled(&env, &a.team_for_game(game, true), &h.team_for_game(game, true), [wild; 2], &mut rng, &mut o);
+            subs += o.0;
+            for t in 0..2 {
+                let outs: u32 = res.boxes[1 - t].pitching.iter().map(|p| p.outs as u32).sum();
+                assert!(outs >= 24 && outs <= 3 * res.innings as u32);
+                for b in &res.boxes[t].batting {
+                    assert_eq!(b.pa, b.ab + b.bb + b.hbp + b.sf + b.sh);
+                    sh += b.sh as u32;
+                    ibb += b.ibb as u32;
+                }
+                let runs: u32 = res.boxes[t].batting.iter().map(|b| b.r as u32).sum();
+                assert_eq!(runs, res.score[t]);
+                // Nobody bats in two spots and everyone in the final order has appeared.
+                let bf: u32 = res.boxes[1 - t].pitching.iter().map(|p| p.bf as u32).sum();
+                let pa: u32 = res.boxes[t].batting.iter().map(|b| b.pa as u32).sum();
+                assert_eq!(bf, pa);
+            }
+        }
+        assert!(sh > 20 && ibb > 20 && subs > 20, "sh {sh} ibb {ibb} substitutions {subs}");
     }
 
     /// A coarse guard against regressions in the calibration: a few hundred games must

@@ -37,7 +37,8 @@ fn main() {
         );
         let mut path = BattedPath::default();
         BattedSim::new(&env.batted_flight, &env.ball, &env.park).run(state, &mut path);
-        let info = BattedInfo { exit_speed: ev * MPH, launch_angle: th, spray: ph, backspin: 0.0, sidespin: 0.0, bat_speed: 32.0, attack_angle: 0.17 };
+        let info =
+            BattedInfo { exit_speed: ev * MPH, launch_angle: th, spray: ph, backspin: 0.0, sidespin: 0.0, bat_speed: 32.0, attack_angle: 0.17, bunt: false };
         let mut counts: BTreeMap<String, usize> = BTreeMap::new();
         for seed in 0..400 {
             let inp = PlayInput {
@@ -49,6 +50,8 @@ fn main() {
                 bases: [None; 3],
                 batter,
                 box_delay: 0.25,
+                running: [0.0; 3],
+                infield_in: false,
                 outs: 0,
             };
             let r = resolve(&inp, &mut Rng::new(seed));

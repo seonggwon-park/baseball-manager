@@ -200,6 +200,48 @@ pub struct ModelParams {
     /// Steal attempts: threshold on the estimated margin and base rate.
     pub steal_margin: f64,
     pub steal_rate: f64,
+    /// Catcher's pop time to third base relative to second (the throw is shorter).
+    pub pop_third_factor: f64,
+    /// Attempts to steal third relative to second for the same margin.
+    pub steal_third_rate: f64,
+    /// Extra margin a runner wants before he tries for third, s.
+    pub steal_third_margin: f64,
+
+    // ---- bunting ----
+    /// Forward speed of the bat on a sacrifice bunt: mean and SD, m/s.
+    pub bunt_push: f64,
+    pub bunt_push_sd: f64,
+    /// Extra forward speed when bunting for a hit, m/s.
+    pub bunt_hit_push: f64,
+    /// Where the bunter puts the bat relative to the centre of the ball
+    /// (negative = above it, to bunt the ball down), m.
+    pub bunt_aim: f64,
+    /// SD of the vertical bat-ball offset for an average bunter, m.
+    pub bunt_offset_sd: f64,
+    /// Angle at which the bunter sets the bat away from square, and its SD for an
+    /// average bunter, rad. The ball keeps much of its speed along the bat, so it
+    /// comes off at roughly three times this angle from the middle of the field.
+    pub bunt_direction: f64,
+    pub bunt_direction_sd: f64,
+    /// Contact point of a bunt, m from the tip of the bat, and its SD.
+    pub bunt_along: f64,
+    pub bunt_along_sd: f64,
+    /// A bunter offers at pitches he sees within this distance of the zone, m.
+    pub bunt_offer_margin: f64,
+    /// Probability that an average bunter misses a pitch of average speed outright
+    /// (pulls the bat back late, loses the ball).
+    pub bunt_miss: f64,
+    /// Time gained out of the box by a batter who bunts for a hit, s.
+    pub bunt_hit_jump: f64,
+    /// Extra margin the defence wants before it goes for the lead runner on a bunt
+    /// instead of taking the out at first, s.
+    pub bunt_lead_margin: f64,
+
+    // ---- hit and run ----
+    /// Extra reaction time of a runner going on a hit-and-run compared with a straight steal, s.
+    pub hit_and_run_jump: f64,
+    /// On a hit-and-run the batter swings at any pitch he sees within this distance of the zone, m.
+    pub hit_and_run_reach: f64,
 }
 
 impl Default for ModelParams {
@@ -207,7 +249,7 @@ impl Default for ModelParams {
         ModelParams {
             target_sd_x: 0.13,
             target_sd_z: 0.14,
-            wild_fraction: 0.06,
+            wild_fraction: 0.052,
             wild_factor: 2.0,
             release_sd_side: 2.1 * INCH,
             release_sd_height: 1.3 * INCH,
@@ -278,7 +320,7 @@ impl Default for ModelParams {
             force_margin: 0.40,
             advance_left_side: 0.42,
             feed_transfer: 0.80,
-            pivot_time: 0.60,
+            pivot_time: 0.64,
             error_ground: 0.009,
             error_fly: 0.004,
             error_throw: 0.012,
@@ -300,7 +342,27 @@ impl Default for ModelParams {
             read_hang_share: 0.18,
             advance_margin: 0.05,
             steal_margin: 0.0,
-            steal_rate: 0.36,
+            steal_rate: 0.34,
+            pop_third_factor: 0.80,
+            steal_third_rate: 0.45,
+            steal_third_margin: 0.10,
+
+            bunt_push: 4.6,
+            bunt_push_sd: 2.5,
+            bunt_hit_push: 1.5,
+            bunt_aim: -0.016,
+            bunt_offset_sd: 0.026,
+            bunt_direction: 0.24,
+            bunt_direction_sd: 0.20,
+            bunt_along: 0.11,
+            bunt_along_sd: 0.03,
+            bunt_offer_margin: 0.06,
+            bunt_miss: 0.075,
+            bunt_hit_jump: 0.08,
+            bunt_lead_margin: 0.35,
+
+            hit_and_run_jump: 0.06,
+            hit_and_run_reach: 0.22,
         }
     }
 }

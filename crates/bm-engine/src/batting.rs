@@ -27,6 +27,30 @@ pub struct BattedInfo {
     pub bat_speed: f64,
     /// Attack angle of the swing, rad.
     pub attack_angle: f64,
+    /// The ball was bunted.
+    pub bunt: bool,
+}
+
+/// What the batter has been told to do with the pitch.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Approach {
+    /// Hit away.
+    #[default]
+    Normal,
+    /// Bunt to move the runners up.
+    SacrificeBunt,
+    /// Bunt for a base hit.
+    BuntForHit,
+    /// Swing at anything hittable, with a short swing, to protect the runner who is going.
+    HitAndRun,
+    /// Do not swing.
+    Take,
+}
+
+impl Approach {
+    pub fn is_bunt(self) -> bool {
+        matches!(self, Approach::SacrificeBunt | Approach::BuntForHit)
+    }
 }
 
 /// Why a swing missed (for commentary and diagnostics).
@@ -131,6 +155,96 @@ pub fn respond(
         return Swing::Take;
     }
     swing(env, batter, zone, strikes, thrown, expected, &per, rng)
+}
+
+/// Response of the batter to a pitch under a given approach. `Approach::Normal` is
+/// exactly [`respond`].
+#[allow(clippy::too_many_arguments)]
+pub fn respond_with(
+    env: &MatchEnv,
+    batter: &BatterProfile,
+    zone: &StrikeZone,
+    balls: usize,
+    strikes: usize,
+    thrown: &Thrown,
+    expected: &Expectation,
+    approach: Approach,
+    bunt_toward_third: bool,
+    rng: &mut Rng,
+) -> Swing {
+    match approach {
+        Approach::Normal => respond(env, batter, zone, balls, strikes, thrown, expected, rng),
+        Approach::Take => Swing::Take,
+        Approach::HitAndRun => {
+            let p = &env.params;
+            let per = perceive(p, batter, zone, balls, strikes, thrown, expected, env.ball.radius, rng);
+            if zone.signed_distance(per.perceived_x, per.perceived_z, env.ball.radius) > p.hit_and_run_reach {
+                return Swing::Take;
+            }
+            // The short, contact-first swing of a two-strike count.
+            swing(env, batter, zone, strikes.max(2), thrown, expected, &per, rng)
+        }
+        Approach::SacrificeBunt | Approach::BuntForHit => bunt(env, batter, zone, thrown, approach == Approach::BuntForHit, bunt_toward_third, rng),
+    }
+}
+
+/// Bunt attempt. The bat is held across the plate and pushed gently at the ball;
+/// what comes off it is decided by the same collision model as a swing.
+pub fn bunt(env: &MatchEnv, batter: &BatterProfile, zone: &StrikeZone, thrown: &Thrown, for_hit: bool, toward_third: bool, rng: &mut Rng) -> Swing {
+    let p = &env.params;
+    let f = &thrown.flight;
+    let out = batter.hand.outside_sign();
+    // Error multiplier: 1.5 for a hopeless bunter, 1.0 for an average one, 0.5 for an expert.
+    let err = 1.5 - batter.bunt.clamp(0.0, 1.0);
+    // The bunter follows the pitch all the way in, so he sees its location better than on a swing.
+    let px = f.plate_pos.x + rng.gauss(0.0, 0.5 * batter.perception_sd);
+    let pz = f.plate_pos.z + rng.gauss(0.0, 0.5 * batter.perception_sd);
+    if zone.signed_distance(px, pz, env.ball.radius) > p.bunt_offer_margin {
+        return Swing::Take; // pulls the bat back
+    }
+    let speed_ratio = f.plate_vel.norm() / p.ref_plate_speed;
+    let push = (rng.gauss(p.bunt_push + if for_hit { p.bunt_hit_push } else { 0.0 }, p.bunt_push_sd)).max(0.0);
+    if rng.chance((p.bunt_miss * err * speed_ratio).min(0.9)) {
+        return Swing::Whiff { bat_speed: push, miss: Miss::Under };
+    }
+    let offset = rng.gauss(p.bunt_aim, p.bunt_offset_sd * err * speed_ratio);
+    let along = rng.gauss(p.bunt_along, p.bunt_along_sd).clamp(0.01, 0.45);
+    // Intended direction of the bunt (+ toward first base) with the bunter's error.
+    let dir = if toward_third { -p.bunt_direction } else { p.bunt_direction } + rng.gauss(0.0, p.bunt_direction_sd * err);
+    let normal = Vec3::new(dir.sin(), dir.cos(), 0.0);
+    // The bat lies across the plate, barrel on the far side, perpendicular to that direction.
+    let axis = Vec3::new(out * dir.cos(), -out * dir.sin(), 0.0);
+
+    let vel = f.plate_vel;
+    let tau = (p.contact_depth - PLATE_FRONT_Y) / vel.y;
+    let ball_pos = f.plate_pos + vel * tau;
+    let contact = Contact { ball_vel: vel, ball_spin: f.spin, bat_axis: axis, bat_vel: normal * push, offset, dist_from_tip: along };
+    match collide(&env.ball, &batter.bat, &contact) {
+        Err(_) => Swing::Whiff { bat_speed: push, miss: if offset < 0.0 { Miss::Over } else { Miss::Under } },
+        Ok(res) => {
+            if res.vel.y <= 0.5 {
+                let cos_defl = res.vel.normalized().dot(vel.normalized());
+                if cos_defl > p.foul_tip_angle.cos() {
+                    Swing::FoulTip { caught: rng.chance(p.foul_tip_catch), bat_speed: push }
+                } else {
+                    Swing::FoulBack { bat_speed: push }
+                }
+            } else {
+                let (wb, ws, _) = spin_components(res.vel, res.spin);
+                let info = BattedInfo {
+                    exit_speed: res.vel.norm(),
+                    launch_angle: launch_angle(res.vel),
+                    spray: spray_angle(res.vel),
+                    backspin: wb,
+                    sidespin: ws,
+                    bat_speed: push,
+                    attack_angle: 0.0,
+                    bunt: true,
+                };
+                Swing::Batted { state: BallState::new(ball_pos, res.vel, res.spin), info }
+            }
+        }
+    }
 }
 
 /// Execute a swing at the pitch.
@@ -254,6 +368,7 @@ pub fn swing(
                     sidespin: ws,
                     bat_speed,
                     attack_angle: attack,
+                    bunt: false,
                 };
                 Swing::Batted { state: BallState::new(ball_pos, res.vel, res.spin), info }
             }
@@ -327,6 +442,69 @@ mod tests {
         assert!(whiff > 0.15 && whiff < 0.36, "whiff per swing {whiff}");
         assert!(ev > 78.0 && ev < 96.0, "mean exit velocity {ev}");
         assert!(la > 0.0 && la < 30.0, "mean launch angle {la}");
+    }
+
+    #[test]
+    fn bunts_are_soft_and_mostly_on_the_ground() {
+        let env = MatchEnv::neutral_mlb();
+        let batter = BatterProfile::league_average(Hand::Right);
+        let pitcher = PitcherProfile::league_average(Hand::Right);
+        let mut st = PitcherState::new(&pitcher, &env);
+        let zone = StrikeZone::for_batter(batter.height, &env.rules);
+        let mut rng = Rng::new(21);
+        let mut w = [0.0; MAX_PITCHES];
+        let (mut offers, mut missed, mut back, mut fair_side, mut ev, mut down, mut third_side) = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        let mut good = batter.clone();
+        good.bunt = 1.0;
+        let mut good_missed = 0.0;
+        for i in 0..20_000 {
+            let k = selection_weights(&pitcher, batter.hand, 0, 0, &env.params, &mut w);
+            let choice = choose_pitch(&pitcher, batter.hand, &zone, 0, 0, &w[..k], &env.params, &mut rng);
+            st.pitch_count = 30;
+            let thrown = throw_pitch(&pitcher, &mut st, &choice, &env, &mut rng);
+            if i % 2 == 1 {
+                if let Swing::Whiff { .. } = bunt(&env, &good, &zone, &thrown, false, true, &mut rng) {
+                    good_missed += 1.0;
+                }
+                continue;
+            }
+            match bunt(&env, &batter, &zone, &thrown, false, true, &mut rng) {
+                Swing::Take => {}
+                Swing::Whiff { .. } => {
+                    offers += 1.0;
+                    missed += 1.0;
+                }
+                Swing::FoulTip { .. } | Swing::FoulBack { .. } => {
+                    offers += 1.0;
+                    back += 1.0;
+                }
+                Swing::Batted { info, .. } => {
+                    offers += 1.0;
+                    assert!(info.bunt);
+                    if info.spray.abs() < std::f64::consts::FRAC_PI_4 {
+                        fair_side += 1.0;
+                        ev += info.exit_speed / MPH;
+                        if info.launch_angle < 0.0 {
+                            down += 1.0;
+                        }
+                        if info.spray < 0.0 {
+                            third_side += 1.0;
+                        }
+                    }
+                }
+            }
+        }
+        assert!(offers > 4000.0);
+        let miss_rate = missed / offers;
+        assert!((0.04..0.14).contains(&miss_rate), "missed {miss_rate}");
+        assert!(good_missed / offers < 0.6 * miss_rate, "a good bunter misses less: {} vs {miss_rate}", good_missed / offers);
+        assert!(back / offers < 0.35, "fouled straight back {}", back / offers);
+        let fair = fair_side / offers;
+        assert!((0.35..0.70).contains(&fair), "between the lines {fair}");
+        let mean_ev = ev / fair_side;
+        assert!((25.0..45.0).contains(&mean_ev), "bunt exit velocity {mean_ev} mph");
+        assert!(down / fair_side > 0.6, "share bunted down {}", down / fair_side);
+        assert!(third_side / fair_side > 0.65, "share toward third {}", third_side / fair_side);
     }
 
     #[test]

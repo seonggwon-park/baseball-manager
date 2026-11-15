@@ -1,6 +1,6 @@
 //! Command-line overrides of model constants (`--set name=value`), used while calibrating.
 
-use bm_engine::{Level, ModelParams};
+use bm_engine::{Level, ManagerStyle, ModelParams};
 use bm_physics::units::MPH;
 use bm_physics::BallSpec;
 
@@ -8,6 +8,7 @@ pub struct Tuning {
     pub params: ModelParams,
     pub level: Level,
     pub ball: BallSpec,
+    pub style: ManagerStyle,
 }
 
 macro_rules! set_scalar {
@@ -18,7 +19,7 @@ macro_rules! set_scalar {
 
 impl Tuning {
     pub fn new() -> Self {
-        Tuning { params: ModelParams::default(), level: Level::mlb(), ball: BallSpec::mlb() }
+        Tuning { params: ModelParams::default(), level: Level::mlb(), ball: BallSpec::mlb(), style: ManagerStyle::default() }
     }
 
     pub fn set(&mut self, key: &str, v: f64) -> Result<(), String> {
@@ -114,6 +115,24 @@ impl Tuning {
                 advance_margin,
                 steal_margin,
                 steal_rate,
+                pop_third_factor,
+                steal_third_rate,
+                steal_third_margin,
+                bunt_push,
+                bunt_push_sd,
+                bunt_hit_push,
+                bunt_aim,
+                bunt_offset_sd,
+                bunt_direction,
+                bunt_direction_sd,
+                bunt_along,
+                bunt_along_sd,
+                bunt_offer_margin,
+                bunt_miss,
+                bunt_hit_jump,
+                bunt_lead_margin,
+                hit_and_run_jump,
+                hit_and_run_reach,
             ]
         ) {
             return Ok(());
@@ -146,6 +165,13 @@ impl Tuning {
             ["bat", "bpf"] => l.bat.bpf = v,
             ["bat", "obliq"] => l.bat.cor_obliquity = v,
             ["bat", "sweet"] => l.bat.sweet_spot_from_tip = v,
+            ["style", "sac_bunt"] => self.style.sac_bunt = v,
+            ["style", "bunt_for_hit"] => self.style.bunt_for_hit = v,
+            ["style", "hit_and_run"] => self.style.hit_and_run = v,
+            ["style", "intentional_walk"] => self.style.intentional_walk = v,
+            ["style", "pinch_hit"] => self.style.pinch_hit = v,
+            ["style", "pinch_run"] => self.style.pinch_run = v,
+            ["style", "situational_defence"] => self.style.situational_defence = v != 0.0,
             ["ball", "cor_ref"] => self.ball.cor_ref = v,
             ["ball", "cor_slope_per_mph"] => self.ball.cor_slope = v / MPH,
             _ => return Err(format!("unknown setting '{key}'")),

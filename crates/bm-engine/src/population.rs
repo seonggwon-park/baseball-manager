@@ -6,7 +6,7 @@
 
 use crate::fielding::{B1, B2, B3, C, CF, LF, P, RF, SS};
 use crate::game::Team;
-use crate::profile::{BatterProfile, CatcherProfile, FielderProfile, Hand, PitchDef, PitchKind, PitchShape, PitcherProfile, Player};
+use crate::profile::{BatterProfile, CatcherProfile, FielderProfile, Hand, PitchDef, PitchKind, PitchShape, PitcherProfile, Player, NO_POSITION};
 use crate::rng::Rng;
 use bm_physics::units::{FT, INCH, MPH, RPM};
 use bm_physics::BatSpec;
@@ -71,6 +71,9 @@ impl Level {
 }
 
 pub fn random_batter(rng: &mut Rng, id: u32, level: &Level) -> Player {
+    // Traits added after the engine was calibrated come from a generator of their own,
+    // so that the calibrated population stays exactly what it was.
+    let mut extra = Rng::new(0xB0A7_5EED ^ ((id as u64) << 8));
     let hand = if rng.chance(0.56) { Hand::Right } else { Hand::Left };
     let sprint_ft = rng.gauss_clamped(27.0, 1.4, 23.0, 30.5);
     let batter = BatterProfile {
@@ -93,6 +96,7 @@ pub fn random_batter(rng: &mut Rng, id: u32, level: &Level) -> Player {
         accel: (4.9 + 0.25 * (sprint_ft - 27.0) + rng.gauss(0.0, 0.25)).clamp(3.8, 6.2),
         baserunning: rng.gauss_clamped(0.5, 0.15, 0.0, 1.0),
         steal: ((sprint_ft - 25.5) / 4.0 + rng.gauss(0.0, 0.15)).clamp(0.0, 1.0),
+        bunt: extra.gauss_clamped(0.5, 0.18, 0.05, 1.0),
         bat: level.bat,
     };
     let fielder = FielderProfile {
@@ -109,6 +113,7 @@ pub fn random_batter(rng: &mut Rng, id: u32, level: &Level) -> Player {
     };
     Player {
         id,
+        position: NO_POSITION,
         batter,
         fielder,
         pitcher: None,
@@ -118,6 +123,7 @@ pub fn random_batter(rng: &mut Rng, id: u32, level: &Level) -> Player {
 
 /// Adjust a position player's tools to what the position demands.
 pub fn fit_to_position(p: &mut Player, pos: usize, rng: &mut Rng) {
+    p.position = pos;
     let (speed_ft, arm_mph) = match pos {
         C => (-1.6, 81.0),
         B1 => (-1.0, 80.0),
@@ -201,6 +207,7 @@ pub fn random_pitcher(rng: &mut Rng, id: u32, starter: bool, level: &Level) -> P
         time_to_plate: rng.gauss_clamped(1.38, 0.08, 1.15, 1.65),
     };
     let mut p = random_batter(rng, id, level);
+    p.position = P;
     p.batter.hand = hand;
     p.batter.bat_speed *= 0.93;
     p.batter.barrel_sd *= 1.45;
@@ -234,6 +241,8 @@ pub struct Club {
     pub hitters: Vec<Player>,
     pub starters: Vec<Player>,
     pub relievers: Vec<Player>,
+    /// Reserves: a catcher, a middle infielder, an outfielder and a corner infielder.
+    pub bench: Vec<Player>,
 }
 
 impl Club {
@@ -247,7 +256,21 @@ impl Club {
         hitters.push(random_batter(rng, id_base + 8, level));
         let starters = (0..5).map(|i| random_pitcher(rng, id_base + 20 + i, true, level)).collect();
         let relievers = (0..8).map(|i| random_pitcher(rng, id_base + 30 + i, false, level)).collect();
-        Club { hitters, starters, relievers }
+        // The bench is drawn from its own generator (see `random_batter`). Reserves are
+        // a little short of the regulars with the bat.
+        let mut side = Rng::new(0xBE7C_4000 ^ ((id_base as u64) << 12));
+        let bench = [C, SS, CF, B3]
+            .into_iter()
+            .enumerate()
+            .map(|(i, pos)| {
+                let mut p = random_batter(&mut side, id_base + 50 + i as u32, level);
+                fit_to_position(&mut p, pos, &mut side);
+                p.batter.bat_speed -= 1.2 * MPH;
+                p.batter.barrel_sd *= 1.06;
+                p
+            })
+            .collect();
+        Club { hitters, starters, relievers, bench }
     }
 
     /// Line-up for one game with the given starter (0-based rotation slot).
@@ -258,6 +281,9 @@ impl Club {
         let pen_start = players.len();
         players.extend(self.relievers.iter().cloned());
         let bullpen: Vec<usize> = (pen_start..players.len()).collect();
+        let bench_start = players.len();
+        players.extend(self.bench.iter().cloned());
+        let bench: Vec<usize> = (bench_start..players.len()).collect();
 
         // Defence: P, C, 1B, 2B, 3B, SS, LF, CF, RF.
         let mut defense = [0usize; 9];
@@ -277,6 +303,6 @@ impl Club {
         }
         let mut lineup = [0usize; 9];
         lineup.copy_from_slice(&order[..9]);
-        Team { players, lineup, defense, bullpen }
+        Team { players, lineup, defense, bullpen, bench }
     }
 }

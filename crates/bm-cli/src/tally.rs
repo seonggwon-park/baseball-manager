@@ -1,7 +1,7 @@
 //! Aggregation of simulated games into the same statistics that were measured
 //! from Statcast and the MLB Stats API, for side-by-side validation.
 
-use bm_engine::{BattedInfo, Hand, Miss, Observer, PaEvent, PaOutcome, PitchEvent, PitchKind, PitchResult, PlayKind};
+use bm_engine::{Approach, BattedInfo, GameEvent, Hand, Miss, Observer, PaEvent, PaOutcome, PitchEvent, PitchKind, PitchResult, PlayKind};
 use bm_physics::units::{FT, INCH, MPH, RPM};
 use bm_physics::{spin_from_components, velocity_from_angles, BallState, FlightModel, PathEnd};
 
@@ -99,6 +99,50 @@ impl Efficiency {
     pub fn share_at_least(&self, x: f64) -> f64 {
         let i = (x / EFF_BIN).round() as usize;
         self.hist[i.min(self.hist.len())..].iter().sum::<f64>() / self.ratio.n.max(1.0)
+    }
+}
+
+/// Counts of the things managers call for.
+#[derive(Clone, Copy, Default)]
+pub struct Tactics {
+    pub sac_bunts: f64,
+    pub intentional_walks: f64,
+    /// Bunt attempts: pulled back, missed, fouled off, put in play.
+    pub bunt_pitches: [f64; 4],
+    pub bunt_ev: Mean,
+    pub bunt_la: Mean,
+    pub bunt_popped: f64,
+    pub bunt_fielder: [f64; 9],
+    /// Bunts in play with a runner on first and fewer than two outs:
+    /// n, sacrifice, hit, batter out without an advance, lead runner out, error.
+    pub sac_situation: [f64; 6],
+    /// Bunts in play with the bases empty: n, hits.
+    pub empty_situation: [f64; 2],
+    pub hit_and_run_pitches: f64,
+    pub pinch_hitters: f64,
+    pub pinch_runners: f64,
+    /// Steals of third: attempts, successes.
+    pub steals_of_third: [f64; 2],
+    /// The plate appearance in progress ended with a bunt in play.
+    bunt_in_play: bool,
+}
+
+impl Tactics {
+    fn merge(&mut self, o: &Tactics) {
+        self.sac_bunts += o.sac_bunts;
+        self.intentional_walks += o.intentional_walks;
+        self.bunt_popped += o.bunt_popped;
+        self.hit_and_run_pitches += o.hit_and_run_pitches;
+        self.pinch_hitters += o.pinch_hitters;
+        self.pinch_runners += o.pinch_runners;
+        self.bunt_ev.merge(&o.bunt_ev);
+        self.bunt_la.merge(&o.bunt_la);
+        let add = |a: &mut [f64], b: &[f64]| a.iter_mut().zip(b).for_each(|(x, y)| *x += *y);
+        add(&mut self.bunt_pitches, &o.bunt_pitches);
+        add(&mut self.bunt_fielder, &o.bunt_fielder);
+        add(&mut self.sac_situation, &o.sac_situation);
+        add(&mut self.empty_situation, &o.empty_situation);
+        add(&mut self.steals_of_third, &o.steals_of_third);
     }
 }
 
@@ -236,6 +280,7 @@ pub struct Tally {
     pub sf: f64,
     pub outs_in_play: f64,
     pub pa_pitches: f64,
+    pub tactics: Tactics,
     pub sb: f64,
     pub cs: f64,
     pub wp: f64,
@@ -334,6 +379,7 @@ impl Default for Tally {
             sf: 0.0,
             outs_in_play: 0.0,
             pa_pitches: 0.0,
+            tactics: Tactics::default(),
             sb: 0.0,
             cs: 0.0,
             wp: 0.0,
@@ -477,6 +523,7 @@ impl Tally {
         self.la.merge(&o.la);
         self.bat_speed_all.merge(&o.bat_speed_all);
         self.bat_speed_bip.merge(&o.bat_speed_bip);
+        self.tactics.merge(&o.tactics);
         self.eff_all.merge(&o.eff_all);
         for (a, b) in self.eff_la.iter_mut().zip(&o.eff_la) {
             a.merge(b);
@@ -649,6 +696,29 @@ impl Tally {
 impl Observer for Tally {
     fn pitch(&mut self, e: &PitchEvent) {
         self.pitches += 1.0;
+        if e.approach.is_bunt() {
+            let t = &mut self.tactics;
+            let i = match e.result {
+                PitchResult::Ball | PitchResult::CalledStrike | PitchResult::HitByPitch => 0,
+                PitchResult::SwingingStrike => 1,
+                PitchResult::Foul | PitchResult::FoulTip => 2,
+                PitchResult::InPlay => 3,
+            };
+            t.bunt_pitches[i] += 1.0;
+            if let (PitchResult::InPlay, Some(info)) = (e.result, e.batted) {
+                t.bunt_ev.add(info.exit_speed / MPH);
+                t.bunt_la.add(info.launch_angle.to_degrees());
+                if info.launch_angle.to_degrees() > 20.0 {
+                    t.bunt_popped += 1.0;
+                }
+                if let Some(play) = e.play {
+                    t.bunt_fielder[play.fielder.min(8)] += 1.0;
+                }
+                t.bunt_in_play = true;
+            }
+        } else if e.approach == Approach::HitAndRun {
+            self.tactics.hit_and_run_pitches += 1.0;
+        }
         let d_in = e.zone_distance / INCH;
         let inz = e.zone_distance <= 0.0;
         let (b, s) = (e.balls.min(3) as usize, e.strikes.min(2) as usize);
@@ -815,8 +885,34 @@ impl Observer for Tally {
     }
 
     fn plate_appearance(&mut self, e: &PaEvent) {
+        let bunted = std::mem::take(&mut self.tactics.bunt_in_play);
         if e.outcome == PaOutcome::Interrupted {
             return;
+        }
+        if e.intentional {
+            self.tactics.intentional_walks += 1.0;
+        }
+        if let (true, PaOutcome::Play(k)) = (bunted, e.outcome) {
+            let t = &mut self.tactics;
+            if k == PlayKind::SacBunt {
+                t.sac_bunts += 1.0;
+            }
+            if e.bases_before & 1 != 0 && e.outs_before < 2 {
+                let i = match k {
+                    PlayKind::SacBunt => 1,
+                    _ if k.is_hit() => 2,
+                    PlayKind::FieldersChoice | PlayKind::DoublePlay => 4,
+                    PlayKind::Error => 5,
+                    _ => 3,
+                };
+                t.sac_situation[0] += 1.0;
+                t.sac_situation[i] += 1.0;
+            } else if e.bases_before == 0 {
+                t.empty_situation[0] += 1.0;
+                if k.is_hit() {
+                    t.empty_situation[1] += 1.0;
+                }
+            }
         }
         self.pa += 1.0;
         self.pa_pitches += e.pitches as f64;
@@ -893,5 +989,19 @@ impl Observer for Tally {
 
     fn pitching_change(&mut self, _team: usize, _player: usize) {
         self.pitchers_used += 1.0;
+    }
+
+    fn event(&mut self, e: &GameEvent) {
+        match *e {
+            GameEvent::PinchHitter { .. } => self.tactics.pinch_hitters += 1.0,
+            GameEvent::PinchRunner { .. } => self.tactics.pinch_runners += 1.0,
+            GameEvent::Steal { to_base: 3, safe, .. } => {
+                self.tactics.steals_of_third[0] += 1.0;
+                if safe {
+                    self.tactics.steals_of_third[1] += 1.0;
+                }
+            }
+            _ => {}
+        }
     }
 }

@@ -32,11 +32,17 @@ pub struct Rules {
     pub zone_extra_half_width: f64,
     /// For automated zones: also require the height limits at the back of the plate.
     pub zone_check_back_plane: bool,
+    /// Batters a pitcher has to face before he can be replaced, unless the half
+    /// inning ends first.
+    pub min_batters_faced: u8,
+    /// Two infielders must stand on each side of second base, all on the infield.
+    pub shift_restricted: bool,
 }
 
 impl Rules {
     /// MLB regular season, 2025: human umpires, universal DH, automatic runner
-    /// in extra innings. The zone fractions reproduce the average `sz_top` /
+    /// in extra innings, three-batter minimum (since 2020) and restricted infield
+    /// shifts (since 2023). The zone fractions reproduce the average `sz_top` /
     /// `sz_bot` reported by Statcast (3.44 ft / 1.60 ft for a 1.855 m batter).
     pub fn mlb_2025() -> Self {
         Rules {
@@ -49,13 +55,17 @@ impl Rules {
             zone_bottom_frac: 0.264,
             zone_extra_half_width: 0.0,
             zone_check_back_plane: false,
+            min_batters_faced: 3,
+            shift_restricted: true,
         }
     }
 
     /// KBO League, 2025: automated ball-strike system (top 55.75 %, bottom 27.04 %
     /// of the batter's height, plate width plus 2 cm on each side, height checked at
     /// the middle and the back of the plate), DH, ties after the 11th inning.
-    /// Source: KBO, "2025 KBO 리그 규정·규칙 변화".
+    /// Source: KBO, "2025 KBO 리그 규정·규칙 변화". Infield shifts have been restricted
+    /// since 2024; the three-batter minimum was only trialled in the Futures League,
+    /// so a reliever has to face one batter.
     pub fn kbo_2025() -> Self {
         Rules {
             innings: 9,
@@ -67,6 +77,8 @@ impl Rules {
             zone_bottom_frac: 0.2704,
             zone_extra_half_width: 0.02,
             zone_check_back_plane: true,
+            min_batters_faced: 1,
+            shift_restricted: true,
         }
     }
 
@@ -83,6 +95,8 @@ impl Rules {
             zone_bottom_frac: 0.264,
             zone_extra_half_width: 0.0,
             zone_check_back_plane: false,
+            min_batters_faced: 1,
+            shift_restricted: false,
         }
     }
 }

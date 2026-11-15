@@ -79,6 +79,49 @@ pub fn print(t: &Tally) {
     );
     println!("  innings / game {:.3}; ties {:.2} %", t.innings / t.games, pct(t.ties, t.games));
 
+    header("Tactics (MLB Stats API totals; bunt details from the Statcast sample)");
+    let x = &t.tactics;
+    line("sacrifice bunts / team game", x.sac_bunts / t.team_games, 0.1152, 4);
+    line("intentional walks / team game", x.intentional_walks / t.team_games, 0.1144, 4);
+    let offers: f64 = x.bunt_pitches[1..].iter().sum();
+    line("bunt attempts: missed %", pct(x.bunt_pitches[1], offers), 8.35, 2);
+    line("bunt attempts: fouled off %", pct(x.bunt_pitches[2], offers), 50.77, 2);
+    line("bunt attempts: in play %", pct(x.bunt_pitches[3], offers), 40.88, 2);
+    line("bunts in play: exit velocity, mph", x.bunt_ev.mean(), 33.8, 2);
+    line("bunts in play: exit velocity SD", x.bunt_ev.sd(), 8.0, 2);
+    line("bunts in play: launch angle, deg", x.bunt_la.mean(), -22.6, 2);
+    line("bunts in play: popped up (> 20 deg) %", pct(x.bunt_popped, x.bunt_pitches[3]), 14.6, 2);
+    let s = &x.sac_situation;
+    line("runner on first, < 2 outs: sacrifice %", pct(s[1], s[0]), 71.6, 2);
+    line("   ... bunt hit %", pct(s[2], s[0]), 15.8, 2);
+    line("   ... batter out, nobody advances %", pct(s[3], s[0]), 8.4, 2);
+    line("   ... lead runner out %", pct(s[4], s[0]), 4.2, 2);
+    line("bases empty: bunt hit %", pct(x.empty_situation[1], x.empty_situation[0]), 51.0, 2);
+    let total: f64 = x.bunt_fielder.iter().sum();
+    let share = |i: usize| pct(x.bunt_fielder[i], total);
+    println!(
+        "  bunts fielded by, % (sim / MLB): P {:.0}/48  C {:.0}/9  1B {:.0}/11  3B {:.0}/32  others {:.0}/1",
+        share(0),
+        share(1),
+        share(2),
+        share(4),
+        100.0 - share(0) - share(1) - share(2) - share(4)
+    );
+    println!(
+        "  bunts in play / team game {:.3} (MLB about 0.24); pulled back {:.0} % of bunt pitches; reached on error {:.1} % of sacrifice situations",
+        x.bunt_pitches[3] / t.team_games,
+        pct(x.bunt_pitches[0], offers + x.bunt_pitches[0]),
+        pct(s[5], s[0])
+    );
+    println!(
+        "  hit-and-run pitches / team game {:.3}; pinch hitters / team game {:.3}; pinch runners / team game {:.3}; steals of third: {:.3} attempts / team game, {:.0} % safe",
+        x.hit_and_run_pitches / t.team_games,
+        x.pinch_hitters / t.team_games,
+        x.pinch_runners / t.team_games,
+        x.steals_of_third[0] / t.team_games,
+        pct(x.steals_of_third[1], x.steals_of_third[0])
+    );
+
     header("Pitch outcomes, % of pitches (Statcast sample)");
     line("ball", pct(t.res[0], t.pitches), 35.70, 2);
     line("called strike", pct(t.res[1], t.pitches), 16.22, 2);
