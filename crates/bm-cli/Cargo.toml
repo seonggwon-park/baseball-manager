@@ -1,0 +1,15 @@
+[package]
+name = "bm-cli"
+description = "Command line tools: batch simulation, calibration and validation reports"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "bm"
+path = "src/main.rs"
+
+[dependencies]
+bm-physics = { path = "../bm-physics" }
+bm-engine = { path = "../bm-engine" }

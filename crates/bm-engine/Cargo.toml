@@ -1,0 +1,10 @@
+[package]
+name = "bm-engine"
+description = "Pitch-by-pitch baseball match engine built on bm-physics"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+bm-physics = { path = "../bm-physics" }

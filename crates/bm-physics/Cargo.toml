@@ -1,0 +1,9 @@
+[package]
+name = "bm-physics"
+description = "Baseball physics: aerodynamics, bat-ball collision, ground interaction"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
