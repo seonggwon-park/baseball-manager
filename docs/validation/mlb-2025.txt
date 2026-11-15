@@ -1,4 +1,4 @@
-Simulated 10000 games (2844825 pitches) in 19.02 s on 4 threads: 526 games/s, 7.6 ms per game per thread
+Simulated 10000 games (2844825 pitches) in 18.63 s on 4 threads: 537 games/s, 7.5 ms per game per thread
 
 == League rates (MLB Stats API, 2025 regular season)
                                            sim  MLB 2025      diff      rel
@@ -135,9 +135,9 @@ Simulated 10000 games (2844825 pitches) in 19.02 s on 4 threads: 526 games/s, 7.
   hard-hit % (>= 95 mph)                 37.76     41.18     -3.42    -8.3%
   barrel %                                7.72      8.55     -0.83    -9.7%
   sweet-spot % (8-32 deg)                36.52     35.87     +0.65    +1.8%
-  bat speed on balls in play, mph        68.51     71.19     -2.68    -3.8%
-  bat speed, all swings                  68.74     69.89     -1.15    -1.6%
-  bat speed SD, all swings               10.41      8.37     +2.04   +24.4%
+  bat speed on balls in play, mph        69.09     71.19     -2.10    -3.0%
+  bat speed, all swings                  69.29     69.89     -0.60    -0.9%
+  bat speed SD, all swings                8.82      8.37     +0.45    +5.4%
   EV percentiles 5/25/50/75/95: sim [60.0 79.4 91.0 98.8 106.6]  MLB [61.2 80.6 92.0 100.1 107.3]
   LA percentiles 5/25/50/75/95: sim [-32.9 -1.9 15.5 32.1 56.5]  MLB [-36.0 -5.0 14.0 31.0 62.0]
   backspin vs launch angle (0-40 deg): sim -1340 + 131 * LA rpm   Statcast fit (Nathan) -763 + 120 * LA rpm
@@ -145,28 +145,28 @@ Simulated 10000 games (2844825 pitches) in 19.02 s on 4 threads: 526 games/s, 7.
 
 == Collision efficiency: exit velocity / (1.23 * bat speed + 0.23 * plate speed), balls in play (Statcast sample)
                                            sim  MLB 2025      diff      rel
-  mean                                  0.8533    0.8350   +0.0183    +2.2%
-  SD                                    0.1115    0.1240   -0.0125   -10.1%
-  share at or above 0.80 (squared up), %     73.42     66.29     +7.13   +10.8%
-  share at or above 0.90, %              42.08     36.59     +5.49   +15.0%
-  share at or above 0.95, %              19.27     17.80     +1.47    +8.3%
-  share at or above 1.00, %               1.06      2.97     -1.91   -64.5%
-  percentiles 5/25/50/75/90/95/99: sim [0.630 0.793 0.879 0.938 0.967 0.977 1.001]  MLB [0.603 0.759 0.860 0.932 0.972 0.991 1.017]
+  mean                                  0.8516    0.8350   +0.0166    +2.0%
+  SD                                    0.1096    0.1240   -0.0144   -11.6%
+  share at or above 0.80 (squared up), %     73.23     66.29     +6.94   +10.5%
+  share at or above 0.90, %              41.68     36.59     +5.09   +13.9%
+  share at or above 0.95, %              18.73     17.80     +0.93    +5.2%
+  share at or above 1.00, %               0.46      2.97     -2.51   -84.6%
+  percentiles 5/25/50/75/90/95/99: sim [0.630 0.792 0.878 0.937 0.966 0.976 0.992]  MLB [0.603 0.759 0.860 0.932 0.972 0.991 1.017]
   by launch angle (sim / MLB): EV, bat speed, mean ratio, median, 90th, 99th percentile
-    LA [ -90, -20)  EV  77.3/ 75.6  bat  63.4/ 69.6  mean 0.811/0.724  p50 0.807/0.738  p90 0.966/0.922  p99 1.191/1.008
-    LA [ -20,   0)  EV  87.1/ 89.8  bat  67.6/ 71.1  mean 0.856/0.845  p50 0.879/0.872  p90 0.971/0.976  p99 1.006/1.022
-    LA [   0,  10)  EV  91.0/ 93.4  bat  68.9/ 71.7  mean 0.880/0.873  p50 0.914/0.905  p90 0.970/0.989  p99 0.991/1.021
-    LA [  10,  25)  EV  92.0/ 93.9  bat  69.3/ 71.6  mean 0.884/0.878  p50 0.919/0.908  p90 0.973/0.986  p99 0.993/1.021
-    LA [  25,  40)  EV  90.1/ 91.6  bat  69.7/ 72.0  mean 0.862/0.853  p50 0.889/0.875  p90 0.963/0.962  p99 0.991/1.003
-    LA [  40,  60)  EV  85.0/ 86.6  bat  69.8/ 72.2  mean 0.812/0.804  p50 0.831/0.822  p90 0.919/0.911  p99 0.970/0.967
-    LA [  60,  90)  EV  79.1/ 81.0  bat  70.1/ 72.5  mean 0.755/0.751  p50 0.769/0.760  p90 0.851/0.859  p99 0.928/0.920
+    LA [ -90, -20)  EV  79.6/ 75.6  bat  66.3/ 69.6  mean 0.796/0.724  p50 0.800/0.738  p90 0.947/0.922  p99 1.004/1.008
+    LA [ -20,   0)  EV  87.7/ 89.8  bat  68.2/ 71.1  mean 0.854/0.845  p50 0.878/0.872  p90 0.970/0.976  p99 0.998/1.022
+    LA [   0,  10)  EV  91.3/ 93.4  bat  69.2/ 71.7  mean 0.880/0.873  p50 0.913/0.905  p90 0.970/0.989  p99 0.988/1.021
+    LA [  10,  25)  EV  92.2/ 93.9  bat  69.5/ 71.6  mean 0.884/0.878  p50 0.919/0.908  p90 0.973/0.986  p99 0.992/1.021
+    LA [  25,  40)  EV  90.3/ 91.6  bat  69.8/ 72.0  mean 0.861/0.853  p50 0.889/0.875  p90 0.962/0.962  p99 0.990/1.003
+    LA [  40,  60)  EV  85.2/ 86.6  bat  70.1/ 72.2  mean 0.811/0.804  p50 0.831/0.822  p90 0.918/0.911  p99 0.967/0.967
+    LA [  60,  90)  EV  79.4/ 81.0  bat  70.4/ 72.5  mean 0.754/0.751  p50 0.769/0.760  p90 0.849/0.859  p99 0.917/0.920
   by bat speed (sim / MLB): share of balls in play, EV, mean launch angle, mean ratio, median, 90th, 99th percentile
-    bat [40,60) mph  share  9.76/ 2.79  EV  69.4/ 72.6  LA  13.4/ -0.4  mean 0.861/0.827  p50 0.892/0.862  p90 0.983/1.001  p99 1.011/1.093
-    bat [60,66) mph  share  9.86/10.22  EV  83.2/ 81.8  LA   4.5/  8.7  mean 0.855/0.842  p50 0.883/0.871  p90 0.972/0.991  p99 0.997/1.031
-    bat [66,70) mph  share 23.02/20.95  EV  87.5/ 86.8  LA   9.7/ 11.7  mean 0.852/0.844  p50 0.880/0.870  p90 0.967/0.986  p99 0.988/1.021
-    bat [70,74) mph  share 30.75/32.45  EV  91.3/ 90.3  LA  15.9/ 14.5  mean 0.850/0.841  p50 0.877/0.866  p90 0.964/0.972  p99 0.983/1.011
-    bat [74,78) mph  share 18.77/23.94  EV  95.0/ 93.2  LA  21.0/ 16.3  mean 0.848/0.832  p50 0.873/0.855  p90 0.960/0.957  p99 0.980/0.997
-    bat [78,90) mph  share  6.04/ 9.48  EV  99.1/ 94.2  LA  26.2/ 17.5  mean 0.845/0.802  p50 0.867/0.823  p90 0.957/0.934  p99 0.978/0.977
+    bat [40,60) mph  share  9.86/ 2.79  EV  69.4/ 72.6  LA  13.4/ -0.4  mean 0.861/0.827  p50 0.892/0.862  p90 0.983/1.001  p99 1.011/1.093
+    bat [60,66) mph  share  9.96/10.22  EV  83.2/ 81.8  LA   4.5/  8.7  mean 0.855/0.842  p50 0.883/0.871  p90 0.972/0.991  p99 0.997/1.031
+    bat [66,70) mph  share 23.25/20.95  EV  87.5/ 86.8  LA   9.7/ 11.7  mean 0.852/0.844  p50 0.880/0.870  p90 0.967/0.986  p99 0.988/1.021
+    bat [70,74) mph  share 31.06/32.45  EV  91.3/ 90.3  LA  15.9/ 14.5  mean 0.850/0.841  p50 0.877/0.866  p90 0.964/0.972  p99 0.983/1.011
+    bat [74,78) mph  share 18.96/23.94  EV  95.0/ 93.2  LA  21.0/ 16.3  mean 0.848/0.832  p50 0.873/0.855  p90 0.960/0.957  p99 0.980/0.997
+    bat [78,90) mph  share  6.10/ 9.48  EV  99.1/ 94.2  LA  26.2/ 17.5  mean 0.845/0.802  p50 0.867/0.823  p90 0.957/0.934  p99 0.978/0.977
 
 == Batted-ball types (launch angle classes: GB < 10, LD 10-25, FB 25-50, PU > 50 deg)
   note: Statcast's own bb_type labels are assigned by its classifier, so shares differ slightly from pure launch-angle classes

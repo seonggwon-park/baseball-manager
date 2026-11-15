@@ -600,15 +600,18 @@ impl Tally {
         if is_barrel(ev, la) {
             self.barrel += 1.0;
         }
-        self.bat_speed_bip.add(info.bat_speed / MPH);
-        let bat = info.bat_speed / MPH;
-        let ratio = ev / (1.23 * bat + 0.23 * e.thrown.flight.plate_vel.norm() / MPH);
-        self.eff_all.add(ratio, ev, bat, la);
-        if let Some(i) = bin(&EFF_LA_EDGES, la) {
-            self.eff_la[i].add(ratio, ev, bat, la);
-        }
-        if let Some(i) = bin(&EFF_BAT_EDGES, bat) {
-            self.eff_bat[i].add(ratio, ev, bat, la);
+        // Bunts are not swings: they stay out of the bat-speed and efficiency figures.
+        if !info.bunt {
+            self.bat_speed_bip.add(info.bat_speed / MPH);
+            let bat = info.bat_speed / MPH;
+            let ratio = ev / (1.23 * bat + 0.23 * e.thrown.flight.plate_vel.norm() / MPH);
+            self.eff_all.add(ratio, ev, bat, la);
+            if let Some(i) = bin(&EFF_LA_EDGES, la) {
+                self.eff_la[i].add(ratio, ev, bat, la);
+            }
+            if let Some(i) = bin(&EFF_BAT_EDGES, bat) {
+                self.eff_bat[i].add(ratio, ev, bat, la);
+            }
         }
         let hit = kind.is_hit();
         let hr = kind == PlayKind::HomeRun;
@@ -803,7 +806,7 @@ impl Observer for Tally {
                     self.fouls_of_contact += 1.0;
                 }
             }
-            if let Some(bs) = e.bat_speed {
+            if let (Some(bs), false) = (e.bat_speed, e.approach.is_bunt()) {
                 self.bat_speed_all.add(bs / MPH);
             }
             if kind == PitchKind::FourSeam {

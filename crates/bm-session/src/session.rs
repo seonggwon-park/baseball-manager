@@ -723,7 +723,11 @@ impl Session {
             if self.sim.is_over() {
                 break;
             }
-            self.apply_orders(req, first);
+            // In the quick modes the bench decides everything; the user's orders are for
+            // the pitch or the plate appearance he asked to see.
+            if !quick {
+                self.apply_orders(req, first);
+            }
             first = false;
             let step = self.sim.step(&mut self.rng, &mut col);
             self.sync();
@@ -887,6 +891,35 @@ mod tests {
             let err = s.substitute(&SubRequest::PinchHitter { player: sub }).unwrap_err();
             assert_eq!(err.code, "player_unavailable");
         }
+    }
+
+    #[test]
+    fn orders_do_not_outlive_the_plate_appearance_in_quick_modes() {
+        let mut s = Session::new(&NewMatch {
+            seed: Some(33),
+            control: Control::Away,
+            delegate: Delegate { offense: false, ..Default::default() },
+            ..Default::default()
+        });
+        let bunt = Some(OffenseOrdersDto { approach: Some(ApproachDto::SacBunt), ..Default::default() });
+        // Asked for one plate appearance: every pitch of it is a bunt attempt.
+        let out = s.advance(&AdvanceRequest { mode: Mode::PlateAppearance, offense: bunt, ..Default::default() });
+        assert!(out.events.iter().all(|e| !matches!(e, EventView::Pitch(p) if p.approach != "sac_bunt")));
+        // Asked to play the game out: the bench runs the team and nobody bunts on the user's stale order
+        // (bases empty, so the bench has no reason to call for a sacrifice either).
+        let out = s.advance(&AdvanceRequest { mode: Mode::Game, offense: bunt, ..Default::default() });
+        let (mut bunts, mut pitches) = (0, 0);
+        for e in &out.events {
+            if let EventView::Pitch(p) = e {
+                if p.top {
+                    pitches += 1;
+                    if p.approach == "sac_bunt" {
+                        bunts += 1;
+                    }
+                }
+            }
+        }
+        assert!(pitches > 80 && bunts * 10 < pitches, "{bunts} bunt attempts in {pitches} pitches");
     }
 
     #[test]

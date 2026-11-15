@@ -1,6 +1,8 @@
 [workspace]
 resolver = "2"
 members = ["crates/bm-physics", "crates/bm-engine", "crates/bm-session", "crates/bm-cli"]
+# The desktop shell has its own lock file and is built separately (see app/src-tauri).
+exclude = ["app/src-tauri"]
 
 [workspace.package]
 version = "0.1.0"
