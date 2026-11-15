@@ -621,6 +621,11 @@ impl GameSim {
         &self.line_score
     }
 
+    /// The pitcher of record of a team (the last one who actually pitched).
+    pub fn pitcher(&self, team: usize) -> usize {
+        self.sides[team].pitcher
+    }
+
     /// Pitches thrown by the current pitcher of a team.
     pub fn pitch_count(&self, team: usize) -> u32 {
         self.sides[team].pitcher_state.pitch_count

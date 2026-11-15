@@ -13,3 +13,5 @@ path = "src/main.rs"
 [dependencies]
 bm-physics = { path = "../bm-physics" }
 bm-engine = { path = "../bm-engine" }
+bm-session = { path = "../bm-session" }
+serde_json = "1"

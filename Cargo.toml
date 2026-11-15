@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/bm-physics", "crates/bm-engine", "crates/bm-cli"]
+members = ["crates/bm-physics", "crates/bm-engine", "crates/bm-session", "crates/bm-cli"]
 
 [workspace.package]
 version = "0.1.0"

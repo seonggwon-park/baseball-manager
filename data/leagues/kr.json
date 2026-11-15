@@ -1,0 +1,169 @@
+{
+ "_comment": "Fictional clubs for the Korean league. Cities are real, club names are invented and can be edited.",
+ "league": {
+  "ko": "한국 프로야구 리그",
+  "en": "Korea Professional Baseball League"
+ },
+ "clubs": [
+  {
+   "id": "seoul-magpies",
+   "city": {
+    "ko": "서울",
+    "en": "Seoul"
+   },
+   "name": {
+    "ko": "매그파이스",
+    "en": "Magpies"
+   },
+   "abbr": "SMP",
+   "colors": [
+    "#1f3a5f",
+    "#e9eef5"
+   ]
+  },
+  {
+   "id": "seoul-comets",
+   "city": {
+    "ko": "서울",
+    "en": "Seoul"
+   },
+   "name": {
+    "ko": "코메츠",
+    "en": "Comets"
+   },
+   "abbr": "SCM",
+   "colors": [
+    "#5b2a86",
+    "#f4c542"
+   ]
+  },
+  {
+   "id": "seoul-stallions",
+   "city": {
+    "ko": "서울",
+    "en": "Seoul"
+   },
+   "name": {
+    "ko": "스탤리온스",
+    "en": "Stallions"
+   },
+   "abbr": "SST",
+   "colors": [
+    "#7a1f1f",
+    "#f2e9dc"
+   ]
+  },
+  {
+   "id": "incheon-cranes",
+   "city": {
+    "ko": "인천",
+    "en": "Incheon"
+   },
+   "name": {
+    "ko": "크레인스",
+    "en": "Cranes"
+   },
+   "abbr": "ICN",
+   "colors": [
+    "#0f6e8c",
+    "#f5f7fa"
+   ]
+  },
+  {
+   "id": "suwon-fortress",
+   "city": {
+    "ko": "수원",
+    "en": "Suwon"
+   },
+   "name": {
+    "ko": "포트리스",
+    "en": "Fortress"
+   },
+   "abbr": "SWN",
+   "colors": [
+    "#2d3b2f",
+    "#d9c27a"
+   ]
+  },
+  {
+   "id": "daejeon-orbiters",
+   "city": {
+    "ko": "대전",
+    "en": "Daejeon"
+   },
+   "name": {
+    "ko": "오비터스",
+    "en": "Orbiters"
+   },
+   "abbr": "DJN",
+   "colors": [
+    "#e06a1b",
+    "#1c1c2e"
+   ]
+  },
+  {
+   "id": "daegu-flares",
+   "city": {
+    "ko": "대구",
+    "en": "Daegu"
+   },
+   "name": {
+    "ko": "플레어스",
+    "en": "Flares"
+   },
+   "abbr": "DGU",
+   "colors": [
+    "#c62828",
+    "#ffd54f"
+   ]
+  },
+  {
+   "id": "busan-breakers",
+   "city": {
+    "ko": "부산",
+    "en": "Busan"
+   },
+   "name": {
+    "ko": "브레이커스",
+    "en": "Breakers"
+   },
+   "abbr": "BSN",
+   "colors": [
+    "#0d47a1",
+    "#b3e5fc"
+   ]
+  },
+  {
+   "id": "gwangju-beacons",
+   "city": {
+    "ko": "광주",
+    "en": "Gwangju"
+   },
+   "name": {
+    "ko": "비컨스",
+    "en": "Beacons"
+   },
+   "abbr": "GWJ",
+   "colors": [
+    "#f9a825",
+    "#263238"
+   ]
+  },
+  {
+   "id": "changwon-turbines",
+   "city": {
+    "ko": "창원",
+    "en": "Changwon"
+   },
+   "name": {
+    "ko": "터빈스",
+    "en": "Turbines"
+   },
+   "abbr": "CHW",
+   "colors": [
+    "#00695c",
+    "#eceff1"
+   ]
+  }
+ ]
+}

@@ -5,9 +5,11 @@
 //!             [--style none|mlb] [--set name=value]               AI manager preset, model constants
 //! bm game [--seed S]                                              play one game and print the box score
 //! bm bench [--games N]                                            measure simulation speed
+//! bm serve [--port P] [--static DIR]                              session API over HTTP for the interface in a browser
 //! ```
 
 mod report;
+mod serve;
 mod tally;
 mod tuning;
 
@@ -19,6 +21,8 @@ use tuning::Tuning;
 
 struct Args {
     cmd: String,
+    port: u16,
+    static_dir: Option<std::path::PathBuf>,
     games: usize,
     seed: u64,
     threads: usize,
@@ -29,6 +33,8 @@ struct Args {
 fn parse_args() -> Args {
     let mut a = Args {
         cmd: "validate".into(),
+        port: 8787,
+        static_dir: None,
         games: 2000,
         seed: 2025,
         threads: std::thread::available_parallelism().map_or(4, |n| n.get()),
@@ -46,6 +52,8 @@ fn parse_args() -> Args {
             "--seed" => a.seed = v.parse().expect("--seed S"),
             "--threads" => a.threads = v.parse::<usize>().expect("--threads T").max(1),
             "--clubs" => a.clubs = v.parse::<usize>().expect("--clubs K").max(2),
+            "--port" => a.port = v.parse().expect("--port P"),
+            "--static" => a.static_dir = Some(v.into()),
             "--style" => {
                 a.tuning.style = match v.as_str() {
                     "none" => ManagerStyle::none(),
@@ -276,8 +284,14 @@ fn main() {
             let res = play_game_styled(&env, &away, &home, [args.tuning.style; 2], &mut rng, &mut NoObserver);
             print_box(&res);
         }
+        "serve" => {
+            if let Err(e) = serve::run(args.port, args.static_dir) {
+                eprintln!("server error: {e}");
+                std::process::exit(1);
+            }
+        }
         other => {
-            eprintln!("unknown command {other}; use validate | game | bench");
+            eprintln!("unknown command {other}; use validate | game | bench | population | serve");
             std::process::exit(2);
         }
     }
