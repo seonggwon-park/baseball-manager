@@ -302,8 +302,8 @@ impl PitcherProfile {
 }
 
 /// Bat speed, m/s, and barrel error, m, of the average hitter of the generated MLB population.
-pub const AVERAGE_BAT_SPEED: f64 = 73.1 * MPH;
-pub const AVERAGE_BARREL_SD: f64 = 0.047;
+pub const AVERAGE_BAT_SPEED: f64 = 73.14 * MPH;
+pub const AVERAGE_BARREL_SD: f64 = 0.0461;
 
 impl BatterProfile {
     pub fn league_average(hand: Hand) -> Self {
@@ -313,11 +313,11 @@ impl BatterProfile {
             bat_speed: AVERAGE_BAT_SPEED,
             bat_speed_sd: 2.8 * MPH,
             attack_angle: 9.5f64.to_radians(),
-            attack_sd: 6.1f64.to_radians(),
+            attack_sd: 5.5f64.to_radians(),
             timing_sd: 0.0138,
             barrel_sd: AVERAGE_BARREL_SD,
-            barrel_aim: 0.012,
-            reach_sd: 0.065,
+            barrel_aim: 0.0154,
+            reach_sd: 0.0692,
             eye: 0.62,
             perception_sd: 0.065,
             chase: 0.0,
