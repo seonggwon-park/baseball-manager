@@ -27,6 +27,10 @@
 - 규칙 선택: 한국식(ABS, 연장 11회 무승부), 북미식(승부치기 주자, 세 타자 의무 상대), 일본식(연장 12회 무승부, 시프트 자유)
 - 2D 탑다운 경기장, 투구 위치, 중계, 박스스코어, 라인업. 한국어 기본, 영어 전환. 어두운 테마 기본, 밝은 테마 전환
 
+![경기 화면: 타구가 내야를 빠져나가는 순간](docs/screenshots/match-ko-dark.png)
+
+영어·밝은 테마 화면은 [`docs/screenshots/match-en-light.png`](docs/screenshots/match-en-light.png)에 있다.
+
 10,000경기 시뮬레이션과 2025 MLB의 비교(자세한 표는 [`docs/validation/mlb-2025.txt`](docs/validation/mlb-2025.txt)):
 
 | 지표 | 시뮬레이션 | MLB 2025 |
