@@ -315,7 +315,7 @@ pub fn swing(
     // The barrel turns toward the pull side as it travels forward, by one radian per
     // `swing_arc_radius` of depth (Statcast: 1.26 deg per inch), and a little with the
     // pitch's location.
-    let theta = p.plan_angle_per_m * inside + (dy / p.swing_arc_radius).atan() + rng.gauss(0.0, p.direction_sd);
+    let theta = p.direction_offset + p.plan_angle_per_m * inside + (dy / p.swing_arc_radius).atan() + rng.gauss(0.0, p.direction_sd);
     if dy.abs() > p.max_depth || theta.abs() > p.max_bat_angle {
         let shape = SwingShape { bat_speed, depth: dy.clamp(-1.5, 1.5), direction: theta, ..Default::default() };
         return Swing::Whiff { shape, miss: if dy > 0.0 { Miss::Early } else { Miss::Late } };

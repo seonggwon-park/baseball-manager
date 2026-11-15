@@ -180,6 +180,9 @@ pub struct ModelParams {
     /// averages 0.84 for swings of 66-74 mph and 0.80 for swings of 78 mph and more).
     pub effort_ref: f64,
     pub effort_exp: f64,
+    /// Direction the barrel is heading at the batter's usual contact point, rad toward
+    /// the pull side: balls in play are pulled by 5 deg on average.
+    pub direction_offset: f64,
     /// Swing-to-swing scatter of the barrel's direction that the depth of contact does
     /// not explain, rad (Statcast: 5.6-6.0 deg), and of the tilt of the swing plane
     /// at a given pitch height, rad (Statcast: 5.6 deg).
@@ -399,6 +402,7 @@ impl Default for ModelParams {
             piece_two_strikes: 1.33,
             effort_ref: 72.0 * MPH,
             effort_exp: 0.0,
+            direction_offset: 0.0,
             direction_sd: 0.115,
             bat_tilt_sd: 0.098,
             chop_foul_dist: 3.0,
