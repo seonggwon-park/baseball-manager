@@ -67,9 +67,11 @@ impl BatSpec {
     ///   (Kensrud, Nathan & Smith, Am. J. Phys. 85, 503 (2017)) to 0.30 +/- 0.02
     ///   for a ball fired at up to 120 mph onto a fixed wood cylinder (Nathan et
     ///   al., Procedia Engineering 34, 182 (2012)). Game collisions close at about
-    ///   157 mph; continuing that trend gives roughly 0.2, and with 0.2 the engine
-    ///   reproduces the measured home-run probability as a function of exit
-    ///   velocity (0.10 / 0.38 / 0.68 at 95-100 / 100-105 / 105-110 mph).
+    ///   157 mph; continuing that trend gives roughly 0.2. (With the first swing
+    ///   model this value also reproduced the measured home-run probability by exit
+    ///   velocity; with the swing model fitted to bat tracking the batted balls carry
+    ///   more sidespin and that probability is 0.08 / 0.29 / 0.57 at 95-100 /
+    ///   100-105 / 105-110 mph against a measured 0.10 / 0.38 / 0.68.)
     /// * `cor_obliquity = 0.45`: not from the literature. The rigid-body model keeps
     ///   too much exit speed on topped and skied balls; this term is fitted so that
     ///   the mean exit velocity by launch angle follows 2025 Statcast (85.6 mph on
