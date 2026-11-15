@@ -51,6 +51,58 @@ impl PlayKind {
     }
 }
 
+/// A throw made during a play (or a fielder carrying the ball to a base himself).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ThrowLeg {
+    /// Position index of the thrower.
+    pub by: usize,
+    pub from: Vec3,
+    /// Base thrown to (1..=3, 4 = home).
+    pub to_base: u8,
+    pub t_release: f64,
+    pub t_arrive: f64,
+    /// The fielder ran the ball to the base instead of throwing it.
+    pub carried: bool,
+}
+
+/// Movement of the batter or a runner during a play.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct RunLeg {
+    /// Index of the player in the batting team.
+    pub player: usize,
+    /// Base he started from (0 = the batter's box).
+    pub from: u8,
+    /// Base he reached or was put out at (4 = home).
+    pub to: u8,
+    pub t_start: f64,
+    pub t_arrive: f64,
+    pub out: bool,
+}
+
+/// Timeline of a play, for the match view. Times are seconds after contact.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct PlayTrace {
+    /// Time at which the ball was caught or picked up (0 if it left the field).
+    pub fielded_t: f64,
+    /// The ball was caught in the air.
+    pub caught: bool,
+    pub throws: [Option<ThrowLeg>; 3],
+    pub runs: [Option<RunLeg>; 4],
+}
+
+impl PlayTrace {
+    fn throw(&mut self, by: usize, from: Vec3, to_base: usize, t_release: f64, t_arrive: f64, carried: bool) {
+        if let Some(slot) = self.throws.iter_mut().find(|t| t.is_none()) {
+            *slot = Some(ThrowLeg { by, from, to_base: to_base as u8, t_release, t_arrive: t_arrive.max(t_release), carried });
+        }
+    }
+    fn run(&mut self, r: &Runner, from: usize, to: usize, t_start: f64, t_arrive: f64, out: bool) {
+        if let Some(slot) = self.runs.iter_mut().find(|t| t.is_none()) {
+            *slot = Some(RunLeg { player: r.player, from: from as u8, to: to as u8, t_start, t_arrive: t_arrive.max(t_start), out });
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct PlayResult {
     pub kind: PlayKind,
@@ -69,11 +121,24 @@ pub struct PlayResult {
     pub gidp: bool,
     /// A runner was thrown out trying to advance on a hit or a fly ball.
     pub runner_thrown_out: bool,
+    pub trace: PlayTrace,
 }
 
 impl PlayResult {
     fn new(kind: PlayKind, bases: [Option<Runner>; 3]) -> Self {
-        PlayResult { kind, outs: 0, bases, scored: [None; 4], n_scored: 0, rbi: 0, fielder: 0, field_pos: Vec3::ZERO, gidp: false, runner_thrown_out: false }
+        PlayResult {
+            kind,
+            outs: 0,
+            bases,
+            scored: [None; 4],
+            n_scored: 0,
+            rbi: 0,
+            fielder: 0,
+            field_pos: Vec3::ZERO,
+            gidp: false,
+            runner_thrown_out: false,
+            trace: PlayTrace::default(),
+        }
     }
     fn score(&mut self, r: Runner, rbi: bool) {
         self.scored[self.n_scored as usize] = Some(r);
@@ -174,20 +239,32 @@ pub fn resolve(inp: &PlayInput, rng: &mut Rng) -> PlayResult {
 
     // ---- over the fence ----
     if path.end == PathEnd::OverFence {
+        let clock = Clock { p, go: 0.15 };
         if path.landing.is_none() {
             let mut res = PlayResult::new(PlayKind::HomeRun, [None; 3]);
             res.field_pos = path.last().pos;
-            for r in inp.bases.iter().rev().flatten() {
-                res.score(*r, true);
+            for (i, r) in inp.bases.iter().enumerate().rev() {
+                if let Some(r) = r {
+                    res.score(*r, true);
+                    res.trace.run(r, i + 1, 4, clock.go, clock.runner(r, i + 1, 3 - i), false);
+                }
             }
             res.score(inp.batter, true);
+            res.trace.run(&inp.batter, 0, 4, inp.box_delay, clock.batter(&inp.batter, inp.box_delay, 4), false);
             return res;
         }
         let mut res = PlayResult::new(PlayKind::GroundRuleDouble, [None, Some(inp.batter), inp.bases[0]]);
         res.field_pos = path.last().pos;
-        for r in [inp.bases[2], inp.bases[1]].into_iter().flatten() {
-            res.score(r, true);
+        for (i, r) in [(2usize, inp.bases[2]), (1, inp.bases[1])] {
+            if let Some(r) = r {
+                res.score(r, true);
+                res.trace.run(&r, i + 1, 4, clock.go, clock.runner(&r, i + 1, 3 - i), false);
+            }
         }
+        if let Some(r) = inp.bases[0] {
+            res.trace.run(&r, 1, 3, clock.go, clock.runner(&r, 1, 2), false);
+        }
+        res.trace.run(&inp.batter, 0, 2, inp.box_delay, clock.batter(&inp.batter, inp.box_delay, 2), false);
         return res;
     }
 
@@ -205,7 +282,7 @@ pub fn resolve(inp: &PlayInput, rng: &mut Rng) -> PlayResult {
             let f = &inp.fielders[c.fielder];
             let fair = is_fair(c.pos);
             if rng.chance((p.error_fly * f.hands).min(0.5)) && fair {
-                return dropped_fly(inp, c.fielder, c.pos);
+                return dropped_fly(inp, c.fielder, c.t, c.pos);
             }
             return caught(inp, c.fielder, c.t, c.pos, fair, rng);
         }
@@ -242,16 +319,25 @@ pub fn resolve(inp: &PlayInput, rng: &mut Rng) -> PlayResult {
 }
 
 /// A catchable fly ball was dropped: everyone moves up a base, the batter reaches.
-fn dropped_fly(inp: &PlayInput, fielder: usize, pos: Vec3) -> PlayResult {
+fn dropped_fly(inp: &PlayInput, fielder: usize, t: f64, pos: Vec3) -> PlayResult {
     let mut res = PlayResult::new(PlayKind::Error, [None; 3]);
     res.fielder = fielder;
     res.field_pos = pos;
+    res.trace.fielded_t = t;
     let mut batter = inp.batter;
     batter.earned = false;
     if let Some(r) = inp.bases[2] {
         res.score(r, false);
     }
     res.bases = [Some(batter), inp.bases[0], inp.bases[1]];
+    // The runners were holding until the ball came down.
+    let clock = Clock { p: &inp.env.params, go: t };
+    for (i, r) in inp.bases.iter().enumerate() {
+        if let Some(r) = r {
+            res.trace.run(r, i + 1, i + 2, t, clock.runner(r, i + 1, 1), false);
+        }
+    }
+    res.trace.run(&inp.batter, 0, 1, inp.box_delay, clock.batter(&inp.batter, inp.box_delay, 1), false);
     res
 }
 
@@ -272,6 +358,8 @@ fn caught(inp: &PlayInput, fielder: usize, t: f64, pos: Vec3, fair: bool, rng: &
     res.fielder = fielder;
     res.field_pos = pos;
     res.outs = 1;
+    res.trace.fielded_t = t;
+    res.trace.caught = true;
     if inp.outs + 1 >= 3 || fielder < LF {
         return res;
     }
@@ -289,13 +377,16 @@ fn caught(inp: &PlayInput, fielder: usize, t: f64, pos: Vec3, fair: bool, rng: &
         let margin = p.advance_margin * (1.2 - 0.6 * r.aggr);
         if eta + margin < arrive + rng.gauss(0.0, 0.30) {
             bases[2] = None;
-            if eta + rng.gauss(0.0, 0.05) < arrive + p.tag_time + rng.gauss(0.0, p.play_noise) {
+            let safe = eta + rng.gauss(0.0, 0.05) < arrive + p.tag_time + rng.gauss(0.0, p.play_noise);
+            if safe {
                 res.score(r, true);
                 res.kind = PlayKind::SacFly;
             } else {
                 res.outs += 1;
                 res.runner_thrown_out = true;
             }
+            res.trace.run(&r, 3, 4, t + 0.10, eta, !safe);
+            res.trace.throw(fielder, pos, 4, release, arrive, false);
         }
     }
     // Runner on second tags to third on a deep fly (only if third is open).
@@ -306,11 +397,17 @@ fn caught(inp: &PlayInput, fielder: usize, t: f64, pos: Vec3, fair: bool, rng: &
             let margin = p.advance_margin * (1.3 - 0.6 * r.aggr);
             if eta + margin < arrive + rng.gauss(0.0, 0.30) {
                 bases[1] = None;
-                if eta + rng.gauss(0.0, 0.05) < arrive + p.tag_time + rng.gauss(0.0, p.play_noise) {
+                let safe = eta + rng.gauss(0.0, 0.05) < arrive + p.tag_time + rng.gauss(0.0, p.play_noise);
+                if safe {
                     bases[2] = Some(r);
                 } else {
                     res.outs += 1;
                     res.runner_thrown_out = true;
+                }
+                res.trace.run(&r, 2, 3, t + 0.10, eta, !safe);
+                // One ball: the throw is shown going to third only when nobody went home.
+                if res.trace.throws[0].is_none() {
+                    res.trace.throw(fielder, pos, 3, release, arrive, false);
                 }
             }
         }
@@ -334,12 +431,19 @@ fn infield_play(inp: &PlayInput, clock: &Clock, pk: &crate::fielding::Pickup, rn
     if rng.chance((p.error_ground * f.hands * difficulty).min(0.5)) {
         let mut res = PlayResult::new(PlayKind::Error, [None; 3]);
         res.fielder = pk.fielder;
+        res.trace.fielded_t = pk.t;
         let mut batter = inp.batter;
         batter.earned = false;
         if let Some(r) = r3 {
             res.score(r, false);
         }
         res.bases = [Some(batter), r1, r2];
+        for (i, r) in inp.bases.iter().enumerate() {
+            if let Some(r) = r {
+                res.trace.run(r, i + 1, i + 2, clock.go, clock.runner(r, i + 1, 1), false);
+            }
+        }
+        res.trace.run(&inp.batter, 0, 1, inp.box_delay, batter_eta, false);
         return res;
     }
 
@@ -360,8 +464,11 @@ fn infield_play(inp: &PlayInput, clock: &Clock, pk: &crate::fielding::Pickup, rn
             let mut res = PlayResult::new(PlayKind::FieldersChoice, [None; 3]);
             res.fielder = pk.fielder;
             res.outs = 1;
-            let pivot = if pk.pos.x < 0.0 { &inp.fielders[B2] } else { &inp.fielders[SS] };
-            let t1 = t2 + if near_bag { f.transfer * 0.8 } else { p.pivot_time } + throw_time(BASE_PATH, pivot.arm * 0.95, p.throw_drag);
+            res.trace.fielded_t = pk.t;
+            let pivot_pos = if pk.pos.x < 0.0 { B2 } else { SS };
+            let pivot = &inp.fielders[pivot_pos];
+            let turn = if near_bag { f.transfer * 0.8 } else { p.pivot_time };
+            let t1 = t2 + turn + throw_time(BASE_PATH, pivot.arm * 0.95, p.throw_drag);
             let doubled = inp.outs + 1 < 3 && t1 + rng.gauss(0.0, p.play_noise) < batter_eta;
             if doubled {
                 res.outs = 2;
@@ -370,10 +477,21 @@ fn infield_play(inp: &PlayInput, clock: &Clock, pk: &crate::fielding::Pickup, rn
             } else {
                 res.bases[0] = Some(inp.batter);
             }
+            let feed_release = if near_bag { pk.t + p.gather_time } else { feed - throw_time(gdist(pk.pos, second), arm * 0.9, p.throw_drag) };
+            res.trace.throw(pk.fielder, pk.pos, 2, feed_release, t2, near_bag);
+            if inp.outs + 1 < 3 {
+                res.trace.throw(if near_bag { pk.fielder } else { pivot_pos }, second, 1, t2 + turn, t1, false);
+            }
+            res.trace.run(&lead, 1, 2, clock.go, lead_eta, true);
+            res.trace.run(&inp.batter, 0, 1, inp.box_delay, batter_eta, doubled);
             if inp.outs + res.outs < 3 {
                 res.bases[2] = r2;
+                if let Some(r) = r2 {
+                    res.trace.run(&r, 2, 3, clock.go, clock.runner(&r, 2, 1), false);
+                }
                 if let Some(r) = r3 {
                     res.score(r, !doubled);
+                    res.trace.run(&r, 3, 4, clock.go, clock.runner(&r, 3, 1), false);
                 }
             }
             return res;
@@ -382,19 +500,25 @@ fn infield_play(inp: &PlayInput, clock: &Clock, pk: &crate::fielding::Pickup, rn
         let t1 = throw_from(first);
         let mut res = PlayResult::new(PlayKind::Single, [None; 3]);
         res.fielder = pk.fielder;
-        if t1 + rng.gauss(0.0, p.play_noise) < batter_eta {
+        res.trace.fielded_t = pk.t;
+        let batter_out = t1 + rng.gauss(0.0, p.play_noise) < batter_eta;
+        if batter_out {
             res.kind = PlayKind::GroundOut;
             res.outs = 1;
             res.bases = [None, Some(lead), r2];
-            if let Some(r) = r3 {
-                res.score(r, true);
-            }
         } else {
             res.bases = [Some(inp.batter), Some(lead), r2];
-            if let Some(r) = r3 {
-                res.score(r, true);
-            }
         }
+        if let Some(r) = r3 {
+            res.score(r, true);
+            res.trace.run(&r, 3, 4, clock.go, clock.runner(&r, 3, 1), false);
+        }
+        if let Some(r) = r2 {
+            res.trace.run(&r, 2, 3, clock.go, clock.runner(&r, 2, 1), false);
+        }
+        res.trace.run(&lead, 1, 2, clock.go, lead_eta, false);
+        res.trace.run(&inp.batter, 0, 1, inp.box_delay, batter_eta, batter_out);
+        res.trace.throw(pk.fielder, pk.pos, 1, release, t1, false);
         return res;
     }
 
@@ -406,17 +530,29 @@ fn infield_play(inp: &PlayInput, clock: &Clock, pk: &crate::fielding::Pickup, rn
         // The throw gets away: the batter takes second and every runner moves up two bases.
         let mut res = PlayResult::new(PlayKind::Error, [None; 3]);
         res.fielder = pk.fielder;
+        res.trace.fielded_t = pk.t;
         let mut batter = inp.batter;
         batter.earned = false;
-        for r in [r3, r2].into_iter().flatten() {
-            res.score(r, false);
+        for (i, r) in [(3usize, r3), (2, r2)] {
+            if let Some(r) = r {
+                res.score(r, false);
+                res.trace.run(&r, i, 4, clock.go, clock.runner(&r, i, 4 - i), false);
+            }
         }
+        if let Some(r) = r1 {
+            res.trace.run(&r, 1, 3, clock.go, clock.runner(&r, 1, 2), false);
+        }
+        res.trace.run(&inp.batter, 0, 2, inp.box_delay, clock.batter(&inp.batter, inp.box_delay, 2), false);
+        res.trace.throw(pk.fielder, pk.pos, 1, release, t1, false);
         res.bases = [None, Some(batter), r1];
         return res;
     }
     let batter_out = in_time;
     let mut res = PlayResult::new(if batter_out { PlayKind::GroundOut } else { PlayKind::Single }, [None; 3]);
     res.fielder = pk.fielder;
+    res.trace.fielded_t = pk.t;
+    res.trace.run(&inp.batter, 0, 1, inp.box_delay, batter_eta, batter_out);
+    res.trace.throw(pk.fielder, pk.pos, 1, if unassisted { pk.t + p.gather_time } else { release }, t1, unassisted);
     if batter_out {
         res.outs = 1;
         if inp.outs + 1 >= 3 {
@@ -437,6 +573,7 @@ fn infield_play(inp: &PlayInput, clock: &Clock, pk: &crate::fielding::Pickup, rn
     if let Some(r) = r3 {
         if third_goes {
             res.score(r, true);
+            res.trace.run(&r, 3, 4, clock.go, clock.runner(&r, 3, 1), false);
         } else {
             third = Some(r);
         }
@@ -445,6 +582,7 @@ fn infield_play(inp: &PlayInput, clock: &Clock, pk: &crate::fielding::Pickup, rn
     if let Some(r) = r2 {
         if second_goes && third.is_none() {
             third = Some(r);
+            res.trace.run(&r, 2, 3, clock.go, clock.runner(&r, 2, 1), false);
         } else {
             second = Some(r);
         }
@@ -453,6 +591,7 @@ fn infield_play(inp: &PlayInput, clock: &Clock, pk: &crate::fielding::Pickup, rn
         // Only reachable with two outs (otherwise the force play above handled it).
         if second.is_none() {
             second = Some(r);
+            res.trace.run(&r, 1, 2, clock.go, clock.runner(&r, 1, 1), false);
         } else {
             res.bases[0] = Some(r);
         }
@@ -574,6 +713,24 @@ fn outfield_play(inp: &PlayInput, clock: &Clock, pk: &crate::fielding::Pickup, h
         }
     }
 
+    res.trace.fielded_t = pk.t;
+    match play {
+        Some(i) => {
+            let to = movers[i].unwrap().to;
+            res.trace.throw(pk.fielder, pk.pos, to, release + extra, arrive[to] + extra, false);
+        }
+        // Nobody to throw out: the ball comes back in to second base.
+        None => res.trace.throw(pk.fielder, pk.pos, 2, release + extra, arrive[2] + extra, false),
+    }
+    for (i, m) in movers.iter().enumerate() {
+        let Some(m) = m else { continue };
+        if m.to > m.from {
+            let (start, eta) =
+                if m.from == 0 { (inp.box_delay, clock.batter(&m.r, inp.box_delay, m.to)) } else { (clock.go, clock.runner(&m.r, m.from, m.to - m.from)) };
+            res.trace.run(&m.r, m.from, m.to, start, eta, out_slot == Some(i));
+        }
+    }
+
     let third_out_made = inp.outs + res.outs >= 3;
     for (i, m) in movers.iter().enumerate() {
         let Some(m) = m else { continue };
@@ -588,7 +745,6 @@ fn outfield_play(inp: &PlayInput, clock: &Clock, pk: &crate::fielding::Pickup, h
         } else if m.to >= 1 {
             res.bases[m.to - 1] = Some(m.r);
         }
-        let _ = m.from;
     }
     res
 }

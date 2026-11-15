@@ -12,7 +12,7 @@ pub mod rng;
 pub mod rules;
 
 pub use batting::{BattedInfo, Miss, Swing};
-pub use game::{play_game, BatLine, GameResult, NoObserver, Observer, PaEvent, PaOutcome, PitchEvent, PitchLine, PitchResult, Team, TeamBox};
+pub use game::{play_game, BatLine, GameResult, GameSim, NoObserver, Observer, PaEvent, PaOutcome, PitchEvent, PitchLine, PitchResult, Step, Team, TeamBox};
 pub use params::ModelParams;
 pub use pitching::{MatchEnv, Thrown};
 pub use play::{PlayKind, PlayResult, Runner};

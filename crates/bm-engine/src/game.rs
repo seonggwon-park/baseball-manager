@@ -1,5 +1,6 @@
-//! The game loop: innings, plate appearances, pitch-by-pitch resolution,
-//! substitutions by a simple AI manager, and the box score.
+//! The game: a state machine advanced one pitch at a time (innings, plate
+//! appearances, pitch-by-pitch resolution), substitutions by a simple AI manager,
+//! and the box score.
 
 use crate::batting::{respond, BattedInfo, Miss, Swing};
 use crate::fielding::{move_time, standard_alignment, C, P};
@@ -10,6 +11,7 @@ use crate::profile::{CatcherProfile, FielderProfile, Hand, PitcherProfile, Playe
 use crate::rng::{sigmoid, Rng};
 use crate::rules::StrikeZone;
 use bm_physics::{BattedPath, BattedSim, Vec3, BASE_PATH};
+use std::sync::Arc;
 
 /// Integration step and sample spacing for batted balls, s.
 const BATTED_DT: f64 = 0.02;
@@ -168,8 +170,8 @@ pub trait Observer {
 pub struct NoObserver;
 impl Observer for NoObserver {}
 
-struct Side<'a> {
-    team: &'a Team,
+struct Side {
+    team: Arc<Team>,
     lineup: [usize; 9],
     order: usize,
     defense: [usize; 9],
@@ -188,8 +190,8 @@ struct Side<'a> {
     box_score: TeamBox,
 }
 
-impl<'a> Side<'a> {
-    fn new(team: &'a Team, env: &MatchEnv) -> Self {
+impl Side {
+    fn new(team: Arc<Team>, env: &MatchEnv) -> Self {
         let pitcher = team.defense[P];
         let mut fielders = [FielderProfile::league_average(); 9];
         for (i, f) in fielders.iter_mut().enumerate() {
@@ -200,14 +202,13 @@ impl<'a> Side<'a> {
         box_score.pitching[pitcher].started = true;
         box_score.pitching[pitcher].appeared = true;
         Side {
-            team,
             lineup: team.lineup,
             order: 0,
             defense: team.defense,
             fielders,
             catcher: team.players[team.defense[C]].catcher,
             pitcher,
-            pitcher_state: PitcherState::new(profile_of(team, pitcher), env),
+            pitcher_state: PitcherState::new(profile_of(&team, pitcher), env),
             bullpen_used: 0,
             closer_used: false,
             is_starter: true,
@@ -217,6 +218,7 @@ impl<'a> Side<'a> {
             cur_inning_bf: 0,
             entry_lead: 0,
             box_score,
+            team,
         }
     }
 }
@@ -225,9 +227,39 @@ fn profile_of(team: &Team, idx: usize) -> &PitcherProfile {
     team.players[idx].pitcher.as_ref().expect("player used as a pitcher has a pitching profile")
 }
 
-struct Game<'a> {
-    env: &'a MatchEnv,
-    sides: [Side<'a>; 2],
+/// The plate appearance in progress.
+struct Pa {
+    batter_idx: usize,
+    pitcher_idx: usize,
+    zone: StrikeZone,
+    me: Runner,
+    box_delay: f64,
+    bases_before: u8,
+    outs_before: u8,
+    positions: [Vec3; 9],
+    balls: usize,
+    strikes: usize,
+    pitches: u8,
+    /// `None` while the plate appearance is still going on.
+    outcome: Option<PaOutcome>,
+    rbi: u8,
+    ground_ball: bool,
+    score_before: u32,
+}
+
+/// What a call to [`GameSim::step`] did.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Step {
+    /// A pitch was thrown (and everything that followed from it was resolved).
+    Pitch,
+    /// The game is over; nothing happened.
+    GameOver,
+}
+
+/// A game in progress, advanced one pitch at a time.
+pub struct GameSim {
+    env: Arc<MatchEnv>,
+    sides: [Side; 2],
     positions: [Vec3; 9],
     inning: u8,
     top: bool,
@@ -240,53 +272,125 @@ struct Game<'a> {
     phantom_outs: u8,
     win_candidate: Option<(usize, usize)>,
     loss_candidate: Option<(usize, usize)>,
+    pa: Option<Pa>,
+    /// The current half inning has started.
+    half_open: bool,
+    result: Option<GameResult>,
 }
 
-/// Play one game. `away` bats first.
+/// Play one game from start to finish. `away` bats first.
 pub fn play_game<O: Observer>(env: &MatchEnv, away: &Team, home: &Team, rng: &mut Rng, obs: &mut O) -> GameResult {
-    let mut g = Game {
-        env,
-        sides: [Side::new(away, env), Side::new(home, env)],
-        positions: standard_alignment(),
-        inning: 1,
-        top: true,
-        outs: 0,
-        bases: [None; 3],
-        score: [0, 0],
-        line_score: Vec::with_capacity(12),
-        path: BattedPath::default(),
-        phantom_outs: 0,
-        win_candidate: None,
-        loss_candidate: None,
-    };
-    g.run(rng, obs)
+    let mut g = GameSim::new(Arc::new(env.clone()), Arc::new(away.clone()), Arc::new(home.clone()));
+    while !g.is_over() {
+        g.step(rng, obs);
+    }
+    g.into_result()
 }
 
-impl<'a> Game<'a> {
-    fn run<O: Observer>(&mut self, rng: &mut Rng, obs: &mut O) -> GameResult {
-        let rules = &self.env.rules;
-        loop {
-            self.line_score.push([0, 0]);
-            self.top = true;
-            self.half_inning(rng, obs);
-            let skip_bottom = self.inning >= rules.innings && self.score[1] > self.score[0];
-            if !skip_bottom {
-                self.top = false;
-                self.half_inning(rng, obs);
-            }
-            let decided = self.score[0] != self.score[1];
-            if self.inning >= rules.innings && (decided || rules.max_innings.is_some_and(|m| self.inning >= m)) {
-                break;
-            }
-            if self.inning >= 60 {
-                break; // safety net
-            }
-            self.inning += 1;
+impl GameSim {
+    pub fn new(env: Arc<MatchEnv>, away: Arc<Team>, home: Arc<Team>) -> Self {
+        let sides = [Side::new(away, &env), Side::new(home, &env)];
+        GameSim {
+            env,
+            sides,
+            positions: standard_alignment(),
+            inning: 1,
+            top: true,
+            outs: 0,
+            bases: [None; 3],
+            score: [0, 0],
+            line_score: Vec::with_capacity(12),
+            path: BattedPath::default(),
+            phantom_outs: 0,
+            win_candidate: None,
+            loss_candidate: None,
+            pa: None,
+            half_open: false,
+            result: None,
         }
-        self.finish()
     }
 
-    fn finish(&mut self) -> GameResult {
+    pub fn is_over(&self) -> bool {
+        self.result.is_some()
+    }
+
+    /// The final result, once the game is over.
+    pub fn result(&self) -> Option<&GameResult> {
+        self.result.as_ref()
+    }
+
+    /// Consume a finished game.
+    pub fn into_result(self) -> GameResult {
+        self.result.expect("the game is over")
+    }
+
+    /// Throw the next pitch and resolve everything that follows from it.
+    pub fn step<O: Observer>(&mut self, rng: &mut Rng, obs: &mut O) -> Step {
+        if self.result.is_some() {
+            return Step::GameOver;
+        }
+        if !self.half_open {
+            self.open_half();
+        }
+        let (bat, fld) = if self.top { (0, 1) } else { (1, 0) };
+        if self.pa.is_none() {
+            self.consider_pitching_change(fld, bat, obs);
+            self.begin_pa(bat, fld);
+        }
+        self.pitch(bat, fld, rng, obs);
+        if self.pa.as_ref().is_some_and(|pa| pa.outcome.is_some()) || self.outs >= 3 {
+            self.end_pa(bat, fld, obs);
+            let walk_off = !self.top && self.inning >= self.env.rules.innings && self.score[1] > self.score[0];
+            if self.outs >= 3 || walk_off {
+                self.close_half(bat);
+            }
+        }
+        Step::Pitch
+    }
+
+    fn open_half(&mut self) {
+        if self.top {
+            self.line_score.push([0, 0]);
+        }
+        let (bat, fld) = if self.top { (0, 1) } else { (1, 0) };
+        self.outs = 0;
+        self.bases = [None; 3];
+        self.phantom_outs = 0;
+        self.sides[fld].cur_inning_runs = 0;
+        self.sides[fld].cur_inning_bf = 0;
+        if self.env.rules.auto_runner_from.is_some_and(|n| self.inning >= n) {
+            let s = &self.sides[bat];
+            let idx = s.lineup[(s.order + 8) % 9];
+            let b = &s.team.players[idx].batter;
+            self.bases[1] =
+                Some(Runner { player: idx, sprint: b.sprint, accel: b.accel, aggr: b.baserunning, pitcher: self.sides[fld].pitcher, earned: false });
+        }
+        self.half_open = true;
+    }
+
+    /// The half inning is over: move on to the next one, or end the game.
+    fn close_half(&mut self, bat: usize) {
+        self.sides[bat].box_score.left_on_base += self.bases.iter().flatten().count() as u32;
+        self.half_open = false;
+        let (innings, max_innings) = (self.env.rules.innings, self.env.rules.max_innings);
+        if self.top {
+            let skip_bottom = self.inning >= innings && self.score[1] > self.score[0];
+            if !skip_bottom {
+                self.top = false;
+                return;
+            }
+        }
+        let decided = self.score[0] != self.score[1];
+        let finished = self.inning >= innings && (decided || max_innings.is_some_and(|m| self.inning >= m));
+        if finished || self.inning >= 60 {
+            self.result = Some(self.finish());
+            return;
+        }
+        self.inning += 1;
+        self.top = true;
+    }
+
+    fn finish(&self) -> GameResult {
         let mut win = None;
         let mut loss = None;
         let mut save = None;
@@ -311,35 +415,8 @@ impl<'a> Game<'a> {
                 save = Some((w, last));
             }
         }
-        let mut boxes = [TeamBox::default(), TeamBox::default()];
-        for (b, s) in boxes.iter_mut().zip(self.sides.iter_mut()) {
-            *b = std::mem::take(&mut s.box_score);
-        }
-        GameResult { score: self.score, innings: self.inning, line_score: std::mem::take(&mut self.line_score), boxes, win, loss, save }
-    }
-
-    fn half_inning<O: Observer>(&mut self, rng: &mut Rng, obs: &mut O) {
-        let (bat, fld) = if self.top { (0, 1) } else { (1, 0) };
-        self.outs = 0;
-        self.bases = [None; 3];
-        self.phantom_outs = 0;
-        self.sides[fld].cur_inning_runs = 0;
-        self.sides[fld].cur_inning_bf = 0;
-        if self.env.rules.auto_runner_from.is_some_and(|n| self.inning >= n) {
-            let s = &self.sides[bat];
-            let idx = s.lineup[(s.order + 8) % 9];
-            let b = &s.team.players[idx].batter;
-            self.bases[1] =
-                Some(Runner { player: idx, sprint: b.sprint, accel: b.accel, aggr: b.baserunning, pitcher: self.sides[fld].pitcher, earned: false });
-        }
-        while self.outs < 3 {
-            self.consider_pitching_change(fld, bat, obs);
-            self.plate_appearance(bat, fld, rng, obs);
-            if !self.top && self.inning >= self.env.rules.innings && self.score[1] > self.score[0] {
-                break; // walk-off
-            }
-        }
-        self.sides[bat].box_score.left_on_base += self.bases.iter().flatten().count() as u32;
+        let boxes = [self.sides[0].box_score.clone(), self.sides[1].box_score.clone()];
+        GameResult { score: self.score, innings: self.inning, line_score: self.line_score.clone(), boxes, win, loss, save }
     }
 
     fn consider_pitching_change<O: Observer>(&mut self, fld: usize, bat: usize, obs: &mut O) {
@@ -348,7 +425,7 @@ impl<'a> Game<'a> {
         let inning = self.inning;
         let outs = self.outs;
         let s = &self.sides[fld];
-        let stamina = profile_of(s.team, s.pitcher).stamina;
+        let stamina = profile_of(&s.team, s.pitcher).stamina;
         let pc = s.pitcher_state.pitch_count as f64;
         let fresh_inning = outs == 0 && s.cur_inning_bf == 0;
         let want = if s.is_starter {
@@ -380,7 +457,6 @@ impl<'a> Game<'a> {
         };
         let Some(slot) = next else { return };
         let new_idx = pen[slot];
-        let env = self.env;
         let s = &mut self.sides[fld];
         if slot == closer {
             s.closer_used = true;
@@ -391,7 +467,7 @@ impl<'a> Game<'a> {
         s.pitcher = new_idx;
         s.defense[P] = new_idx;
         s.fielders[P] = s.team.players[new_idx].fielder;
-        s.pitcher_state = PitcherState::new(profile_of(s.team, new_idx), env);
+        s.pitcher_state = PitcherState::new(profile_of(&s.team, new_idx), &self.env);
         s.is_starter = false;
         s.cur_bf = 0;
         s.cur_runs = 0;
@@ -411,200 +487,224 @@ impl<'a> Game<'a> {
         self.bases.iter().enumerate().fold(0, |acc, (i, b)| acc | ((b.is_some() as u8) << i))
     }
 
-    fn plate_appearance<O: Observer>(&mut self, bat: usize, fld: usize, rng: &mut Rng, obs: &mut O) {
-        let env = self.env;
-        let params = &env.params;
-        let bat_team = self.sides[bat].team;
-        let fld_team = self.sides[fld].team;
+    fn begin_pa(&mut self, bat: usize, fld: usize) {
+        let params = &self.env.params;
         let batter_idx = self.sides[bat].lineup[self.sides[bat].order];
-        let batter = &bat_team.players[batter_idx].batter;
+        let batter = &self.sides[bat].team.players[batter_idx].batter;
         let pitcher_idx = self.sides[fld].pitcher;
-        let pprof = profile_of(fld_team, pitcher_idx);
-        let zone = StrikeZone::for_batter(batter.height, &env.rules);
-        let catcher = self.sides[fld].catcher;
+        let zone = StrikeZone::for_batter(batter.height, &self.env.rules);
         let me = Runner { player: batter_idx, sprint: batter.sprint, accel: batter.accel, aggr: batter.baserunning, pitcher: pitcher_idx, earned: true };
         let box_delay = match batter.hand {
             Hand::Right => params.box_delay_right,
             Hand::Left => params.box_delay_left,
         };
-        let bases_before = self.bases_bits();
-        let outs_before = self.outs;
         // With a runner on first and second base open the first baseman holds him on,
         // which opens the hole on the right side.
         let mut positions = self.positions;
         if self.bases[0].is_some() && self.bases[1].is_none() {
             positions[crate::fielding::B1] = Vec3::new(20.4, 22.4, 0.0);
         }
-        let (mut balls, mut strikes, mut pitches) = (0usize, 0usize, 0u8);
+        self.pa = Some(Pa {
+            batter_idx,
+            pitcher_idx,
+            zone,
+            me,
+            box_delay,
+            bases_before: self.bases_bits(),
+            outs_before: self.outs,
+            positions,
+            balls: 0,
+            strikes: 0,
+            pitches: 0,
+            outcome: None,
+            rbi: 0,
+            ground_ball: false,
+            score_before: self.score[bat],
+        });
+    }
+
+    /// One pitch of the current plate appearance.
+    fn pitch<O: Observer>(&mut self, bat: usize, fld: usize, rng: &mut Rng, obs: &mut O) {
+        let mut pa = self.pa.take().expect("a plate appearance is in progress");
+        self.pitch_inner(&mut pa, bat, fld, rng, obs);
+        self.pa = Some(pa);
+    }
+
+    fn pitch_inner<O: Observer>(&mut self, pa: &mut Pa, bat: usize, fld: usize, rng: &mut Rng, obs: &mut O) {
+        let env = Arc::clone(&self.env);
+        let env = &*env;
+        let params = &env.params;
+        let bat_team = Arc::clone(&self.sides[bat].team);
+        let fld_team = Arc::clone(&self.sides[fld].team);
+        let batter_idx = pa.batter_idx;
+        let batter = &bat_team.players[batter_idx].batter;
+        let pitcher_idx = pa.pitcher_idx;
+        let pprof = profile_of(&fld_team, pitcher_idx);
+        let zone = pa.zone;
+        let catcher = self.sides[fld].catcher;
+        let (balls, strikes) = (pa.balls, pa.strikes);
         let mut w = [0.0; MAX_PITCHES];
-        let mut outcome = PaOutcome::Interrupted;
-        let (mut rbi, mut runs) = (0u8, 0u8);
-        let mut ground_ball = false;
-        let score_before = self.score[bat];
 
-        loop {
-            if self.outs >= 3 {
-                break;
+        let n = selection_weights(pprof, batter.hand, balls, strikes, params, &mut w);
+        let exp = expectation(pprof, &self.sides[fld].pitcher_state, &w[..n], params.expect_mix);
+        let choice = choose_pitch(pprof, batter.hand, &zone, balls, strikes, &w[..n], params, rng);
+        let thrown = throw_pitch(pprof, &mut self.sides[fld].pitcher_state, &choice, env, rng);
+        pa.pitches = pa.pitches.saturating_add(1);
+        let stealing = self.steal_decision(bat, pprof, &catcher, rng);
+        let f = thrown.flight;
+        let zone_distance = zone.signed_distance(f.plate_pos.x, f.plate_pos.z, env.ball.radius);
+        let mut ev = PitchEvent {
+            inning: self.inning,
+            top: self.top,
+            balls: balls as u8,
+            strikes: strikes as u8,
+            outs: self.outs,
+            pitcher_hand: pprof.hand,
+            batter_hand: batter.hand,
+            thrown: &thrown,
+            zone,
+            zone_distance,
+            swung: true,
+            result: PitchResult::Ball,
+            bat_speed: None,
+            miss: None,
+            batted: None,
+            path: None,
+            play: None,
+        };
+        let line = &mut self.sides[fld].box_score.pitching[pitcher_idx];
+        line.pitches += 1;
+
+        let sw = respond(env, batter, &zone, balls, strikes, &thrown, &exp, rng);
+        let mut live_ball = false; // pitch not put in play or fouled: steals and wild pitches can happen
+        match sw {
+            Swing::Take => {
+                ev.swung = false;
+                if hit_by_pitch(params, batter.hand, f.plate_pos, rng) {
+                    ev.result = PitchResult::HitByPitch;
+                    obs.pitch(&ev);
+                    pa.outcome = Some(PaOutcome::HitByPitch);
+                    return;
+                }
+                if zone.called_strike(&env.rules, params, f.plate_pos, f.plate_vel, env.ball.radius, catcher.framing, rng.f64()) {
+                    pa.strikes += 1;
+                    line.strikes += 1;
+                    ev.result = PitchResult::CalledStrike;
+                } else {
+                    pa.balls += 1;
+                    ev.result = PitchResult::Ball;
+                }
+                live_ball = true;
+                obs.pitch(&ev);
             }
-            let n = selection_weights(pprof, batter.hand, balls, strikes, params, &mut w);
-            let exp = expectation(pprof, &self.sides[fld].pitcher_state, &w[..n], params.expect_mix);
-            let choice = choose_pitch(pprof, batter.hand, &zone, balls, strikes, &w[..n], params, rng);
-            let thrown = throw_pitch(pprof, &mut self.sides[fld].pitcher_state, &choice, env, rng);
-            pitches = pitches.saturating_add(1);
-            let stealing = self.steal_decision(bat, pprof, &catcher, rng);
-            let f = thrown.flight;
-            let zone_distance = zone.signed_distance(f.plate_pos.x, f.plate_pos.z, env.ball.radius);
-            let (b0, s0) = (balls as u8, strikes as u8);
-            let mut ev = PitchEvent {
-                inning: self.inning,
-                top: self.top,
-                balls: b0,
-                strikes: s0,
-                outs: self.outs,
-                pitcher_hand: pprof.hand,
-                batter_hand: batter.hand,
-                thrown: &thrown,
-                zone,
-                zone_distance,
-                swung: true,
-                result: PitchResult::Ball,
-                bat_speed: None,
-                miss: None,
-                batted: None,
-                path: None,
-                play: None,
-            };
-            let line = &mut self.sides[fld].box_score.pitching[pitcher_idx];
-            line.pitches += 1;
-
-            let sw = respond(env, batter, &zone, balls, strikes, &thrown, &exp, rng);
-            let mut live_ball = false; // pitch not put in play or fouled: steals and wild pitches can happen
-            match sw {
-                Swing::Take => {
-                    ev.swung = false;
-                    if hit_by_pitch(params, batter.hand, f.plate_pos, rng) {
-                        ev.result = PitchResult::HitByPitch;
-                        obs.pitch(&ev);
-                        outcome = PaOutcome::HitByPitch;
-                        break;
-                    }
-                    if zone.called_strike(&env.rules, params, f.plate_pos, f.plate_vel, env.ball.radius, catcher.framing, rng.f64()) {
-                        strikes += 1;
-                        line.strikes += 1;
-                        ev.result = PitchResult::CalledStrike;
-                    } else {
-                        balls += 1;
-                        ev.result = PitchResult::Ball;
-                    }
-                    live_ball = true;
-                    obs.pitch(&ev);
-                }
-                Swing::Whiff { bat_speed, miss } => {
-                    strikes += 1;
-                    line.strikes += 1;
-                    ev.result = PitchResult::SwingingStrike;
-                    ev.bat_speed = Some(bat_speed);
-                    ev.miss = Some(miss);
-                    live_ball = true;
-                    obs.pitch(&ev);
-                }
-                Swing::FoulTip { caught, bat_speed } => {
-                    line.strikes += 1;
-                    ev.bat_speed = Some(bat_speed);
-                    if caught {
-                        strikes += 1;
-                        ev.result = PitchResult::FoulTip;
-                    } else {
-                        if strikes < 2 {
-                            strikes += 1;
-                        }
-                        ev.result = PitchResult::Foul;
-                    }
-                    obs.pitch(&ev);
-                }
-                Swing::FoulBack { bat_speed } => {
-                    line.strikes += 1;
-                    if strikes < 2 {
-                        strikes += 1;
+            Swing::Whiff { bat_speed, miss } => {
+                pa.strikes += 1;
+                line.strikes += 1;
+                ev.result = PitchResult::SwingingStrike;
+                ev.bat_speed = Some(bat_speed);
+                ev.miss = Some(miss);
+                live_ball = true;
+                obs.pitch(&ev);
+            }
+            Swing::FoulTip { caught, bat_speed } => {
+                line.strikes += 1;
+                ev.bat_speed = Some(bat_speed);
+                if caught {
+                    pa.strikes += 1;
+                    ev.result = PitchResult::FoulTip;
+                } else {
+                    if pa.strikes < 2 {
+                        pa.strikes += 1;
                     }
                     ev.result = PitchResult::Foul;
-                    ev.bat_speed = Some(bat_speed);
-                    obs.pitch(&ev);
                 }
-                Swing::Batted { state, info } => {
-                    line.strikes += 1;
-                    // A ball hit low and well outside the lines is foul without any play on it.
-                    if info.spray.abs() > OBVIOUS_FOUL_SPRAY && info.launch_angle < OBVIOUS_FOUL_LAUNCH {
-                        if strikes < 2 {
-                            strikes += 1;
-                        }
-                        ev.result = PitchResult::Foul;
-                        ev.bat_speed = Some(info.bat_speed);
-                        obs.pitch(&ev);
-                        continue;
+                obs.pitch(&ev);
+            }
+            Swing::FoulBack { bat_speed } => {
+                line.strikes += 1;
+                if pa.strikes < 2 {
+                    pa.strikes += 1;
+                }
+                ev.result = PitchResult::Foul;
+                ev.bat_speed = Some(bat_speed);
+                obs.pitch(&ev);
+            }
+            Swing::Batted { state, info } => {
+                line.strikes += 1;
+                // A ball hit low and well outside the lines is foul without any play on it.
+                if info.spray.abs() > OBVIOUS_FOUL_SPRAY && info.launch_angle < OBVIOUS_FOUL_LAUNCH {
+                    if pa.strikes < 2 {
+                        pa.strikes += 1;
                     }
-                    let mut flight = env.batted_flight;
-                    flight.aero.cd0 = (flight.aero.cd0 + rng.gauss(0.0, params.drag_jitter)).max(0.15);
-                    let mut sim = BattedSim::new(&flight, &env.ball, &env.park);
-                    sim.dt = BATTED_DT;
-                    sim.sample_dt = BATTED_SAMPLE_DT;
-                    sim.run(state, &mut self.path);
-                    let inp = PlayInput {
-                        env,
-                        path: &self.path,
-                        info: &info,
-                        fielders: &self.sides[fld].fielders,
-                        positions: &positions,
-                        bases: self.bases,
-                        batter: me,
-                        box_delay,
-                        outs: self.outs,
-                    };
-                    let res = resolve(&inp, rng);
+                    ev.result = PitchResult::Foul;
                     ev.bat_speed = Some(info.bat_speed);
-                    ev.batted = Some(&info);
-                    ev.path = Some(&self.path);
-                    ev.play = Some(&res);
-                    if res.kind == PlayKind::Foul {
-                        if strikes < 2 {
-                            strikes += 1;
-                        }
-                        ev.result = PitchResult::Foul;
-                        obs.pitch(&ev);
-                    } else {
-                        ev.result = PitchResult::InPlay;
-                        obs.pitch(&ev);
-                        outcome = PaOutcome::Play(res.kind);
-                        ground_ball = self.path.landing.is_some_and(|l| l.t < 0.9 && l.pos.horiz() < 45.0);
-                        rbi = res.rbi;
-                        self.apply_play(bat, fld, batter_idx, pitcher_idx, &res);
-                        break;
+                    obs.pitch(&ev);
+                    return;
+                }
+                let mut flight = env.batted_flight;
+                flight.aero.cd0 = (flight.aero.cd0 + rng.gauss(0.0, params.drag_jitter)).max(0.15);
+                let mut sim = BattedSim::new(&flight, &env.ball, &env.park);
+                sim.dt = BATTED_DT;
+                sim.sample_dt = BATTED_SAMPLE_DT;
+                sim.run(state, &mut self.path);
+                let inp = PlayInput {
+                    env,
+                    path: &self.path,
+                    info: &info,
+                    fielders: &self.sides[fld].fielders,
+                    positions: &pa.positions,
+                    bases: self.bases,
+                    batter: pa.me,
+                    box_delay: pa.box_delay,
+                    outs: self.outs,
+                };
+                let res = resolve(&inp, rng);
+                ev.bat_speed = Some(info.bat_speed);
+                ev.batted = Some(&info);
+                ev.path = Some(&self.path);
+                ev.play = Some(&res);
+                if res.kind == PlayKind::Foul {
+                    if pa.strikes < 2 {
+                        pa.strikes += 1;
                     }
+                    ev.result = PitchResult::Foul;
+                    obs.pitch(&ev);
+                } else {
+                    ev.result = PitchResult::InPlay;
+                    obs.pitch(&ev);
+                    pa.outcome = Some(PaOutcome::Play(res.kind));
+                    pa.ground_ball = self.path.landing.is_some_and(|l| l.t < 0.9 && l.pos.horiz() < 45.0);
+                    pa.rbi = res.rbi;
+                    self.apply_play(bat, fld, batter_idx, pitcher_idx, &res);
                 }
-            }
-
-            // Strike three with two outs ends the inning before anything happens on the bases.
-            let inning_over = strikes >= 3 && self.outs >= 2;
-            if live_ball && !inning_over && self.bases.iter().any(|b| b.is_some()) {
-                if let Some(runner) = stealing {
-                    self.resolve_steal(bat, fld, runner, pprof, &catcher, &thrown, rng, obs);
-                } else if is_wild(f.plate_pos) && rng.chance((params.wild_pitch_prob * catcher.blocking).min(0.9)) {
-                    self.sides[fld].box_score.pitching[pitcher_idx].wp += 1;
-                    self.advance_all_one(bat, fld);
-                    obs.wild_pitch();
-                }
-            }
-            if strikes >= 3 {
-                outcome = PaOutcome::Strikeout;
-                break;
-            }
-            if balls >= 4 {
-                outcome = PaOutcome::Walk;
-                break;
+                return;
             }
         }
 
-        // ---- book-keeping for outcomes decided at the plate ----
+        // Strike three with two outs ends the inning before anything happens on the bases.
+        let inning_over = pa.strikes >= 3 && self.outs >= 2;
+        if live_ball && !inning_over && self.bases.iter().any(|b| b.is_some()) {
+            if let Some(runner) = stealing {
+                self.resolve_steal(bat, fld, runner, pprof, &catcher, &thrown, rng, obs);
+            } else if is_wild(f.plate_pos) && rng.chance((params.wild_pitch_prob * catcher.blocking).min(0.9)) {
+                self.sides[fld].box_score.pitching[pitcher_idx].wp += 1;
+                self.advance_all_one(bat, fld);
+                obs.wild_pitch();
+            }
+        }
+        if pa.strikes >= 3 {
+            pa.outcome = Some(PaOutcome::Strikeout);
+        } else if pa.balls >= 4 {
+            pa.outcome = Some(PaOutcome::Walk);
+        }
+    }
+
+    /// Book-keeping at the end of a plate appearance.
+    fn end_pa<O: Observer>(&mut self, bat: usize, fld: usize, obs: &mut O) {
+        let pa = self.pa.take().expect("a plate appearance is in progress");
+        let outcome = pa.outcome.unwrap_or(PaOutcome::Interrupted);
+        let (batter_idx, pitcher_idx) = (pa.batter_idx, pa.pitcher_idx);
+        let mut rbi = pa.rbi;
         let bl = &mut self.sides[bat].box_score.batting[batter_idx];
         let pl = &mut self.sides[fld].box_score.pitching[pitcher_idx];
         match outcome {
@@ -628,7 +728,7 @@ impl<'a> Game<'a> {
                     bl.hbp += 1;
                     pl.hbp += 1;
                 }
-                rbi = self.force_walk(bat, fld, me);
+                rbi = self.force_walk(bat, fld, pa.me);
                 self.sides[bat].box_score.batting[batter_idx].rbi += rbi as u16;
             }
             PaOutcome::Play(_) | PaOutcome::Interrupted => {}
@@ -640,7 +740,7 @@ impl<'a> Game<'a> {
             d.cur_bf += 1;
             d.cur_inning_bf += 1;
         }
-        runs = runs.saturating_add((self.score[bat] - score_before) as u8);
+        let runs = (self.score[bat] - pa.score_before).min(255) as u8;
         let bases_after = self.bases_bits();
         obs.plate_appearance(&PaEvent {
             inning: self.inning,
@@ -650,12 +750,12 @@ impl<'a> Game<'a> {
             outcome,
             rbi,
             runs,
-            outs_made: self.outs - outs_before,
-            pitches,
-            bases_before,
+            outs_made: self.outs - pa.outs_before,
+            pitches: pa.pitches,
+            bases_before: pa.bases_before,
             bases_after,
-            outs_before,
-            ground_ball,
+            outs_before: pa.outs_before,
+            ground_ball: pa.ground_ball,
         });
     }
 
@@ -799,7 +899,8 @@ impl<'a> Game<'a> {
         rng: &mut Rng,
         obs: &mut O,
     ) {
-        let p = &self.env.params;
+        let env = Arc::clone(&self.env);
+        let p = &env.params;
         let skill = self.sides[bat].team.players[runner.player].batter.steal;
         // Slow pitches and pitches in the dirt give the runner more time.
         let v = thrown.flight.plate_vel.norm();
