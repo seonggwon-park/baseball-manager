@@ -41,6 +41,10 @@ pub struct BatSpec {
     pub cor_floor: f64,
     /// Bat performance factor e/e0 at the sweet spot (about 1 for wood).
     pub bpf: f64,
+    /// Empirical loss of normal COR for off-centre impacts:
+    /// `e *= 1 - cor_obliquity * sin^2(psi)`, where `psi` is the angle between the
+    /// line of centres and the approach direction.
+    pub cor_obliquity: f64,
     /// Tangential coefficient of restitution of the ball-bat contact (e_x).
     pub tangential_cor: f64,
     /// Coefficient of friction limiting the tangential impulse (gross slip).
@@ -58,10 +62,18 @@ impl BatSpec {
     /// * `cor_falloff = 30 /m^2`: in the same calculation the exit speed 11.5 cm
     ///   inside the sweet spot is about 25 % below the rigid-bat value, which
     ///   corresponds to `e_eff ~ 0.30` against `e0 = 0.50` there.
-    /// * `tangential_cor = 0.40`: Kensrud, Nathan & Smith, Am. J. Phys. 85, 503
-    ///   (2017) measured `e_x = 0.405 +/- 0.010` for baseballs struck by a swung
-    ///   bat (0.30 +/- 0.02 in the clamped-cylinder experiment of Nathan et al.,
-    ///   Procedia Engineering 34, 182 (2012)).
+    /// * `tangential_cor = 0.20`: measured values fall with impact speed, from
+    ///   `e_x = 0.405 +/- 0.010` for a bat swung at 63-88 mph into a ball at rest
+    ///   (Kensrud, Nathan & Smith, Am. J. Phys. 85, 503 (2017)) to 0.30 +/- 0.02
+    ///   for a ball fired at up to 120 mph onto a fixed wood cylinder (Nathan et
+    ///   al., Procedia Engineering 34, 182 (2012)). Game collisions close at about
+    ///   157 mph; continuing that trend gives roughly 0.2, and with 0.2 the engine
+    ///   reproduces the measured home-run probability as a function of exit
+    ///   velocity (0.10 / 0.38 / 0.68 at 95-100 / 100-105 / 105-110 mph).
+    /// * `cor_obliquity = 0.45`: not from the literature. The rigid-body model keeps
+    ///   too much exit speed on topped and skied balls; this term is fitted so that
+    ///   the mean exit velocity by launch angle follows 2025 Statcast (85.6 mph on
+    ///   ground balls, 77.6 mph on pop-ups against 94 mph on line drives).
     /// * `friction = 0.15`: impulse ratio at which gross slip sets in in the
     ///   high-speed experiment of Nathan et al. (2012); consistent with the lower
     ///   limit of 0.15 reported by Kensrud et al. (2017).
@@ -80,7 +92,8 @@ impl BatSpec {
             cor_falloff: 30.0,
             cor_floor: 0.25,
             bpf: 1.0,
-            tangential_cor: 0.40,
+            cor_obliquity: 0.45,
+            tangential_cor: 0.20,
             friction: 0.15,
         }
     }
@@ -142,7 +155,8 @@ mod tests {
         let expect = 5.125 * (1.0 / 31.5 + 5.3 * 5.3 / 2578.0);
         assert!((r - expect).abs() < 1e-9, "r {r} expect {expect}");
         // Nathan (2003): "for a typical collision in the sweet spot zone e ~ 0.5 and r ~ 0.25,
-        // so that e_A ~ 0.2". Statcast's maximum exit velocity uses 0.21 for the pitch term.
+        // so that e_A ~ 0.2". Nathan et al. (2011) measure 0.214-0.227 on 31 oz wood bats;
+        // Statcast's squared-up model uses 0.23 as the upper limit.
         let q = bat.collision_efficiency(&ball, 5.5 * INCH, 150.0 * MPH);
         assert!(q > 0.17 && q < 0.24, "collision efficiency {q}");
     }

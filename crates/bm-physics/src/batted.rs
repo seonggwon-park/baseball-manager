@@ -206,7 +206,8 @@ impl<'a> BattedSim<'a> {
             let mut t = s.t;
             path.points.push(PathPoint { t, pos, vel: dir * speed, airborne: false });
             while speed > 0.05 && t < self.t_max {
-                let a = park.surface_at(pos).rolling_decel();
+                // Rolling resistance plus air drag (which dominates while the ball is still fast).
+                let a = park.surface_at(pos).rolling_decel() + self.model.k * self.model.aero.cd0 * speed * speed;
                 let step = self.sample_dt.min(speed / a);
                 pos += dir * (speed * step - 0.5 * a * step * step);
                 speed = (speed - a * step).max(0.0);
@@ -295,7 +296,7 @@ mod tests {
         while la <= 30.0 {
             sim.run(hit(106.0, la, 0.0, 1200.0 + 60.0 * la), &mut path);
             if let Some(wp) = path.wall {
-                if wp.airborne && path.landing.map_or(true, |l| l.t > wp.t) {
+                if wp.airborne && path.landing.is_none_or(|l| l.t > wp.t) {
                     wall_hits += 1;
                     assert_eq!(path.end, PathEnd::Stopped);
                     assert!(wp.pos.z > 0.0 && wp.pos.z <= 8.5 * FT + 1e-6);

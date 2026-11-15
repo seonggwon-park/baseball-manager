@@ -112,7 +112,7 @@ pub fn collide(ball: &BallSpec, bat: &BatSpec, c: &Contact) -> Result<ContactRes
     let k_c = ball_t + inv_bat_n + rbat * rbat / bat.inertia_long;
     let k_a = ball_t + 1.0 / bat.mass + rbat * rbat / bat.inertia_cm;
 
-    let e_y = bat.cor(ball, c.dist_from_tip, -u_n);
+    let e_y = bat.cor(ball, c.dist_from_tip, -u_n) * (1.0 - bat.cor_obliquity * sin_psi * sin_psi);
     let e_x = bat.tangential_cor;
     let j_n = -(1.0 + e_y) * u_n / k_n;
     let mut j_c = -(1.0 + e_x) * u_c / k_c;
@@ -239,7 +239,7 @@ mod tests {
     #[test]
     fn game_conditions_give_realistic_launch_and_spin() {
         let ball = BallSpec::mlb();
-        let bat = BatSpec::mlb_wood();
+        let bat = BatSpec { tangential_cor: 0.40, ..BatSpec::mlb_wood() };
         let d = bat.sweet_spot_from_tip;
         let descent = 6.0f64.to_radians();
         let attack = 6.0f64.to_radians();

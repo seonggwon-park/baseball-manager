@@ -38,9 +38,25 @@ impl BallSpec {
     /// MLB ball: 5.125 oz, 9.125 in circumference (the values Nathan's
     /// calculator uses; the rules allow 5-5.25 oz and 9-9.25 in).
     ///
-    /// COR: "drops roughly linearly from about 0.55 at 60 mph to about 0.45
-    /// at 160 mph" (Nathan, Am. J. Phys. 71, 134 (2003), Sec. II B). MLB's
-    /// own specification is 0.546 +/- 0.032 at 58 mph.
+    /// COR against a rigid wall: 0.55 at 60 mph (MLB's specification is
+    /// 0.546 +/- 0.032 at 58 mph), falling linearly with impact speed.
+    ///
+    /// The slope is an effective value, not a laboratory one. Laboratory data fall
+    /// faster: Nathan (Am. J. Phys. 71, 134 (2003), Sec. II B) quotes a roughly
+    /// linear drop "from about 0.55 at 60 mph to about 0.45 at 160 mph", and Nathan,
+    /// Smith, Faber & Russell (Am. J. Phys. 79, 575 (2011)) measure a ball-bat COR
+    /// of 0.489 +/- 0.009 for 110 mph balls on wood bats. With the laboratory slope
+    /// the best possible exit velocity for a given swing comes out 4-5 mph below what
+    /// Statcast's bat tracking implies: its squared-up model takes the maximum as
+    /// `1.23 * bat speed + 0.23 * pitch speed at the plate`, a collision efficiency
+    /// of 0.23 relative to the bat speed it measures about 6 in from the tip.
+    ///
+    /// The slope used here gives e = 0.49 at a closing speed of 157 mph (collision
+    /// efficiency 0.21 at the sweet spot), between the two. With the measured
+    /// distribution of bat speeds it puts the 95th percentile of exit velocity
+    /// within 1 mph of 2025 Statcast. Whether the gap to the laboratory value comes
+    /// from today's ball or from how bat speed is measured is not resolved here;
+    /// `docs/validation` tracks exit velocity against the squared-up maximum.
     pub fn mlb() -> Self {
         BallSpec {
             mass: 5.125 * OZ,
@@ -48,7 +64,7 @@ impl BallSpec {
             inertia_factor: 0.4,
             cor_ref: 0.55,
             cor_ref_speed: 60.0 * MPH,
-            cor_slope: -0.10 / (100.0 * MPH),
+            cor_slope: -0.06 / (97.0 * MPH),
         }
     }
 
@@ -104,6 +120,30 @@ impl AeroModel {
         AeroModel { cd0: 0.28, cd_spin: 0.0292, cl0: 0.583, cl1: 2.333, cl2: 1.12, spin_mode: SpinMode::Transverse, spin_decay_tau: f64::INFINITY }
     }
 
+    /// Pitched-ball parameters used by the engine: the lift model above with the
+    /// transverse spin, and the batted-ball `cd0 = 0.3008`.
+    ///
+    /// Nathan's pitched-ball sheet ships with `cd0 = 0.28`. Against 2025 Statcast
+    /// pitch tracking (plate speed / release speed for eight pitch types, 126k
+    /// pitches) that value under-predicts the speed loss by about 0.5 % of the
+    /// release speed, while 0.30 reproduces it to within 0.3 % for every pitch type
+    /// at the average game-time air density (see `examples/pitch_shapes.rs`).
+    pub const fn pitched_2025() -> Self {
+        AeroModel { cd0: 0.3008, cd_spin: 0.0292, cl0: 0.583, cl1: 2.333, cl2: 1.12, spin_mode: SpinMode::Transverse, spin_decay_tau: f64::INFINITY }
+    }
+
+    /// Batted-ball parameters used by the engine: Nathan's model with `cd0` refitted
+    /// to 2025 data.
+    ///
+    /// Flying 5,870 Statcast fly balls of the 2025 season (launch angle 15-45 deg,
+    /// exit velocity >= 85 mph) one by one with the 2016 constants and Nathan's
+    /// spin model over-predicts the measured distance by 11 ft on average at the
+    /// mean game-time air density (1.155 kg/m^3); `cd0 = 0.331` removes the bias
+    /// (`examples/flight_check.rs`). MLB reported higher drag on the 2025 ball.
+    pub const fn batted_2025() -> Self {
+        AeroModel { cd0: 0.331, cd_spin: 0.0292, cl0: 0.583, cl1: 2.333, cl2: 1.12, spin_mode: SpinMode::Total, spin_decay_tau: f64::INFINITY }
+    }
+
     /// Drag coefficient for a spin (rad/s) chosen according to `spin_mode`.
     #[inline]
     pub fn cd(&self, spin: f64) -> f64 {
@@ -135,7 +175,7 @@ mod tests {
     fn cor_speed_dependence() {
         let b = BallSpec::mlb();
         assert!((b.cor_at(60.0 * MPH) - 0.55).abs() < 1e-12);
-        assert!((b.cor_at(160.0 * MPH) - 0.45).abs() < 1e-12);
+        assert!((b.cor_at(157.0 * MPH) - 0.49).abs() < 1e-12);
     }
 
     #[test]

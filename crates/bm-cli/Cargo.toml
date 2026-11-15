@@ -3,7 +3,7 @@ name = "bm-cli"
 description = "Command line tools: batch simulation, calibration and validation reports"
 version.workspace = true
 edition.workspace = true
-license.workspace = true
+publish.workspace = true
 rust-version.workspace = true
 
 [[bin]]

@@ -121,6 +121,21 @@ impl PitchSpec {
         (at_plane, flight)
     }
 
+    /// Spin-induced movement measured the way Statcast reports `pfx_x` / `pfx_z`:
+    /// deviation over the last stretch of the flight, from `y = 50 ft` to the front of
+    /// the plate, relative to a spin-free pitch. Returns `(pfx_x, pfx_z)` in metres.
+    pub fn statcast_movement(&self, model: &FlightModel, a: ReleaseAngles, dt: f64) -> (f64, f64) {
+        let y50 = 50.0 * 0.3048;
+        let mut s = self.initial_state(a);
+        if s.pos.y > y50 {
+            model.advance_until(&mut s, dt, 3.0, |b| b.pos.y - y50, |_| {});
+        }
+        let start = s;
+        model.advance_until(&mut s, dt, 3.0, |b| b.pos.y - PLATE_FRONT_Y, |_| {});
+        let t = s.t - start.t;
+        (s.pos.x - (start.pos.x + start.vel.x * t), s.pos.z - (start.pos.z + start.vel.z * t - 0.5 * G * t * t))
+    }
+
     /// Release angles that send the pitch through `(target_x, target_z)` at the
     /// front of the plate. Fixed-point iteration on the nearly diagonal Jacobian
     /// (location changes by about one flight distance per radian).
