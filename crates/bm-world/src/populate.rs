@@ -290,15 +290,28 @@ pub fn populate_with(world: &World, levels: &LevelTable, aging: &AgingTable, car
     // Ceilings: the mean remaining growth at the player's age, times a personal factor
     // (log-normal, median 1) that makes some players prospects and others organisation
     // depth, with the skill gaps of the level closing by the peak. A separate stream, so
-    // that the rosters stay what they were.
+    // that the rosters stay what they were. The growth ahead is the one the career rules
+    // give a new player of the same kind (`careers.json`: the class potential of his
+    // origin, times the pitchers' factor): with a factor of 1 the first world's young
+    // players were promised up to four times the growth of those who come after them, and
+    // that generation took over the majors and rose a standard deviation above them.
     let closure = careers.balance;
+    let class_potential = |name: &str| careers.classes.get(name).map_or(1.0, |c| c.potential);
     let mut prng = Rng::new(seed ^ 0x9E0_7E17);
     let mut potentials = BTreeMap::new();
     for r in &rosters {
         let profile = levels.get(&r.level);
         for p in r.players() {
-            let age = date.days_since(maker.out[&p.id].born) as f64 / 365.2425;
-            let scale = (careers.prospect_spread * prng.gauss(0.0, 1.0)).exp() as f32;
+            let person = &maker.out[&p.id];
+            let age = date.days_since(person.born) as f64 / 365.2425;
+            let origin = match peak_level(&r.level) {
+                "kbo" => class_potential("kbo_high_school"),
+                "npb" => class_potential("npb_high_school"),
+                _ if ["US", "CA", "PR"].contains(&person.birthplace.as_str()) => class_potential("us_college"),
+                _ => class_potential("international"),
+            };
+            let factor = origin * if p.is_pitcher() { careers.pitcher_potential } else { 1.0 };
+            let scale = (careers.prospect_spread * prng.gauss(0.0, 1.0)).exp() as f32 * factor;
             let mut pot = Potential::draw(p, age, scale, aging, &mut prng);
             // A player grows into the balance of his league's first team; foreign players
             // keep theirs.
