@@ -183,6 +183,12 @@ struct Env {
 /// data: its ballpark and elevation, the league's rules, average game-time weather and no
 /// wind. Returns the league index of every club alongside.
 pub fn park_envs(ids: &[&str], rules: &Rules, tuning: &Tuning) -> (Vec<MatchEnv>, Vec<usize>) {
+    park_envs_with(ids, rules, tuning, 1.0)
+}
+
+/// [`park_envs`] with the batted ball's drag multiplied by `drag` (the ball of the lower
+/// minors).
+pub fn park_envs_with(ids: &[&str], rules: &Rules, tuning: &Tuning, drag: f64) -> (Vec<MatchEnv>, Vec<usize>) {
     let world = World::bundled();
     let (mut envs, mut league) = (Vec::new(), Vec::new());
     for (li, id) in ids.iter().enumerate() {
@@ -190,6 +196,7 @@ pub fn park_envs(ids: &[&str], rules: &Rules, tuning: &Tuning) -> (Vec<MatchEnv>
             let mut env =
                 MatchEnv::new(&Atmosphere::new(24.0, 760.0, 55.0, c.park.elevation()), Wind::CALM, c.park.field(), rules.clone(), tuning.params.clone());
             env.ball = tuning.ball;
+            env.batted_flight.aero.cd0 *= drag;
             envs.push(env);
             league.push(li);
         }
@@ -209,9 +216,9 @@ fn foreign_slots(level: &str) -> (usize, usize, &'static [usize]) {
     }
 }
 
-fn build(level: &str, talent: &Talent, foreign: &Talent, tuning: &Tuning, seed: u64) -> Env {
+fn build(level: &str, talent: &Talent, foreign: &Talent, tuning: &Tuning, seed: u64, drag: f64) -> Env {
     let (ids, rules) = leagues(level).unwrap_or_else(|| panic!("unknown level '{level}'"));
-    let (envs, league) = park_envs(&ids, &rules, tuning);
+    let (envs, league) = park_envs_with(&ids, &rules, tuning, drag);
     let mut rng = Rng::new(seed ^ 0x1E7E1);
     let (fs, fr, fh) = foreign_slots(level);
     let clubs = (0..envs.len())
@@ -320,7 +327,7 @@ pub struct VsMlb {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn run(level: &str, talent: Talent, foreign: Talent, games: usize, seed: u64, threads: usize, tuning: &Tuning, vs_mlb: Option<VsMlb>) {
+pub fn run(level: &str, talent: Talent, foreign: Talent, games: usize, seed: u64, threads: usize, tuning: &Tuning, vs_mlb: Option<VsMlb>, drag: f64) {
     let mut rng = Rng::new(seed ^ 0xA11);
     let mlb: Vec<Club> = (0..30).map(|i| Squad::random(&mut rng, 900_000 + 1000 * i, &Talent::MAJOR).to_engine_with(&tuning.baseline)).collect();
     let against_mlb = |clubs: &[Club], v: &VsMlb| {
@@ -349,9 +356,12 @@ pub fn run(level: &str, talent: Talent, foreign: Talent, games: usize, seed: u64
         return;
     }
     let target = targets(level).unwrap_or_else(|| panic!("unknown level '{level}': use aaa, aa, high_a, single_a, kbo, kbo2, npb, npb2, mlb or pool"));
-    let env = build(level, &talent, &foreign, tuning, seed);
+    let env = build(level, &talent, &foreign, tuning, seed, drag);
     let (line, speeds) = own_league(&env, games, seed, threads, tuning.style);
     let s = line.rates();
+    if drag != 1.0 {
+        println!("  ball drag x{drag:.3} in the level's own games");
+    }
     println!(
         "level {level}: {} clubs, talent hitting {:+.2} pitching {:+.2} fielding {:+.2} physical {:+.2} power {:+.2} command {:+.2}; {games} games",
         env.clubs.len(),

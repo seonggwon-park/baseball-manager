@@ -10,7 +10,7 @@
 //! bm players [--clubs K] [--games G]                              season lines of individual players as CSV (G games per club)
 //! bm level --level L [--talent h,p,f,x[,pw,cm]] [--vs-mlb]         one level (aaa, aa, high_a, single_a, kbo, kbo2, npb, npb2,
 //!          [--foreign h,p,f,x] [--cross-games N]                   mlb) in its own parks against its official rates; talent of
-//!          [--vs-mlb-pitchers]                                     the foreign players of KBO and NPB clubs; wRC+ of the level's
+//!          [--vs-mlb-pitchers] [--ball-drag F]                     the foreign players of KBO and NPB clubs; wRC+ of the level's
 //!                                                                  hitters (and pitchers) against major-leaguers; `pool` = only that
 //! bm season [--seed S] [--until YYYY-MM-DD] [--seasons N]         generate the world and play a season of every league
 //!                                                                 (N seasons with offseasons between them)
@@ -63,6 +63,8 @@ struct Args {
     vs_mlb_pitchers: bool,
     /// `bm attributes`: fielding value position by position instead of the attribute table.
     by_position: bool,
+    /// `bm level`: factor on the batted ball's drag in the level's own games.
+    ball_drag: f64,
     /// `bm season`: play up to this date instead of the whole season.
     until: Option<bm_world::Date>,
     /// `bm careers`: offseasons to run, how often to print, other level and career files.
@@ -96,6 +98,7 @@ fn parse_args() -> Args {
         cross_games: None,
         vs_mlb_pitchers: false,
         by_position: false,
+        ball_drag: 1.0,
         until: None,
         years: 20,
         seasons: 1,
@@ -128,6 +131,7 @@ fn parse_args() -> Args {
         match k.as_str() {
             "--games" => a.games = v.parse().expect("--games N"),
             "--years" => a.years = v.parse().expect("--years N"),
+            "--ball-drag" => a.ball_drag = v.parse().expect("--ball-drag F"),
             "--seasons" => a.seasons = v.parse().expect("--seasons N"),
             "--every" => a.every = v.parse().expect("--every K"),
             "--from" => a.from = Some(v.parse().expect("--from N")),
@@ -417,7 +421,7 @@ fn main() {
         }
         "level" => {
             let vs = args.vs_mlb.then(|| level::VsMlb { games: args.cross_games.unwrap_or(args.games.max(400)), pitchers: args.vs_mlb_pitchers });
-            level::run(&args.level, args.talent, args.foreign, args.games, args.seed, args.threads, &args.tuning, vs)
+            level::run(&args.level, args.talent, args.foreign, args.games, args.seed, args.threads, &args.tuning, vs, args.ball_drag)
         }
         "season" => season::run(&args.tuning, args.seed, args.threads, args.until, args.seasons),
         "careers" => {

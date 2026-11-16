@@ -260,6 +260,9 @@ pub struct Play {
     pub baseline: Baseline,
     pub style: ManagerStyle,
     pub threads: usize,
+    /// Factor on the batted ball's drag by level key (`LevelProfile::ball_drag`); levels
+    /// not named play with the major-league ball.
+    pub ball_drag: BTreeMap<String, f64>,
 }
 
 impl Default for Play {
@@ -269,7 +272,16 @@ impl Default for Play {
             baseline: Baseline::default(),
             style: ManagerStyle::mlb(),
             threads: std::thread::available_parallelism().map_or(4, |n| n.get()),
+            ball_drag: BTreeMap::new(),
         }
+    }
+}
+
+impl Play {
+    /// The ball of every level of `levels` that does not use the major-league one.
+    pub fn with_balls(mut self, levels: &crate::populate::LevelTable) -> Play {
+        self.ball_drag = levels.levels.iter().filter(|(_, p)| p.ball_drag != 1.0).map(|(k, p)| (k.clone(), p.ball_drag)).collect();
+        self
     }
 }
 
@@ -333,9 +345,12 @@ impl Season {
         for c in world.clubs() {
             let level = world.level_of(c);
             let atmosphere = Atmosphere::new(24.0, 760.0, 55.0, c.park.elevation());
-            envs.insert(c.id.as_str(), MatchEnv::new(&atmosphere, Wind::CALM, c.park.field(), rules_for(level, &c.country), play.params.clone()));
+            let mut env = MatchEnv::new(&atmosphere, Wind::CALM, c.park.field(), rules_for(level, &c.country), play.params.clone());
+            if let Some(f) = play.ball_drag.get(level_key(world, c)) {
+                env.batted_flight.aero.cd0 *= f;
+            }
+            envs.insert(c.id.as_str(), env);
         }
-        let _ = level_key; // the level of each club is in the population's rosters
         let jobs: Vec<(usize, usize, usize)> = (self.played..end)
             .map(|i| {
                 let f = &self.fixtures[i];

@@ -96,7 +96,7 @@ pub fn run(tuning: &Tuning, seed: u64, threads: usize, until: Option<Date>, seas
     let t0 = Instant::now();
     let mut pop = populate(&world, &levels, Date::new(2027, 2, 1), seed);
     let t_pop = t0.elapsed().as_secs_f64();
-    let play = Play { params: tuning.params.clone(), baseline: tuning.baseline.clone(), style: tuning.style, threads };
+    let play = Play { params: tuning.params.clone(), baseline: tuning.baseline.clone(), style: tuning.style, threads, ..Play::default() }.with_balls(&levels);
     let seasons = seasons.max(1);
     for k in 0..seasons {
         let year = 2027 + k as i32;

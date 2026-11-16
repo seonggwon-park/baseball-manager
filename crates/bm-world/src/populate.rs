@@ -57,6 +57,14 @@ pub struct LevelProfile {
     pub roster: usize,
     #[serde(default)]
     pub foreign: Option<ForeignSlots>,
+    /// Factor on the drag of a batted ball in the level's own games: Triple-A and the
+    /// majors use the major-league ball, the lower minors a ball of their own.
+    #[serde(default = "one")]
+    pub ball_drag: f64,
+}
+
+fn one() -> f64 {
+    1.0
 }
 
 impl LevelProfile {
