@@ -143,7 +143,7 @@ impl AeroModel {
     /// mean game-time air density (1.155 kg/m^3); `cd0 = 0.331` removes the bias
     /// (`examples/flight_check.rs`). MLB reported higher drag on the 2025 ball.
     pub const fn batted_2025() -> Self {
-        AeroModel { cd0: 0.331, cd_spin: 0.0292, cl0: 0.583, cl1: 2.333, cl2: 1.12, spin_mode: SpinMode::Total, spin_decay_tau: f64::INFINITY }
+        AeroModel { cd0: 0.331, cd_spin: 0.0292, cl0: 0.583, cl1: 2.333, cl2: 1.12, spin_mode: SpinMode::Transverse, spin_decay_tau: f64::INFINITY }
     }
 
     /// Drag coefficient for a spin (rad/s) chosen according to `spin_mode`.

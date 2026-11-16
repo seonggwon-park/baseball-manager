@@ -42,11 +42,14 @@ pub struct BattedPath {
     pub apex: f64,
     /// Number of ground contacts before the path ended.
     pub bounces: u32,
+    /// For a ball that reached the wall or the stands on the fly: where it would first have
+    /// come down at field level had nothing stopped it (Statcast's projected distance).
+    pub carry: Option<Vec3>,
 }
 
 impl Default for BattedPath {
     fn default() -> Self {
-        BattedPath { points: Vec::with_capacity(128), landing: None, wall: None, end: PathEnd::Stopped, apex: 0.0, bounces: 0 }
+        BattedPath { points: Vec::with_capacity(128), landing: None, wall: None, end: PathEnd::Stopped, apex: 0.0, bounces: 0, carry: None }
     }
 }
 
@@ -58,6 +61,13 @@ impl BattedPath {
         self.end = PathEnd::Stopped;
         self.apex = 0.0;
         self.bounces = 0;
+        self.carry = None;
+    }
+
+    /// Where the flight first came down at field level, or would have without the wall or
+    /// the stands: the point behind Statcast's projected distance.
+    pub fn carry_point(&self) -> Vec3 {
+        self.carry.or(self.landing.map(|l| l.pos)).unwrap_or_else(|| self.last().pos)
     }
 
     pub fn last(&self) -> PathPoint {
@@ -153,6 +163,11 @@ impl<'a> BattedSim<'a> {
             let at_wall = s.pos.horiz() >= b_dist - 1e-3 && s.pos.z > 1e-3;
             if at_wall {
                 let fair = ang.abs() <= FRAC_PI_4;
+                if path.landing.is_none() && path.carry.is_none() {
+                    let mut c = s;
+                    self.model.advance_until(&mut c, self.dt, self.t_max, |b| b.pos.z, |_| {});
+                    path.carry = Some(Vec3::new(c.pos.x, c.pos.y, 0.0));
+                }
                 if s.pos.z > b_height {
                     path.points.push(PathPoint { t: s.t, pos: s.pos, vel: s.vel, airborne: true });
                     path.end = if fair { PathEnd::OverFence } else { PathEnd::OutOfPlay };

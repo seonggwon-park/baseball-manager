@@ -3,7 +3,7 @@
 
 use bm_engine::{Approach, BattedInfo, GameEvent, Hand, Miss, Observer, PaEvent, PaOutcome, PitchEvent, PitchKind, PitchResult, PlayKind};
 use bm_physics::units::{FT, INCH, MPH, RPM};
-use bm_physics::{spin_from_components, velocity_from_angles, BallState, FlightModel, PathEnd};
+use bm_physics::FlightModel;
 
 pub const DIST_EDGES: [f64; 17] = [-12.0, -8.0, -6.0, -4.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 6.0, 8.0, 10.0, 14.0, 20.0, 40.0];
 pub const CALL_EDGES: [f64; 16] = [-12.0, -6.0, -4.0, -3.0, -2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0];
@@ -348,6 +348,8 @@ pub struct KindStat {
 pub struct Tally {
     /// Flight model used to project the landing point of balls that left the park.
     pub flight: Option<FlightModel>,
+    /// The park of the current game, for distances beyond its fence.
+    pub park: Option<bm_physics::Park>,
     pub games: f64,
     pub team_games: f64,
     pub innings: f64,
@@ -406,9 +408,23 @@ pub struct Tally {
     pub hr_ev_n: [f64; 7],
     pub hr_ev_hr: [f64; 7],
     pub hr_ev_dist: [Mean; 7],
+    /// Launch angle 15 deg and up: [line, alley, centre][20-ft bin from 300 ft] = (balls, home runs)
+    /// by projected distance and the bearing of the projected landing point.
+    pub hr_dist: [[(f64, f64); 8]; 3],
+    /// The same balls by margin beyond the park's fence at the landing bearing:
+    /// [sector][10-ft bin from -40 ft] = (balls, home runs). Filled by the caller.
+    pub hr_margin: [[(f64, f64); 9]; 3],
+    /// Home-run rate by launch angle (10-15, 15-20, 20-25, 25-30, 30-35, 35-40, 40-50 deg) and
+    /// exit velocity (90-95, 95-100, 100-105, 105-110, 110-120 mph): (balls, home runs).
+    pub hr_cell: [[(f64, f64); 5]; 7],
+    /// Home runs that did not leave the park on the fly: (inside the park, all).
+    pub hr_inside: (f64, f64),
     pub spray_pull: [Mean; 2],
     pub pull_n: [[f64; 3]; 2],
     pub spin_fit: [f64; 5],
+    /// Sums for the regression of backspin on launch angle and pull-side direction (LA 0-40 deg):
+    /// n, la, pull, y, la^2, pull^2, la*pull, la*y, pull*y.
+    pub spin_fit3: [f64; 9],
     /// Regression sums of "hook" sidespin (toward the pull-side line) on the launch
     /// direction measured toward the pull side.
     pub side_fit: [f64; 5],
@@ -460,6 +476,7 @@ impl Default for Tally {
     fn default() -> Self {
         Tally {
             flight: None,
+            park: None,
             games: 0.0,
             team_games: 0.0,
             innings: 0.0,
@@ -515,9 +532,14 @@ impl Default for Tally {
             hr_ev_n: [0.0; 7],
             hr_ev_hr: [0.0; 7],
             hr_ev_dist: [Mean::default(); 7],
+            hr_dist: [[(0.0, 0.0); 8]; 3],
+            hr_margin: [[(0.0, 0.0); 9]; 3],
+            hr_inside: (0.0, 0.0),
+            hr_cell: [[(0.0, 0.0); 5]; 7],
             spray_pull: [Mean::default(); 2],
             pull_n: [[0.0; 3]; 2],
             spin_fit: [0.0; 5],
+            spin_fit3: [0.0; 9],
             side_fit: [0.0; 5],
             base_state: [0.0; 8],
             third_lt2: 0.0,
@@ -664,6 +686,7 @@ impl Tally {
         add_arr(&mut self.hr_ev_hr, &o.hr_ev_hr);
         add_grid(&mut self.pull_n, &o.pull_n);
         add_arr(&mut self.spin_fit, &o.spin_fit);
+        add_arr(&mut self.spin_fit3, &o.spin_fit3);
         add_arr(&mut self.side_fit, &o.side_fit);
         add_arr(&mut self.base_state, &o.base_state);
         self.third_lt2 += o.third_lt2;
@@ -694,6 +717,20 @@ impl Tally {
         }
         for (a, b) in self.eff_bat.iter_mut().zip(&o.eff_bat) {
             a.merge(b);
+        }
+        for (a, b) in self.hr_cell.iter_mut().flatten().zip(o.hr_cell.iter().flatten()) {
+            a.0 += b.0;
+            a.1 += b.1;
+        }
+        self.hr_inside.0 += o.hr_inside.0;
+        self.hr_inside.1 += o.hr_inside.1;
+        for (a, b) in self.hr_margin.iter_mut().flatten().zip(o.hr_margin.iter().flatten()) {
+            a.0 += b.0;
+            a.1 += b.1;
+        }
+        for (a, b) in self.hr_dist.iter_mut().flatten().zip(o.hr_dist.iter().flatten()) {
+            a.0 += b.0;
+            a.1 += b.1;
         }
         for (a, b) in self.hr_ev_dist.iter_mut().zip(&o.hr_ev_dist) {
             a.merge(b);
@@ -756,7 +793,7 @@ impl Tally {
         offset + width * hist.len() as f64
     }
 
-    fn batted(&mut self, e: &PitchEvent, info: &BattedInfo, kind: PlayKind, landing_dist_ft: f64, field_bearing_deg: f64) {
+    fn batted(&mut self, e: &PitchEvent, info: &BattedInfo, kind: PlayKind, landing_dist_ft: f64, landing_bearing_deg: f64, field_bearing_deg: f64) {
         let ev = info.exit_speed / MPH;
         let la = info.launch_angle.to_degrees();
         self.bip += 1.0;
@@ -817,6 +854,29 @@ impl Tally {
                 b.hr += 1.0;
             }
         }
+        if la >= 15.0 && (300.0..460.0).contains(&landing_dist_ft) && landing_bearing_deg.abs() <= 45.0 {
+            let deg = landing_bearing_deg.abs();
+            let sector = if deg >= 33.75 {
+                0
+            } else if deg >= 11.25 {
+                1
+            } else {
+                2
+            };
+            let c = &mut self.hr_dist[sector][((landing_dist_ft - 300.0) / 20.0) as usize];
+            c.0 += 1.0;
+            if hr {
+                c.1 += 1.0;
+            }
+        }
+        if !info.bunt && (10.0..50.0).contains(&la) && (90.0..120.0).contains(&ev) {
+            let r = if la < 40.0 { ((la - 10.0) / 5.0) as usize } else { 6 };
+            let c = if ev < 110.0 { ((ev - 90.0) / 5.0) as usize } else { 4 };
+            self.hr_cell[r][c].0 += 1.0;
+            if hr {
+                self.hr_cell[r][c].1 += 1.0;
+            }
+        }
         if (20.0..35.0).contains(&la) && (80.0..115.0).contains(&ev) {
             let i = ((ev - 80.0) / 5.0) as usize;
             self.hr_ev_n[i] += 1.0;
@@ -842,6 +902,17 @@ impl Tally {
             self.spin_fit[2] += y;
             self.spin_fit[3] += la * la;
             self.spin_fit[4] += la * y;
+            let pull = info.spray.to_degrees() * e.batter_hand.pull_sign();
+            let f = &mut self.spin_fit3;
+            f[0] += 1.0;
+            f[1] += la;
+            f[2] += pull;
+            f[3] += y;
+            f[4] += la * la;
+            f[5] += pull * pull;
+            f[6] += la * pull;
+            f[7] += la * y;
+            f[8] += pull * y;
         }
         if (10.0..40.0).contains(&la) {
             let pull = e.batter_hand.pull_sign();
@@ -1135,23 +1206,36 @@ impl Observer for Tally {
         }
         if e.result == PitchResult::InPlay {
             if let (Some(info), Some(play), Some(path)) = (e.batted, e.play, e.path) {
-                let mut dist = path.landing.map_or_else(|| path.last().pos.horiz(), |l| l.pos.horiz()) / FT;
-                if path.end == PathEnd::OverFence && path.landing.is_none() {
-                    // Statcast reports the projected distance at field level, so do the same for home runs.
-                    if let Some(model) = &self.flight {
-                        let start = path.points[0].pos;
-                        let (th, ph) = (info.launch_angle, info.spray);
-                        let mut s = BallState::new(
-                            start,
-                            velocity_from_angles(info.exit_speed, th, ph),
-                            spin_from_components(th, ph, info.backspin, info.sidespin, 0.0),
-                        );
-                        model.advance_until(&mut s, 0.01, 20.0, |b| b.pos.z, |_| {});
-                        dist = s.pos.horiz() / FT;
+                // Statcast reports the projected distance at field level: where the ball would
+                // have come down had no wall or stand stopped it.
+                let end = path.carry_point();
+                let bearing = play.field_pos.x.atan2(play.field_pos.y).to_degrees();
+                if play.kind == PlayKind::HomeRun {
+                    self.hr_inside.1 += 1.0;
+                    if !path.is_home_run() {
+                        self.hr_inside.0 += 1.0;
                     }
                 }
-                let bearing = play.field_pos.x.atan2(play.field_pos.y).to_degrees();
-                self.batted(e, info, play.kind, dist, bearing);
+                if let Some(park) = &self.park {
+                    let b = end.x.atan2(end.y);
+                    if info.launch_angle.to_degrees() >= 15.0 && end.horiz() / FT >= 250.0 && b.abs() <= std::f64::consts::FRAC_PI_4 {
+                        let m = (end.horiz() - park.fence_at(b).0) / FT;
+                        let deg = b.to_degrees().abs();
+                        let sector = if deg >= 33.75 {
+                            0
+                        } else if deg >= 11.25 {
+                            1
+                        } else {
+                            2
+                        };
+                        let c = &mut self.hr_margin[sector][((m / 10.0).floor() as i64 + 4).clamp(0, 8) as usize];
+                        c.0 += 1.0;
+                        if play.kind == PlayKind::HomeRun {
+                            c.1 += 1.0;
+                        }
+                    }
+                }
+                self.batted(e, info, play.kind, end.horiz() / FT, end.x.atan2(end.y).to_degrees(), bearing);
                 if play.runner_thrown_out {
                     self.runner_outs += 1.0;
                 }

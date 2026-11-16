@@ -52,18 +52,23 @@ pub struct Level {
 impl Level {
     pub fn mlb() -> Self {
         let avg = BatterProfile::league_average(Hand::Right);
+        // Bat speed, the batters' and the pitchers' precision and the batters' eye are
+        // fitted so that this population, in the average park, reproduces the 2025 MLB
+        // runs, AVG/OBP/SLG, strikeout, walk and home-run rates (`bm validate
+        // --population engine --parks neutral`); the attribute population is fitted
+        // separately (`bm_world::Baseline`).
         Level {
             velocity: 0.0,
-            bat_speed: 0.0,
-            precision: 1.0,
-            command: 1.0,
+            bat_speed: -0.64 * MPH,
+            precision: 1.15,
+            command: 1.08,
             timing_sd: avg.timing_sd,
             barrel_sd: avg.barrel_sd,
             barrel_aim: avg.barrel_aim,
             attack_mean: avg.attack_angle,
             attack_spread: 3.0f64.to_radians(),
             attack_sd: avg.attack_sd,
-            eye: avg.eye,
+            eye: 0.641,
             perception_sd: avg.perception_sd,
             reach_sd: avg.reach_sd,
             bat_speed_sd: avg.bat_speed_sd,

@@ -126,6 +126,8 @@ pub struct Baseline {
     pub command: f64,
     /// Fastball velocity of a starter relative to the league-average pitch shapes, m/s.
     pub velocity: f64,
+    /// The bat of an average-strength hitter.
+    pub bat: BatSpec,
 }
 
 impl Default for Baseline {
@@ -144,6 +146,7 @@ impl Default for Baseline {
             steal: 0.375,
             command: mean::COMMAND_IN * INCH,
             velocity: mean::STARTER_VELOCITY_MPH * MPH,
+            bat: BatSpec::mlb_wood(),
         }
     }
 }
@@ -196,7 +199,7 @@ pub fn batter_with(p: &Player, base: &Baseline) -> BatterProfile {
         pressure: -PRESSURE * z(Attr::Composure),
         // A stronger hitter swings a heavier bat at the same speed: more of the bat's
         // momentum goes into the ball.
-        bat: BatSpec::mlb_wood().weighted((1.0 + BAT_WEIGHT * z(Attr::Strength)).clamp(0.85, 1.15)),
+        bat: base.bat.weighted((1.0 + BAT_WEIGHT * z(Attr::Strength)).clamp(0.85, 1.15)),
     }
 }
 

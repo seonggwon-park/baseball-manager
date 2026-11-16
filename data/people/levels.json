@@ -1,0 +1,105 @@
+{
+ "_comment": "Levels of play for generating the world's players. talent: offsets in standard deviations of the major-league attribute distribution, in the order hitting, pitching, fielding, physical, power (on top of hitting), command (on top of pitching); PROVISIONAL until fitted with `bm level` against each level's 2025-2026 official rates, tracking gaps and published translations (docs/data-files.md). batters/pitchers: ages on 1 February 2027; the means are Baseball-Reference league averages for 2025-2026 (docs/research/world/levels.md section 4), the spreads and limits, the KBO Futures and the two development squads (rookie complex, Dominican academy) are assumptions. roster: players per club (2026 rules: Triple-A and Double-A 28, High-A and Single-A 30, KBO 68 registered of whom 28 on the first team, NPB 70 registered of whom 29 on the first team plus about 19 development players). foreign: the foreign players a KBO or NPB club fields, at the talent whose translated major-league production matches the players those leagues sign (Davenport 2016: EqA .247 against a major-league .260). Edit freely.",
+ "levels": {
+  "mlb": {
+   "talent": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+   "batters": {"mean": 27.85, "sd": 3.6, "min": 20.0, "max": 42.0},
+   "pitchers": {"mean": 29.15, "sd": 3.8, "min": 20.0, "max": 43.0},
+   "birthplaces": "mlb",
+   "roster": 26
+  },
+  "aaa": {
+   "talent": [-0.8, -1.2, -0.5, -0.3, 0.0, -0.6],
+   "batters": {"mean": 26.44, "sd": 2.9, "min": 19.0, "max": 38.0},
+   "pitchers": {"mean": 27.25, "sd": 3.0, "min": 19.0, "max": 39.0},
+   "birthplaces": "aaa",
+   "roster": 28
+  },
+  "aa": {
+   "talent": [-1.3, -1.7, -0.8, -0.4, 0.0, -0.8],
+   "batters": {"mean": 23.74, "sd": 1.9, "min": 19.0, "max": 32.0},
+   "pitchers": {"mean": 24.64, "sd": 2.1, "min": 19.0, "max": 33.0},
+   "birthplaces": "aa",
+   "roster": 28
+  },
+  "high_a": {
+   "talent": [-1.8, -2.2, -1.0, -0.5, 0.0, -0.9],
+   "batters": {"mean": 22.18, "sd": 1.5, "min": 18.0, "max": 29.0},
+   "pitchers": {"mean": 23.09, "sd": 1.6, "min": 18.0, "max": 30.0},
+   "birthplaces": "high_a",
+   "roster": 30
+  },
+  "single_a": {
+   "talent": [-2.3, -2.7, -1.2, -0.6, 0.0, -1.0],
+   "batters": {"mean": 20.79, "sd": 1.3, "min": 17.0, "max": 27.0},
+   "pitchers": {"mean": 21.86, "sd": 1.5, "min": 17.0, "max": 28.0},
+   "birthplaces": "single_a",
+   "roster": 30
+  },
+  "complex": {
+   "talent": [-2.7, -3.1, -1.5, -0.8, 0.0, -1.2],
+   "batters": {"mean": 19.5, "sd": 1.2, "min": 17.0, "max": 25.0},
+   "pitchers": {"mean": 20.0, "sd": 1.3, "min": 17.0, "max": 26.0},
+   "birthplaces": "complex",
+   "roster": 35
+  },
+  "academy": {
+   "talent": [-3.2, -3.6, -1.8, -1.0, 0.0, -1.4],
+   "batters": {"mean": 17.6, "sd": 0.9, "min": 16.0, "max": 21.0},
+   "pitchers": {"mean": 18.0, "sd": 1.0, "min": 16.0, "max": 22.0},
+   "birthplaces": "academy",
+   "roster": 35
+  },
+  "kbo": {
+   "talent": [-1.1, -1.5, -0.7, -0.4, 0.0, -0.4],
+   "batters": {"mean": 28.7, "sd": 4.0, "min": 19.0, "max": 42.0},
+   "pitchers": {"mean": 27.3, "sd": 4.2, "min": 19.0, "max": 43.0},
+   "birthplaces": "kbo_domestic",
+   "roster": 28,
+   "foreign": {
+    "talent": [-0.4, -0.5, -0.3, -0.1, 0.0, -0.2],
+    "birthplaces": "kbo_foreign",
+    "asia_quota": "kbo_asia",
+    "starters": 2,
+    "relievers": 0,
+    "hitters": [8]
+   }
+  },
+  "kbo2": {
+   "talent": [-1.9, -2.3, -1.1, -0.6, 0.0, -0.7],
+   "batters": {"mean": 24.5, "sd": 3.5, "min": 18.0, "max": 38.0},
+   "pitchers": {"mean": 25.0, "sd": 3.5, "min": 18.0, "max": 39.0},
+   "birthplaces": "kbo_domestic",
+   "roster": 40
+  },
+  "npb": {
+   "talent": [-1.0, -1.2, -0.6, -0.4, 0.0, -0.2],
+   "batters": {"mean": 27.65, "sd": 4.0, "min": 19.0, "max": 42.0},
+   "pitchers": {"mean": 27.7, "sd": 4.0, "min": 19.0, "max": 43.0},
+   "birthplaces": "npb_domestic",
+   "roster": 29,
+   "foreign": {
+    "talent": [-0.4, -0.5, -0.3, -0.1, 0.0, -0.2],
+    "birthplaces": "npb_foreign",
+    "starters": 2,
+    "relievers": 0,
+    "hitters": [1, 8]
+   }
+  },
+  "npb2": {
+   "talent": [-1.8, -2.0, -1.0, -0.6, 0.0, -0.5],
+   "batters": {"mean": 25.05, "sd": 3.8, "min": 18.0, "max": 40.0},
+   "pitchers": {"mean": 26.2, "sd": 3.8, "min": 18.0, "max": 41.0},
+   "birthplaces": "npb_domestic",
+   "roster": 60,
+   "foreign": {
+    "talent": [-1.2, -1.4, -0.8, -0.3, 0.0, -0.6],
+    "birthplaces": "npb_foreign",
+    "starters": 0,
+    "relievers": 0,
+    "hitters": [],
+    "reserves": 2
+   }
+  }
+ }
+}

@@ -335,6 +335,16 @@ pub fn print(t: &Tally) {
         let slope = (n * t.spin_fit[4] - t.spin_fit[1] * t.spin_fit[2]) / (n * t.spin_fit[3] - t.spin_fit[1].powi(2));
         let icpt = (t.spin_fit[2] - slope * t.spin_fit[1]) / n;
         println!("  backspin vs launch angle (0-40 deg): sim {icpt:.0} + {slope:.0} * LA rpm   Statcast fit (Nathan) -763 + 120 * LA rpm");
+        // Multiple regression on launch angle and pull-side direction (Nathan: +21 rpm per
+        // degree toward the opposite field).
+        let f = &t.spin_fit3;
+        let (n, mx, mz, my) = (f[0], f[1] / f[0], f[2] / f[0], f[3] / f[0]);
+        let (sxx, szz, sxz) = (f[4] / n - mx * mx, f[5] / n - mz * mz, f[6] / n - mx * mz);
+        let (sxy, szy) = (f[7] / n - mx * my, f[8] / n - mz * my);
+        let det = sxx * szz - sxz * sxz;
+        let (b_la, b_pull) = ((sxy * szz - szy * sxz) / det, (szy * sxx - sxy * sxz) / det);
+        let a = my - b_la * mx - b_pull * mz;
+        println!("  backspin vs launch angle and pull-side direction (0-40 deg): sim {a:.0} + {b_la:.0} * LA {b_pull:+.0} * pull rpm   Statcast fit (Nathan) -763 + 120 * LA -21 * pull rpm");
     }
 
     if t.side_fit[0] > 10.0 {
@@ -809,19 +819,86 @@ pub fn print(t: &Tally) {
             tg[4]
         );
     }
-    println!("\n== Launch angle 20-35 deg by exit velocity: HR rate and landing distance; sim / MLB");
-    let ht: [[f64; 2]; 7] = [[0.000, 281.0], [0.002, 303.0], [0.021, 328.0], [0.102, 354.0], [0.382, 377.0], [0.680, 398.0], [0.859, 413.0]];
+    println!("\n== Launch angle 20-35 deg by exit velocity: HR rate and projected distance (mean, SD); sim / MLB");
+    // Statcast 2025: distances from the full season, SDs from the 22,095-ball sample.
+    let ht: [[f64; 3]; 7] = [
+        [0.000, 281.0, 21.7],
+        [0.002, 303.0, 22.1],
+        [0.021, 328.0, 23.0],
+        [0.102, 354.0, 23.1],
+        [0.382, 377.0, 25.3],
+        [0.680, 398.0, 26.4],
+        [0.859, 413.0, 30.6],
+    ];
     for (i, tg) in ht.iter().enumerate() {
         println!(
-            "  EV [{:3},{:3})  HR {:.3}/{:.3}  dist {:4.0}/{:4.0}   (n = {:.0})",
+            "  EV [{:3},{:3})  HR {:.3}/{:.3}  dist {:4.0}/{:4.0}  SD {:4.1}/{:4.1}   (n = {:.0})",
             80 + 5 * i,
             85 + 5 * i,
             t.hr_ev_hr[i] / t.hr_ev_n[i],
             tg[0],
             t.hr_ev_dist[i].mean(),
             tg[1],
+            t.hr_ev_dist[i].sd(),
+            tg[2],
             t.hr_ev_n[i]
         );
+    }
+    println!("\n== Home-run rate by launch angle and exit velocity; sim / MLB (Statcast 2025 sample, n in brackets)");
+    let hc: [[(f64, u32); 5]; 7] = [
+        [(0.000, 196), (0.000, 274), (0.000, 365), (0.000, 233), (0.000, 69)],
+        [(0.000, 225), (0.000, 304), (0.000, 355), (0.026, 228), (0.068, 59)],
+        [(0.000, 231), (0.014, 296), (0.132, 319), (0.425, 207), (0.755, 53)],
+        [(0.018, 221), (0.137, 307), (0.536, 304), (0.916, 155), (1.000, 37)],
+        [(0.045, 222), (0.163, 257), (0.524, 231), (0.835, 103), (0.923, 13)],
+        [(0.011, 177), (0.063, 206), (0.314, 153), (0.690, 42), (0.857, 7)],
+        [(0.004, 284), (0.014, 214), (0.103, 136), (0.435, 23), (0.667, 3)],
+    ];
+    println!("  LA \\ EV        [ 90, 95)          [ 95,100)          [100,105)          [105,110)          [110,120)");
+    for (r, (row, name)) in t.hr_cell.iter().zip(["10-15", "15-20", "20-25", "25-30", "30-35", "35-40", "40-50"]).enumerate() {
+        print!("  {name:<8}");
+        for (c, (sim, tg)) in row.iter().zip(&hc[r]).enumerate() {
+            let _ = c;
+            print!("   {:.3}/{:.3} ({:3})", sim.1 / sim.0.max(1.0), tg.0, tg.1);
+        }
+        println!();
+    }
+    println!("\n== Home-run share by projected distance (ft), launch angle 15 deg and up, by the bearing of the landing point; sim / MLB");
+    // Statcast 2025 sample (10,739 balls): the line sector is within 11.25 deg of a foul line,
+    // centre within 11.25 deg of straightaway centre field.
+    let hd: [[f64; 8]; 3] =
+        [[0.004, 0.034, 0.349, 0.907, 1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 0.012, 0.157, 0.635, 0.957, 0.969, 1.0], [0.0, 0.0, 0.0, 0.0, 0.043, 0.531, 0.914, 1.0]];
+    print!("  distance  ");
+    for i in 0..8 {
+        print!("   [{:3},{:3})", 300 + 20 * i, 320 + 20 * i);
+    }
+    println!();
+    for (s, name) in ["line", "alley", "centre"].iter().enumerate() {
+        print!("  {name:<8}  ");
+        for (c, tg) in t.hr_dist[s].iter().zip(&hd[s]) {
+            print!("  {:.2}/{:.2}", c.1 / c.0.max(1.0), tg);
+        }
+        println!();
+    }
+    println!("\n  inside-the-park home runs: {:.2} % of home runs", 100.0 * t.hr_inside.0 / t.hr_inside.1.max(1.0));
+    println!("\n== Home-run share by projected distance beyond the park's fence at the landing bearing (ft), launch angle 15 deg and up; sim / MLB");
+    // Statcast 2025 sample against the five published distances of each park, linear in bearing.
+    let hm: [[f64; 9]; 3] = [
+        [0.0, 0.0, 0.0, 0.02, 0.24, 0.67, 0.85, 0.95, 0.99],
+        [0.0, 0.0, 0.0, 0.10, 0.42, 0.75, 0.97, 0.99, 0.99],
+        [0.0, 0.0, 0.0, 0.02, 0.22, 0.68, 0.95, 1.0, 1.0],
+    ];
+    print!("  margin    ");
+    for i in 0..9 {
+        print!("  [{:3},{:3})", -40 + 10 * i, -30 + 10 * i);
+    }
+    println!();
+    for (s, name) in ["line", "alley", "centre"].iter().enumerate() {
+        print!("  {name:<8}  ");
+        for (c, tg) in t.hr_margin[s].iter().zip(&hm[s]) {
+            print!("  {:.2}/{:.2}", c.1 / c.0.max(1.0), tg);
+        }
+        println!();
     }
     println!("\n== Spray (pull-side angle, deg): sim / MLB");
     let st = [[3.2, 32.3, 42.1, 28.9, 29.0], [7.7, 31.5, 46.8, 27.8, 25.3]];

@@ -4,27 +4,7 @@
 use bm_engine::Rng;
 use serde::{Deserialize, Serialize};
 
-const KO_NAMES: &str = include_str!("../../../data/names/ko.json");
 const KR_LEAGUE: &str = include_str!("../../../data/leagues/kr.json");
-
-#[derive(Deserialize)]
-struct NamePart {
-    n: String,
-    en: String,
-    #[serde(default = "one")]
-    w: f64,
-}
-
-fn one() -> f64 {
-    1.0
-}
-
-#[derive(Deserialize)]
-struct KoreanNames {
-    surnames: Vec<NamePart>,
-    given_first: Vec<NamePart>,
-    given_second: Vec<NamePart>,
-}
 
 /// Text in the languages the interface knows about.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -54,31 +34,18 @@ struct LeagueFile {
 
 /// Source of player names.
 pub struct NameGenerator {
-    names: KoreanNames,
-    weights: Vec<f64>,
+    book: bm_world::names::KoreanBook,
 }
 
 impl NameGenerator {
     pub fn korean() -> Self {
-        let names: KoreanNames = serde_json::from_str(KO_NAMES).expect("data/names/ko.json is valid");
-        let weights = names.surnames.iter().map(|s| s.w).collect();
-        NameGenerator { names, weights }
+        NameGenerator { book: bm_world::names::KoreanBook::bundled() }
     }
 
     /// A full name in Korean and in Latin script.
     pub fn next(&self, rng: &mut Rng) -> Localized {
-        let s = &self.names.surnames[rng.pick_weighted(&self.weights)];
-        let a = &self.names.given_first[rng.below(self.names.given_first.len())];
-        let mut b = &self.names.given_second[rng.below(self.names.given_second.len())];
-        // No doubled syllables.
-        if b.n == a.n {
-            b = &self.names.given_second[(rng.below(self.names.given_second.len() - 1) + 1) % self.names.given_second.len()];
-        }
-        let mut given_en = format!("{}-{}", a.en, b.en);
-        if let Some(first) = given_en.get_mut(0..1) {
-            first.make_ascii_uppercase();
-        }
-        Localized { ko: format!("{}{}{}", s.n, a.n, b.n), en: format!("{} {}", given_en, s.en) }
+        let t = self.book.draw(rng);
+        Localized { ko: t.ko, en: t.en }
     }
 }
 

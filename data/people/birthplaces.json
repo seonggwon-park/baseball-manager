@@ -1,0 +1,356 @@
+{
+ "_comment": "Birthplace weights of generated players by group (relative counts; only the ratios matter), the name book used for each birthplace, and country names. Groups: mlb, aaa, aa, high_a, single_a, complex (rookie complex squads), academy (Dominican academy squads), kbo_*/npb_* domestic, foreign and Asia-quota players. Where a source lumps small countries together as 'other', the split over countries is an assumption, as is the use of the English name book for the Dutch Caribbean and European countries and of the Spanish one for Brazil. Edit freely.",
+ "groups": {
+  "mlb": {
+   "source": "MLB press releases, 2026 Opening Day rosters (corrected), by birthplace including the players MLB lists as miscellaneous; docs/research/world/nationality.md section 1",
+   "weights": {
+    "US": 699,
+    "DO": 93,
+    "VE": 60,
+    "CU": 20,
+    "CA": 19,
+    "JP": 15,
+    "PR": 14,
+    "MX": 7,
+    "CW": 4,
+    "PA": 4,
+    "CO": 3,
+    "KR": 3,
+    "AW": 1,
+    "BS": 1,
+    "HN": 1,
+    "NI": 1,
+    "TW": 1,
+    "PE": 1,
+    "GB": 1
+   }
+  },
+  "aaa": {
+   "source": "MLB Stats API active rosters of 2026-07-01, Triple-A (section 2a); 18 'other' split evenly over the small countries named there",
+   "weights": {
+    "US": 641,
+    "DO": 70,
+    "VE": 58,
+    "PR": 14,
+    "CU": 17,
+    "MX": 11,
+    "CA": 11,
+    "PA": 4,
+    "CO": 5,
+    "TW": 2.25,
+    "AU": 2.25,
+    "KR": 2.25,
+    "JP": 2.25,
+    "BS": 2.25,
+    "NI": 2.25,
+    "CW": 2.25,
+    "AW": 1.12,
+    "BR": 1.12
+   }
+  },
+  "aa": {
+   "source": "as above, Double-A; 10 'other'",
+   "weights": {
+    "US": 622,
+    "DO": 68,
+    "VE": 64,
+    "PR": 9,
+    "CU": 15,
+    "MX": 12,
+    "CA": 13,
+    "PA": 5,
+    "CO": 4,
+    "TW": 1.25,
+    "AU": 1.25,
+    "KR": 1.25,
+    "JP": 1.25,
+    "BS": 1.25,
+    "NI": 1.25,
+    "CW": 1.25,
+    "AW": 0.62,
+    "BR": 0.62
+   }
+  },
+  "high_a": {
+   "source": "as above, High-A; 14 'other'",
+   "weights": {
+    "US": 583,
+    "DO": 126,
+    "VE": 98,
+    "PR": 7,
+    "CU": 12,
+    "MX": 7,
+    "CA": 15,
+    "PA": 4,
+    "CO": 4,
+    "TW": 1.75,
+    "AU": 1.75,
+    "KR": 1.75,
+    "JP": 1.75,
+    "BS": 1.75,
+    "NI": 1.75,
+    "CW": 1.75,
+    "AW": 0.88,
+    "BR": 0.88
+   }
+  },
+  "single_a": {
+   "source": "as above, Single-A; 37 'other'",
+   "weights": {
+    "US": 430,
+    "DO": 183,
+    "VE": 156,
+    "PR": 10,
+    "CU": 19,
+    "MX": 26,
+    "CA": 11,
+    "PA": 4,
+    "CO": 2,
+    "TW": 4.62,
+    "AU": 4.62,
+    "KR": 4.62,
+    "JP": 4.62,
+    "BS": 4.62,
+    "NI": 4.62,
+    "CW": 4.62,
+    "AW": 2.31,
+    "BR": 2.31
+   }
+  },
+  "complex": {
+   "source": "as above, Arizona and Florida Complex Leagues together, before the July draft (US share rises from about 22 % to 37 % after it); 38 'other'",
+   "weights": {
+    "US": 212,
+    "DO": 336,
+    "VE": 276,
+    "PR": 8,
+    "CU": 23,
+    "MX": 30,
+    "CA": 14,
+    "PA": 17,
+    "CO": 18,
+    "TW": 4.75,
+    "AU": 4.75,
+    "KR": 4.75,
+    "JP": 4.75,
+    "BS": 4.75,
+    "NI": 4.75,
+    "CW": 4.75,
+    "AW": 2.38,
+    "BR": 2.38
+   }
+  },
+  "academy": {
+   "source": "as above, Dominican Summer League; 'other' from the DSL list in section 2a",
+   "weights": {
+    "US": 7,
+    "DO": 795,
+    "VE": 618,
+    "CU": 45,
+    "MX": 70,
+    "PA": 38,
+    "CO": 36,
+    "NI": 14.72,
+    "CW": 11.32,
+    "AW": 7.92,
+    "BR": 4.53,
+    "DE": 3.4,
+    "IT": 3.4,
+    "BS": 3.4,
+    "JP": 3.4,
+    "CR": 2.26,
+    "ES": 2.26,
+    "AU": 1.13,
+    "NL": 1.13,
+    "CN": 1.13
+   }
+  },
+  "kbo_domestic": {
+   "source": "domestic players",
+   "weights": {
+    "KR": 1
+   }
+  },
+  "kbo_foreign": {
+   "source": "every non-quota foreign player who appeared in a 2026 KBO game, Baseball-Reference birthplaces (section 3c iii)",
+   "weights": {
+    "US": 32,
+    "VE": 7,
+    "DO": 5,
+    "AU": 2,
+    "CU": 1,
+    "PA": 1,
+    "CA": 1,
+    "PR": 1,
+    "JP": 1
+   }
+  },
+  "kbo_asia": {
+   "source": "Asia-quota players who appeared in 2026 (section 3c iii)",
+   "weights": {
+    "JP": 11,
+    "AU": 2,
+    "TW": 1
+   }
+  },
+  "npb_domestic": {
+   "source": "domestic players",
+   "weights": {
+    "JP": 1
+   }
+  },
+  "npb_foreign": {
+   "source": "foreign-born players in 2026 first-team games, Baseball-Reference birthplaces (section 4b); farm and development players are not counted there",
+   "weights": {
+    "US": 27,
+    "DO": 27,
+    "VE": 9,
+    "TW": 5,
+    "CU": 4,
+    "PA": 2,
+    "MX": 2,
+    "PR": 1,
+    "CO": 1
+   }
+  }
+ },
+ "locales": {
+  "US": "en",
+  "CA": "en",
+  "AU": "en",
+  "GB": "en",
+  "BS": "en",
+  "CW": "en",
+  "AW": "en",
+  "NL": "en",
+  "DE": "en",
+  "IT": "en",
+  "DO": "es",
+  "VE": "es",
+  "CU": "es",
+  "PR": "es",
+  "MX": "es",
+  "PA": "es",
+  "CO": "es",
+  "NI": "es",
+  "HN": "es",
+  "PE": "es",
+  "CR": "es",
+  "ES": "es",
+  "BR": "es",
+  "JP": "ja",
+  "KR": "ko",
+  "TW": "zh",
+  "CN": "zh"
+ },
+ "countries": {
+  "US": {
+   "ko": "미국",
+   "en": "United States"
+  },
+  "CA": {
+   "ko": "캐나다",
+   "en": "Canada"
+  },
+  "AU": {
+   "ko": "오스트레일리아",
+   "en": "Australia"
+  },
+  "GB": {
+   "ko": "영국",
+   "en": "United Kingdom"
+  },
+  "BS": {
+   "ko": "바하마",
+   "en": "Bahamas"
+  },
+  "CW": {
+   "ko": "퀴라소",
+   "en": "Curaçao"
+  },
+  "AW": {
+   "ko": "아루바",
+   "en": "Aruba"
+  },
+  "NL": {
+   "ko": "네덜란드",
+   "en": "Netherlands"
+  },
+  "DE": {
+   "ko": "독일",
+   "en": "Germany"
+  },
+  "IT": {
+   "ko": "이탈리아",
+   "en": "Italy"
+  },
+  "DO": {
+   "ko": "도미니카 공화국",
+   "en": "Dominican Republic"
+  },
+  "VE": {
+   "ko": "베네수엘라",
+   "en": "Venezuela"
+  },
+  "CU": {
+   "ko": "쿠바",
+   "en": "Cuba"
+  },
+  "PR": {
+   "ko": "푸에르토리코",
+   "en": "Puerto Rico"
+  },
+  "MX": {
+   "ko": "멕시코",
+   "en": "Mexico"
+  },
+  "PA": {
+   "ko": "파나마",
+   "en": "Panama"
+  },
+  "CO": {
+   "ko": "콜롬비아",
+   "en": "Colombia"
+  },
+  "NI": {
+   "ko": "니카라과",
+   "en": "Nicaragua"
+  },
+  "HN": {
+   "ko": "온두라스",
+   "en": "Honduras"
+  },
+  "PE": {
+   "ko": "페루",
+   "en": "Peru"
+  },
+  "CR": {
+   "ko": "코스타리카",
+   "en": "Costa Rica"
+  },
+  "ES": {
+   "ko": "스페인",
+   "en": "Spain"
+  },
+  "BR": {
+   "ko": "브라질",
+   "en": "Brazil"
+  },
+  "JP": {
+   "ko": "일본",
+   "en": "Japan"
+  },
+  "KR": {
+   "ko": "대한민국",
+   "en": "South Korea"
+  },
+  "TW": {
+   "ko": "대만",
+   "en": "Taiwan"
+  },
+  "CN": {
+   "ko": "중국",
+   "en": "China"
+  }
+ }
+}

@@ -50,14 +50,17 @@ pub struct NameBook {
 const EN: &str = include_str!("../../../data/names/en.json");
 const ES: &str = include_str!("../../../data/names/es.json");
 const JA: &str = include_str!("../../../data/names/ja.json");
+const ZH: &str = include_str!("../../../data/names/zh.json");
+const KO: &str = include_str!("../../../data/names/ko.json");
 
 impl NameBook {
-    /// The name book bundled with the program for `locale` (`en`, `es`, `ja`).
+    /// The name book bundled with the program for `locale` (`en`, `es`, `ja`, `zh`).
     pub fn bundled(locale: &str) -> Option<NameBook> {
         let text = match locale {
             "en" => EN,
             "es" => ES,
             "ja" => JA,
+            "zh" => ZH,
             _ => return None,
         };
         Some(NameBook::from_json(text).unwrap_or_else(|e| panic!("data/names/{locale}.json: {e}")))
@@ -81,9 +84,104 @@ impl NameBook {
     }
 }
 
+/// A syllable or surname of a Korean name: Hangul and its romanisation.
+#[derive(Clone, Debug, Deserialize)]
+struct KoreanPart {
+    n: String,
+    en: String,
+    #[serde(default = "one")]
+    w: f64,
+}
+
+/// Korean names: a surname and two given-name syllables (`data/names/ko.json`). The
+/// Korean screen writes them together ("김민준"), the English screen given name first
+/// with a hyphen ("Min-jun Kim").
+#[derive(Clone, Debug, Deserialize)]
+pub struct KoreanBook {
+    surnames: Vec<KoreanPart>,
+    given_first: Vec<KoreanPart>,
+    given_second: Vec<KoreanPart>,
+    #[serde(skip)]
+    weights: Vec<f64>,
+}
+
+impl KoreanBook {
+    pub fn bundled() -> KoreanBook {
+        let mut b: KoreanBook = serde_json::from_str(KO).unwrap_or_else(|e| panic!("data/names/ko.json: {e}"));
+        b.weights = b.surnames.iter().map(|p| p.w).collect();
+        assert!(!b.surnames.is_empty() && !b.given_first.is_empty() && b.given_second.len() >= 2, "data/names/ko.json is incomplete");
+        b
+    }
+
+    pub fn draw(&self, rng: &mut Rng) -> Text {
+        let s = &self.surnames[rng.pick_weighted(&self.weights)];
+        let a = &self.given_first[rng.below(self.given_first.len())];
+        let mut b = &self.given_second[rng.below(self.given_second.len())];
+        // No doubled syllables.
+        if b.n == a.n {
+            b = &self.given_second[(rng.below(self.given_second.len() - 1) + 1) % self.given_second.len()];
+        }
+        let mut given = format!("{}-{}", a.en, b.en.to_lowercase());
+        if let Some(first) = given.get_mut(0..1) {
+            first.make_ascii_uppercase();
+        }
+        Text { ko: format!("{}{}{}", s.n, a.n, b.n), en: format!("{given} {}", s.en) }
+    }
+}
+
+/// Any of the bundled naming traditions.
+#[derive(Clone, Debug)]
+pub enum Names {
+    Book(NameBook),
+    Korean(KoreanBook),
+}
+
+impl Names {
+    /// `en`, `es`, `ja`, `zh` or `ko`.
+    pub fn bundled(locale: &str) -> Option<Names> {
+        if locale == "ko" {
+            return Some(Names::Korean(KoreanBook::bundled()));
+        }
+        NameBook::bundled(locale).map(Names::Book)
+    }
+
+    pub fn draw(&self, rng: &mut Rng) -> Text {
+        match self {
+            Names::Book(b) => b.draw(rng),
+            Names::Korean(k) => k.draw(rng),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn hangul(s: &str) -> bool {
+        s.chars().all(|c| ('가'..='힣').contains(&c) || c == ' ')
+    }
+
+    #[test]
+    fn taiwanese_and_korean_names_look_right() {
+        let zh = NameBook::bundled("zh").unwrap();
+        assert!(zh.surnames.len() >= 20 && zh.given.len() >= 20);
+        for p in zh.surnames.iter().chain(&zh.given) {
+            assert!(hangul(&p.ko) && !p.en.is_empty() && p.w > 0.0, "{p:?}");
+        }
+        let mut rng = Rng::new(3);
+        let ko = Names::bundled("ko").unwrap();
+        for _ in 0..500 {
+            let n = ko.draw(&mut rng);
+            let syllables: Vec<char> = n.ko.chars().collect();
+            assert!(syllables.len() == 3 && hangul(&n.ko), "{}", n.ko);
+            assert_ne!(syllables[1], syllables[2], "{}", n.ko);
+            let (given, surname) = n.en.split_once(' ').unwrap();
+            assert!(given.contains('-') && given.chars().next().unwrap().is_ascii_uppercase() && !surname.is_empty(), "{}", n.en);
+        }
+        let n = Names::bundled("zh").unwrap().draw(&mut rng);
+        assert!(n.ko.contains(' ') && n.en.contains(' '), "{n:?}");
+        assert!(Names::bundled("xx").is_none());
+    }
 
     #[test]
     fn bundled_books_load() {

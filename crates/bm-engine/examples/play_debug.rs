@@ -43,6 +43,7 @@ fn main() {
             spray: ph,
             backspin: 0.0,
             sidespin: 0.0,
+            gyrospin: 0.0,
             bat_speed: 32.0,
             attack_angle: 0.17,
             bunt: false,

@@ -1,334 +1,359 @@
-Simulated 10000 games (2846065 pitches) in 18.81 s on 4 threads: 532 games/s, 7.5 ms per game per thread
+Simulated 10000 games (2856271 pitches) in 19.63 s on 4 threads: 509 games/s, 7.9 ms per game per thread
 
 == League rates (MLB Stats API, 2025 regular season)
                                            sim  MLB 2025      diff      rel
-  R / team game                          4.297     4.447    -0.150    -3.4%
-  PA / team game                        37.759    37.640    +0.119    +0.3%
-  AVG                                   0.2436    0.2452   -0.0016    -0.7%
-  OBP                                   0.3114    0.3152   -0.0038    -1.2%
-  SLG                                   0.4005    0.4038   -0.0033    -0.8%
-  BABIP                                 0.2886    0.2906   -0.0020    -0.7%
-  K %                                   21.930    22.220    -0.290    -1.3%
-  BB %                                   8.168     8.410    -0.242    -2.9%
-  HBP %                                  0.992     1.054    -0.062    -5.8%
-  HR %                                   2.948     3.089    -0.141    -4.6%
-  1B %                                  14.026    14.280    -0.254    -1.8%
-  2B %                                   4.700     4.234    +0.466   +11.0%
-  3B %                                  0.3073    0.3430   -0.0357   -10.4%
-  SF %                                  0.6032    0.7140   -0.1108   -15.5%
-  ROE % (Statcast sample)               0.6952    0.5400   +0.1552   +28.7%
-  GIDP / team game                      0.6571    0.6420   +0.0151    +2.4%
-  pitches / PA                           3.765     3.882    -0.117    -3.0%
-  SB attempts / team game               0.8064    0.9110   -0.1046   -11.5%
-  SB success %                          76.271    77.670    -1.399    -1.8%
-  wild pitches / team game 0.401; runners thrown out on the bases / team game 0.182; pitchers used / team game 3.90
-  innings / game 9.153; ties 0.00 %
+  R / team game                          4.448     4.447    +0.001    +0.0%
+  PA / team game                        37.683    37.640    +0.043    +0.1%
+  AVG                                   0.2448    0.2452   -0.0004    -0.2%
+  OBP                                   0.3132    0.3152   -0.0020    -0.6%
+  SLG                                   0.4129    0.4038   +0.0091    +2.2%
+  BABIP                                 0.2875    0.2906   -0.0031    -1.1%
+  K %                                   22.219    22.220    -0.001    -0.0%
+  BB %                                   8.226     8.410    -0.184    -2.2%
+  HBP %                                  1.002     1.054    -0.052    -5.0%
+  HR %                                   3.341     3.089    +0.252    +8.1%
+  1B %                                  14.049    14.280    -0.231    -1.6%
+  2B %                                   4.261     4.234    +0.027    +0.6%
+  3B %                                  0.4392    0.3430   +0.0962   +28.0%
+  SF %                                  0.5463    0.7140   -0.1677   -23.5%
+  ROE % (Statcast sample)               0.8134    0.5400   +0.2734   +50.6%
+  GIDP / team game                      0.8066    0.6420   +0.1646   +25.6%
+  pitches / PA                           3.786     3.882    -0.096    -2.5%
+  SB attempts / team game               0.8297    0.9110   -0.0813    -8.9%
+  SB success %                          76.618    77.670    -1.052    -1.4%
+  wild pitches / team game 0.397; runners thrown out on the bases / team game 0.162; pitchers used / team game 3.95
+  innings / game 9.143; ties 0.00 %
 
 == Tactics (MLB Stats API totals; bunt details from the Statcast sample)
                                            sim  MLB 2025      diff      rel
-  sacrifice bunts / team game           0.1343    0.1152   +0.0191   +16.6%
+  sacrifice bunts / team game           0.1254    0.1152   +0.0102    +8.9%
   intentional walks / team game         0.1080    0.1144   -0.0064    -5.6%
-  bunt attempts: missed %                 8.37      8.35     +0.02    +0.2%
-  bunt attempts: fouled off %            48.94     50.77     -1.83    -3.6%
-  bunt attempts: in play %               42.70     40.88     +1.82    +4.4%
-  bunts in play: exit velocity, mph      34.57     33.80     +0.77    +2.3%
-  bunts in play: exit velocity SD         7.46      8.00     -0.54    -6.7%
-  bunts in play: launch angle, deg      -18.36    -22.60     +4.24   -18.8%
-  bunts in play: popped up (> 20 deg) %     15.02     14.60     +0.42    +2.9%
-  runner on first, < 2 outs: sacrifice %     72.95     71.60     +1.35    +1.9%
-     ... bunt hit %                       9.94     15.80     -5.86   -37.1%
-     ... batter out, nobody advances %     11.62      8.40     +3.22   +38.4%
-     ... lead runner out %                4.09      4.20     -0.11    -2.5%
-  bases empty: bunt hit %                55.31     51.00     +4.31    +8.5%
-  bunts fielded by, % (sim / MLB): P 41/48  C 16/9  1B 13/11  3B 29/32  others 1/1
-  bunts in play / team game 0.250 (MLB about 0.24); pulled back 32 % of bunt pitches; reached on error 1.4 % of sacrifice situations
-  hit-and-run pitches / team game 0.007; pinch hitters / team game 0.213; pinch runners / team game 0.107; steals of third: 0.036 attempts / team game, 73 % safe
+  bunt attempts: missed %                 8.10      8.35     -0.25    -3.0%
+  bunt attempts: fouled off %            49.03     50.77     -1.74    -3.4%
+  bunt attempts: in play %               42.87     40.88     +1.99    +4.9%
+  bunts in play: exit velocity, mph      34.79     33.80     +0.99    +2.9%
+  bunts in play: exit velocity SD         7.55      8.00     -0.45    -5.6%
+  bunts in play: launch angle, deg      -19.07    -22.60     +3.53   -15.6%
+  bunts in play: popped up (> 20 deg) %     14.64     14.60     +0.04    +0.3%
+  runner on first, < 2 outs: sacrifice %     71.59     71.60     -0.01    -0.0%
+     ... bunt hit %                      10.78     15.80     -5.02   -31.8%
+     ... batter out, nobody advances %     11.50      8.40     +3.10   +36.9%
+     ... lead runner out %                4.62      4.20     +0.42    +9.9%
+  bases empty: bunt hit %                53.26     51.00     +2.26    +4.4%
+  bunts fielded by, % (sim / MLB): P 41/48  C 15/9  1B 13/11  3B 30/32  others 1/1
+  bunts in play / team game 0.245 (MLB about 0.24); pulled back 33 % of bunt pitches; reached on error 1.5 % of sacrifice situations
+  hit-and-run pitches / team game 0.007; pinch hitters / team game 0.217; pinch runners / team game 0.104; steals of third: 0.034 attempts / team game, 76 % safe
 
 == Pitch outcomes, % of pitches (Statcast sample)
                                            sim  MLB 2025      diff      rel
-  ball                                   35.15     35.70     -0.55    -1.5%
-  called strike                          16.33     16.22     +0.11    +0.7%
-  swinging strike (incl. tips)           11.72     12.11     -0.39    -3.2%
-  foul                                   18.25     18.12     +0.13    +0.7%
-  in play                                18.28     17.58     +0.70    +4.0%
-  hit by pitch                           0.263     0.274    -0.011    -3.9%
-  swings and misses by cause: early 0.8 %, late 0.1 %, off the end 34.3 %, jammed 0.0 %, over the ball 34.0 %, under the ball 30.8 %
+  ball                                   35.11     35.70     -0.59    -1.7%
+  called strike                          16.30     16.22     +0.08    +0.5%
+  swinging strike (incl. tips)           11.74     12.11     -0.37    -3.1%
+  foul                                   18.50     18.12     +0.38    +2.1%
+  in play                                18.09     17.58     +0.51    +2.9%
+  hit by pitch                           0.264     0.274    -0.010    -3.5%
+  swings and misses by cause: early 0.8 %, late 0.1 %, off the end 34.1 %, jammed 0.0 %, over the ball 34.0 %, under the ball 31.0 %
 
 == Plate discipline (Statcast sample)
                                            sim  MLB 2025      diff      rel
-  Zone %                                 51.16     50.73     +0.43    +0.8%
-  Swing %                                48.26     47.97     +0.29    +0.6%
-  Z-Swing %                              66.77     67.08     -0.31    -0.5%
-  O-Swing %                              28.87     28.29     +0.58    +2.0%
+  Zone %                                 51.13     50.73     +0.40    +0.8%
+  Swing %                                48.33     47.97     +0.36    +0.8%
+  Z-Swing %                              66.87     67.08     -0.21    -0.3%
+  O-Swing %                              28.94     28.29     +0.65    +2.3%
   Contact %                              75.71     74.67     +1.04    +1.4%
-  Z-Contact %                            82.19     82.83     -0.64    -0.8%
-  O-Contact %                            60.01     54.73     +5.28    +9.6%
-  foul share of contact %                49.95     50.77     -0.82    -1.6%
-  called strike | take in zone %         87.53     87.71     -0.18    -0.2%
+  Z-Contact %                            82.16     82.83     -0.67    -0.8%
+  O-Contact %                            60.11     54.73     +5.38    +9.8%
+  foul share of contact %                50.57     50.77     -0.20    -0.4%
+  called strike | take in zone %         87.64     87.71     -0.07    -0.1%
   called strike | take out of zone %      4.22      4.54     -0.32    -7.0%
 
 == By count: sim / MLB (share of pitches, zone %, swing %, Z-swing %, O-swing %, fastball %)
-  0-0  share 26.51/25.78  zone  55.7/ 54.9  swing  33.1/ 32.1  zsw  46.2/ 45.1  osw  16.7/ 16.2  fastballs  56.7
-  0-1  share 12.96/12.99  zone  47.7/ 46.5  swing  52.1/ 49.8  zsw  77.0/ 74.8  osw  29.5/ 28.2  fastballs  50.3
-  0-2  share  7.11/ 6.75  zone  32.8/ 32.7  swing  54.2/ 50.6  zsw  88.4/ 87.2  osw  37.6/ 32.7  fastballs  40.6
-  1-0  share 10.03/ 9.73  zone  56.3/ 56.5  swing  42.3/ 43.1  zsw  59.0/ 58.6  osw  20.8/ 22.9  fastballs  59.3
-  1-1  share  9.59/10.06  zone  52.0/ 50.9  swing  54.5/ 54.3  zsw  76.9/ 77.0  osw  30.2/ 30.7  fastballs  52.1
-  1-2  share  9.41/ 9.82  zone  37.5/ 38.9  swing  57.6/ 57.3  zsw  87.7/ 88.2  osw  39.5/ 37.6  fastballs  39.9
-  2-0  share  3.53/ 3.24  zone  59.6/ 59.6  swing  41.4/ 41.1  zsw  56.4/ 55.9  osw  19.4/ 19.3  fastballs  71.0
-  2-1  share  4.98/ 5.19  zone  57.6/ 57.5  swing  56.9/ 58.4  zsw  76.6/ 77.1  osw  30.2/ 33.2  fastballs  58.6
-  2-2  share  7.92/ 8.38  zone  49.3/ 48.1  swing  64.9/ 64.9  zsw  87.0/ 89.6  osw  43.3/ 42.1  fastballs  44.2
-  3-0  share  1.18/ 0.99  zone  62.8/ 63.9  swing   8.7/  7.9  zsw  11.7/ 10.9  osw   3.7/  2.4  fastballs  90.0
-  3-1  share  2.17/ 2.09  zone  62.2/ 64.0  swing  56.0/ 55.1  zsw  73.4/ 71.8  osw  27.3/ 25.6  fastballs  75.3
-  3-2  share  4.63/ 4.98  zone  59.3/ 59.6  swing  69.6/ 70.2  zsw  87.0/ 89.2  osw  44.3/ 42.1  fastballs  58.5
+  0-0  share 26.36/25.78  zone  55.7/ 54.9  swing  33.0/ 32.1  zsw  46.1/ 45.1  osw  16.5/ 16.2  fastballs  56.7
+  0-1  share 12.93/12.99  zone  47.7/ 46.5  swing  52.1/ 49.8  zsw  76.9/ 74.8  osw  29.6/ 28.2  fastballs  50.6
+  0-2  share  7.15/ 6.75  zone  32.8/ 32.7  swing  54.1/ 50.6  zsw  88.2/ 87.2  osw  37.4/ 32.7  fastballs  40.7
+  1-0  share  9.99/ 9.73  zone  56.3/ 56.5  swing  42.5/ 43.1  zsw  59.2/ 58.6  osw  20.9/ 22.9  fastballs  59.3
+  1-1  share  9.58/10.06  zone  52.0/ 50.9  swing  54.8/ 54.3  zsw  77.2/ 77.0  osw  30.5/ 30.7  fastballs  52.2
+  1-2  share  9.48/ 9.82  zone  37.6/ 38.9  swing  57.6/ 57.3  zsw  87.9/ 88.2  osw  39.4/ 37.6  fastballs  40.1
+  2-0  share  3.51/ 3.24  zone  59.6/ 59.6  swing  41.4/ 41.1  zsw  56.3/ 55.9  osw  19.4/ 19.3  fastballs  70.8
+  2-1  share  4.96/ 5.19  zone  57.8/ 57.5  swing  57.0/ 58.4  zsw  76.7/ 77.1  osw  30.1/ 33.2  fastballs  58.7
+  2-2  share  7.99/ 8.38  zone  48.9/ 48.1  swing  65.0/ 64.9  zsw  87.2/ 89.6  osw  43.6/ 42.1  fastballs  44.5
+  3-0  share  1.17/ 0.99  zone  62.8/ 63.9  swing   8.7/  7.9  zsw  11.8/ 10.9  osw   3.5/  2.4  fastballs  89.7
+  3-1  share  2.15/ 2.09  zone  62.4/ 64.0  swing  55.8/ 55.1  zsw  73.2/ 71.8  osw  27.1/ 25.6  fastballs  75.3
+  3-2  share  4.70/ 4.98  zone  59.5/ 59.6  swing  69.8/ 70.2  zsw  87.0/ 89.2  osw  44.6/ 42.1  fastballs  58.9
 
 == Swing % by distance outside the zone edge (in): sim / MLB for all counts, 0, 1, 2 strikes
-  [-12.0, -8.0)   73.9/ 76.4   56.7/ 58.0   86.4/ 87.8   93.4/ 97.1   contact|swing  83.9/ 88.8  (pitch share  5.1 %)
-  [ -8.0, -6.0)   72.8/ 74.6   55.6/ 57.3   84.6/ 84.5   92.5/ 94.4   contact|swing  83.3/ 86.8  (pitch share  9.0 %)
-  [ -6.0, -4.0)   70.1/ 70.3   52.3/ 51.8   80.9/ 79.8   90.6/ 91.9   contact|swing  82.9/ 84.0  (pitch share 11.7 %)
-  [ -4.0, -2.0)   65.2/ 64.4   47.2/ 44.8   74.6/ 72.7   86.6/ 87.5   contact|swing  81.7/ 81.3  (pitch share 12.8 %)
-  [ -2.0, -1.0)   60.2/ 60.2   41.9/ 39.7   67.8/ 66.8   82.4/ 83.0   contact|swing  80.8/ 77.9  (pitch share  6.4 %)
-  [ -1.0,  0.0)   55.8/ 54.6   37.7/ 35.0   62.1/ 59.8   78.3/ 78.1   contact|swing  79.1/ 74.5  (pitch share  6.2 %)
-  [  0.0,  1.0)   51.3/ 48.2   33.4/ 31.0   55.8/ 53.1   74.5/ 68.1   contact|swing  76.1/ 70.3  (pitch share  5.9 %)
-  [  1.0,  2.0)   46.2/ 43.7   28.7/ 27.1   49.5/ 46.3   68.7/ 64.7   contact|swing  71.9/ 65.3  (pitch share  5.4 %)
-  [  2.0,  3.0)   41.1/ 39.9   24.0/ 23.3   42.8/ 41.5   63.3/ 59.7   contact|swing  66.4/ 60.3  (pitch share  5.0 %)
-  [  3.0,  4.0)   36.2/ 35.1   20.0/ 19.8   36.9/ 35.4   56.8/ 53.7   contact|swing  60.7/ 56.8  (pitch share  4.5 %)
-  [  4.0,  6.0)   29.4/ 29.7   15.1/ 16.9   28.7/ 29.0   47.5/ 44.4   contact|swing  51.6/ 49.1  (pitch share  7.6 %)
-  [  6.0,  8.0)   21.9/ 21.8   10.3/ 11.8   20.1/ 20.1   36.0/ 33.6   contact|swing  39.7/ 37.5  (pitch share  5.9 %)
-  [  8.0, 10.0)   16.0/ 15.7    6.6/  7.8   13.9/ 14.5   26.4/ 24.2   contact|swing  30.2/ 28.1  (pitch share  4.4 %)
-  [ 10.0, 14.0)    9.8/ 10.0    3.5/  5.6    7.6/  9.5   16.0/ 13.6   contact|swing  21.6/ 13.9  (pitch share  5.5 %)
-  [ 14.0, 20.0)    3.6/  5.3    1.0/  2.0    2.4/  5.5    5.7/  7.0   contact|swing  13.6/  2.7  (pitch share  3.4 %)
-  [ 20.0, 40.0)    0.5/  2.5    0.1/  1.3    0.3/  2.2    0.7/  3.1   contact|swing  11.6/  2.1  (pitch share  1.3 %)
+  [-12.0, -8.0)   74.2/ 76.4   56.9/ 58.0   86.3/ 87.8   93.8/ 97.1   contact|swing  83.9/ 88.8  (pitch share  5.1 %)
+  [ -8.0, -6.0)   72.9/ 74.6   55.6/ 57.3   84.8/ 84.5   92.4/ 94.4   contact|swing  83.4/ 86.8  (pitch share  9.0 %)
+  [ -6.0, -4.0)   70.2/ 70.3   52.3/ 51.8   81.1/ 79.8   90.5/ 91.9   contact|swing  82.7/ 84.0  (pitch share 11.7 %)
+  [ -4.0, -2.0)   65.4/ 64.4   47.2/ 44.8   74.6/ 72.7   86.9/ 87.5   contact|swing  81.9/ 81.3  (pitch share 12.8 %)
+  [ -2.0, -1.0)   60.1/ 60.2   41.8/ 39.7   67.5/ 66.8   82.3/ 83.0   contact|swing  80.9/ 77.9  (pitch share  6.4 %)
+  [ -1.0,  0.0)   55.8/ 54.6   37.5/ 35.0   62.0/ 59.8   78.4/ 78.1   contact|swing  78.9/ 74.5  (pitch share  6.2 %)
+  [  0.0,  1.0)   51.3/ 48.2   33.3/ 31.0   55.8/ 53.1   73.9/ 68.1   contact|swing  76.0/ 70.3  (pitch share  5.9 %)
+  [  1.0,  2.0)   46.4/ 43.7   28.9/ 27.1   49.7/ 46.3   68.7/ 64.7   contact|swing  72.0/ 65.3  (pitch share  5.5 %)
+  [  2.0,  3.0)   41.0/ 39.9   23.8/ 23.3   42.8/ 41.5   62.9/ 59.7   contact|swing  66.5/ 60.3  (pitch share  5.0 %)
+  [  3.0,  4.0)   36.3/ 35.1   19.9/ 19.8   37.2/ 35.4   56.8/ 53.7   contact|swing  60.7/ 56.8  (pitch share  4.5 %)
+  [  4.0,  6.0)   29.6/ 29.7   15.1/ 16.9   28.6/ 29.0   47.7/ 44.4   contact|swing  52.1/ 49.1  (pitch share  7.6 %)
+  [  6.0,  8.0)   22.0/ 21.8    9.9/ 11.8   20.0/ 20.1   36.3/ 33.6   contact|swing  40.1/ 37.5  (pitch share  5.9 %)
+  [  8.0, 10.0)   15.9/ 15.7    6.5/  7.8   13.6/ 14.5   26.2/ 24.2   contact|swing  29.8/ 28.1  (pitch share  4.4 %)
+  [ 10.0, 14.0)    9.9/ 10.0    3.5/  5.6    7.8/  9.5   16.0/ 13.6   contact|swing  21.9/ 13.9  (pitch share  5.5 %)
+  [ 14.0, 20.0)    3.7/  5.3    1.1/  2.0    2.6/  5.5    5.7/  7.0   contact|swing  15.3/  2.7  (pitch share  3.4 %)
+  [ 20.0, 40.0)    0.5/  2.5    0.1/  1.3    0.3/  2.2    0.7/  3.1   contact|swing  10.4/  2.1  (pitch share  1.3 %)
 
 == Called-strike % on takes by distance outside the zone edge (in): sim / MLB
-  [-12.0,-6.0)  99.9/100.0  [-6.0,-4.0)  99.2/ 99.0  [-4.0,-3.0)  96.5/ 95.7  [-3.0,-2.0)  90.8/ 90.7
-  [-2.0,-1.5)  82.4/ 82.4  [-1.5,-1.0)  73.2/ 75.1  [-1.0,-0.5)  61.5/ 61.8  [-0.5, 0.0)  48.6/ 51.1
-  [ 0.0, 0.5)  35.6/ 32.5  [ 0.5, 1.0)  24.8/ 25.4  [ 1.0, 1.5)  15.9/ 18.0  [ 1.5, 2.0)  10.0/ 11.6
-  [ 2.0, 3.0)   4.9/  5.4  [ 3.0, 4.0)   1.7/  1.7  [ 4.0, 6.0)   0.4/  0.2
+  [-12.0,-6.0)  99.9/100.0  [-6.0,-4.0)  99.2/ 99.0  [-4.0,-3.0)  96.6/ 95.7  [-3.0,-2.0)  91.2/ 90.7
+  [-2.0,-1.5)  82.6/ 82.4  [-1.5,-1.0)  72.9/ 75.1  [-1.0,-0.5)  62.0/ 61.8  [-0.5, 0.0)  49.0/ 51.1
+  [ 0.0, 0.5)  36.0/ 32.5  [ 0.5, 1.0)  24.1/ 25.4  [ 1.0, 1.5)  15.9/ 18.0  [ 1.5, 2.0)  10.0/ 11.6
+  [ 2.0, 3.0)   4.9/  5.4  [ 3.0, 4.0)   1.8/  1.7  [ 4.0, 6.0)   0.4/  0.2
 
 == Pitch types: usage % sim/MLB, velocity mph sim/MLB, whiff per swing % sim/MLB, zone % sim/MLB, O-swing % sim/MLB, EV, LA, GB %  sim/MLB
-  FF  use  31.5/ 31.7  v  94.2/ 94.5  whiff  18.9/ 21.7  zone  57.5/ 56.7  osw  25.0/ 23.6  EV  90.7/ 91.2  LA  18.4/ 20.5  GB  38.3/ 31.0
-  SI  use  14.7/ 15.6  v  93.5/ 93.8  whiff  17.8/ 13.9  zone  60.6/ 58.1  osw  26.0/ 25.1  EV  90.1/ 89.3  LA   6.8/  5.0  GB  55.8/ 57.2
-  FC  use   7.3/  7.2  v  89.7/ 89.9  whiff  14.3/ 21.8  zone  61.4/ 53.5  osw  26.5/ 26.0  EV  90.1/ 87.8  LA  17.7/ 15.6  GB  39.4/ 38.6
-  SL  use  14.9/ 14.5  v  86.0/ 86.3  whiff  29.8/ 33.0  zone  43.9/ 47.3  osw  31.7/ 32.0  EV  87.6/ 87.9  LA  13.9/ 13.4  GB  46.2/ 41.4
-  ST  use   8.2/  7.7  v  82.3/ 82.5  whiff  36.0/ 32.7  zone  42.7/ 45.3  osw  30.3/ 30.7  EV  85.7/ 85.7  LA  16.8/ 19.1  GB  41.5/ 35.2
-  CU  use   9.3/  8.7  v  79.7/ 79.9  whiff  33.3/ 29.9  zone  43.0/ 44.2  osw  32.8/ 27.9  EV  84.9/ 88.6  LA  19.6/ 10.4  GB  37.0/ 46.8
-  CH  use  10.4/ 10.4  v  85.6/ 86.0  whiff  32.1/ 30.9  zone  39.9/ 39.8  osw  31.2/ 34.0  EV  87.2/ 86.8  LA  15.3/  8.9  GB  44.8/ 48.3
-  FS  use   3.7/  3.2  v  86.1/ 86.4  whiff  33.0/ 36.1  zone  40.5/ 36.1  osw  33.1/ 34.6  EV  87.0/ 87.1  LA  14.0/  7.0  GB  46.6/ 51.8
+  FF  use  31.6/ 31.7  v  94.2/ 94.5  whiff  19.0/ 21.7  zone  57.4/ 56.7  osw  25.0/ 23.6  EV  91.4/ 91.2  LA  13.6/ 20.5  GB  45.2/ 31.0
+  SI  use  14.7/ 15.6  v  93.5/ 93.8  whiff  17.9/ 13.9  zone  60.5/ 58.1  osw  26.2/ 25.1  EV  90.4/ 89.3  LA   2.4/  5.0  GB  62.2/ 57.2
+  FC  use   7.3/  7.2  v  89.7/ 89.9  whiff  14.4/ 21.8  zone  61.2/ 53.5  osw  26.5/ 26.0  EV  90.4/ 87.8  LA  13.5/ 15.6  GB  45.6/ 38.6
+  SL  use  14.9/ 14.5  v  86.0/ 86.3  whiff  29.6/ 33.0  zone  43.8/ 47.3  osw  31.7/ 32.0  EV  87.5/ 87.9  LA  10.3/ 13.4  GB  51.7/ 41.4
+  ST  use   8.0/  7.7  v  82.3/ 82.5  whiff  36.4/ 32.7  zone  42.9/ 45.3  osw  30.6/ 30.7  EV  85.2/ 85.7  LA  13.1/ 19.1  GB  47.1/ 35.2
+  CU  use   9.4/  8.7  v  79.7/ 79.9  whiff  33.2/ 29.9  zone  42.8/ 44.2  osw  33.2/ 27.9  EV  84.5/ 88.6  LA  16.7/ 10.4  GB  41.7/ 46.8
+  CH  use  10.3/ 10.4  v  85.6/ 86.0  whiff  31.9/ 30.9  zone  39.7/ 39.8  osw  31.3/ 34.0  EV  87.3/ 86.8  LA  11.5/  8.9  GB  50.1/ 48.3
+  FS  use   3.8/  3.2  v  86.2/ 86.4  whiff  32.3/ 36.1  zone  40.9/ 36.1  osw  32.7/ 34.6  EV  87.0/ 87.1  LA   9.8/  7.0  GB  52.6/ 51.8
   whiff per swing, sim/MLB: in the zone, against same-side batters, against opposite-side batters; sim misses by cause, % of swings
-    FF  zone  15.5/ 18.2  same  19.1/ 23.4  opposite  18.8/ 20.6   early  0.0  late  0.0  off the end  2.7  jammed  0.0  over  1.8  under 13.1
-    SI  zone  14.9/ 10.8  same  18.0/ 13.5  opposite  17.5/ 14.7   early  0.0  late  0.0  off the end  2.4  jammed  0.0  over 10.1  under  4.1
-    FC  zone  11.2/ 16.1  same  14.4/ 23.8  opposite  14.2/ 20.6   early  0.0  late  0.0  off the end  4.9  jammed  0.0  over  3.4  under  5.2
-    SL  zone  20.3/ 19.3  same  32.1/ 34.7  opposite  25.4/ 30.7   early  0.2  late  0.0  off the end 13.9  jammed  0.0  over 11.2  under  3.6
-    ST  zone  26.1/ 19.5  same  39.5/ 35.5  opposite  27.9/ 27.3   early  0.5  late  0.0  off the end 20.0  jammed  0.0  over 10.9  under  3.7
-    CU  zone  24.0/ 15.3  same  36.3/ 30.2  opposite  31.3/ 29.9   early  1.0  late  0.0  off the end 13.4  jammed  0.0  over 13.1  under  4.9
-    CH  zone  23.6/ 20.5  same  28.9/ 34.2  opposite  33.2/ 30.1   early  0.2  late  0.0  off the end 12.5  jammed  0.0  over 13.6  under  4.7
-    FS  zone  23.3/ 22.6  same  31.8/ 38.1  opposite  33.7/ 35.4   early  0.2  late  0.0  off the end 12.1  jammed  0.0  over 15.4  under  4.2
+    FF  zone  15.6/ 18.2  same  19.3/ 23.4  opposite  18.8/ 20.6   early  0.0  late  0.0  off the end  2.7  jammed  0.0  over  1.8  under 13.3
+    SI  zone  15.0/ 10.8  same  18.0/ 13.5  opposite  17.7/ 14.7   early  0.0  late  0.0  off the end  2.4  jammed  0.0  over 10.1  under  4.1
+    FC  zone  11.4/ 16.1  same  14.5/ 23.8  opposite  14.3/ 20.6   early  0.0  late  0.0  off the end  5.0  jammed  0.0  over  3.4  under  5.2
+    SL  zone  20.1/ 19.3  same  31.9/ 34.7  opposite  25.3/ 30.7   early  0.2  late  0.0  off the end 13.9  jammed  0.0  over 11.1  under  3.6
+    ST  zone  26.5/ 19.5  same  40.1/ 35.5  opposite  28.0/ 27.3   early  0.6  late  0.0  off the end 20.1  jammed  0.0  over 11.1  under  3.8
+    CU  zone  23.6/ 15.3  same  36.3/ 30.2  opposite  31.3/ 29.9   early  1.0  late  0.0  off the end 13.2  jammed  0.0  over 13.1  under  5.1
+    CH  zone  23.3/ 20.5  same  28.9/ 34.2  opposite  33.0/ 30.1   early  0.2  late  0.0  off the end 12.6  jammed  0.0  over 13.4  under  4.7
+    FS  zone  23.2/ 22.6  same  31.3/ 38.1  opposite  33.0/ 35.4   early  0.2  late  0.0  off the end 11.6  jammed  0.0  over 15.4  under  4.0
   movement over the whole flight (in) and plate height (ft), sim/MLB: induced rise, arm-side, height
-    FF  rise  17.6/ 16.6  arm side   9.0/  9.1  height 2.88/2.87
-    SI  rise   8.3/  7.9  arm side  17.2/ 16.8  height 2.32/2.38
-    FC  rise   9.1/  8.6  arm side  -2.2/ -0.9  height 2.52/2.53
-    SL  rise   2.2/  2.3  arm side  -4.5/ -2.9  height 1.86/1.93
-    ST  rise   1.4/  1.1  arm side -15.7/-12.7  height 1.93/2.01
-    CU  rise -11.6/-10.3  arm side -10.4/ -8.4  height 1.73/1.85
-    CH  rise   5.3/  5.0  arm side  16.5/ 16.0  height 1.74/1.83
-    FS  rise   3.9/  4.0  arm side  12.5/ 12.0  height 1.70/1.77
+    FF  rise  17.7/ 16.6  arm side   9.0/  9.1  height 2.88/2.87
+    SI  rise   8.3/  7.9  arm side  17.3/ 16.8  height 2.32/2.38
+    FC  rise   9.2/  8.6  arm side  -2.1/ -0.9  height 2.52/2.53
+    SL  rise   2.2/  2.3  arm side  -4.5/ -2.9  height 1.85/1.93
+    ST  rise   1.4/  1.1  arm side -15.8/-12.7  height 1.93/2.01
+    CU  rise -11.7/-10.3  arm side -10.4/ -8.4  height 1.73/1.85
+    CH  rise   5.3/  5.0  arm side  16.6/ 16.0  height 1.74/1.83
+    FS  rise   3.9/  4.0  arm side  12.5/ 12.0  height 1.69/1.77
   four-seam whiff per swing by velocity, sim/MLB:
-    [88-90) 13.9/17.4 [90-92) 15.8/19.2 [92-94) 17.6/19.3 [94-96) 19.6/21.5 [96-98) 21.6/24.5 [98-100) 24.2/25.4 [100-102) 27.7/30.3
+    [88-90) 14.3/17.4 [90-92) 15.7/19.2 [92-94) 17.6/19.3 [94-96) 19.6/21.5 [96-98) 21.8/24.5 [98-100) 24.8/25.4 [100-102) 26.8/30.3
   whiff per swing by pitch height (ft), sim/MLB for fastballs, breaking, offspeed:
-    z [0.5,1.0)   56.8/ 74.3   64.9/ 82.3   63.3/ 76.4
-    z [1.0,1.5)   25.2/ 36.6   40.6/ 57.4   39.5/ 52.9
-    z [1.5,2.0)   15.0/ 16.4   28.3/ 30.4   27.8/ 31.1
-    z [2.0,2.5)   14.7/ 11.5   26.3/ 18.6   26.2/ 19.1
-    z [2.5,3.0)   15.9/ 14.5   24.2/ 14.1   25.1/ 15.6
-    z [3.0,3.5)   18.9/ 24.6   21.3/ 23.9   22.6/ 20.1
-    z [3.5,4.0)   28.8/ 42.6   23.7/ 39.1   27.2/  NaN
-    z [4.0,4.5)   53.1/ 57.7   54.1/  NaN   49.1/  NaN
+    z [0.5,1.0)   54.8/ 74.3   65.7/ 82.3   63.0/ 76.4
+    z [1.0,1.5)   25.4/ 36.6   40.4/ 57.4   39.3/ 52.9
+    z [1.5,2.0)   15.1/ 16.4   28.3/ 30.4   27.4/ 31.1
+    z [2.0,2.5)   14.7/ 11.5   26.3/ 18.6   26.0/ 19.1
+    z [2.5,3.0)   16.0/ 14.5   24.1/ 14.1   24.4/ 15.6
+    z [3.0,3.5)   19.0/ 24.6   21.0/ 23.9   22.5/ 20.1
+    z [3.5,4.0)   28.8/ 42.6   23.9/ 39.1   28.2/  NaN
+    z [4.0,4.5)   51.9/ 57.7   51.3/  NaN   62.7/  NaN
 
 == Batted balls in play (Statcast sample)
                                            sim  MLB 2025      diff      rel
-  exit velocity mean, mph                88.95     88.91     +0.04    +0.0%
-  exit velocity SD                       15.49     14.95     +0.54    +3.6%
-  launch angle mean, deg                 15.35     13.14     +2.21   +16.8%
-  launch angle SD                        26.88     28.67     -1.79    -6.2%
-  hard-hit % (>= 95 mph)                 40.65     41.18     -0.53    -1.3%
-  barrel %                                8.70      8.55     +0.15    +1.8%
-  sweet-spot % (8-32 deg)                32.65     35.87     -3.22    -9.0%
-  bat speed on balls in play, mph        71.40     71.19     +0.21    +0.3%
-  bat speed, all swings                  70.22     69.89     +0.33    +0.5%
-  bat speed SD, all swings                7.98      8.37     -0.39    -4.7%
-  EV percentiles 5/25/50/75/95: sim [59.8 80.4 91.6 100.3 108.9]  MLB [61.2 80.6 92.0 100.1 107.3]
-  LA percentiles 5/25/50/75/95: sim [-27.2 -2.9 14.5 33.7 60.7]  MLB [-36.0 -5.0 14.0 31.0 62.0]
-  backspin vs launch angle (0-40 deg): sim -1329 + 142 * LA rpm   Statcast fit (Nathan) -763 + 120 * LA rpm
-  hook spin vs pull-side direction (LA 10-40 deg): sim 133 + 108 * angle rpm   Statcast fit (Nathan) -849 + 94 * angle rpm
+  exit velocity mean, mph                89.13     88.91     +0.22    +0.3%
+  exit velocity SD                       15.76     14.95     +0.81    +5.4%
+  launch angle mean, deg                 11.18     13.14     -1.96   -14.9%
+  launch angle SD                        26.67     28.67     -2.00    -7.0%
+  hard-hit % (>= 95 mph)                 41.88     41.18     +0.70    +1.7%
+  barrel %                                8.25      8.55     -0.30    -3.5%
+  sweet-spot % (8-32 deg)                31.90     35.87     -3.97   -11.1%
+  bat speed on balls in play, mph        71.35     71.19     +0.16    +0.2%
+  bat speed, all swings                  70.21     69.89     +0.32    +0.5%
+  bat speed SD, all swings                7.98      8.37     -0.39    -4.6%
+  EV percentiles 5/25/50/75/95: sim [59.5 80.2 92.0 100.8 109.5]  MLB [61.2 80.6 92.0 100.1 107.3]
+  LA percentiles 5/25/50/75/95: sim [-32.3 -6.3 10.3 28.9 56.0]  MLB [-36.0 -5.0 14.0 31.0 62.0]
+  backspin vs launch angle (0-40 deg): sim -1472 + 139 * LA rpm   Statcast fit (Nathan) -763 + 120 * LA rpm
+  backspin vs launch angle and pull-side direction (0-40 deg): sim -1225 + 132 * LA -29 * pull rpm   Statcast fit (Nathan) -763 + 120 * LA -21 * pull rpm
+  hook spin vs pull-side direction (LA 10-40 deg): sim -339 + 108 * angle rpm   Statcast fit (Nathan) -849 + 94 * angle rpm
 
 == Collision efficiency: exit velocity / (1.23 * bat speed + 0.23 * plate speed), balls in play (Statcast sample)
                                            sim  MLB 2025      diff      rel
-  mean                                  0.8390    0.8350   +0.0040    +0.5%
-  SD                                    0.1212    0.1240   -0.0028    -2.2%
-  share at or above 0.80 (squared up), %     68.21     66.29     +1.92    +2.9%
-  share at or above 0.90, %              37.56     36.59     +0.97    +2.7%
-  share at or above 0.95, %              18.80     17.80     +1.00    +5.6%
-  share at or above 1.00, %               1.42      2.97     -1.55   -52.3%
-  percentiles 5/25/50/75/90/95/99: sim [0.610 0.771 0.863 0.934 0.972 0.986 1.003]  MLB [0.603 0.759 0.860 0.932 0.972 0.991 1.017]
+  mean                                  0.8415    0.8350   +0.0065    +0.8%
+  SD                                    0.1233    0.1240   -0.0007    -0.6%
+  share at or above 0.80 (squared up), %     68.36     66.29     +2.07    +3.1%
+  share at or above 0.90, %              39.35     36.59     +2.76    +7.5%
+  share at or above 0.95, %              20.87     17.80     +3.07   +17.3%
+  share at or above 1.00, %               1.80      2.97     -1.17   -39.4%
+  percentiles 5/25/50/75/90/95/99: sim [0.609 0.770 0.867 0.939 0.976 0.989 1.005]  MLB [0.603 0.759 0.860 0.932 0.972 0.991 1.017]
   by launch angle (sim / MLB): EV, bat speed, mean ratio, median, 90th, 99th percentile
-    LA [ -90, -20)  EV  81.4/ 75.6  bat  70.9/ 69.6  mean 0.766/0.724  p50 0.772/0.738  p90 0.914/0.922  p99 0.993/1.008
-    LA [ -20,   0)  EV  89.2/ 89.8  bat  71.3/ 71.1  mean 0.837/0.845  p50 0.858/0.872  p90 0.970/0.976  p99 1.006/1.022
-    LA [   0,  10)  EV  93.0/ 93.4  bat  71.4/ 71.7  mean 0.872/0.873  p50 0.907/0.905  p90 0.980/0.989  p99 1.004/1.021
-    LA [  10,  25)  EV  93.8/ 93.9  bat  71.5/ 71.6  mean 0.879/0.878  p50 0.917/0.908  p90 0.984/0.986  p99 1.007/1.021
-    LA [  25,  40)  EV  91.4/ 91.6  bat  71.7/ 72.0  mean 0.854/0.853  p50 0.884/0.875  p90 0.970/0.962  p99 1.002/1.003
-    LA [  40,  60)  EV  85.4/ 86.6  bat  71.4/ 72.2  mean 0.802/0.804  p50 0.822/0.822  p90 0.920/0.911  p99 0.974/0.967
-    LA [  60,  90)  EV  78.6/ 81.0  bat  71.0/ 72.5  mean 0.741/0.751  p50 0.756/0.760  p90 0.850/0.859  p99 0.919/0.920
+    LA [ -90, -20)  EV  81.0/ 75.6  bat  70.8/ 69.6  mean 0.764/0.724  p50 0.768/0.738  p90 0.917/0.922  p99 0.994/1.008
+    LA [ -20,   0)  EV  89.7/ 89.8  bat  71.3/ 71.1  mean 0.843/0.845  p50 0.866/0.872  p90 0.975/0.976  p99 1.007/1.022
+    LA [   0,  10)  EV  93.4/ 93.4  bat  71.4/ 71.7  mean 0.876/0.873  p50 0.913/0.905  p90 0.984/0.989  p99 1.005/1.021
+    LA [  10,  25)  EV  93.9/ 93.9  bat  71.5/ 71.6  mean 0.879/0.878  p50 0.917/0.908  p90 0.987/0.986  p99 1.009/1.021
+    LA [  25,  40)  EV  91.2/ 91.6  bat  71.6/ 72.0  mean 0.854/0.853  p50 0.883/0.875  p90 0.973/0.962  p99 1.004/1.003
+    LA [  40,  60)  EV  85.2/ 86.6  bat  71.3/ 72.2  mean 0.801/0.804  p50 0.821/0.822  p90 0.922/0.911  p99 0.977/0.967
+    LA [  60,  90)  EV  78.2/ 81.0  bat  70.8/ 72.5  mean 0.741/0.751  p50 0.754/0.760  p90 0.848/0.859  p99 0.916/0.920
   by bat speed (sim / MLB): share of balls in play, EV, mean launch angle, mean ratio, median, 90th, 99th percentile
-    bat [40,60) mph  share  5.04/ 2.79  EV  70.1/ 72.6  LA  16.3/ -0.4  mean 0.856/0.827  p50 0.883/0.862  p90 0.989/1.001  p99 1.020/1.093
-    bat [60,66) mph  share  6.20/10.22  EV  82.0/ 81.8  LA  14.3/  8.7  mean 0.845/0.842  p50 0.867/0.871  p90 0.977/0.991  p99 1.009/1.031
-    bat [66,70) mph  share 18.29/20.95  EV  86.8/ 86.8  LA  14.4/ 11.7  mean 0.844/0.844  p50 0.868/0.870  p90 0.975/0.986  p99 1.004/1.021
-    bat [70,74) mph  share 33.75/32.45  EV  90.2/ 90.3  LA  15.4/ 14.5  mean 0.839/0.841  p50 0.863/0.866  p90 0.971/0.972  p99 1.001/1.011
-    bat [74,78) mph  share 26.38/23.94  EV  93.6/ 93.2  LA  16.4/ 16.3  mean 0.834/0.832  p50 0.858/0.855  p90 0.968/0.957  p99 0.998/0.997
-    bat [78,90) mph  share  9.81/ 9.48  EV  97.5/ 94.2  LA  17.5/ 17.5  mean 0.830/0.802  p50 0.852/0.823  p90 0.965/0.934  p99 0.995/0.977
+    bat [40,60) mph  share  5.25/ 2.79  EV  70.0/ 72.6  LA  12.1/ -0.4  mean 0.855/0.827  p50 0.881/0.862  p90 0.991/1.001  p99 1.022/1.093
+    bat [60,66) mph  share  6.35/10.22  EV  81.9/ 81.8  LA  10.5/  8.7  mean 0.845/0.842  p50 0.868/0.871  p90 0.981/0.991  p99 1.009/1.031
+    bat [66,70) mph  share 18.22/20.95  EV  87.0/ 86.8  LA  10.2/ 11.7  mean 0.846/0.844  p50 0.873/0.870  p90 0.979/0.986  p99 1.006/1.021
+    bat [70,74) mph  share 33.38/32.45  EV  90.5/ 90.3  LA  11.0/ 14.5  mean 0.842/0.841  p50 0.869/0.866  p90 0.976/0.972  p99 1.003/1.011
+    bat [74,78) mph  share 26.29/23.94  EV  93.9/ 93.2  LA  12.3/ 16.3  mean 0.837/0.832  p50 0.862/0.855  p90 0.973/0.957  p99 1.000/0.997
+    bat [78,90) mph  share  9.93/ 9.48  EV  97.7/ 94.2  LA  13.3/ 17.5  mean 0.832/0.802  p50 0.856/0.823  p90 0.970/0.934  p99 0.998/0.977
 
 == Swing geometry: full swings of 60 mph and up (Statcast bat tracking)
                                            sim  MLB 2025      diff      rel
-  swings under 60 mph, % of all swings      9.27      6.90     +2.37   +34.4%
-     ... of swings and misses            15.03     13.30     +1.73   +13.0%
-     ... of fouls                         9.26      6.10     +3.16   +51.8%
-     ... of balls in play                 5.57      3.50     +2.07   +59.2%
-  swings with 0 strikes: miss  22.3/ 23.8  caught tip  1.0/ 2.2  foul  37.5/ 37.0  in play  39.2/ 37.0  bat speed  71.2/ 71.0  under 60 mph  7.3/ 5.3 %
-  swings with 1 strikes: miss  24.6/ 23.5  caught tip  1.0/ 2.1  foul  37.0/ 37.3  in play  37.4/ 37.1  bat speed  71.0/ 70.3  under 60 mph  7.9/ 6.0 %
-  swings with 2 strikes: miss  23.1/ 22.3  caught tip  1.2/ 2.4  foul  38.5/ 38.6  in play  37.2/ 36.7  bat speed  68.7/ 68.7  under 60 mph 12.1/ 8.8 %
-  swing and miss  bat speed 71.53/71.54 (SD 5.00/4.73)  depth mean   6.8 in, SD 12.95/15.49  direction mean   9.0, SD 18.69/24.72 deg
-  foul            bat speed 72.21/71.11 (SD 4.50/4.86)  depth mean   2.7 in, SD  9.62/10.38  direction mean   3.2, SD 15.18/17.19 deg
-  in play         bat speed 72.66/72.01 (SD 4.31/4.71)  depth mean   2.8 in, SD  7.51/ 7.69  direction mean   3.4, SD 11.49/12.00 deg
-  attack angle on balls in play, deg     10.44      8.78     +1.66   +18.9%
-  attack angle SD                         8.29      8.36     -0.07    -0.9%
-  pull-side spray off the bat, mean deg      9.41      5.60     +3.81   +68.1%
-  pull-side spray SD                     22.05     31.60     -9.55   -30.2%
+  swings under 60 mph, % of all swings      9.31      6.90     +2.41   +34.9%
+     ... of swings and misses            15.08     13.30     +1.78   +13.4%
+     ... of fouls                         9.03      6.10     +2.93   +48.0%
+     ... of balls in play                 5.83      3.50     +2.33   +66.5%
+  swings with 0 strikes: miss  22.4/ 23.8  caught tip  1.0/ 2.2  foul  38.2/ 37.0  in play  38.4/ 37.0  bat speed  71.2/ 71.0  under 60 mph  7.3/ 5.3 %
+  swings with 1 strikes: miss  24.6/ 23.5  caught tip  1.0/ 2.1  foul  37.4/ 37.3  in play  37.0/ 37.1  bat speed  71.0/ 70.3  under 60 mph  7.9/ 6.0 %
+  swings with 2 strikes: miss  23.1/ 22.3  caught tip  1.2/ 2.4  foul  38.8/ 38.6  in play  36.9/ 36.7  bat speed  68.7/ 68.7  under 60 mph 12.2/ 8.8 %
+  swing and miss  bat speed 71.54/71.54 (SD 4.99/4.73)  depth mean   6.8 in, SD 12.94/15.49  direction mean   8.9, SD 18.67/24.72 deg
+  foul            bat speed 72.22/71.11 (SD 4.46/4.86)  depth mean   2.2 in, SD  9.56/10.38  direction mean   2.4, SD 15.07/17.19 deg
+  in play         bat speed 72.66/72.01 (SD 4.34/4.71)  depth mean   3.3 in, SD  7.50/ 7.69  direction mean   4.3, SD 11.50/12.00 deg
+  attack angle on balls in play, deg     11.00      8.78     +2.22   +25.3%
+  attack angle SD                         8.39      8.36     +0.03    +0.4%
+  pull-side spray off the bat, mean deg      6.64      5.60     +1.04   +18.6%
+  pull-side spray SD                     22.11     31.60     -9.49   -30.0%
   fits on balls in play: slope sim / MLB (correlation sim / MLB)
-    bat speed (mph) per inch of depth                      0.018 /  0.168   (r  0.03 / 0.27)
-    attack angle (deg) per inch of depth                   0.633 /  0.706   (r  0.57 / 0.65)
+    bat speed (mph) per inch of depth                      0.010 /  0.168   (r  0.02 / 0.27)
+    attack angle (deg) per inch of depth                   0.643 /  0.706   (r  0.57 / 0.65)
     direction toward pull (deg) per inch of depth          1.259 /  1.264   (r  0.82 / 0.81)
-    pull-side spray per degree of direction                1.249 /  1.090   (r  0.65 / 0.41)
-    depth (in) per inch of inside location                -0.092 /  0.000   (r -0.07 / 0.00)
-    direction (deg) per inch of inside location            0.167 /  0.218   (r  0.09 / 0.11)
-    pull-side spray (deg) per inch of inside location      0.187 /  0.790   (r  0.05 / 0.15)
+    pull-side spray per degree of direction                1.282 /  1.090   (r  0.67 / 0.41)
+    depth (in) per inch of inside location                -0.084 /  0.000   (r -0.07 / 0.00)
+    direction (deg) per inch of inside location            0.182 /  0.218   (r  0.10 / 0.11)
+    pull-side spray (deg) per inch of inside location      0.198 /  0.790   (r  0.05 / 0.15)
   by contact depth (in, relative to the usual contact point; MLB bins relative to 30 in): sim / MLB
     depth          whiff %      foul %     in play %   | in play: bat speed    attack      direction   launch      EV          efficiency    spray
-    [-60,-25)   60.2/ 60.1   30.9/ 37.3    8.9/  2.6   |  69.9/  NaN  -11.7/  NaN  -34.5/  NaN  -27.3/  NaN   93.0/  NaN  0.877/NaN  -26.1/  NaN   (share of swings  0.2 %,  5.1 in from the end of the bat)
-    [-25,-15)   42.6/ 35.7   39.9/ 51.1   17.5/ 13.2   |  70.6/ 67.9   -5.8/ -5.9  -23.5/-23.1  -15.8/-13.9   92.8/ 88.2  0.870/0.855  -20.2/-23.6   (share of swings  2.4 %,  5.7 in from the end of the bat)
-    [-15, -8)   27.5/ 20.4   45.1/ 50.5   27.4/ 29.1   |  71.5/ 69.6    0.2/  0.1  -14.0/-14.7   -2.5/  0.8   91.5/ 88.3  0.850/0.841  -12.5/-13.4   (share of swings  8.5 %,  6.2 in from the end of the bat)
-    [ -8, -3)   16.4/ 12.6   44.0/ 43.1   39.6/ 44.3   |  72.1/ 71.1    5.0/  5.2   -6.8/ -7.2    9.2/ 11.3   90.8/ 89.4  0.839/0.838   -5.1/ -4.2   (share of swings 13.8 %,  6.3 in from the end of the bat)
-    [ -3,  1)   11.9/  9.4   38.6/ 38.4   49.4/ 52.2   |  72.7/ 72.1    8.7/  8.5   -1.2/ -1.3   16.1/ 15.5   90.8/ 91.2  0.836/0.846    2.7/  4.6   (share of swings 15.4 %,  6.1 in from the end of the bat)
-    [  1,  5)   11.8/  9.9   35.2/ 35.5   53.0/ 54.6   |  73.2/ 72.9   11.4/ 11.4    3.9/  3.7   19.4/ 19.3   91.3/ 92.0  0.838/0.849   10.2/ 12.3   (share of swings 16.5 %,  5.8 in from the end of the bat)
-    [  5, 10)   16.5/ 15.9   36.1/ 37.8   47.4/ 46.2   |  73.3/ 73.4   13.5/ 13.8    9.3/  8.8   20.0/ 20.5   91.4/ 91.3  0.840/0.840   17.9/ 19.3   (share of swings 17.8 %,  5.1 in from the end of the bat)
-    [ 10, 17)   31.1/ 31.2   36.8/ 42.3   32.1/ 26.5   |  72.4/ 73.4   16.0/ 16.6   15.8/ 15.1   19.3/ 18.4   89.2/ 84.9  0.832/0.785   25.7/ 23.5   (share of swings 16.0 %,  4.2 in from the end of the bat)
-    [ 17, 25)   53.7/ 60.2   31.0/ 29.4   15.3/ 10.3   |  70.7/ 73.4   18.8/ 20.1   23.3/ 23.6   14.5/  1.8   85.3/ 72.1  0.814/0.670   33.8/ 16.1   (share of swings  7.5 %,  3.3 in from the end of the bat)
-    [ 25, 60)   71.9/ 91.6   22.2/  6.2    5.8/  2.2   |  69.4/  NaN   22.0/  NaN   32.1/  NaN   11.5/  NaN   83.5/  NaN  0.811/NaN   39.6/  NaN   (share of swings  1.9 %,  3.1 in from the end of the bat)
+    [-60,-25)   61.3/ 60.1   30.4/ 37.3    8.3/  2.6   |  70.1/  NaN  -11.6/  NaN  -33.8/  NaN  -29.0/  NaN   93.8/  NaN  0.883/NaN  -25.1/  NaN   (share of swings  0.2 %,  4.9 in from the end of the bat)
+    [-25,-15)   42.8/ 35.7   41.6/ 51.1   15.6/ 13.2   |  70.6/ 67.9   -6.0/ -5.9  -23.6/-23.1  -19.5/-13.9   93.4/ 88.2  0.875/0.855  -22.3/-23.6   (share of swings  2.4 %,  5.8 in from the end of the bat)
+    [-15, -8)   27.5/ 20.4   48.3/ 50.5   24.2/ 29.1   |  71.5/ 69.6   -0.1/  0.1  -14.1/-14.7   -8.2/  0.8   92.5/ 88.3  0.860/0.841  -16.0/-13.4   (share of swings  8.5 %,  6.1 in from the end of the bat)
+    [ -8, -3)   16.6/ 12.6   47.7/ 43.1   35.7/ 44.3   |  72.2/ 71.1    5.0/  5.2   -6.6/ -7.2    2.6/ 11.3   91.6/ 89.4  0.847/0.838   -8.9/ -4.2   (share of swings 13.8 %,  6.3 in from the end of the bat)
+    [ -3,  1)   11.8/  9.4   41.7/ 38.4   46.5/ 52.2   |  72.7/ 72.1    8.9/  8.5   -0.8/ -1.3   10.5/ 15.5   91.5/ 91.2  0.843/0.846   -1.7/  4.6   (share of swings 15.4 %,  6.2 in from the end of the bat)
+    [  1,  5)   11.8/  9.9   35.7/ 35.5   52.5/ 54.6   |  73.2/ 72.9   11.7/ 11.4    4.3/  3.7   14.4/ 19.3   91.7/ 92.0  0.842/0.849    6.3/ 12.3   (share of swings 16.4 %,  5.8 in from the end of the bat)
+    [  5, 10)   16.6/ 15.9   34.3/ 37.8   49.0/ 46.2   |  73.3/ 73.4   14.0/ 13.8    9.7/  8.8   16.3/ 20.5   91.3/ 91.3  0.840/0.840   14.6/ 19.3   (share of swings 17.9 %,  5.1 in from the end of the bat)
+    [ 10, 17)   31.1/ 31.2   34.4/ 42.3   34.5/ 26.5   |  72.4/ 73.4   16.4/ 16.6   16.1/ 15.1   17.0/ 18.4   88.9/ 84.9  0.829/0.785   23.1/ 23.5   (share of swings 16.0 %,  4.1 in from the end of the bat)
+    [ 17, 25)   53.5/ 60.2   29.9/ 29.4   16.6/ 10.3   |  70.6/ 73.4   19.0/ 20.1   23.5/ 23.6   14.2/  1.8   84.7/ 72.1  0.809/0.670   32.1/ 16.1   (share of swings  7.4 %,  3.3 in from the end of the bat)
+    [ 25, 60)   71.9/ 91.6   21.5/  6.2    6.6/  2.2   |  68.8/  NaN   21.7/  NaN   31.8/  NaN   10.8/  NaN   82.3/  NaN  0.805/NaN   38.7/  NaN   (share of swings  1.9 %,  3.0 in from the end of the bat)
   by location of the pitch (sim / MLB): miss % / foul % / in play % by depth of contact
-    pitch well inside the zone  share 44.8/46.6   miss  16.0/ 13.9   foul  38.5/ 40.5   in play  45.5/ 45.7   more than 10 in early 21.6/13.2 %
-    pitch on the edge           share 16.1/16.2   miss  17.8/ 19.4   foul  38.7/ 40.7   in play  43.5/ 39.9   more than 10 in early 23.2/16.3 %
-    pitch outside the zone      share 39.1/37.2   miss  32.8/ 36.3   foul  36.4/ 35.4   in play  30.8/ 28.3   more than 10 in early 30.9/26.3 %
-    [-60,-25)     59/  54   31/  43   10/   3     61/  67   29/  30    9/   2     62/  72   31/  25    7/   4
-    [-25,-15)     39/  36   42/  52   19/  12     42/  43   40/  49   18/   8     49/  51   35/  42   15/   8
-    [-15, -8)     23/  21   47/  51   30/  28     25/  26   47/  50   28/  24     36/  31   41/  44   24/  24
-    [ -8, -3)     12/  10   45/  43   44/  47     13/  14   46/  41   41/  46     25/  20   42/  38   33/  43
-    [ -3,  1)      7/   7   38/  33   55/  60      8/   7   39/  34   53/  59     21/  16   40/  36   40/  48
-    [  1,  5)      6/   5   34/  30   60/  65      7/   6   35/  34   58/  61     21/  18   37/  39   42/  43
-    [  5, 10)     10/   6   35/  35   55/  59     11/  10   36/  43   53/  47     26/  30   37/  40   37/  31
-    [ 10, 17)     23/  15   39/  52   39/  33     25/  27   38/  46   37/  27     40/  53   35/  34   25/  14
-    [ 17, 25)     46/  51   35/  37   19/  12     49/  56   33/  33   18/  11     60/  79   27/  16   12/   5
-    [ 25, 60)     67/  93   26/   4    8/   3     69/  99   24/   1    7/   0     76/  97   20/   2    4/   1
+    pitch well inside the zone  share 44.9/46.6   miss  16.2/ 13.9   foul  39.2/ 40.5   in play  44.6/ 45.7   more than 10 in early 21.5/13.2 %
+    pitch on the edge           share 16.1/16.2   miss  17.6/ 19.4   foul  39.7/ 40.7   in play  42.7/ 39.9   more than 10 in early 22.9/16.3 %
+    pitch outside the zone      share 39.0/37.2   miss  32.8/ 36.3   foul  36.7/ 35.4   in play  30.5/ 28.3   more than 10 in early 30.8/26.3 %
+    [-60,-25)     59/  54   32/  43    9/   3     63/  67   28/  30    9/   2     65/  72   29/  25    6/   4
+    [-25,-15)     40/  36   43/  52   17/  12     41/  43   42/  49   16/   8     48/  51   38/  42   14/   8
+    [-15, -8)     23/  21   50/  51   26/  28     25/  26   51/  50   25/  24     36/  31   44/  44   21/  24
+    [ -8, -3)     11/  10   49/  43   39/  47     13/  14   50/  41   37/  46     26/  20   44/  38   30/  43
+    [ -3,  1)      7/   7   41/  33   52/  60      8/   7   43/  34   50/  59     21/  16   42/  36   37/  48
+    [  1,  5)      6/   5   34/  30   60/  65      7/   6   35/  34   57/  61     21/  18   38/  39   42/  43
+    [  5, 10)     10/   6   33/  35   57/  59     11/  10   35/  43   55/  47     26/  30   36/  40   38/  31
+    [ 10, 17)     23/  15   36/  52   41/  33     25/  27   35/  46   40/  27     40/  53   33/  34   27/  14
+    [ 17, 25)     46/  51   33/  37   21/  12     48/  56   32/  33   20/  11     60/  79   27/  16   13/   5
+    [ 25, 60)     67/  93   25/   4    9/   3     69/  99   24/   1    7/   0     76/  97   19/   2    5/   1
   well-timed swings (within 4 in of the usual depth and 5 deg of the usual direction), 15.2 % of full swings: sim / MLB
-    swing and miss  10.2/  7.2   foul, with caught tips  36.9/ 34.6   in play  52.9/ 58.2   (caught tips  1.1/ 1.6; MLB fouls without launch data 4.4)
-    pitch well inside the zone  share 48.3/53.7   swing and miss   6.3/  6.4   foul  34.8/ 32.1   in play  58.9/ 61.6
-    pitch on the edge           share 16.8/16.4   swing and miss   7.2/  6.8   foul  36.0/ 34.0   in play  56.8/ 59.2
-    pitch outside the zone      share 35.0/29.9   swing and miss  20.2/ 14.3   foul  37.2/ 34.3   in play  42.6/ 51.5
-    well-timed misses by cause: early 0.0 %, late 0.0 %, off the end 12.2 %, jammed 0.0 %, over the ball 38.7 %, under the ball 49.1 %
+    swing and miss  10.2/  7.2   foul, with caught tips  39.8/ 34.6   in play  50.0/ 58.2   (caught tips  1.1/ 1.6; MLB fouls without launch data 4.4)
+    pitch well inside the zone  share 48.3/53.7   swing and miss   6.3/  6.4   foul  37.9/ 32.1   in play  55.8/ 61.6
+    pitch on the edge           share 16.7/16.4   swing and miss   7.3/  6.8   foul  39.2/ 34.0   in play  53.5/ 59.2
+    pitch outside the zone      share 35.0/29.9   swing and miss  20.1/ 14.3   foul  39.5/ 34.3   in play  40.3/ 51.5
+    well-timed misses by cause: early 0.0 %, late 0.0 %, off the end 11.6 %, jammed 0.0 %, over the ball 38.7 %, under the ball 49.6 %
   timing by pitch type (sim / MLB), depth of contact relative to the mean of balls in play, + = out in front:
         mean in       SD           >10 in late %  >10 in early % | whiff %: >10 late    5-10 late    within 5     5-10 early   >10 early
-    FF   -4.3/ -6.0    8.0/  7.4    21.1/ 28.1      3.7/  1.5   |         34.7/ 38.9   17.7/ 20.0   10.9/  9.2   16.2/  4.2   32.9/  9.6
-    SI   -3.9/ -4.6    8.1/  7.3    19.9/ 21.8      4.3/  2.1   |         24.5/ 20.5   13.6/ 11.2   13.3/  8.3   22.9/ 12.5   40.4/ 23.7
-    FC   +0.4/ -0.4    8.5/  9.1     9.7/ 14.0     13.1/ 12.2   |         23.5/ 41.3   10.2/ 20.1    7.4/ 12.0   14.7/ 14.3   33.9/ 35.9
-    SL   +6.4/ +5.8    8.8/ 10.1     2.7/  5.7     35.2/ 33.0   |         22.8/ 36.0   12.9/ 17.8   13.9/ 11.5   24.1/ 18.7   49.9/ 57.6
-    ST   +8.3/ +7.5    8.8/ 10.0     1.5/  4.0     41.5/ 40.0   |         24.9/ 42.5   16.0/ 20.3   14.5/ 11.3   23.1/ 16.8   51.4/ 47.9
-    CU   +8.5/ +8.9    8.2/ 10.2     1.0/  2.8     42.0/ 44.9   |         24.6/ 18.8   15.2/  7.9   13.5/  7.3   20.0/ 14.0   43.0/ 44.0
-    CH   +6.2/ +6.9    8.7/  9.4     2.7/  3.4     33.7/ 36.7   |         27.0/ 18.2   18.0/ 12.8   17.6/ 12.1   27.0/ 18.8   51.1/ 53.8
-    FS   +7.0/ +7.2    8.9/  9.5     2.6/  3.7     38.6/ 37.9   |         25.5/ 27.8   16.0/  7.8   16.7/ 17.1   26.8/ 23.9   50.7/ 57.1
+    FF   -4.8/ -6.0    8.0/  7.4    21.2/ 28.1      3.6/  1.5   |         34.9/ 38.9   17.6/ 20.0   11.0/  9.2   16.1/  4.2   33.7/  9.6
+    SI   -4.3/ -4.6    8.0/  7.3    19.8/ 21.8      4.3/  2.1   |         24.5/ 20.5   13.7/ 11.2   13.3/  8.3   23.5/ 12.5   39.9/ 23.7
+    FC   +0.0/ -0.4    8.4/  9.1     9.4/ 14.0     13.3/ 12.2   |         23.4/ 41.3   10.2/ 20.1    7.6/ 12.0   14.4/ 14.3   34.0/ 35.9
+    SL   +5.9/ +5.8    8.8/ 10.1     2.9/  5.7     35.0/ 33.0   |         23.2/ 36.0   13.3/ 17.8   13.6/ 11.5   24.0/ 18.7   49.7/ 57.6
+    ST   +7.8/ +7.5    8.7/ 10.0     1.5/  4.0     41.7/ 40.0   |         26.4/ 42.5   16.6/ 20.3   14.6/ 11.3   23.6/ 16.8   51.7/ 47.9
+    CU   +8.0/ +8.9    8.2/ 10.2     1.1/  2.8     41.8/ 44.9   |         25.9/ 18.8   16.0/  7.9   13.5/  7.3   20.4/ 14.0   42.9/ 44.0
+    CH   +5.7/ +6.9    8.7/  9.4     2.7/  3.4     33.6/ 36.7   |         27.5/ 18.2   18.4/ 12.8   17.4/ 12.1   26.8/ 18.8   50.9/ 53.8
+    FS   +6.4/ +7.2    8.8/  9.5     2.6/  3.7     37.9/ 37.9   |         21.3/ 27.8   16.5/  7.8   16.7/ 17.1   26.8/ 23.9   49.9/ 57.1
     elevation off the bat      fouls, % of swings (EV, mph)        in play, % of swings (EV, mph)
-    [-90,-60)     0.6/  0.1  ( 71.5/ 56.7)     0.1/  0.1  ( 72.7/  NaN)
-    [-60,-40)     5.8/  2.6  ( 71.2/ 67.0)     0.6/  0.7  ( 75.5/ 70.0)
-    [-40,-25)     4.9/  2.6  ( 74.3/ 75.0)     1.5/  2.1  ( 80.5/ 81.7)
-    [-25,-10)     2.7/  1.4  ( 78.0/ 77.4)     5.0/  5.2  ( 87.4/ 89.7)
-    [-10,  0)     0.3/  0.2  ( 64.3/ 71.6)     6.1/  6.6  ( 91.9/ 94.2)
-    [  0, 10)     0.8/  0.6  ( 75.9/ 75.5)     7.2/  7.6  ( 94.4/ 96.7)
-    [ 10, 20)     1.5/  1.5  ( 77.8/ 75.2)     7.9/  8.3  ( 94.9/ 96.3)
-    [ 20, 30)     1.9/  1.6  ( 76.7/ 71.6)     7.7/  9.4  ( 93.4/ 95.3)
-    [ 30, 40)     2.4/  2.1  ( 76.7/ 69.6)     6.8/  6.9  ( 90.6/ 91.9)
-    [ 40, 50)     3.5/  2.9  ( 76.0/ 71.6)     4.8/  4.3  ( 86.7/ 88.6)
-    [ 50, 60)     4.8/  4.7  ( 76.0/ 73.9)     2.9/  3.2  ( 83.0/ 85.9)
-    [ 60, 70)     4.4/  4.9  ( 76.9/ 76.4)     1.6/  2.3  ( 80.1/ 82.5)
-    [ 70, 80)     2.0/  2.8  ( 78.3/ 76.1)     0.6/  0.9  ( 77.2/ 76.9)
-    [ 80, 91)     0.3/  0.6  ( 79.8/ 76.3)     0.1/  0.3  ( 76.9/ 77.3)
+    [-90,-60)     1.2/  0.1  ( 71.1/ 56.7)     0.1/  0.1  ( 73.6/  NaN)
+    [-60,-40)     6.1/  2.6  ( 71.3/ 67.0)     1.1/  0.7  ( 75.2/ 70.0)
+    [-40,-25)     4.6/  2.6  ( 76.1/ 75.0)     2.1/  2.1  ( 80.8/ 81.7)
+    [-25,-10)     2.5/  1.4  ( 80.4/ 77.4)     6.0/  5.2  ( 88.9/ 89.7)
+    [-10,  0)     0.2/  0.2  ( 59.5/ 71.6)     6.6/  6.6  ( 93.4/ 94.2)
+    [  0, 10)     0.7/  0.6  ( 76.0/ 75.5)     7.5/  7.6  ( 95.3/ 96.7)
+    [ 10, 20)     1.5/  1.5  ( 78.0/ 75.2)     7.9/  8.3  ( 95.2/ 96.3)
+    [ 20, 30)     2.4/  1.6  ( 78.0/ 71.6)     7.3/  9.4  ( 93.2/ 95.3)
+    [ 30, 40)     3.6/  2.1  ( 78.1/ 69.6)     5.5/  6.9  ( 90.0/ 91.9)
+    [ 40, 50)     5.2/  2.9  ( 76.5/ 71.6)     3.4/  4.3  ( 86.6/ 88.6)
+    [ 50, 60)     5.9/  4.7  ( 76.7/ 73.9)     1.6/  3.2  ( 82.1/ 85.9)
+    [ 60, 70)     3.7/  4.9  ( 77.6/ 76.4)     0.6/  2.3  ( 79.8/ 82.5)
+    [ 70, 80)     1.0/  2.8  ( 78.5/ 76.1)     0.2/  0.9  ( 75.4/ 76.9)
+    [ 80, 91)     0.1/  0.6  ( 79.8/ 76.3)     0.0/  0.3  ( 75.1/ 77.3)
   by launch-angle class (sim / MLB): pull-side spray mean and SD, direction, depth, attack angle
-    GB  spray   16.4/  16.1 (SD 22.4/27.4)  direction   1.0/  2.6  depth   1.8/ -1.1 in  attack   8.5/  6.9
-    LD  spray    8.7/   5.8 (SD 19.7/25.9)  direction   3.6/  1.1  depth   3.0/ -0.1 in  attack  10.8/  8.5
-    FB  spray    3.2/  -2.3 (SD 18.3/25.2)  direction   5.3/ -1.8  depth   3.6/  1.3 in  attack  12.1/ 10.5
-    PU  spray   -3.3/ -19.2 (SD 22.9/47.6)  direction   8.6/ -6.3  depth   4.9/  3.3 in  attack  13.9/ 13.0
+    GB  spray   11.9/  16.1 (SD 23.1/27.4)  direction   1.5/  2.6  depth   2.1/ -1.1 in  attack   9.0/  6.9
+    LD  spray    4.3/   5.8 (SD 19.9/25.9)  direction   5.0/  1.1  depth   3.7/ -0.1 in  attack  11.8/  8.5
+    FB  spray    0.4/  -2.3 (SD 18.1/25.2)  direction   7.4/ -1.8  depth   4.6/  1.3 in  attack  13.3/ 10.5
+    PU  spray   -3.2/ -19.2 (SD 22.9/47.6)  direction  11.5/ -6.3  depth   6.4/  3.3 in  attack  15.0/ 13.0
 
 == Batted-ball types (launch angle classes: GB < 10, LD 10-25, FB 25-50, PU > 50 deg)
   note: Statcast's own bb_type labels are assigned by its classifier, so shares differ slightly from pure launch-angle classes
-  GB  share  43.4/ 42.2  EV  88.2/ 85.6  AVG 0.296/0.249  HR 0.000/0.000  1B 0.255/0.224  2B 0.040/0.023  3B 0.001/0.002  pull-side mean  16.6 deg
-  LD  share  21.1/ 24.2  EV  93.6/ 94.2  AVG 0.651/0.621  HR 0.050/0.014  1B 0.375/0.416  2B 0.210/0.178  3B 0.016/0.013  pull-side mean  12.9 deg
-  FB  share  25.1/ 26.6  EV  89.8/ 92.4  AVG 0.211/0.252  HR 0.128/0.153  1B 0.055/0.047  2B 0.027/0.045  3B 0.002/0.007  pull-side mean   5.1 deg
-  PU  share  10.4/  7.0  EV  80.5/ 77.6  AVG 0.002/0.011  HR 0.000/0.000  1B 0.002/0.009  2B 0.000/0.002  3B 0.000/0.000  pull-side mean  -6.3 deg
+  GB  share  49.5/ 42.2  EV  88.4/ 85.6  AVG 0.258/0.249  HR 0.000/0.000  1B 0.232/0.224  2B 0.024/0.023  3B 0.001/0.002  pull-side mean  11.4 deg
+  LD  share  20.9/ 24.2  EV  93.6/ 94.2  AVG 0.661/0.621  HR 0.060/0.014  1B 0.374/0.416  2B 0.204/0.178  3B 0.023/0.013  pull-side mean   5.5 deg
+  FB  share  22.0/ 26.6  EV  89.7/ 92.4  AVG 0.256/0.252  HR 0.164/0.153  1B 0.052/0.047  2B 0.035/0.045  3B 0.005/0.007  pull-side mean  -0.6 deg
+  PU  share   7.6/  7.0  EV  80.2/ 77.6  AVG 0.002/0.011  HR 0.000/0.000  1B 0.002/0.009  2B 0.000/0.002  3B 0.000/0.000  pull-side mean  -7.7 deg
   MLB pull-side mean by Statcast type: GB +12.1 (RHB) / +18.5 (LHB), LD +4.3 / +6.4, FB -4.5 / -1.9 deg
 
 == By launch-angle bin: share %, mean EV, AVG, HR rate, landing distance (ft); sim / MLB
-  [ -40, -30)  share  1.94/ 2.38  EV  78.5/ 75.6  AVG 0.093/0.066  HR 0.000/0.000  dist    6/   3
-  [ -30, -20)  share  3.62/ 4.43  EV  82.6/ 83.9  AVG 0.088/0.068  HR 0.000/0.000  dist    8/   5
-  [ -20, -10)  share  8.44/ 7.75  EV  86.7/ 87.5  AVG 0.119/0.118  HR 0.000/0.000  dist   12/   8
-  [ -10,   0)  share 12.57/11.39  EV  90.1/ 91.2  AVG 0.246/0.240  HR 0.000/0.000  dist   27/  22
-  [   0,  10)  share 14.49/13.91  EV  92.7/ 93.4  AVG 0.537/0.483  HR 0.000/0.000  dist  110/  97
-  [  10,  20)  share 14.44/14.98  EV  93.7/ 94.0  AVG 0.716/0.711  HR 0.013/0.003  dist  241/ 236
-  [  20,  30)  share 12.87/14.30  EV  92.9/ 93.2  AVG 0.465/0.467  HR 0.178/0.178  dist  317/ 327
-  [  30,  40)  share 10.87/10.57  EV  90.5/ 90.6  AVG 0.225/0.253  HR 0.155/0.158  dist  318/ 325
-  [  40,  50)  share  8.06/ 5.97  EV  86.8/ 87.5  AVG 0.034/0.068  HR 0.015/0.023  dist  274/ 278
-  [  50,  60)  share  5.11/ 4.31  EV  82.8/ 85.1  AVG 0.004/0.030  HR 0.000/0.000  dist  214/ 220
-  [  60,  70)  share  3.12/ 3.31  EV  79.7/ 82.2  AVG 0.001/0.014  HR 0.000/0.000  dist  149/ 156
+  [ -40, -30)  share  2.51/ 2.38  EV  78.9/ 75.6  AVG 0.079/0.066  HR 0.000/0.000  dist    6/   3
+  [ -30, -20)  share  4.50/ 4.43  EV  82.7/ 83.9  AVG 0.071/0.068  HR 0.000/0.000  dist    8/   5
+  [ -20, -10)  share  9.94/ 7.75  EV  87.3/ 87.5  AVG 0.092/0.118  HR 0.000/0.000  dist   12/   8
+  [ -10,   0)  share 14.00/11.39  EV  90.8/ 91.2  AVG 0.214/0.240  HR 0.000/0.000  dist   27/  22
+  [   0,  10)  share 15.37/13.91  EV  93.2/ 93.4  AVG 0.501/0.483  HR 0.000/0.000  dist  107/  97
+  [  10,  20)  share 14.49/14.98  EV  93.8/ 94.0  AVG 0.710/0.711  HR 0.014/0.003  dist  242/ 236
+  [  20,  30)  share 12.22/14.30  EV  92.9/ 93.2  AVG 0.520/0.467  HR 0.225/0.178  dist  326/ 327
+  [  30,  40)  share  9.54/10.57  EV  90.2/ 90.6  AVG 0.267/0.253  HR 0.190/0.158  dist  325/ 325
+  [  40,  50)  share  6.66/ 5.97  EV  86.6/ 87.5  AVG 0.039/0.068  HR 0.018/0.023  dist  278/ 278
+  [  50,  60)  share  3.91/ 4.31  EV  82.3/ 85.1  AVG 0.004/0.030  HR 0.000/0.000  dist  215/ 220
+  [  60,  70)  share  2.14/ 3.31  EV  79.4/ 82.2  AVG 0.001/0.014  HR 0.000/0.000  dist  149/ 156
 
-== Launch angle 20-35 deg by exit velocity: HR rate and landing distance; sim / MLB
-  EV [ 80, 85)  HR 0.000/0.000  dist  278/ 281   (n = 6731)
-  EV [ 85, 90)  HR 0.001/0.002  dist  302/ 303   (n = 9389)
-  EV [ 90, 95)  HR 0.011/0.021  dist  325/ 328   (n = 13023)
-  EV [ 95,100)  HR 0.089/0.102  dist  344/ 354   (n = 16773)
-  EV [100,105)  HR 0.304/0.382  dist  362/ 377   (n = 17440)
-  EV [105,110)  HR 0.596/0.680  dist  381/ 398   (n = 11389)
-  EV [110,115)  HR 0.814/0.859  dist  399/ 413   (n = 4222)
+== Launch angle 20-35 deg by exit velocity: HR rate and projected distance (mean, SD); sim / MLB
+  EV [ 80, 85)  HR 0.000/0.000  dist  284/ 281  SD 24.4/21.7   (n = 6255)
+  EV [ 85, 90)  HR 0.000/0.002  dist  308/ 303  SD 24.2/22.1   (n = 8644)
+  EV [ 90, 95)  HR 0.007/0.021  dist  331/ 328  SD 24.5/23.0   (n = 11973)
+  EV [ 95,100)  HR 0.085/0.102  dist  354/ 354  SD 25.4/23.1   (n = 15077)
+  EV [100,105)  HR 0.412/0.382  dist  377/ 377  SD 26.6/25.3   (n = 15649)
+  EV [105,110)  HR 0.781/0.680  dist  396/ 398  SD 28.7/26.4   (n = 10546)
+  EV [110,115)  HR 0.898/0.859  dist  413/ 413  SD 31.2/30.6   (n = 4232)
+
+== Home-run rate by launch angle and exit velocity; sim / MLB (Statcast 2025 sample, n in brackets)
+  LA \ EV        [ 90, 95)          [ 95,100)          [100,105)          [105,110)          [110,120)
+  10-15      0.000/0.000 (196)   0.000/0.000 (274)   0.000/0.000 (365)   0.000/0.000 (233)   0.004/0.000 ( 69)
+  15-20      0.000/0.000 (225)   0.000/0.000 (304)   0.003/0.000 (355)   0.055/0.026 (228)   0.245/0.068 ( 59)
+  20-25      0.000/0.000 (231)   0.011/0.014 (296)   0.167/0.132 (319)   0.576/0.425 (207)   0.811/0.755 ( 53)
+  25-30      0.006/0.018 (221)   0.096/0.137 (307)   0.586/0.536 (304)   0.941/0.916 (155)   0.984/1.000 ( 37)
+  30-35      0.016/0.045 (222)   0.164/0.163 (257)   0.551/0.524 (231)   0.904/0.835 (103)   0.991/0.923 ( 13)
+  35-40      0.009/0.011 (177)   0.088/0.063 (206)   0.294/0.314 (153)   0.612/0.690 ( 42)   0.891/0.857 (  7)
+  40-50      0.000/0.004 (284)   0.010/0.014 (214)   0.062/0.103 (136)   0.193/0.435 ( 23)   0.394/0.667 (  3)
+
+== Home-run share by projected distance (ft), launch angle 15 deg and up, by the bearing of the landing point; sim / MLB
+  distance     [300,320)   [320,340)   [340,360)   [360,380)   [380,400)   [400,420)   [420,440)   [440,460)
+  line        0.00/0.00  0.02/0.03  0.36/0.35  0.89/0.91  1.00/1.00  1.00/1.00  1.00/1.00  1.00/1.00
+  alley       0.00/0.00  0.00/0.00  0.00/0.01  0.13/0.16  0.56/0.64  0.96/0.96  1.00/0.97  1.00/1.00
+  centre      0.00/0.00  0.00/0.00  0.00/0.00  0.00/0.00  0.02/0.04  0.66/0.53  0.99/0.91  1.00/1.00
+
+  inside-the-park home runs: 0.00 % of home runs
+
+== Home-run share by projected distance beyond the park's fence at the landing bearing (ft), launch angle 15 deg and up; sim / MLB
+  margin      [-40,-30)  [-30,-20)  [-20,-10)  [-10,  0)  [  0, 10)  [ 10, 20)  [ 20, 30)  [ 30, 40)  [ 40, 50)
+  line        0.00/0.00  0.00/0.00  0.00/0.00  0.00/0.02  0.17/0.24  0.79/0.67  0.93/0.85  0.98/0.95  1.00/0.99
+  alley       0.00/0.00  0.00/0.00  0.00/0.00  0.00/0.10  0.15/0.42  0.83/0.75  0.97/0.97  1.00/0.99  1.00/0.99
+  centre      0.00/0.00  0.00/0.00  0.00/0.00  0.00/0.02  0.18/0.22  0.86/0.68  0.99/0.95  1.00/1.00  1.00/1.00
 
 == Spray (pull-side angle, deg): sim / MLB
-  RHB  mean  10.4/  3.2  SD  27.9/ 32.3  pull  50.9/ 42.1  centre  28.3/ 28.9  oppo  20.8/ 29.0
-  LHB  mean  10.8/  7.7  SD  27.9/ 31.5  pull  51.5/ 46.8  centre  27.8/ 27.8  oppo  20.7/ 25.3
+  RHB  mean   6.0/  3.2  SD  27.7/ 32.3  pull  43.7/ 42.1  centre  30.5/ 28.9  oppo  25.8/ 29.0
+  LHB  mean   6.3/  7.7  SD  27.7/ 31.5  pull  44.1/ 46.8  centre  30.3/ 27.8  oppo  25.5/ 25.3
 
 == Launch angle of balls in play by pitch height (ft): sim / MLB
-  [1.0,1.5)  15.0/  NaN  [1.5,2.0)  12.6/  6.0  [2.0,2.5)  14.1/ 11.6  [2.5,3.0)  16.3/ 17.0  [3.0,3.5)  19.2/ 21.9  [3.5,4.0)  18.4/ 26.7
+  [1.0,1.5)  10.9/  NaN  [1.5,2.0)   8.5/  6.0  [2.0,2.5)  10.0/ 11.6  [2.5,3.0)  12.1/ 17.0  [3.0,3.5)  14.8/ 21.9  [3.5,4.0)  14.3/ 26.7
 
 == Base states at the start of a plate appearance, % (sim / MLB)
-  empty 56.01/56.35  1B 20.02/18.32  2B 8.02/8.78  1B+2B 6.95/6.56  3B 2.36/2.77  1B+3B 2.12/2.66  2B+3B 2.48/2.36  loaded 2.04/2.18 
-  runner on third with fewer than two outs: 4.16/5.20 % of PA; sacrifice fly in that situation: 13.93/15.25 %
-  runner on first with fewer than two outs: 18.71/18.15 % of PA; GIDP in that situation: 9.30/10.39 %
+  empty 56.80/56.35  1B 19.75/18.32  2B 7.58/8.78  1B+2B 6.70/6.56  3B 2.68/2.77  1B+3B 2.15/2.66  2B+3B 2.29/2.36  loaded 2.05/2.18 
+  runner on third with fewer than two outs: 4.25/5.20 % of PA; sacrifice fly in that situation: 12.21/15.25 %
+  runner on first with fewer than two outs: 18.60/18.15 % of PA; GIDP in that situation: 11.51/10.39 %
 
 == Base running, % (sim / MLB)
-  runner on first reaches third on a single                       28.5 /  33.7
-  runner on second scores on a single                             71.1 /  65.2
-  runner on first scores on a double                              30.6 /  40.7
-  runner on second takes third on a ground out                    68.2 /  69.7
-  runner on second tags to third on an air out                    35.4 /  35.1
-  ground-ball out with a runner on first, <2 outs: double play    51.1 /  50.6
-     ... force out at second only                                 31.5 /  28.6
-     ... out at first only                                        17.4 /  20.8
+  runner on first reaches third on a single                       28.4 /  33.7
+  runner on second scores on a single                             67.0 /  65.2
+  runner on first scores on a double                              36.1 /  40.7
+  runner on second takes third on a ground out                    68.6 /  69.7
+  runner on second tags to third on an air out                    37.0 /  35.1
+  ground-ball out with a runner on first, <2 outs: double play    52.7 /  50.6
+     ... force out at second only                                 29.9 /  28.6
+     ... out at first only                                        17.5 /  20.8
 
 == Outs on balls in play by fielder, % (sim / MLB): P C 1B 2B 3B SS LF CF RF
-  GB   7.3/ 8.4  0.8/ 1.0 23.6/15.1 18.9/26.5 31.3/22.4 18.1/26.5  0.0/ 0.0  0.0/ 0.0  0.0/ 0.0
-  LD   0.7/ 1.7  0.1/ 0.0  3.9/ 4.3  4.8/ 7.7  6.0/ 5.9  5.4/ 7.8 27.8/20.5 24.9/28.9 26.5/23.3
-  FB   0.1/ 0.0  0.0/ 0.0  1.1/ 0.2  4.1/ 1.7  1.4/ 0.5  3.9/ 2.0 30.3/27.7 29.1/37.1 29.9/30.9
-  PU   5.3/ 0.7  7.2/ 9.3 15.0/23.6 21.2/22.0 15.0/23.4 18.3/20.8  7.4/ 0.0  3.2/ 0.1  7.5/ 0.1
+  GB   7.8/ 8.4  0.7/ 1.0 20.6/15.1 21.7/26.5 29.0/22.4 20.0/26.5  0.0/ 0.0  0.0/ 0.0  0.0/ 0.0
+  LD   0.8/ 1.7  0.1/ 0.0  4.3/ 4.3  5.7/ 7.7  6.5/ 5.9  6.0/ 7.8 24.5/20.5 24.4/28.9 27.8/23.3
+  FB   0.1/ 0.0  0.1/ 0.0  1.3/ 0.2  4.0/ 1.7  1.4/ 0.5  3.7/ 2.0 28.2/27.7 29.4/37.1 31.9/30.9
+  PU   4.8/ 0.7  7.5/ 9.3 15.1/23.6 20.1/22.0 15.3/23.4 16.8/20.8  8.1/ 0.0  3.2/ 0.1  9.2/ 0.1
 
-== Double plays: GIDP per ground-ball out with a runner on first and fewer than two outs: 0.511
+== Double plays: GIDP per ground-ball out with a runner on first and fewer than two outs: 0.527

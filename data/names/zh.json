@@ -1,0 +1,230 @@
+{
+ "_comment": "Names for Taiwanese players: surname first in Korean, given name first in English as MLB writes them. Surname weights: Ministry of the Interior, household registers of 2023-06-30 (陳 11.21 %, 林 8.33 %, 黃 6.05 %; ranks 4-10 share the published top-10 total of 52.79 % in rank order, ranks 11-20 are approximate). Given names are common male names without published counts, weighted equally. Korean spellings follow the Korean rules for Mandarin; Latin spellings follow Taiwanese passport usage (Wade-Giles). Edit freely.",
+ "locale": "zh",
+ "order_ko": "surname_first",
+ "order_en": "given_first",
+ "surnames": [
+  {
+   "en": "Chen",
+   "ko": "천",
+   "w": 11.21
+  },
+  {
+   "en": "Lin",
+   "ko": "린",
+   "w": 8.33
+  },
+  {
+   "en": "Huang",
+   "ko": "황",
+   "w": 6.05
+  },
+  {
+   "en": "Chang",
+   "ko": "장",
+   "w": 5.3
+  },
+  {
+   "en": "Lee",
+   "ko": "리",
+   "w": 5.1
+  },
+  {
+   "en": "Wang",
+   "ko": "왕",
+   "w": 4.1
+  },
+  {
+   "en": "Wu",
+   "ko": "우",
+   "w": 4.0
+  },
+  {
+   "en": "Liu",
+   "ko": "류",
+   "w": 3.2
+  },
+  {
+   "en": "Tsai",
+   "ko": "차이",
+   "w": 2.9
+  },
+  {
+   "en": "Yang",
+   "ko": "양",
+   "w": 2.6
+  },
+  {
+   "en": "Hsu",
+   "ko": "쉬",
+   "w": 1.6
+  },
+  {
+   "en": "Cheng",
+   "ko": "정",
+   "w": 1.5
+  },
+  {
+   "en": "Hsieh",
+   "ko": "셰",
+   "w": 1.4
+  },
+  {
+   "en": "Hung",
+   "ko": "훙",
+   "w": 1.2
+  },
+  {
+   "en": "Kuo",
+   "ko": "궈",
+   "w": 1.2
+  },
+  {
+   "en": "Chiu",
+   "ko": "추",
+   "w": 1.1
+  },
+  {
+   "en": "Tseng",
+   "ko": "쩡",
+   "w": 1.0
+  },
+  {
+   "en": "Liao",
+   "ko": "랴오",
+   "w": 1.0
+  },
+  {
+   "en": "Lai",
+   "ko": "라이",
+   "w": 1.0
+  },
+  {
+   "en": "Hsu",
+   "ko": "쉬",
+   "w": 0.9
+  }
+ ],
+ "given": [
+  {
+   "en": "Cheng-En",
+   "ko": "청언",
+   "w": 1.0
+  },
+  {
+   "en": "Chia-Hao",
+   "ko": "자하오",
+   "w": 1.0
+  },
+  {
+   "en": "Chih-Ming",
+   "ko": "즈밍",
+   "w": 1.0
+  },
+  {
+   "en": "Chien-Hung",
+   "ko": "젠훙",
+   "w": 1.0
+  },
+  {
+   "en": "Kuan-Yu",
+   "ko": "관위",
+   "w": 1.0
+  },
+  {
+   "en": "Yu-Hsiang",
+   "ko": "위샹",
+   "w": 1.0
+  },
+  {
+   "en": "Po-Han",
+   "ko": "보한",
+   "w": 1.0
+  },
+  {
+   "en": "Cheng-Han",
+   "ko": "청한",
+   "w": 1.0
+  },
+  {
+   "en": "Kuan-Ting",
+   "ko": "관팅",
+   "w": 1.0
+  },
+  {
+   "en": "Tsung-Han",
+   "ko": "쭝한",
+   "w": 1.0
+  },
+  {
+   "en": "Yen-Ting",
+   "ko": "옌팅",
+   "w": 1.0
+  },
+  {
+   "en": "Chun-Hung",
+   "ko": "쥔훙",
+   "w": 1.0
+  },
+  {
+   "en": "Chia-Ming",
+   "ko": "자밍",
+   "w": 1.0
+  },
+  {
+   "en": "Chih-Hao",
+   "ko": "즈하오",
+   "w": 1.0
+  },
+  {
+   "en": "Yu-Cheng",
+   "ko": "위청",
+   "w": 1.0
+  },
+  {
+   "en": "Wei-Chung",
+   "ko": "웨이중",
+   "w": 1.0
+  },
+  {
+   "en": "Wei-Yin",
+   "ko": "웨이인",
+   "w": 1.0
+  },
+  {
+   "en": "Tzu-Wei",
+   "ko": "쯔웨이",
+   "w": 1.0
+  },
+  {
+   "en": "Kai-Wei",
+   "ko": "카이웨이",
+   "w": 1.0
+  },
+  {
+   "en": "Chih-Sheng",
+   "ko": "즈성",
+   "w": 1.0
+  },
+  {
+   "en": "Pin-Jui",
+   "ko": "핀루이",
+   "w": 1.0
+  },
+  {
+   "en": "Yu-En",
+   "ko": "위언",
+   "w": 1.0
+  },
+  {
+   "en": "Po-Yu",
+   "ko": "보위",
+   "w": 1.0
+  },
+  {
+   "en": "Li-Te",
+   "ko": "리더",
+   "w": 1.0
+  }
+ ]
+}

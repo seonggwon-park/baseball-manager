@@ -169,6 +169,9 @@ pub struct ModelParams {
     /// heading (Statcast: the spray of balls in play moves 1.7 deg per inch of contact
     /// depth, the direction of the barrel's travel 1.26-1.44), how much further round
     /// it faces at the usual contact point, rad, and the swing-to-swing scatter of that.
+    /// A bat that faces further round than it travels slides along the ball and puts
+    /// hook spin on it; with a lead of 0.118 rad the batted balls carried about 1,000 rpm
+    /// more hook spin than Nathan's Statcast fit at every direction, so there is none.
     pub face_gain: f64,
     pub face_lead: f64,
     pub face_sd: f64,
@@ -275,9 +278,12 @@ pub struct ModelParams {
     pub tag_time: f64,
     /// SD of the timing noise on close plays, s.
     pub play_noise: f64,
-    /// SD of the drag coefficient from one batted ball to the next. In a neutral
-    /// environment this also stands in for wind and weather, which the flight model
-    /// otherwise treats as fixed.
+    /// SD of the drag coefficient from one batted ball to the next, standing in for wind,
+    /// weather and ball-to-ball variation, which the flight model otherwise treats as
+    /// fixed. Zero: the spread of the batted balls' own spin already gives distances at a
+    /// given exit velocity and launch angle the spread Statcast measures (23-30 ft at
+    /// 20-35 deg against 22-31 ft), and any more lifts the home-run rate of the slower
+    /// fly balls above the measured one.
     pub drag_jitter: f64,
     /// Average time lost on throws from the outfield (off line, cut off, short hop), s.
     pub throw_slop: f64,
@@ -418,9 +424,9 @@ impl Default for ModelParams {
             pivot_radius: 2.25,
             off_end_linear: 0.012,
             off_end_max: 0.16,
-            face_gain: 1.35,
-            face_lead: 0.118,
-            face_sd: 0.123,
+            face_gain: 1.3212,
+            face_lead: 0.0,
+            face_sd: 0.108,
             face_max: 0.424,
             roll_from: 0.184,
             roll_span: 0.261,
@@ -471,7 +477,7 @@ impl Default for ModelParams {
             wall_play_delay: 1.0,
             tag_time: 0.12,
             play_noise: 0.12,
-            drag_jitter: 0.04,
+            drag_jitter: 0.0,
             throw_slop: 0.50,
             throw_drag: 0.0061,
             infield_reach: 1.6,

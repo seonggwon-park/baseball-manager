@@ -20,9 +20,10 @@ pub struct BattedInfo {
     pub launch_angle: f64,
     /// Horizontal spray angle, rad (+ toward first base / right field).
     pub spray: f64,
-    /// Backspin and sidespin, rad/s.
+    /// Backspin, sidespin and gyrospin (about the direction of flight), rad/s.
     pub backspin: f64,
     pub sidespin: f64,
+    pub gyrospin: f64,
     /// Bat speed at the sweet spot, m/s.
     pub bat_speed: f64,
     /// Attack angle of the swing, rad.
@@ -257,13 +258,14 @@ pub fn bunt(env: &MatchEnv, batter: &BatterProfile, zone: &StrikeZone, thrown: &
                     Swing::FoulBack { shape }
                 }
             } else {
-                let (wb, ws, _) = spin_components(res.vel, res.spin);
+                let (wb, ws, wg) = spin_components(res.vel, res.spin);
                 let info = BattedInfo {
                     exit_speed: res.vel.norm(),
                     launch_angle: launch_angle(res.vel),
                     spray: spray_angle(res.vel),
                     backspin: wb,
                     sidespin: ws,
+                    gyrospin: wg,
                     bat_speed: push,
                     attack_angle: 0.0,
                     bunt: true,
@@ -459,13 +461,14 @@ pub fn swing(
                     Swing::FoulBack { shape }
                 }
             } else {
-                let (wb, ws, _) = spin_components(res.vel, res.spin);
+                let (wb, ws, wg) = spin_components(res.vel, res.spin);
                 let info = BattedInfo {
                     exit_speed: res.vel.norm(),
                     launch_angle: launch_angle(res.vel),
                     spray: spray_angle(res.vel),
                     backspin: wb,
                     sidespin: ws,
+                    gyrospin: wg,
                     bat_speed,
                     attack_angle: attack,
                     bunt: false,

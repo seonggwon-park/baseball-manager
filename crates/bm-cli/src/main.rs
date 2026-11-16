@@ -4,13 +4,19 @@
 //! bm validate [--games N] [--seed S] [--threads T] [--clubs K]   compare simulated aggregates with MLB 2025
 //!             [--style none|mlb] [--set name=value]               AI manager preset, model constants
 //!             [--population world|engine]                         players drawn from attributes (default) or as physical profiles
+//!             [--parks world|neutral]                             the 30 major-league parks of the world data (default) or one average park
 //! bm attributes [--games N] [--only NAME]                         value of one standard deviation of each attribute
 //! bm players [--clubs K] [--games G]                              season lines of individual players as CSV (G games per club)
+//! bm level --level L [--talent h,p,f,x[,pw,cm]] [--vs-mlb]         one level (aaa, aa, high_a, single_a, kbo, kbo2, npb, npb2,
+//!          [--foreign h,p,f,x] [--cross-games N]                   mlb) in its own parks against its official rates; talent of
+//!          [--vs-mlb-pitchers]                                     the foreign players of KBO and NPB clubs; wRC+ of the level's
+//!                                                                  hitters (and pitchers) against major-leaguers; `pool` = only that
 //! bm game [--seed S]                                              play one game and print the box score
 //! bm bench [--games N]                                            measure simulation speed
 //! bm serve [--port P] [--static DIR]                              session API over HTTP for the interface in a browser
 //! ```
 
+mod level;
 mod players;
 mod report;
 mod sensitivity;
@@ -34,7 +40,19 @@ struct Args {
     clubs: usize,
     /// Draw the players from the attribute system instead of the engine's own population.
     world: bool,
+    /// Play `validate` and `bench` in the major-league ballparks of the world data instead of one average park.
+    parks: bool,
     only: Option<String>,
+    /// `bm level`: the level, its talent offsets and whether to play it against major-leaguers.
+    level: String,
+    talent: bm_world::Talent,
+    /// Talent of the foreign players of a KBO or NPB club.
+    foreign: bm_world::Talent,
+    vs_mlb: bool,
+    /// Games per side of the comparison with major-leaguers (default: `--games`, at least 400),
+    /// and whether to play the level's pitchers against them too.
+    cross_games: Option<usize>,
+    vs_mlb_pitchers: bool,
     tuning: Tuning,
 }
 
@@ -48,7 +66,14 @@ fn parse_args() -> Args {
         threads: std::thread::available_parallelism().map_or(4, |n| n.get()),
         clubs: 300,
         world: true,
+        parks: true,
         only: None,
+        level: "aaa".into(),
+        talent: bm_world::Talent::MAJOR,
+        foreign: bm_world::Talent::MAJOR,
+        vs_mlb: false,
+        cross_games: None,
+        vs_mlb_pitchers: false,
         tuning: Tuning::new(),
     };
     let mut it = std::env::args().skip(1);
@@ -56,6 +81,15 @@ fn parse_args() -> Args {
         a.cmd = c;
     }
     while let Some(k) = it.next() {
+        if k == "--vs-mlb" {
+            a.vs_mlb = true;
+            continue;
+        }
+        if k == "--vs-mlb-pitchers" {
+            a.vs_mlb = true;
+            a.vs_mlb_pitchers = true;
+            continue;
+        }
         let v = it.next().unwrap_or_default();
         match k.as_str() {
             "--games" => a.games = v.parse().expect("--games N"),
@@ -73,7 +107,33 @@ fn parse_args() -> Args {
                     }
                 }
             }
+            "--parks" => {
+                a.parks = match v.as_str() {
+                    "world" => true,
+                    "neutral" => false,
+                    other => {
+                        eprintln!("unknown parks {other}; use world | neutral");
+                        std::process::exit(2);
+                    }
+                }
+            }
             "--only" => a.only = Some(v),
+            "--level" => a.level = v,
+            "--cross-games" => a.cross_games = Some(v.parse().expect("--cross-games N")),
+            "--talent" | "--foreign" => {
+                let t: Vec<f32> = v.split(',').map(|x| x.trim().parse().expect("--talent hitting,pitching,fielding,physical[,power,command]")).collect();
+                if t.len() != 4 && t.len() != 6 {
+                    eprintln!("{k} needs four or six numbers: hitting,pitching,fielding,physical[,power,command]");
+                    std::process::exit(2);
+                }
+                let extra = |i: usize| t.get(i).copied().unwrap_or(0.0);
+                let talent = bm_world::Talent { hitting: t[0], pitching: t[1], fielding: t[2], physical: t[3], power: extra(4), command: extra(5) };
+                if k == "--talent" {
+                    a.talent = talent;
+                } else {
+                    a.foreign = talent;
+                }
+            }
             "--static" => a.static_dir = Some(v.into()),
             "--style" => {
                 a.tuning.style = match v.as_str() {
@@ -119,8 +179,9 @@ fn pick_pair(rng: &mut Rng, n: usize) -> (usize, usize) {
     (a, b)
 }
 
-/// Run `games` games on `threads` threads, feeding every event to a [`Tally`].
-fn simulate(env: &MatchEnv, clubs: &[Club], style: ManagerStyle, games: usize, seed: u64, threads: usize, observe: bool) -> Tally {
+/// Run `games` games on `threads` threads, feeding every event to a [`Tally`]. Home club
+/// `h` plays in `envs[h % envs.len()]`.
+fn simulate(envs: &[MatchEnv], clubs: &[Club], style: ManagerStyle, games: usize, seed: u64, threads: usize, observe: bool) -> Tally {
     let per = games.div_ceil(threads);
     let mut master = Rng::new(seed);
     let seeds: Vec<Rng> = (0..threads).map(|_| master.fork()).collect();
@@ -132,10 +193,14 @@ fn simulate(env: &MatchEnv, clubs: &[Club], style: ManagerStyle, games: usize, s
             .map(|(i, mut rng)| {
                 let n = per.min(games.saturating_sub(i * per));
                 scope.spawn(move || {
-                    let mut t = Tally { flight: Some(env.batted_flight), ..Default::default() };
-                    let dh = env.rules.dh;
+                    let mut t = Tally::default();
                     for _ in 0..n {
                         let (a, h) = pick_pair(&mut rng, clubs.len());
+                        let env = &envs[h % envs.len()];
+                        // Home runs are projected to field level in the air of the park they were hit in.
+                        t.flight = Some(env.batted_flight);
+                        t.park = Some(env.park.clone());
+                        let dh = env.rules.dh;
                         let away = clubs[a].team_for_game(rng.below(5), dh);
                         let home = clubs[h].team_for_game(rng.below(5), dh);
                         let styles = [style; 2];
@@ -229,11 +294,12 @@ fn main() {
     env.ball = args.tuning.ball;
     let level: &Level = &args.tuning.level;
     let world = args.world.then_some(&args.tuning.baseline);
+    let envs = if args.parks { level::park_envs(&["us-major"], &env.rules, &args.tuning).0 } else { vec![env.clone()] };
     match args.cmd.as_str() {
         "validate" => {
             let clubs = make_clubs(args.clubs, args.seed, level, world);
             let start = Instant::now();
-            let t = simulate(&env, &clubs, args.tuning.style, args.games, args.seed, args.threads, true);
+            let t = simulate(&envs, &clubs, args.tuning.style, args.games, args.seed, args.threads, true);
             let secs = start.elapsed().as_secs_f64();
             println!(
                 "Simulated {:.0} games ({:.0} pitches) in {:.2} s on {} threads: {:.0} games/s, {:.1} ms per game per thread",
@@ -250,7 +316,7 @@ fn main() {
             let clubs = make_clubs(args.clubs, args.seed, level, world);
             for threads in [1, args.threads] {
                 let start = Instant::now();
-                let t = simulate(&env, &clubs, args.tuning.style, args.games, args.seed, threads, false);
+                let t = simulate(&envs, &clubs, args.tuning.style, args.games, args.seed, threads, false);
                 let secs = start.elapsed().as_secs_f64();
                 println!(
                     "{threads} thread(s): {:.0} games in {:.2} s = {:.0} games/s ({:.2} ms per game per thread)",
@@ -304,6 +370,10 @@ fn main() {
         "attributes" => {
             sensitivity::run(&env, &args.tuning.baseline, args.tuning.style, args.games, args.seed, args.threads, args.clubs.min(60), args.only.as_deref())
         }
+        "level" => {
+            let vs = args.vs_mlb.then(|| level::VsMlb { games: args.cross_games.unwrap_or(args.games.max(400)), pitchers: args.vs_mlb_pitchers });
+            level::run(&args.level, args.talent, args.foreign, args.games, args.seed, args.threads, &args.tuning, vs)
+        }
         "players" => players::run(&env, &args.tuning.baseline, args.tuning.style, args.seed, args.threads, args.clubs.min(60), args.games.min(400)),
         "game" => {
             let clubs = make_clubs(2, args.seed, level, world);
@@ -320,7 +390,7 @@ fn main() {
             }
         }
         other => {
-            eprintln!("unknown command {other}; use validate | attributes | players | game | bench | population | serve");
+            eprintln!("unknown command {other}; use validate | attributes | players | level | game | bench | population | serve");
             std::process::exit(2);
         }
     }

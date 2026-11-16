@@ -21,10 +21,16 @@ pub struct Talent {
     pub fielding: f32,
     /// Added to the physical attributes.
     pub physical: f32,
+    /// Added to power on top of `hitting`: raw power and the rest of the bat need not be
+    /// equally far from the majors.
+    pub power: f32,
+    /// Added to control and command on top of `pitching`: minor-league pitchers walk far
+    /// more batters than their strikeout rates alone would suggest.
+    pub command: f32,
 }
 
 impl Talent {
-    pub const MAJOR: Talent = Talent { hitting: 0.0, pitching: 0.0, fielding: 0.0, physical: 0.0 };
+    pub const MAJOR: Talent = Talent { hitting: 0.0, pitching: 0.0, fielding: 0.0, physical: 0.0, power: 0.0, command: 0.0 };
 }
 
 fn z(rng: &mut Rng, mean: f64) -> f32 {
@@ -152,8 +158,8 @@ pub fn position_player(rng: &mut Rng, id: u32, pos: Option<Position>, t: &Talent
     let mut a = Attributes::default();
     common(rng, &mut a, t);
     let hit = t.hitting as f64;
-    a[Attr::Power] = z(rng, hit);
-    let swing = a[Attr::Power] as f64 - hit;
+    a[Attr::Power] = z(rng, hit + t.power as f64);
+    let swing = a[Attr::Power] as f64 - hit - t.power as f64;
     let mut traded = |rho: f64| (hit - rho * swing + (1.0 - rho * rho).sqrt() * rng.gauss_clamped(0.0, 1.0, -3.5, 3.5)) as f32;
     a[Attr::Contact] = traded(shape::POWER_CONTACT);
     a[Attr::Timing] = traded(shape::POWER_TIMING);
@@ -245,7 +251,8 @@ pub fn pitcher(rng: &mut Rng, id: u32, role: Role, t: &Talent) -> Player {
     // Relievers are selected for velocity; starters for the stamina to go deep.
     a[Attr::Velocity] = z(rng, pit + if role == Role::Reliever { 0.27 } else { 0.0 });
     for attr in [Attr::Stuff, Attr::Control, Attr::Command, Attr::Deception] {
-        a[attr] = z(rng, pit);
+        let command = if matches!(attr, Attr::Control | Attr::Command) { t.command as f64 } else { 0.0 };
+        a[attr] = z(rng, pit + command);
     }
     a[Attr::HoldRunners] = z(rng, 0.0);
     a[Attr::Stamina] = match role {
@@ -320,7 +327,7 @@ pub fn pitcher(rng: &mut Rng, id: u32, role: Role, t: &Talent) -> Player {
 
 /// A club's players for one game day: the regulars at the eight positions and the
 /// designated hitter, four reserves, five starters and eight relievers.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Squad {
     pub hitters: Vec<(Player, Option<Position>)>,
     pub bench: Vec<(Player, Option<Position>)>,
@@ -347,6 +354,24 @@ impl Squad {
             .map(|(i, pos)| (position_player(rng, id_base + 50 + i as u32, Some(pos), &reserve), Some(pos)))
             .collect();
         Squad { hitters, bench, starters, relievers }
+    }
+
+    /// Replace `starters` of the rotation (from the top), the relievers named by
+    /// `relievers` (from the top) and the regular hitters at the lineup slots `hitters`
+    /// with players of `other`, at the same positions: foreign players in a league that
+    /// limits how many of them a club may use.
+    pub fn import_from(&mut self, other: &Squad, starters: usize, relievers: usize, hitters: &[usize]) {
+        for i in 0..starters.min(self.starters.len()).min(other.starters.len()) {
+            self.starters[i] = other.starters[i].clone();
+        }
+        for i in 0..relievers.min(self.relievers.len()).min(other.relievers.len()) {
+            self.relievers[i] = other.relievers[i].clone();
+        }
+        for &i in hitters {
+            if i < self.hitters.len() && i < other.hitters.len() {
+                self.hitters[i] = other.hitters[i].clone();
+            }
+        }
     }
 
     /// The squad as the match engine's club.
