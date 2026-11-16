@@ -20,7 +20,7 @@ struct LevelStats {
     n: f64,
     age_b: f64,
     age_p: f64,
-    talent: [f64; 7],
+    talent: [f64; 8],
     /// Mean value of the position players and of the pitchers, runs per 162 games.
     value_h: f64,
     value_p: f64,
@@ -33,7 +33,7 @@ impl LevelStats {
         self.age_p += o.age_p;
         self.value_h += o.value_h;
         self.value_p += o.value_p;
-        for i in 0..7 {
+        for i in 0..8 {
             self.talent[i] += o.talent[i];
         }
     }
@@ -183,19 +183,19 @@ fn value_targets(levels: &LevelTable) -> BTreeMap<&'static str, ValueTarget> {
 }
 
 fn print_table(rows: &BTreeMap<&'static str, LevelStats>, levels: &LevelTable, targets: &BTreeMap<&'static str, ValueTarget>) {
-    println!("  level       n   age B  age P   hitting  pitching fielding physical  power  command  veloc | value H  value P  (level table below; gap in SD)");
+    println!("  level       n   age B  age P   hitting  pitching fielding physical  power  command  veloc  discip | value H  value P  (level table below; gap in SD)");
     for key in LEVELS {
         let Some(s) = rows.get(key) else { continue };
         let t = s.talent;
         println!(
-            "  {:<9} {:5.0}  {:5.2}  {:5.2}   {:+7.2}  {:+7.2}  {:+7.2}  {:+7.2}  {:+6.2}  {:+6.2}  {:+5.2} | {:+7.1}  {:+7.1}",
-            key, s.n, s.age_b, s.age_p, t[0], t[1], t[2], t[3], t[4], t[5], t[6], s.value_h, s.value_p
+            "  {:<9} {:5.0}  {:5.2}  {:5.2}   {:+7.2}  {:+7.2}  {:+7.2}  {:+7.2}  {:+6.2}  {:+6.2}  {:+5.2}  {:+6.2} | {:+7.1}  {:+7.1}",
+            key, s.n, s.age_b, s.age_p, t[0], t[1], t[2], t[3], t[4], t[5], t[6], t[7], s.value_h, s.value_p
         );
         let target = levels.get(key);
-        let g: [f32; 7] = std::array::from_fn(|i| target.talent.get(i).copied().unwrap_or(0.0));
+        let g: [f32; 8] = std::array::from_fn(|i| target.talent.get(i).copied().unwrap_or(0.0));
         let v = targets[key];
         println!(
-            "  {:<9} {:5}  {:5.2}  {:5.2}   {:+7.2}  {:+7.2}  {:+7.2}  {:+7.2}  {:+6.2}  {:+6.2}  {:+5.2} | {:+7.1}  {:+7.1}  gap {:+5.2} {:+5.2}",
+            "  {:<9} {:5}  {:5.2}  {:5.2}   {:+7.2}  {:+7.2}  {:+7.2}  {:+7.2}  {:+6.2}  {:+6.2}  {:+5.2}  {:+6.2} | {:+7.1}  {:+7.1}  gap {:+5.2} {:+5.2}",
             "",
             "",
             target.batters.mean,
@@ -207,6 +207,7 @@ fn print_table(rows: &BTreeMap<&'static str, LevelStats>, levels: &LevelTable, t
             g[4],
             g[5],
             g[6],
+            g[7],
             v.h,
             v.p,
             (s.value_h - v.h) / v.slope_h,
@@ -373,7 +374,7 @@ pub fn run(
                     serde_json::json!({
                         "n": s.n, "age_b": s.age_b, "age_p": s.age_p, "talent": s.talent,
                         "target_age_b": target.batters.mean, "target_age_p": target.pitchers.mean,
-                        "target_talent": (0..7).map(|i| target.talent.get(i).copied().unwrap_or(0.0)).collect::<Vec<f32>>(),
+                        "target_talent": (0..8).map(|i| target.talent.get(i).copied().unwrap_or(0.0)).collect::<Vec<f32>>(),
                         "gap_h": (s.value_h - v.h) / v.slope_h, "gap_p": (s.value_p - v.p) / v.slope_p,
                     }),
                 )

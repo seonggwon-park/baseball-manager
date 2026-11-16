@@ -171,6 +171,7 @@ impl Potential {
     /// and a Japanese prospect grows into the contact and control of the NPB rather than
     /// into a major-leaguer. A share `closure` of each difference closes by the peak.
     pub fn balance(&mut self, player: &Player, from: &Talent, to: &Talent, closure: &Closure) {
+        // Plate discipline sits on top of hitting like power (`Talent::discipline`).
         use Attr::*;
         let mut shift = |attrs: &[Attr], by: f32| {
             for &a in attrs {
@@ -186,9 +187,10 @@ impl Potential {
             shift(&FIELD[..5], closure.fielding * (b.2 - a.2));
             shift(&[Strength, Durability, Agility], closure.physical * (b.3 - a.3));
         } else {
-            let rel = |t: &Talent| (t.power, t.fielding - t.hitting, t.physical - t.hitting);
+            let rel = |t: &Talent| (t.power, t.fielding - t.hitting, t.physical - t.hitting, t.discipline);
             let (a, b) = (rel(from), rel(to));
             shift(&[Power], closure.power * (b.0 - a.0));
+            shift(&[Discipline], closure.discipline * (b.3 - a.3));
             shift(&FIELD, closure.fielding * (b.1 - a.1));
             shift(&[Strength, Stamina, Durability, Agility, Speed, Acceleration, ArmStrength], closure.physical * (b.2 - a.2));
         }
@@ -220,6 +222,8 @@ pub struct Closure {
     pub command: f32,
     #[serde(default = "one")]
     pub velocity: f32,
+    #[serde(default = "one")]
+    pub discipline: f32,
 }
 
 fn one() -> f32 {
@@ -227,7 +231,7 @@ fn one() -> f32 {
 }
 
 impl Closure {
-    pub const NONE: Closure = Closure { power: 0.0, fielding: 0.0, physical: 0.0, command: 0.0, velocity: 0.0 };
+    pub const NONE: Closure = Closure { power: 0.0, fielding: 0.0, physical: 0.0, command: 0.0, velocity: 0.0, discipline: 0.0 };
 }
 
 /// One year of development for a player who was `age` at his last birthday. The ceiling

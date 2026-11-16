@@ -8,7 +8,7 @@
 //! bm attributes [--games N] [--only NAME]                         value of one standard deviation of each attribute
 //!               [--by-position]                                   fielding value of the regular at each position (2 SD steps)
 //! bm players [--clubs K] [--games G]                              season lines of individual players as CSV (G games per club)
-//! bm level --level L [--talent h,p,f,x[,pw,cm[,v]]] [--vs-mlb]    one level (aaa, aa, high_a, single_a, kbo, kbo2, npb, npb2,
+//! bm level --level L [--talent h,p,f,x[,pw,cm[,v[,d]]]] [--vs-mlb] one level (aaa, aa, high_a, single_a, kbo, kbo2, npb, npb2,
 //!          [--foreign h,p,f,x] [--cross-games N]                   mlb) in its own parks against its official rates; talent of
 //!          [--vs-mlb-pitchers] [--ball-drag F]                     the foreign players of KBO and NPB clubs; wRC+ of the level's
 //!                                                                  hitters (and pitchers) against major-leaguers; `pool` = only that
@@ -175,10 +175,12 @@ fn parse_args() -> Args {
             "--cross-games" => a.cross_games = Some(v.parse().expect("--cross-games N")),
             "--until" => a.until = Some(bm_world::Date::parse(&v).expect("--until YYYY-MM-DD")),
             "--talent" | "--foreign" => {
-                let t: Vec<f32> =
-                    v.split(',').map(|x| x.trim().parse().expect("--talent hitting,pitching,fielding,physical[,power,command[,velocity]]")).collect();
-                if ![4, 6, 7].contains(&t.len()) {
-                    eprintln!("{k} needs four, six or seven numbers: hitting,pitching,fielding,physical[,power,command[,velocity]]");
+                let t: Vec<f32> = v
+                    .split(',')
+                    .map(|x| x.trim().parse().expect("--talent hitting,pitching,fielding,physical[,power,command[,velocity[,discipline]]]"))
+                    .collect();
+                if ![4, 6, 7, 8].contains(&t.len()) {
+                    eprintln!("{k} needs four, six, seven or eight numbers: hitting,pitching,fielding,physical[,power,command[,velocity[,discipline]]]");
                     std::process::exit(2);
                 }
                 let extra = |i: usize| t.get(i).copied().unwrap_or(0.0);
@@ -190,6 +192,7 @@ fn parse_args() -> Args {
                     power: extra(4),
                     command: extra(5),
                     velocity: extra(6),
+                    discipline: extra(7),
                     spread: 1.0,
                 };
                 if k == "--talent" {

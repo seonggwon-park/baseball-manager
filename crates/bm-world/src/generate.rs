@@ -30,6 +30,10 @@ pub struct Talent {
     /// Added to velocity on top of `pitching`: minor-league pitchers throw nearly as hard as
     /// major-leaguers while the rest of their game lags.
     pub velocity: f32,
+    /// Added to plate discipline on top of `hitting`: minor-league hitters chase no more
+    /// than major-leaguers (Statcast 2026: 27.7 % at Triple-A and 25.7 % in the Florida
+    /// State League against 30.5 %) although the rest of their bat lags.
+    pub discipline: f32,
     /// Spread of the attributes around these means, in standard deviations of the
     /// major-league distribution: 1 for every level; new amateurs come in narrower
     /// (`careers.json` intake_spread), as growth and the years spread them out.
@@ -37,7 +41,8 @@ pub struct Talent {
 }
 
 impl Talent {
-    pub const MAJOR: Talent = Talent { hitting: 0.0, pitching: 0.0, fielding: 0.0, physical: 0.0, power: 0.0, command: 0.0, velocity: 0.0, spread: 1.0 };
+    pub const MAJOR: Talent =
+        Talent { hitting: 0.0, pitching: 0.0, fielding: 0.0, physical: 0.0, power: 0.0, command: 0.0, velocity: 0.0, discipline: 0.0, spread: 1.0 };
 }
 
 fn z(rng: &mut Rng, mean: f64, sd: f64) -> f32 {
@@ -173,9 +178,8 @@ pub fn position_player(rng: &mut Rng, id: u32, pos: Option<Position>, t: &Talent
     a[Attr::Contact] = traded(shape::POWER_CONTACT);
     a[Attr::Timing] = traded(shape::POWER_TIMING);
     a[Attr::BatControl] = traded(shape::POWER_BAT_CONTROL);
-    for attr in [Attr::Discipline, Attr::Recognition] {
-        a[attr] = z(rng, hit, s);
-    }
+    a[Attr::Discipline] = z(rng, hit + t.discipline as f64, s);
+    a[Attr::Recognition] = z(rng, hit, s);
     a[Attr::Bunt] = z(rng, 0.0, s);
     let ((speed, speed_sd), (arm, arm_sd)) = position_tools(pos);
     let run = t.physical as f64;

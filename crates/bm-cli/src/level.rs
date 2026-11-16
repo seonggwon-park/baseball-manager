@@ -151,11 +151,14 @@ impl Line {
     }
 }
 
-/// Four-seam velocity and exit velocity, for comparison with the tracked levels.
+/// Four-seam velocity and exit velocity, and the plate-discipline counts (pitches in and
+/// out of the zone, swings at each, whiffs), for comparison with the tracked levels.
 #[derive(Clone, Copy, Default)]
 struct Speeds {
     ff: (f64, f64),
     ev: (f64, f64),
+    /// Pitches in the zone, out of it, swings at each, whiffs.
+    zone: [f64; 5],
 }
 
 impl Observer for Speeds {
@@ -168,6 +171,14 @@ impl Observer for Speeds {
         if let (PitchResult::InPlay, Some(BattedInfo { exit_speed, bunt: false, .. })) = (e.result, e.batted) {
             self.ev.0 += exit_speed / MPH;
             self.ev.1 += 1.0;
+        }
+        let inside = e.zone_distance <= 0.0;
+        self.zone[usize::from(!inside)] += 1.0;
+        if e.swung {
+            self.zone[2 + usize::from(!inside)] += 1.0;
+            if matches!(e.result, PitchResult::SwingingStrike | PitchResult::FoulTip) {
+                self.zone[4] += 1.0;
+            }
         }
     }
 }
@@ -271,6 +282,9 @@ fn own_league(env: &Env, games: usize, seed: u64, threads: usize, style: bm_engi
             total.1.ff.1 += s.ff.1;
             total.1.ev.0 += s.ev.0;
             total.1.ev.1 += s.ev.1;
+            for k in 0..5 {
+                total.1.zone[k] += s.zone[k];
+            }
         }
     });
     total
@@ -348,8 +362,8 @@ pub fn run(level: &str, talent: Talent, foreign: Talent, games: usize, seed: u64
         // Players of one talent level only, against major-leaguers: for the foreign players of
         // the Asian leagues, whose level is set by their translated major-league production.
         println!(
-            "pool: 30 clubs, talent hitting {:+.2} pitching {:+.2} fielding {:+.2} physical {:+.2} power {:+.2} command {:+.2} velocity {:+.2}",
-            talent.hitting, talent.pitching, talent.fielding, talent.physical, talent.power, talent.command, talent.velocity
+            "pool: 30 clubs, talent hitting {:+.2} pitching {:+.2} fielding {:+.2} physical {:+.2} power {:+.2} command {:+.2} velocity {:+.2} discipline {:+.2}",
+            talent.hitting, talent.pitching, talent.fielding, talent.physical, talent.power, talent.command, talent.velocity, talent.discipline
         );
         let clubs: Vec<Club> = (0..30).map(|i| Squad::random(&mut rng, 1000 * (i + 1), &talent).to_engine_with(&tuning.baseline)).collect();
         against_mlb(&clubs, &vs_mlb.unwrap_or(VsMlb { games: games.max(400), pitchers: true }));
@@ -363,7 +377,7 @@ pub fn run(level: &str, talent: Talent, foreign: Talent, games: usize, seed: u64
         println!("  ball drag x{drag:.3} in the level's own games");
     }
     println!(
-        "level {level}: {} clubs, talent hitting {:+.2} pitching {:+.2} fielding {:+.2} physical {:+.2} power {:+.2} command {:+.2} velocity {:+.2}; {games} games",
+        "level {level}: {} clubs, talent hitting {:+.2} pitching {:+.2} fielding {:+.2} physical {:+.2} power {:+.2} command {:+.2} velocity {:+.2} discipline {:+.2}; {games} games",
         env.clubs.len(),
         talent.hitting,
         talent.pitching,
@@ -371,7 +385,8 @@ pub fn run(level: &str, talent: Talent, foreign: Talent, games: usize, seed: u64
         talent.physical,
         talent.power,
         talent.command,
-        talent.velocity
+        talent.velocity,
+        talent.discipline
     );
     let (fs, fr, fh) = foreign_slots(level);
     if fs + fr + fh.len() > 0 {
@@ -392,6 +407,15 @@ pub fn run(level: &str, talent: Talent, foreign: Talent, games: usize, seed: u64
     show("2025", &target[0]);
     show("2026", &target[1]);
     println!("  four-seam {:.1} mph, exit velocity {:.1} mph (balls in play)", speeds.ff.0 / speeds.ff.1.max(1.0), speeds.ev.0 / speeds.ev.1.max(1.0));
+    let z = speeds.zone;
+    let pct = |a: f64, b: f64| 100.0 * a / b.max(1.0);
+    println!(
+        "  zone {:.1} %, swing in zone {:.1} %, chase {:.1} %, whiffs per swing {:.1} % (Statcast 2025: MLB 50.6/66.9/28.2/25.3, Triple-A 46.2/67.0/28.2/26.8, FSL 48.5/66.7/25.3/27.4)",
+        pct(z[0], z[0] + z[1]),
+        pct(z[2], z[0]),
+        pct(z[3], z[1]),
+        pct(z[4], z[2] + z[3])
+    );
     if let Some(v) = vs_mlb {
         // The translations describe the league's own players: leave the foreign ones out.
         let domestic: Vec<Club> = if fs + fr + fh.len() > 0 {

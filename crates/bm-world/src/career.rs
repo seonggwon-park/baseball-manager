@@ -1159,13 +1159,13 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
 
 /// The talent offsets (in the order of `levels.json`: hitting, pitching, fielding,
 /// physical, power on top of hitting, command on top of pitching, velocity on top of
-/// pitching) that a group of players shows on average.
-pub fn talent_of<'a>(players: impl Iterator<Item = &'a Player>) -> [f64; 7] {
+/// pitching, plate discipline on top of hitting) that a group of players shows on average.
+pub fn talent_of<'a>(players: impl Iterator<Item = &'a Player>) -> [f64; 8] {
     use crate::attr::Attr::*;
     let mean = |p: &Player, a: &[crate::attr::Attr]| a.iter().map(|&x| p.attrs.z(x)).sum::<f64>() / a.len() as f64;
     let (mut h, mut pw, mut f, mut n_h) = (0.0, 0.0, 0.0, 0.0);
     let (mut pt, mut cm, mut vel, mut n_p) = (0.0, 0.0, 0.0, 0.0);
-    let (mut ph, mut n) = (0.0, 0.0);
+    let (mut ph, mut n, mut dis) = (0.0, 0.0, 0.0);
     for p in players {
         ph += mean(p, &[Strength, Durability, Agility]);
         n += 1.0;
@@ -1177,15 +1177,16 @@ pub fn talent_of<'a>(players: impl Iterator<Item = &'a Player>) -> [f64; 7] {
             vel += p.attrs.z(Velocity) - relief - base;
             n_p += 1.0;
         } else {
-            let hit = mean(p, &[Contact, Timing, BatControl, Discipline, Recognition]);
+            let hit = mean(p, &[Contact, Timing, BatControl, Recognition]);
             h += hit;
             pw += p.attrs.z(Power) - hit;
+            dis += p.attrs.z(Discipline) - hit;
             f += mean(p, &[Hands, Range, Reads, ArmAccuracy, Footwork, Baserunning]);
             n_h += 1.0;
         }
     }
     let d = |x: f64, k: f64| if k > 0.0 { x / k } else { 0.0 };
-    [d(h, n_h), d(pt, n_p), d(f, n_h), d(ph, n), d(pw, n_h), d(cm, n_p), d(vel, n_p)]
+    [d(h, n_h), d(pt, n_p), d(f, n_h), d(ph, n), d(pw, n_h), d(cm, n_p), d(vel, n_p), d(dis, n_h)]
 }
 
 #[cfg(test)]

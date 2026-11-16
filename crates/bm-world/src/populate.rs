@@ -24,7 +24,7 @@ const LEVELS: &str = include_str!("../../../data/people/levels.json");
 /// power, command and, if given, velocity (see [`Talent`]).
 pub(crate) fn talent(v: &[f32]) -> Talent {
     let at = |i: usize| v.get(i).copied().unwrap_or(0.0);
-    Talent { hitting: at(0), pitching: at(1), fielding: at(2), physical: at(3), power: at(4), command: at(5), velocity: at(6), spread: 1.0 }
+    Talent { hitting: at(0), pitching: at(1), fielding: at(2), physical: at(3), power: at(4), command: at(5), velocity: at(6), discipline: at(7), spread: 1.0 }
 }
 
 /// Foreign players of a club in a league that limits them.
