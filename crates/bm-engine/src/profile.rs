@@ -377,7 +377,7 @@ impl PitcherProfile {
 }
 
 /// Bat speed, m/s, and barrel error, m, of the average hitter of the generated MLB population.
-pub const AVERAGE_BAT_SPEED: f64 = 73.72 * MPH;
+pub const AVERAGE_BAT_SPEED: f64 = 74.3 * MPH;
 pub const AVERAGE_BARREL_SD: f64 = 0.044;
 
 impl BatterProfile {
@@ -390,9 +390,9 @@ impl BatterProfile {
             bat_speed_sd: 2.8 * MPH,
             attack_angle: 9.5f64.to_radians(),
             attack_sd: 5.5f64.to_radians(),
-            timing_sd: 0.0138,
+            timing_sd: 0.0145,
             barrel_sd: AVERAGE_BARREL_SD,
-            barrel_aim: 0.0154,
+            barrel_aim: 0.0139,
             reach_sd: 0.0692,
             eye: 0.62,
             perception_sd: 0.065,

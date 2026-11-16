@@ -58,7 +58,7 @@ fn hit_style(rng: &mut Rng) -> HitStyle {
     HitStyle {
         attack_angle: (9.5 + shape::ATTACK_ANGLE_DEG * lift).to_radians() as f32,
         attack_sd: 5.5f64.to_radians() as f32,
-        barrel_aim: (0.0154 + shape::BARREL_AIM * aim) as f32,
+        barrel_aim: (0.0139 + shape::BARREL_AIM * aim) as f32,
         timing_bias: rng.gauss(0.0002, shape::TIMING_BIAS) as f32,
         bat_speed_sd: (2.8 * MPH) as f32,
     }

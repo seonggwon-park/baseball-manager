@@ -3,7 +3,7 @@
 //! ```text
 //! bm validate [--games N] [--seed S] [--threads T] [--clubs K]   compare simulated aggregates with MLB 2025
 //!             [--style none|mlb] [--set name=value]               AI manager preset, model constants
-//!             [--population engine|world]                         players drawn as physical profiles or from attributes
+//!             [--population world|engine]                         players drawn from attributes (default) or as physical profiles
 //! bm attributes [--games N] [--only NAME]                         value of one standard deviation of each attribute
 //! bm players [--clubs K] [--games G]                              season lines of individual players as CSV (G games per club)
 //! bm game [--seed S]                                              play one game and print the box score
@@ -47,7 +47,7 @@ fn parse_args() -> Args {
         seed: 2025,
         threads: std::thread::available_parallelism().map_or(4, |n| n.get()),
         clubs: 300,
-        world: false,
+        world: true,
         only: None,
         tuning: Tuning::new(),
     };
