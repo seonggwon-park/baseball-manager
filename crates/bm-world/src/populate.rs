@@ -315,11 +315,15 @@ pub fn populate_with(world: &World, levels: &LevelTable, aging: &AgingTable, car
             let mut pot = Potential::draw(p, age, scale, aging, &mut prng);
             // A player grows into the balance of his league's first team; foreign players
             // keep theirs.
-            let (t, peak) = match (&profile.foreign, foreign.contains_key(&p.id)) {
+            let is_foreign = foreign.contains_key(&p.id);
+            let (t, peak) = match (&profile.foreign, is_foreign) {
                 (Some(f), true) => (talent(&f.talent), talent(&f.talent)),
                 _ => (profile.talent(), levels.get(peak_level(&r.level)).talent()),
             };
             pot.balance(p, &t, &peak, &closure);
+            if !is_foreign {
+                pot.style(p, &careers.style(peak_level(&r.level)));
+            }
             potentials.insert(p.id, pot);
         }
     }

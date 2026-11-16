@@ -213,6 +213,41 @@ pub fn grows(a: Attr, pitcher: bool) -> bool {
     }
 }
 
+/// How the clubs of one league shape their players beyond the run values every club shares
+/// (`careers.json` styles): shifts of a ceiling, in standard deviations, for hitters' power,
+/// bat-to-ball skills (contact, timing, bat control) and plate discipline and for pitchers'
+/// stuff (stuff and deception). Choosing players by value alone gathers power and discipline
+/// at the top of every league; these keep each league's own balance.
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq)]
+pub struct Style {
+    #[serde(default)]
+    pub power: f32,
+    #[serde(default)]
+    pub contact: f32,
+    #[serde(default)]
+    pub discipline: f32,
+    #[serde(default)]
+    pub stuff: f32,
+}
+
+impl Potential {
+    /// Shift the ceiling by the style of the league the player grows up in.
+    pub fn style(&mut self, player: &Player, style: &Style) {
+        use Attr::*;
+        if player.is_pitcher() {
+            for a in [Stuff, Deception] {
+                self.attrs[a] += style.stuff;
+            }
+        } else {
+            self.attrs[Power] += style.power;
+            for a in [Contact, Timing, BatControl] {
+                self.attrs[a] += style.contact;
+            }
+            self.attrs[Discipline] += style.discipline;
+        }
+    }
+}
+
 /// Shares of a level's skill gaps that close by a player's peak (`Potential::balance`).
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Closure {

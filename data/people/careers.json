@@ -239,5 +239,11 @@
   "velocity": 0.8056,
   "discipline": 1.16,
   "basis": "Share of a level's skill gaps (more raw power than bat-to-ball skill, weaker defence and bodies, poor command, nearly major-league velocity, plate discipline as good as the majors) that closes by a player's peak. Assumption, fitted with `bm careers` so that each level keeps the skill balance of its 2025-2026 statistics"
+ },
+ "styles": {
+  "mlb": {"power": 0.0, "contact": 0.0, "discipline": 0.0, "stuff": 0.0},
+  "kbo": {"power": 0.0, "contact": 0.0, "discipline": 0.0, "stuff": 0.0},
+  "npb": {"power": 0.0, "contact": 0.0, "discipline": 0.0, "stuff": 0.0},
+  "basis": "Shifts of the ceilings of the players each kind of league grows (mlb: the major-league organisations, kbo, npb), in standard deviations: hitters' power, bat-to-ball skills and plate discipline, pitchers' stuff. Choosing players by value alone gathers power and discipline at the top of every league; fitted so that the world after 30 offseasons plays each league's 2025-2026 records"
  }
 }

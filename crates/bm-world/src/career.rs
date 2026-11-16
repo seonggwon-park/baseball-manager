@@ -11,7 +11,7 @@
 
 use crate::ability;
 use crate::calendar::Date;
-use crate::develop::{develop, AgingTable, Closure, Potential};
+use crate::develop::{develop, AgingTable, Closure, Potential, Style};
 use crate::generate::{pitcher, position_player, Squad, Talent};
 use crate::league::{Level, World};
 use crate::people::{AgeSpread, PeopleMaker};
@@ -101,11 +101,24 @@ struct CareerFile {
     board_noise: Valued<f64>,
     foreign_candidates: Valued<usize>,
     balance: Closure,
+    #[serde(default)]
+    styles: Styles,
     prospect_spread: Valued<f64>,
     pitcher_potential: Valued<f32>,
     #[serde(default)]
     pitcher_shift: Option<Valued<f32>>,
     age_discount: Valued<f64>,
+}
+
+/// The styles of the three kinds of league (see `Style`).
+#[derive(Clone, Copy, Debug, Default, Deserialize)]
+struct Styles {
+    #[serde(default)]
+    mlb: Style,
+    #[serde(default)]
+    kbo: Style,
+    #[serde(default)]
+    npb: Style,
 }
 
 /// The contents of `data/people/careers.json`.
@@ -125,6 +138,8 @@ pub struct CareerTable {
     pub board_noise: f64,
     pub foreign_candidates: usize,
     pub balance: Closure,
+    /// Styles of the leagues players grow up in, by peak level (`mlb`, `kbo`, `npb`).
+    pub styles: BTreeMap<String, Style>,
     /// Spread (standard deviation of the logarithm) of the personal factor on a player's
     /// growth ahead: what makes some players prospects and others organisation depth.
     pub prospect_spread: f64,
@@ -145,6 +160,12 @@ fn position_code(code: &str) -> Result<Option<Position>, String> {
 }
 
 impl CareerTable {
+    /// The style of the league whose balance a player grows into (`Class::peak`, or a
+    /// level's peak level): none for an unknown key.
+    pub fn style(&self, peak: &str) -> Style {
+        self.styles.get(peak).copied().unwrap_or_default()
+    }
+
     pub fn bundled() -> CareerTable {
         CareerTable::from_json(CAREERS).unwrap_or_else(|e| panic!("data/people/careers.json: {e}"))
     }
@@ -173,6 +194,7 @@ impl CareerTable {
             board_noise: f.board_noise.value,
             foreign_candidates: f.foreign_candidates.value,
             balance: f.balance,
+            styles: [("mlb", f.styles.mlb), ("kbo", f.styles.kbo), ("npb", f.styles.npb)].into_iter().map(|(k, s)| (k.to_string(), s)).collect(),
             prospect_spread: f.prospect_spread.value,
             pitcher_potential: f.pitcher_potential.value,
             pitcher_shift: f.pitcher_shift.map_or(0.0, |v| v.value),
@@ -779,7 +801,8 @@ impl Intake<'_> {
         let person = self.people.make(id, &class.birthplaces, &class.ages, self.date, rng);
         let factor = class.potential * if is_pitcher { self.table.pitcher_potential } else { 1.0 };
         let peak = self.levels.get(&class.peak).talent();
-        let potential = self.ceiling(&player, &person, &t, &peak, factor, rng);
+        let mut potential = self.ceiling(&player, &person, &t, &peak, factor, rng);
+        potential.style(&player, &self.table.style(&class.peak));
         Newcomer { player, person, potential }
     }
 
