@@ -19,8 +19,16 @@ export function Scoreboard() {
     if (over && i === state.line_score.length - 1 && team === 1 && state.situation.score[1] > state.situation.score[0] && row[1] === 0) return "x";
     return String(row[team]);
   };
+  const park = view.park;
   return (
     <div className="scoreboard">
+      <div className="venue" title={t("park.title")}>
+        <span>{loc(park.name)}</span>
+        <span className="muted">
+          {t("park.elevation", { m: Math.round(park.elevation_m) })}
+          {park.turf ? ` · ${t("park.turf")}` : ""}
+        </span>
+      </div>
       <table className="linescore">
         <thead>
           <tr>

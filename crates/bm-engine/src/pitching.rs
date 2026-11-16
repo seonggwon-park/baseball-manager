@@ -29,6 +29,8 @@ pub struct MatchEnv {
     /// Spin-induced vertical movement of the league-average pitch of each type, m, indexed
     /// by `PitchKind::index`: what a batter who has recognised the pitch expects it to do.
     pub typical_rise: [f64; 8],
+    /// Speed at the plate of the league-average pitch of each type, m/s.
+    pub typical_plate_speed: [f64; 8],
 }
 
 impl MatchEnv {
@@ -43,6 +45,7 @@ impl MatchEnv {
             params,
             typical_fastball_time: 0.0,
             typical_rise: [0.0; 8],
+            typical_plate_speed: [0.0; 8],
         };
         // The league-average pitch of every type, thrown from the average release point.
         let mut typical = PitcherProfile::league_average(Hand::Right);
@@ -53,6 +56,7 @@ impl MatchEnv {
         let state = PitcherState::new(&typical, &env);
         for (kind, mean) in PitchKind::ALL.iter().zip(&state.means) {
             env.typical_rise[kind.index()] = mean.aim.move_z;
+            env.typical_plate_speed[kind.index()] = mean.aim.plate_speed;
         }
         env.typical_fastball_time = state.means[PitchKind::FourSeam.index()].aim.time;
         env
@@ -117,6 +121,8 @@ pub struct Expectation {
     pub move_x: f64,
     /// Vertical deviation from the straight release line: spin-induced movement minus gravity drop.
     pub drop_z: f64,
+    /// The expected pitch is a fastball.
+    pub fastball: bool,
 }
 
 /// Selection weights for each pitch of the arsenal in a given count.
@@ -159,7 +165,7 @@ pub fn selection_weights(
 /// adjust to everything else, leaning toward the count's pitch mix by `mix`
 /// (0 = pure fastball timing, 1 = the usage-weighted average pitch).
 pub fn expectation(profile: &PitcherProfile, state: &PitcherState, weights: &[f64], mix: f64) -> Expectation {
-    let of = |m: &PitchMean| Expectation { time: m.aim.time, move_x: m.aim.move_x, drop_z: m.aim.move_z - 0.5 * G * m.aim.time * m.aim.time };
+    let of = |m: &PitchMean| Expectation { time: m.aim.time, move_x: m.aim.move_x, drop_z: m.aim.move_z - 0.5 * G * m.aim.time * m.aim.time, fastball: false };
     // Main fastball: the most used fastball in this situation, else the fastest pitch.
     let mut best: Option<usize> = None;
     for (i, d) in profile.pitches.iter().enumerate().take(weights.len()) {
@@ -176,7 +182,7 @@ pub fn expectation(profile: &PitcherProfile, state: &PitcherState, weights: &[f6
         }
         k
     });
-    let base = of(&state.means[fb]);
+    let base = Expectation { fastball: profile.pitches[fb].kind.group() == PitchGroup::Fastball, ..of(&state.means[fb]) };
     let total: f64 = weights.iter().sum();
     if total <= 0.0 || mix <= 0.0 {
         return base;
@@ -193,6 +199,7 @@ pub fn expectation(profile: &PitcherProfile, state: &PitcherState, weights: &[f6
         time: base.time + mix * (avg.time - base.time),
         move_x: base.move_x + mix * (avg.move_x - base.move_x),
         drop_z: base.drop_z + mix * (avg.drop_z - base.drop_z),
+        fastball: base.fastball,
     }
 }
 
@@ -341,7 +348,7 @@ mod tests {
         let (mx, mz) = (sx / nf, sz / nf);
         let (sdx, sdz) = ((sxx / nf - mx * mx).sqrt(), (szz / nf - mz * mz).sqrt());
         assert!((mx - 0.10).abs() < 0.02 && (mz - 0.85).abs() < 0.02, "mean location ({mx}, {mz})");
-        // Command of 6.72 in (root mean square of the two axes) plus the pitches that get
+        // Command of 6.6 in (root mean square of the two axes) plus the pitches that get
         // away and the release scatter.
         assert!(sdx > 5.5 * INCH && sdx < 8.5 * INCH, "sd x {} in", sdx / INCH);
         assert!(sdz > 6.5 * INCH && sdz < 10.0 * INCH, "sd z {} in", sdz / INCH);

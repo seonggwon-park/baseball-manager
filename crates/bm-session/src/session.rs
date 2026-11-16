@@ -12,7 +12,7 @@ use bm_engine::{
 };
 use bm_physics::units::RPM;
 use bm_physics::{Atmosphere, Park, PathEnd, Vec3, Wind};
-use bm_world::{display, Attr, Bats, Scale, ScaleAnchor, Side, Squad, Talent};
+use bm_world::{display, Attr, Bats, Scale, ScaleAnchor, Side, Squad, Talent, World};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -519,15 +519,12 @@ impl Session {
             t ^ (t >> 29)
         });
         let mut rng = Rng::new(seed);
-        // Generic parks until real stadium dimensions are in: a typical Korean, Japanese
-        // and North American outfield.
-        let (rules, park, rules_id) = match cfg.rules {
-            RuleSet::Kbo => (Rules::kbo_2025(), Park::symmetric(99.0, 116.0, 121.0, 2.8), "kbo"),
-            RuleSet::Mlb => (Rules::mlb_2025(), Park::mlb_average(), "mlb"),
-            RuleSet::Npb => (Rules::npb_2025(true), Park::symmetric(100.0, 116.0, 122.0, 3.5), "npb"),
+        let (rules, rules_id) = match cfg.rules {
+            RuleSet::Kbo => (Rules::kbo_2025(), "kbo"),
+            RuleSet::Mlb => (Rules::mlb_2025(), "mlb"),
+            RuleSet::Npb => (Rules::npb_2025(true), "npb"),
         };
-        let env = MatchEnv::new(&Atmosphere::new(22.0, 760.0, 55.0, 50.0), Wind::CALM, park, rules, ModelParams::default());
-        let dh = env.rules.dh;
+        let dh = rules.dh;
         let squads = [Squad::random(&mut rng, 1000, &Talent::MAJOR), Squad::random(&mut rng, 2000, &Talent::MAJOR)];
         let away = squads[0].to_engine().team_for_game(0, dh);
         let home = squads[1].to_engine().team_for_game(0, dh);
@@ -539,6 +536,11 @@ impl Session {
         if home_club == away_club {
             home_club = (away_club + 1 + rng.below(clubs.len() - 1)) % clubs.len();
         }
+        // The home club's ballpark: its fence, walls and surface, and its elevation for the
+        // density of the air. Weather is not modelled yet: a mild, calm evening.
+        let ballpark = World::bundled().club(&clubs[home_club].id).map(|c| c.park.clone());
+        let (park, elevation) = ballpark.as_ref().map_or((Park::mlb_average(), 50.0), |b| (b.field(), b.elevation()));
+        let env = MatchEnv::new(&Atmosphere::new(22.0, 760.0, 55.0, elevation), Wind::CALM, park, rules, ModelParams::default());
         let names = NameGenerator::korean();
         let teams = [
             team_view(&away, &squads[0], clubs[away_club].clone(), &names, &mut rng),
@@ -555,6 +557,12 @@ impl Session {
             league,
             teams,
             park: ParkView {
+                name: ballpark.as_ref().map_or_else(
+                    || Localized { ko: "중립 구장".into(), en: "Neutral ballpark".into() },
+                    |b| Localized { ko: b.name.ko.clone(), en: b.name.en.clone() },
+                ),
+                elevation_m: elevation,
+                turf: env.park.synthetic,
                 fence: env.park.fence.iter().map(|p| [r3(p.angle), r3(p.distance), r3(p.height)]).collect(),
                 backstop: env.park.backstop,
                 foul_width_near: env.park.foul_width_near,

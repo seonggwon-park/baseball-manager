@@ -60,8 +60,12 @@ impl Tuning {
                 expect_mix,
                 recognition_scale,
                 recognition_time_scale,
+                timing_adjust,
+                location_adjust,
+                fastball_misread,
                 ride_bias,
                 ride_reference,
+                ride_confusion,
                 velocity_lag,
                 misread_rate,
                 misread_factor,
@@ -182,6 +186,7 @@ impl Tuning {
         let parts: Vec<&str> = key.split('.').collect();
         match parts.as_slice() {
             ["swing_base", b, s] => p.swing_base[idx(b, 4)?][idx(s, 3)?] = v,
+            ["kind_recognition", k] => p.kind_recognition[idx(k, 8)?] = v,
             ["zone_intent", b, s] => p.zone_intent[idx(b, 4)?][idx(s, 3)?] = v,
             ["fastball_bias", b, s] => p.fastball_bias[idx(b, 4)?][idx(s, 3)?] = v,
             ["lv", "velocity_mph"] => l.velocity = v * MPH,
@@ -207,6 +212,7 @@ impl Tuning {
             ["w", "perception_sd"] => self.baseline.perception_sd = v,
             ["w", "chase"] => self.baseline.chase = v,
             ["w", "aim"] => self.baseline.aim = v,
+            ["w", "timing_bias"] => self.baseline.timing_bias = v,
             ["w", "steal"] => self.baseline.steal = v,
             ["w", "command_in"] => self.baseline.command = v * bm_physics::units::INCH,
             ["w", "velocity_mph"] => self.baseline.velocity = v * MPH,

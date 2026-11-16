@@ -66,11 +66,36 @@ pub struct ModelParams {
     pub recognition_scale: f64,
     /// Flight-time difference at which the timing misjudgement is halved, s.
     pub recognition_time_scale: f64,
+    /// Share of the difference in flight time from the expected fastball that a batter
+    /// who has picked the pitch up corrects in his swing. Statcast 2025 bat tracking:
+    /// against pitches 8-15 mph slower than the four-seamer, batters meet the ball
+    /// 12-15 in further out in front, about half of what full fastball timing would give.
+    pub timing_adjust: f64,
+    /// The same for the location: share of the misjudged movement that a batter who has
+    /// picked the pitch up corrects. Below 1 the batter still reads an off-speed pitch a
+    /// little higher than it is, swings over it and beats it into the ground (Statcast 2025:
+    /// curves, changeups and splitters leave the bat at 7-10 deg on average against 20.5
+    /// for four-seamers, although their descent and spin alone would lift them).
+    pub location_adjust: f64,
+    /// Share of the movement misjudgement that applies when both the pitch and the
+    /// expected one are fastballs. Statcast 2025: a sinker draws 13.0 % whiffs per swing
+    /// from pitchers whose main fastball is a four-seamer and 14.1 % from sinker-first
+    /// pitchers (four-seamers 21.7 % and 20.9 %), so taking one fastball for another costs
+    /// the batter nothing measurable.
+    pub fastball_misread: f64,
+    /// How much easier (+) or harder (-) each pitch type is to pick up out of the hand
+    /// than the batter's eye alone says, indexed by `PitchKind::index`. A curveball leaves
+    /// the hand on an upward path that no fastball has; a slider or a splitter looks like
+    /// a fastball for longer. Fitted to the whiff rates by pitch type. Fastballs are 0.
+    pub kind_recognition: [f64; 8],
     /// Batters adapt only partly to a fastball's "ride": share of the difference between
     /// its induced vertical movement and the generic fastball that ends up as barrel error.
     pub ride_bias: f64,
     /// Induced vertical movement (whole flight) of the generic fastball, m.
     pub ride_reference: f64,
+    /// How far a four-seamer or a sinker is taken for the generic fastball rather than
+    /// for what it is (0 = told apart perfectly, 1 = not at all).
+    pub ride_confusion: f64,
     /// Batters time a pitcher's fastball from the fastballs they see every day and adapt
     /// to his own only in part: this share of the difference in flight time between the
     /// league's typical fastball and this pitcher's stays in the swing as a timing error,
@@ -330,8 +355,8 @@ impl Default for ModelParams {
         ModelParams {
             target_sd_x: 0.13,
             target_sd_z: 0.155,
-            aim_adapt: 0.0,
-            aim_reference: 6.72 * INCH,
+            aim_adapt: 1.5,
+            aim_reference: 6.45 * INCH,
             wild_fraction: 0.037,
             wild_factor: 2.0,
             release_sd_side: 2.1 * INCH,
@@ -352,24 +377,29 @@ impl Default for ModelParams {
             recognition_sd: 0.08,
             fooled_recognition: 0.5,
             noise_residual: 0.05,
-            recognition_scale: 0.8,
+            recognition_scale: 0.58,
             recognition_time_scale: 0.181,
-            ride_bias: 0.30,
-            ride_reference: 0.38,
+            timing_adjust: 0.7,
+            location_adjust: 0.76,
+            fastball_misread: 0.0,
+            kind_recognition: [0.0, 0.0, 0.0, -0.12, -0.016, 0.1, 0.0, -0.15],
+            ride_bias: 0.3,
+            ride_reference: 0.375,
+            ride_confusion: 0.6,
             velocity_lag: 0.10,
             expect_mix: 0.0,
             misread_rate: 0.12,
             misread_factor: 2.5,
 
             ref_plate_speed: 86.0 * MPH,
-            timing_speed_exp: 3.2,
-            barrel_speed_exp: 2.8,
-            tracking_residual: 0.122,
+            timing_speed_exp: 4.1,
+            barrel_speed_exp: 3.55,
+            tracking_residual: 0.16,
             barrel_outside_gain: 6.95,
             barrel_outside_gain2: 70.0,
             barrel_outside_offset: 0.03,
             reach_limit: 0.40,
-            height_bias: 0.11,
+            height_bias: 0.074,
             bat_tilt_mid: 32.0f64.to_radians(),
             bat_tilt_slope: 0.31,
             plan_angle_per_m: 0.2,
@@ -394,7 +424,7 @@ impl Default for ModelParams {
             face_max: 0.424,
             roll_from: 0.184,
             roll_span: 0.261,
-            roll_flatten: 0.837,
+            roll_flatten: 0.757,
             swing_arc_radius: 1.0,
             arc_scale: 0.048,
             arc_scale_early: 0.6,
@@ -403,8 +433,8 @@ impl Default for ModelParams {
             max_depth: 0.90,
             bat_speed_depth_cap: 0.15,
             partial_precision: 1.5,
-            piece_rate: 0.69,
-            piece_reach: 0.0456,
+            piece_rate: 0.645,
+            piece_reach: 0.041,
             piece_band: 0.022,
             piece_depth: 0.37,
             piece_centre: 0.11,
@@ -418,11 +448,11 @@ impl Default for ModelParams {
             foul_tip_catch: 0.55,
             foul_tip_angle: 0.3,
             two_strike_speed: 0.98,
-            two_strike_precision: 0.82,
+            two_strike_precision: 0.78,
 
             batter_body_x: 0.63,
             hbp_width: 0.063,
-            hbp_no_evade: 0.80,
+            hbp_no_evade: 0.90,
             wild_pitch_prob: 0.13,
 
             catch_height: 2.6,

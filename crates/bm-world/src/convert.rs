@@ -18,8 +18,8 @@ pub mod spread {
     /// Bat speed, mph (Statcast bat tracking 2025, qualified hitters).
     pub const BAT_SPEED_MPH: f64 = 2.6;
     /// Relative spread of the barrel error and of the timing error.
-    pub const BARREL: f64 = 0.16;
-    pub const TIMING: f64 = 0.13;
+    pub const BARREL: f64 = 0.19;
+    pub const TIMING: f64 = 0.15;
     /// Probability of picking up the pitch type.
     pub const EYE: f64 = 0.07;
     /// Relative spread of the error in judging the pitch's location.
@@ -63,14 +63,14 @@ pub mod spread {
     /// time to the plate (s), pitches of stamina.
     pub const VELOCITY_MPH: f64 = 2.2;
     pub const LOCATION: f64 = 0.05;
-    pub const DECEPTION: f64 = 0.08;
+    pub const DECEPTION: f64 = 0.03;
     pub const TIME_TO_PLATE: f64 = 0.08;
     pub const STAMINA: f64 = 16.0;
     pub const WILDNESS: f64 = 0.15;
     /// Extra precision on a secondary pitch per point of its grade.
     pub const PITCH_COMMAND: f64 = 0.06;
     /// Change of the batter's pick-up probability on a secondary pitch per point of its grade.
-    pub const PITCH_DISGUISE: f64 = 0.14;
+    pub const PITCH_DISGUISE: f64 = 0.05;
     /// Change of the swing and location errors at full pressure, per point of composure.
     pub const PRESSURE: f64 = 0.04;
     /// Platoon: change of the pick-up probability against same-sided pitchers.
@@ -85,7 +85,7 @@ pub mod mean {
     /// Arm strength of a position player on a full-effort throw, mph.
     pub const ARM_MPH: f64 = 85.9;
     /// Location error of the average pitcher on a fastball, root mean square over the two axes, in.
-    pub const COMMAND_IN: f64 = 6.72;
+    pub const COMMAND_IN: f64 = 6.45;
     /// Pitches before fatigue for a pitcher of average stamina (starters sit near +2, relievers near -2).
     pub const STAMINA: f64 = 60.0;
     /// Fastball velocity of a starter with an average velocity attribute relative to the
@@ -115,6 +115,8 @@ pub struct Baseline {
     /// Probability of picking up the pitch type; error in judging the location (m).
     pub eye: f64,
     pub perception_sd: f64,
+    /// Shift of every hitter's timing, s (+ = late).
+    pub timing_bias: f64,
     /// Shift of every hitter's swing/take boundary (m) and of his aim under the ball (m).
     pub chase: f64,
     pub aim: f64,
@@ -136,7 +138,8 @@ impl Default for Baseline {
             reach_sd: avg.reach_sd,
             eye: avg.eye,
             perception_sd: avg.perception_sd,
-            chase: 0.0,
+            chase: avg.chase,
+            timing_bias: 0.0,
             aim: 0.0,
             steal: 0.375,
             command: mean::COMMAND_IN * INCH,
@@ -178,7 +181,7 @@ pub fn batter_with(p: &Player, base: &Baseline) -> BatterProfile {
         perception_sd: base.perception_sd * shrink(z(Attr::Discipline), PERCEPTION),
         chase: base.chase + CHASE * (-0.9 * z(Attr::Discipline) + 0.44 * z(Attr::Aggression)),
         aggression: (1.0 + AGGRESSION * z(Attr::Aggression)).clamp(0.75, 1.25),
-        timing_bias: p.hit.timing_bias as f64,
+        timing_bias: p.hit.timing_bias as f64 + base.timing_bias,
         sprint: (27.0 + SPRINT_FT * z(Attr::Speed)).clamp(20.0, 31.5) * FT,
         accel: (avg.accel + ACCEL * z(Attr::Acceleration)).clamp(3.4, 6.4),
         baserunning: (0.5 + 0.15 * z(Attr::Aggression)).clamp(0.0, 1.0),
@@ -464,7 +467,7 @@ mod tests {
         assert!(close(b.perception_sd, avg.perception_sd, 0.02));
         assert!(close(b.reach_sd, avg.reach_sd, 0.02));
         assert!(close(b.eye, avg.eye, 1e-6) && close(b.sprint, avg.sprint, 1e-6) && close(b.accel, avg.accel, 1e-6));
-        assert_eq!((b.chase, b.aggression, b.baserunning, b.bunt), (0.0, 1.0, 0.5, 0.5));
+        assert_eq!((b.chase, b.aggression, b.baserunning, b.bunt), (avg.chase, 1.0, 0.5, 0.5));
         assert_eq!((b.foul_skill, b.adjust, b.eye_same, b.pressure), (1.0, 1.0, 0.0, 0.0));
         assert!(close(b.lapse, 1.0, 0.03) && close(b.speed_loss, 1.0, 0.02) && close(b.judgement, 1.0, 0.04));
         assert!(!b.switch);
@@ -509,7 +512,7 @@ mod tests {
         assert!(batter(&up(Attr::Contact)).barrel_sd < b0.barrel_sd);
         assert!(batter(&up(Attr::Timing)).timing_sd < b0.timing_sd);
         assert!(close((batter(&up(Attr::Power)).bat_speed - b0.bat_speed) / MPH, spread::BAT_SPEED_MPH, 1e-9));
-        assert!(batter(&up(Attr::Discipline)).perception_sd < b0.perception_sd && batter(&up(Attr::Discipline)).chase < 0.0);
+        assert!(batter(&up(Attr::Discipline)).perception_sd < b0.perception_sd && batter(&up(Attr::Discipline)).chase < b0.chase);
         assert!(batter(&up(Attr::Recognition)).eye > b0.eye);
         assert!(batter(&up(Attr::BatControl)).foul_skill > 1.0 && batter(&up(Attr::BatControl)).reach_sd < b0.reach_sd);
         assert!(batter(&up(Attr::Bunt)).bunt > b0.bunt && batter(&up(Attr::Stealing)).steal > b0.steal);
@@ -518,7 +521,7 @@ mod tests {
         assert!(batter(&up(Attr::Anticipation)).adjust > 1.0 && batter(&up(Attr::Concentration)).lapse < b0.lapse);
         assert!(batter(&up(Attr::Strength)).speed_loss < b0.speed_loss && batter(&up(Attr::Composure)).pressure < 0.0);
         assert!(batter(&up(Attr::Strength)).bat.mass > b0.bat.mass && batter(&up(Attr::Strength)).bat.inertia_cm > b0.bat.inertia_cm);
-        assert!(batter(&up(Attr::Aggression)).aggression > 1.0 && batter(&up(Attr::Aggression)).chase > 0.0);
+        assert!(batter(&up(Attr::Aggression)).aggression > 1.0 && batter(&up(Attr::Aggression)).chase > b0.chase);
 
         let short = Some(Position::Short);
         let f0 = fielder(&base, short);

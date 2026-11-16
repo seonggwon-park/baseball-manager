@@ -7,7 +7,7 @@
 use crate::attr::{Attr, Attributes, Hidden};
 use crate::convert;
 use crate::player::{Bats, HitStyle, PitchSkill, Pitching, Player, Position, Role, Side};
-use bm_engine::{Club, PitchKind, Rng};
+use bm_engine::{BatterProfile, Club, Hand, PitchKind, Rng};
 use bm_physics::units::{FT, MPH, RPM};
 
 /// Talent level of a league relative to the major leagues, in standard scores.
@@ -55,11 +55,12 @@ fn hit_style(rng: &mut Rng) -> HitStyle {
     let lift = rng.gauss_clamped(0.0, 1.0, -3.0, 3.0);
     // Hitters who swing up also aim under the ball: lift is one habit seen in both.
     let aim = shape::LIFT_AIM * lift + (1.0 - shape::LIFT_AIM * shape::LIFT_AIM).sqrt() * rng.gauss(0.0, 1.0);
+    let avg = BatterProfile::league_average(Hand::Right);
     HitStyle {
         attack_angle: (9.5 + shape::ATTACK_ANGLE_DEG * lift).to_radians() as f32,
         attack_sd: 5.5f64.to_radians() as f32,
-        barrel_aim: (0.0139 + shape::BARREL_AIM * aim) as f32,
-        timing_bias: rng.gauss(0.0002, shape::TIMING_BIAS) as f32,
+        barrel_aim: (avg.barrel_aim + shape::BARREL_AIM * aim) as f32,
+        timing_bias: rng.gauss(avg.timing_bias, shape::TIMING_BIAS) as f32,
         bat_speed_sd: (2.8 * MPH) as f32,
     }
 }
@@ -101,9 +102,9 @@ pub mod shape {
     /// comes off his contact, timing and bat control (Statcast 2025, qualified hitters:
     /// bat speed against in-zone contact -0.63, against whiffs per swing +0.69, against
     /// squared-up contact -0.67).
-    pub const POWER_CONTACT: f64 = 0.70;
-    pub const POWER_TIMING: f64 = 0.50;
-    pub const POWER_BAT_CONTROL: f64 = 0.45;
+    pub const POWER_CONTACT: f64 = 0.80;
+    pub const POWER_TIMING: f64 = 0.60;
+    pub const POWER_BAT_CONTROL: f64 = 0.50;
     /// Between-hitter spreads of the swing's shape: attack angle (deg), aim under the
     /// ball (m), timing bias (s).
     pub const ATTACK_ANGLE_DEG: f64 = 3.5;

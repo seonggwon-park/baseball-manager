@@ -61,6 +61,10 @@ export interface TeamView {
 }
 
 export interface ParkView {
+  /** The home club's ballpark. */
+  name: Localized;
+  elevation_m: number;
+  turf: boolean;
   /** [bearing rad, distance m, height m] from the left-field line to the right-field line. */
   fence: [number, number, number][];
   backstop: number;

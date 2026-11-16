@@ -1,9 +1,50 @@
 {
- "_comment": "Fictional clubs for the Korean league. Cities are real, club names are invented and can be edited.",
+ "_comment": "Fictional clubs of the Korean structure. Cities and ballpark dimensions follow the real 2026 league; the two Seoul clubs that share a park play 2027-2031 in a temporary ballpark (95 m lines, 124 m centre). Club, league and ballpark names are invented and can be edited. Second-team ballparks have no published dimensions; their values are placeholders (park.estimated).",
+ "source": "docs/research/world/kbo_clubs.json, kbo_notes.md (researched 2026-11-16)",
+ "country": "KR",
  "league": {
   "ko": "한국 프로야구 리그",
   "en": "Korea Professional Baseball League"
  },
+ "leagues": [
+  {
+   "id": "kr-top",
+   "level": "top",
+   "name": {
+    "ko": "한국 프로야구 리그",
+    "en": "Korea Professional Baseball League"
+   },
+   "games": 144,
+   "divisions": []
+  },
+  {
+   "id": "kr-second",
+   "level": "second",
+   "name": {
+    "ko": "한국 2군 리그",
+    "en": "Korean Second League"
+   },
+   "games": 121,
+   "divisions": [
+    {
+     "id": "kr-second-north",
+     "name": {
+      "ko": "북부",
+      "en": "North"
+     },
+     "group": null
+    },
+    {
+     "id": "kr-second-south",
+     "name": {
+      "ko": "남부",
+      "en": "South"
+     },
+     "group": null
+    }
+   ]
+  }
+ ],
  "clubs": [
   {
    "id": "seoul-magpies",
@@ -19,7 +60,40 @@
    "colors": [
     "#1f3a5f",
     "#e9eef5"
-   ]
+   ],
+   "league": "kr-top",
+   "division": null,
+   "parent": null,
+   "region": null,
+   "country": "KR",
+   "park": {
+    "name": {
+     "ko": "서울 올림픽 볼파크",
+     "en": "Seoul Olympic Ballpark"
+    },
+    "capacity": 18000,
+    "elevation_m": 22,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     95.0,
+     113.4,
+     124.0,
+     113.4,
+     95.0
+    ],
+    "wall_m": [
+     4.0,
+     4.0,
+     4.0
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "surface"
+    ]
+   }
   },
   {
    "id": "seoul-comets",
@@ -35,7 +109,40 @@
    "colors": [
     "#5b2a86",
     "#f4c542"
-   ]
+   ],
+   "league": "kr-top",
+   "division": null,
+   "parent": null,
+   "region": null,
+   "country": "KR",
+   "park": {
+    "name": {
+     "ko": "서울 올림픽 볼파크",
+     "en": "Seoul Olympic Ballpark"
+    },
+    "capacity": 18000,
+    "elevation_m": 22,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     95.0,
+     113.4,
+     124.0,
+     113.4,
+     95.0
+    ],
+    "wall_m": [
+     4.0,
+     4.0,
+     4.0
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "surface"
+    ]
+   }
   },
   {
    "id": "seoul-stallions",
@@ -51,7 +158,38 @@
    "colors": [
     "#7a1f1f",
     "#f2e9dc"
-   ]
+   ],
+   "league": "kr-top",
+   "division": null,
+   "parent": null,
+   "region": null,
+   "country": "KR",
+   "park": {
+    "name": {
+     "ko": "서울 돔",
+     "en": "Seoul Dome"
+    },
+    "capacity": 16000,
+    "elevation_m": 16,
+    "roof": "dome",
+    "surface": "turf",
+    "fence_m": [
+     99.0,
+     113.6,
+     122.0,
+     113.6,
+     99.0
+    ],
+    "wall_m": [
+     4.0,
+     4.0,
+     4.0
+    ],
+    "estimated": [
+     "lcf",
+     "rcf"
+    ]
+   }
   },
   {
    "id": "incheon-cranes",
@@ -67,7 +205,35 @@
    "colors": [
     "#0f6e8c",
     "#f5f7fa"
-   ]
+   ],
+   "league": "kr-top",
+   "division": null,
+   "parent": null,
+   "region": null,
+   "country": "KR",
+   "park": {
+    "name": {
+     "ko": "인천 볼파크",
+     "en": "Incheon Ballpark"
+    },
+    "capacity": 23000,
+    "elevation_m": 34,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     95.0,
+     115.0,
+     120.0,
+     115.0,
+     95.0
+    ],
+    "wall_m": [
+     2.8,
+     2.8,
+     2.8
+    ],
+    "estimated": []
+   }
   },
   {
    "id": "suwon-fortress",
@@ -83,7 +249,35 @@
    "colors": [
     "#2d3b2f",
     "#d9c27a"
-   ]
+   ],
+   "league": "kr-top",
+   "division": null,
+   "parent": null,
+   "region": null,
+   "country": "KR",
+   "park": {
+    "name": {
+     "ko": "수원 볼파크",
+     "en": "Suwon Ballpark"
+    },
+    "capacity": 18700,
+    "elevation_m": 57,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     98.0,
+     115.0,
+     120.0,
+     115.0,
+     98.0
+    ],
+    "wall_m": [
+     4.0,
+     4.0,
+     4.0
+    ],
+    "estimated": []
+   }
   },
   {
    "id": "daejeon-orbiters",
@@ -99,7 +293,35 @@
    "colors": [
     "#e06a1b",
     "#1c1c2e"
-   ]
+   ],
+   "league": "kr-top",
+   "division": null,
+   "parent": null,
+   "region": null,
+   "country": "KR",
+   "park": {
+    "name": {
+     "ko": "대전 볼파크",
+     "en": "Daejeon Ballpark"
+    },
+    "capacity": 17000,
+    "elevation_m": 60,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.0,
+     115.0,
+     122.0,
+     112.0,
+     95.0
+    ],
+    "wall_m": [
+     2.4,
+     2.4,
+     8.0
+    ],
+    "estimated": []
+   }
   },
   {
    "id": "daegu-flares",
@@ -115,23 +337,35 @@
    "colors": [
     "#c62828",
     "#ffd54f"
-   ]
-  },
-  {
-   "id": "busan-breakers",
-   "city": {
-    "ko": "부산",
-    "en": "Busan"
-   },
-   "name": {
-    "ko": "브레이커스",
-    "en": "Breakers"
-   },
-   "abbr": "BSN",
-   "colors": [
-    "#0d47a1",
-    "#b3e5fc"
-   ]
+   ],
+   "league": "kr-top",
+   "division": null,
+   "parent": null,
+   "region": null,
+   "country": "KR",
+   "park": {
+    "name": {
+     "ko": "대구 볼파크",
+     "en": "Daegu Ballpark"
+    },
+    "capacity": 24000,
+    "elevation_m": 63,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.5,
+     107.0,
+     122.5,
+     107.0,
+     99.5
+    ],
+    "wall_m": [
+     3.6,
+     3.6,
+     3.6
+    ],
+    "estimated": []
+   }
   },
   {
    "id": "gwangju-beacons",
@@ -147,7 +381,82 @@
    "colors": [
     "#f9a825",
     "#263238"
-   ]
+   ],
+   "league": "kr-top",
+   "division": null,
+   "parent": null,
+   "region": null,
+   "country": "KR",
+   "park": {
+    "name": {
+     "ko": "광주 볼파크",
+     "en": "Gwangju Ballpark"
+    },
+    "capacity": 20500,
+    "elevation_m": 29,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.0,
+     117.0,
+     121.0,
+     117.0,
+     99.0
+    ],
+    "wall_m": [
+     2.6,
+     2.6,
+     2.6
+    ],
+    "estimated": []
+   }
+  },
+  {
+   "id": "busan-breakers",
+   "city": {
+    "ko": "부산",
+    "en": "Busan"
+   },
+   "name": {
+    "ko": "브레이커스",
+    "en": "Breakers"
+   },
+   "abbr": "BSN",
+   "colors": [
+    "#0d47a1",
+    "#b3e5fc"
+   ],
+   "league": "kr-top",
+   "division": null,
+   "parent": null,
+   "region": null,
+   "country": "KR",
+   "park": {
+    "name": {
+     "ko": "부산 볼파크",
+     "en": "Busan Ballpark"
+    },
+    "capacity": 23200,
+    "elevation_m": 29,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     95.8,
+     111.8,
+     121.0,
+     111.8,
+     95.8
+    ],
+    "wall_m": [
+     4.8,
+     6.0,
+     4.8
+    ],
+    "estimated": [
+     "lcf",
+     "rcf"
+    ]
+   }
   },
   {
    "id": "changwon-turbines",
@@ -163,7 +472,638 @@
    "colors": [
     "#00695c",
     "#eceff1"
-   ]
+   ],
+   "league": "kr-top",
+   "division": null,
+   "parent": null,
+   "region": null,
+   "country": "KR",
+   "park": {
+    "name": {
+     "ko": "창원 볼파크",
+     "en": "Changwon Ballpark"
+    },
+    "capacity": 18128,
+    "elevation_m": 11,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     101.0,
+     114.3,
+     122.0,
+     114.3,
+     101.0
+    ],
+    "wall_m": [
+     3.3,
+     3.3,
+     3.3
+    ],
+    "estimated": [
+     "lcf",
+     "rcf"
+    ]
+   }
+  },
+  {
+   "id": "armed-forces",
+   "league": "kr-second",
+   "division": "kr-second-north",
+   "parent": null,
+   "city": {
+    "ko": "문경",
+    "en": "Mungyeong"
+   },
+   "region": null,
+   "country": "KR",
+   "name": {
+    "ko": "국군",
+    "en": "Armed Forces"
+   },
+   "abbr": "AFC",
+   "colors": [
+    "#357029",
+    "#e7f0e6"
+   ],
+   "military": true,
+   "park": {
+    "name": {
+     "ko": "문경 2군 구장",
+     "en": "Mungyeong Training Ground"
+    },
+    "capacity": null,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     98.0,
+     113.0,
+     120.0,
+     113.0,
+     98.0
+    ],
+    "wall_m": [
+     2.5,
+     2.5,
+     2.5
+    ],
+    "estimated": [
+     "fence",
+     "wall",
+     "surface",
+     "capacity"
+    ]
+   }
+  },
+  {
+   "id": "daejeon-orbiters-futures",
+   "league": "kr-second",
+   "division": "kr-second-north",
+   "parent": "daejeon-orbiters",
+   "second_team": true,
+   "city": {
+    "ko": "서산",
+    "en": "Seosan"
+   },
+   "region": null,
+   "country": "KR",
+   "name": {
+    "ko": "오비터스",
+    "en": "Orbiters"
+   },
+   "abbr": "DJN",
+   "colors": [
+    "#e06a1b",
+    "#1c1c2e"
+   ],
+   "park": {
+    "name": {
+     "ko": "서산 2군 구장",
+     "en": "Seosan Training Ground"
+    },
+    "capacity": null,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     98.0,
+     113.0,
+     120.0,
+     113.0,
+     98.0
+    ],
+    "wall_m": [
+     2.5,
+     2.5,
+     2.5
+    ],
+    "estimated": [
+     "fence",
+     "wall",
+     "surface",
+     "capacity"
+    ]
+   }
+  },
+  {
+   "id": "seoul-magpies-futures",
+   "league": "kr-second",
+   "division": "kr-second-north",
+   "parent": "seoul-magpies",
+   "second_team": true,
+   "city": {
+    "ko": "이천",
+    "en": "Icheon"
+   },
+   "region": null,
+   "country": "KR",
+   "name": {
+    "ko": "매그파이스",
+    "en": "Magpies"
+   },
+   "abbr": "SMP",
+   "colors": [
+    "#1f3a5f",
+    "#e9eef5"
+   ],
+   "park": {
+    "name": {
+     "ko": "이천 매그파이스 2군 구장",
+     "en": "Icheon Magpies Training Ground"
+    },
+    "capacity": null,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     98.0,
+     113.0,
+     120.0,
+     113.0,
+     98.0
+    ],
+    "wall_m": [
+     2.5,
+     2.5,
+     2.5
+    ],
+    "estimated": [
+     "fence",
+     "wall",
+     "surface",
+     "capacity"
+    ]
+   }
+  },
+  {
+   "id": "seoul-comets-futures",
+   "league": "kr-second",
+   "division": "kr-second-north",
+   "parent": "seoul-comets",
+   "second_team": true,
+   "city": {
+    "ko": "이천",
+    "en": "Icheon"
+   },
+   "region": null,
+   "country": "KR",
+   "name": {
+    "ko": "코메츠",
+    "en": "Comets"
+   },
+   "abbr": "SCM",
+   "colors": [
+    "#5b2a86",
+    "#f4c542"
+   ],
+   "park": {
+    "name": {
+     "ko": "이천 코메츠 2군 구장",
+     "en": "Icheon Comets Training Ground"
+    },
+    "capacity": null,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     98.0,
+     113.0,
+     120.0,
+     113.0,
+     98.0
+    ],
+    "wall_m": [
+     2.5,
+     2.5,
+     2.5
+    ],
+    "estimated": [
+     "fence",
+     "wall",
+     "surface",
+     "capacity"
+    ]
+   }
+  },
+  {
+   "id": "seoul-stallions-futures",
+   "league": "kr-second",
+   "division": "kr-second-north",
+   "parent": "seoul-stallions",
+   "second_team": true,
+   "city": {
+    "ko": "고양",
+    "en": "Goyang"
+   },
+   "region": null,
+   "country": "KR",
+   "name": {
+    "ko": "스탤리온스",
+    "en": "Stallions"
+   },
+   "abbr": "SST",
+   "colors": [
+    "#7a1f1f",
+    "#f2e9dc"
+   ],
+   "park": {
+    "name": {
+     "ko": "고양 2군 구장",
+     "en": "Goyang Training Ground"
+    },
+    "capacity": null,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     98.0,
+     113.0,
+     120.0,
+     113.0,
+     98.0
+    ],
+    "wall_m": [
+     2.5,
+     2.5,
+     2.5
+    ],
+    "estimated": [
+     "fence",
+     "wall",
+     "surface",
+     "capacity"
+    ]
+   }
+  },
+  {
+   "id": "incheon-cranes-futures",
+   "league": "kr-second",
+   "division": "kr-second-north",
+   "parent": "incheon-cranes",
+   "second_team": true,
+   "city": {
+    "ko": "강화",
+    "en": "Ganghwa"
+   },
+   "region": null,
+   "country": "KR",
+   "name": {
+    "ko": "크레인스",
+    "en": "Cranes"
+   },
+   "abbr": "ICN",
+   "colors": [
+    "#0f6e8c",
+    "#f5f7fa"
+   ],
+   "park": {
+    "name": {
+     "ko": "강화 2군 구장",
+     "en": "Ganghwa Training Ground"
+    },
+    "capacity": null,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     98.0,
+     113.0,
+     120.0,
+     113.0,
+     98.0
+    ],
+    "wall_m": [
+     2.5,
+     2.5,
+     2.5
+    ],
+    "estimated": [
+     "fence",
+     "wall",
+     "surface",
+     "capacity"
+    ]
+   }
+  },
+  {
+   "id": "ulsan-shipbuilders",
+   "league": "kr-second",
+   "division": "kr-second-south",
+   "parent": null,
+   "city": {
+    "ko": "울산",
+    "en": "Ulsan"
+   },
+   "region": null,
+   "country": "KR",
+   "name": {
+    "ko": "쉽빌더스",
+    "en": "Shipbuilders"
+   },
+   "abbr": "USB",
+   "colors": [
+    "#3a2871",
+    "#eae0c8"
+   ],
+   "military": false,
+   "park": {
+    "name": {
+     "ko": "울산 2군 구장",
+     "en": "Ulsan Training Ground"
+    },
+    "capacity": null,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     98.0,
+     113.0,
+     120.0,
+     113.0,
+     98.0
+    ],
+    "wall_m": [
+     2.5,
+     2.5,
+     2.5
+    ],
+    "estimated": [
+     "fence",
+     "wall",
+     "surface",
+     "capacity"
+    ]
+   }
+  },
+  {
+   "id": "busan-breakers-futures",
+   "league": "kr-second",
+   "division": "kr-second-south",
+   "parent": "busan-breakers",
+   "second_team": true,
+   "city": {
+    "ko": "김해",
+    "en": "Gimhae"
+   },
+   "region": null,
+   "country": "KR",
+   "name": {
+    "ko": "브레이커스",
+    "en": "Breakers"
+   },
+   "abbr": "BSN",
+   "colors": [
+    "#0d47a1",
+    "#b3e5fc"
+   ],
+   "park": {
+    "name": {
+     "ko": "김해 2군 구장",
+     "en": "Gimhae Training Ground"
+    },
+    "capacity": null,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     98.0,
+     113.0,
+     120.0,
+     113.0,
+     98.0
+    ],
+    "wall_m": [
+     2.5,
+     2.5,
+     2.5
+    ],
+    "estimated": [
+     "fence",
+     "wall",
+     "surface",
+     "capacity"
+    ]
+   }
+  },
+  {
+   "id": "changwon-turbines-futures",
+   "league": "kr-second",
+   "division": "kr-second-south",
+   "parent": "changwon-turbines",
+   "second_team": true,
+   "city": {
+    "ko": "창원",
+    "en": "Changwon"
+   },
+   "region": null,
+   "country": "KR",
+   "name": {
+    "ko": "터빈스",
+    "en": "Turbines"
+   },
+   "abbr": "CHW",
+   "colors": [
+    "#00695c",
+    "#eceff1"
+   ],
+   "park": {
+    "name": {
+     "ko": "창원 2군 구장",
+     "en": "Changwon Training Ground"
+    },
+    "capacity": null,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     98.0,
+     113.0,
+     120.0,
+     113.0,
+     98.0
+    ],
+    "wall_m": [
+     2.5,
+     2.5,
+     2.5
+    ],
+    "estimated": [
+     "fence",
+     "wall",
+     "surface",
+     "capacity"
+    ]
+   }
+  },
+  {
+   "id": "suwon-fortress-futures",
+   "league": "kr-second",
+   "division": "kr-second-south",
+   "parent": "suwon-fortress",
+   "second_team": true,
+   "city": {
+    "ko": "익산",
+    "en": "Iksan"
+   },
+   "region": null,
+   "country": "KR",
+   "name": {
+    "ko": "포트리스",
+    "en": "Fortress"
+   },
+   "abbr": "SWN",
+   "colors": [
+    "#2d3b2f",
+    "#d9c27a"
+   ],
+   "park": {
+    "name": {
+     "ko": "익산 2군 구장",
+     "en": "Iksan Training Ground"
+    },
+    "capacity": null,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     98.0,
+     113.0,
+     120.0,
+     113.0,
+     98.0
+    ],
+    "wall_m": [
+     2.5,
+     2.5,
+     2.5
+    ],
+    "estimated": [
+     "fence",
+     "wall",
+     "surface",
+     "capacity"
+    ]
+   }
+  },
+  {
+   "id": "gwangju-beacons-futures",
+   "league": "kr-second",
+   "division": "kr-second-south",
+   "parent": "gwangju-beacons",
+   "second_team": true,
+   "city": {
+    "ko": "함평",
+    "en": "Hampyeong"
+   },
+   "region": null,
+   "country": "KR",
+   "name": {
+    "ko": "비컨스",
+    "en": "Beacons"
+   },
+   "abbr": "GWJ",
+   "colors": [
+    "#f9a825",
+    "#263238"
+   ],
+   "park": {
+    "name": {
+     "ko": "함평 2군 구장",
+     "en": "Hampyeong Training Ground"
+    },
+    "capacity": null,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     98.0,
+     113.0,
+     120.0,
+     113.0,
+     98.0
+    ],
+    "wall_m": [
+     2.5,
+     2.5,
+     2.5
+    ],
+    "estimated": [
+     "fence",
+     "wall",
+     "surface",
+     "capacity"
+    ]
+   }
+  },
+  {
+   "id": "daegu-flares-futures",
+   "league": "kr-second",
+   "division": "kr-second-south",
+   "parent": "daegu-flares",
+   "second_team": true,
+   "city": {
+    "ko": "경산",
+    "en": "Gyeongsan"
+   },
+   "region": null,
+   "country": "KR",
+   "name": {
+    "ko": "플레어스",
+    "en": "Flares"
+   },
+   "abbr": "DGU",
+   "colors": [
+    "#c62828",
+    "#ffd54f"
+   ],
+   "park": {
+    "name": {
+     "ko": "경산 2군 구장",
+     "en": "Gyeongsan Training Ground"
+    },
+    "capacity": null,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     98.0,
+     113.0,
+     120.0,
+     113.0,
+     98.0
+    ],
+    "wall_m": [
+     2.5,
+     2.5,
+     2.5
+    ],
+    "estimated": [
+     "fence",
+     "wall",
+     "surface",
+     "capacity"
+    ]
+   }
   }
  ]
 }

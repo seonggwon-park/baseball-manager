@@ -69,6 +69,11 @@ pub struct TeamView {
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub struct ParkView {
+    /// Name of the home club's ballpark.
+    pub name: Localized,
+    /// Elevation above sea level, m.
+    pub elevation_m: f64,
+    pub turf: bool,
     /// Outfield fence: `[bearing rad, distance m, height m]` from the left-field line to the right-field line.
     pub fence: Vec<[f64; 3]>,
     pub backstop: f64,

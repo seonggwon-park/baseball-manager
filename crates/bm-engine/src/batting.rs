@@ -5,7 +5,7 @@
 
 use crate::params::ModelParams;
 use crate::pitching::{Expectation, MatchEnv, Thrown};
-use crate::profile::{BatterProfile, PitchKind};
+use crate::profile::{BatterProfile, PitchGroup, PitchKind};
 use crate::rng::{sigmoid, Rng};
 use crate::rules::StrikeZone;
 use bm_physics::units::G;
@@ -130,7 +130,7 @@ pub fn perceive(
     let f = &thrown.flight;
     // Recognition is close to all-or-nothing: the batter either picks the pitch up out
     // of the hand or commits to the wrong one.
-    let rho = if rng.chance((batter.eye - thrown.disguise).clamp(0.02, 0.99)) {
+    let rho = if rng.chance((batter.eye - thrown.disguise + params.kind_recognition[thrown.kind.index()]).clamp(0.02, 0.99)) {
         1.0 - rng.gauss(0.0, params.recognition_sd).abs().min(0.5)
     } else {
         rng.range(0.0, (params.fooled_recognition * batter.adjust).min(0.95))
@@ -138,15 +138,18 @@ pub fn perceive(
     let drop_act = f.move_z - 0.5 * G * f.time * f.time;
     // A pitch that differs a lot from the fastball is easier to identify, so the
     // misjudgement grows less than proportionally with the difference in movement.
+    // One fastball taken for another is tracked like any fastball.
+    let same_group = if thrown.kind.group() == PitchGroup::Fastball && expected.fastball { params.fastball_misread } else { 1.0 };
     let (dmx, dmz) = {
         let (x, z) = (expected.move_x - f.move_x, expected.drop_z - drop_act);
-        let sat = 1.0 / (1.0 + (x * x + z * z).sqrt() / params.recognition_scale);
+        let sat = same_group / (1.0 + (x * x + z * z).sqrt() / params.recognition_scale);
         (x * sat, z * sat)
     };
     // Mostly small errors, now and then a pitch that is badly misread.
     let sd = batter.perception_sd * if rng.chance((params.misread_rate * batter.lapse).min(0.9)) { params.misread_factor } else { 1.0 };
-    let px = f.plate_pos.x + (1.0 - rho) * dmx + rng.gauss(0.0, sd);
-    let pz = f.plate_pos.z + (1.0 - rho) * dmz + rng.gauss(0.0, sd);
+    let miss = 1.0 - params.location_adjust * rho;
+    let px = f.plate_pos.x + miss * dmx + rng.gauss(0.0, sd);
+    let pz = f.plate_pos.z + miss * dmz + rng.gauss(0.0, sd);
     let d_hat = zone.signed_distance(px, pz, ball_radius);
     let d0 = params.swing_d0
         + batter.chase
@@ -156,7 +159,7 @@ pub fn perceive(
             _ => params.swing_d0_two_strikes,
         };
     let base = (params.swing_base[balls.min(3)][strikes.min(2)] * batter.aggression).min(0.992);
-    Perception { recognition: rho, perceived_x: px, perceived_z: pz, bias_z: (1.0 - rho) * dmz, swing_prob: base * sigmoid(-(d_hat - d0) / params.swing_width) }
+    Perception { recognition: rho, perceived_x: px, perceived_z: pz, bias_z: miss * dmz, swing_prob: base * sigmoid(-(d_hat - d0) / params.swing_width) }
 }
 
 /// Full response of the batter to a pitch.
@@ -291,11 +294,13 @@ pub fn swing(
     let two = strikes >= 2;
     let prec = if two { p.two_strike_precision } else { 1.0 };
     let v_plate = f.plate_vel.norm();
-    let speed_ratio = v_plate / p.ref_plate_speed;
+    // Speed against what the batter is used to from this kind of pitch: a slider is not
+    // easier to time than a fastball for being slower, but a hard slider is harder than a soft one.
+    let speed_ratio = v_plate / env.typical_plate_speed[thrown.kind.index()];
 
     // ---- timing ----
     let dt_raw = expected.time - f.time;
-    let dt_bias = (1.0 - per.recognition) * dt_raw / (1.0 + dt_raw.abs() / p.recognition_time_scale);
+    let dt_bias = (1.0 - p.timing_adjust * per.recognition) * dt_raw / (1.0 + dt_raw.abs() / p.recognition_time_scale);
     let fooled = (dt_bias.abs() / p.fooled_time).min(1.0);
     let mut bat_speed = rng.gauss(batter.bat_speed, batter.bat_speed_sd) * (1.0 - (p.fooled_speed_loss * batter.speed_loss).min(0.9) * fooled * fooled);
     if two {
@@ -353,9 +358,11 @@ pub fn swing(
     let d_out = (d_act + p.barrel_outside_offset).max(0.0);
     let loc_gain = 1.0 + p.barrel_outside_gain * d_out + p.barrel_outside_gain2 * d_out * d_out;
     // Batters adapt only in part to how much a pitch rises or sinks compared with what
-    // they expect of it: one generic fastball for four-seamers and sinkers alike, the
-    // league's typical pitch of its type for everything else.
-    let ride_expected = if matches!(thrown.kind, PitchKind::FourSeam | PitchKind::Sinker) { p.ride_reference } else { env.typical_rise[thrown.kind.index()] };
+    // they expect of it: the league's typical pitch of its type, except that four-seamers
+    // and sinkers are partly taken for one generic fastball.
+    let typical_rise = env.typical_rise[thrown.kind.index()];
+    let confusion = if matches!(thrown.kind, PitchKind::FourSeam | PitchKind::Sinker) { p.ride_confusion } else { 0.0 };
+    let ride_expected = typical_rise + confusion * (p.ride_reference - typical_rise);
     let offset = rng.gauss(batter.barrel_aim, batter.barrel_sd * speed_ratio.powf(p.barrel_speed_exp) * loc_gain * prec)
         - p.tracking_residual * per.bias_z
         - p.noise_residual * (per.perceived_z - f.plate_pos.z - per.bias_z)

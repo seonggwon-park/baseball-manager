@@ -184,7 +184,7 @@ const ARSENAL: [(PitchKind, f64, f64, f64, f64); 8] = [
 pub fn random_pitcher(rng: &mut Rng, id: u32, starter: bool, level: &Level) -> Player {
     let hand = if rng.chance(0.73) { Hand::Right } else { Hand::Left };
     let fb_delta = rng.gauss_clamped(if starter { -0.6 } else { 0.9 }, 2.2, -7.0, 7.0) * MPH + level.velocity;
-    let command_in = rng.gauss_clamped(6.72, 0.71, 5.1, 8.95) * level.command;
+    let command_in = rng.gauss_clamped(6.6, 0.7, 5.0, 8.8) * level.command;
     let mut pitches: Vec<PitchDef> = Vec::with_capacity(6);
     for &(kind, prob, weight, same, opp) in &ARSENAL {
         if pitches.len() >= 6 || !rng.chance(prob) {

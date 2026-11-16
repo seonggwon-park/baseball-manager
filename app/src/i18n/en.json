@@ -381,5 +381,10 @@
   },
   "field": {
     "failed": "The field view could not be drawn. The game can still be followed in the play-by-play."
+  },
+  "park": {
+    "title": "The home club's ballpark",
+    "elevation": "Elevation {{m}} m",
+    "turf": "Artificial turf"
   }
 }

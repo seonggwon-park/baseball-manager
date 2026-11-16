@@ -358,10 +358,10 @@ impl PitcherProfile {
             release_height: 5.8 * FT,
             extension: 6.45 * FT,
             pitches: vec![
-                mk(PitchKind::FourSeam, 0.48, 0.50, 6.72),
-                mk(PitchKind::Slider, 0.34, 0.18, 7.75),
-                mk(PitchKind::Changeup, 0.08, 0.22, 7.55),
-                mk(PitchKind::Curve, 0.10, 0.10, 8.15),
+                mk(PitchKind::FourSeam, 0.48, 0.50, 6.45),
+                mk(PitchKind::Slider, 0.34, 0.18, 7.43),
+                mk(PitchKind::Changeup, 0.08, 0.22, 7.23),
+                mk(PitchKind::Curve, 0.10, 0.10, 7.82),
             ],
             speed_sd: 1.05 * MPH,
             spin_sd: 85.0 * RPM,
@@ -378,7 +378,7 @@ impl PitcherProfile {
 
 /// Bat speed, m/s, and barrel error, m, of the average hitter of the generated MLB population.
 pub const AVERAGE_BAT_SPEED: f64 = 74.3 * MPH;
-pub const AVERAGE_BARREL_SD: f64 = 0.038;
+pub const AVERAGE_BARREL_SD: f64 = 0.0291;
 
 impl BatterProfile {
     pub fn league_average(hand: Hand) -> Self {
@@ -390,15 +390,15 @@ impl BatterProfile {
             bat_speed_sd: 2.8 * MPH,
             attack_angle: 9.5f64.to_radians(),
             attack_sd: 5.5f64.to_radians(),
-            timing_sd: 0.0138,
+            timing_sd: 0.011,
             barrel_sd: AVERAGE_BARREL_SD,
             barrel_aim: 0.0139,
             reach_sd: 0.0692,
-            eye: 0.62,
+            eye: 0.613,
             perception_sd: 0.065,
-            chase: 0.0,
+            chase: -0.0126,
             aggression: 1.0,
-            timing_bias: 0.0002,
+            timing_bias: 0.0026,
             sprint: 27.0 * FT,
             accel: 4.9,
             baserunning: 0.5,

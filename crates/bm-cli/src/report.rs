@@ -252,6 +252,50 @@ pub fn print(t: &Tally) {
             tg[7]
         );
     }
+    // MLB: whiff per swing at pitches in the zone, against same-side and opposite-side batters.
+    #[rustfmt::skip]
+    let kz: [[f64; 3]; 8] = [[18.2, 23.4, 20.6], [10.8, 13.5, 14.7], [16.1, 23.8, 20.6], [19.3, 34.7, 30.7], [19.5, 35.5, 27.3], [15.3, 30.2, 29.9], [20.5, 34.2, 30.1], [22.6, 38.1, 35.4]];
+    println!("  whiff per swing, sim/MLB: in the zone, against same-side batters, against opposite-side batters; sim misses by cause, % of swings");
+    for ((kind, _), tg) in kt.iter().zip(kz) {
+        let k = &t.kinds[kind.index()];
+        println!(
+            "    {}  zone {:5.1}/{:5.1}  same {:5.1}/{:5.1}  opposite {:5.1}/{:5.1}   early {:4.1}  late {:4.1}  off the end {:4.1}  jammed {:4.1}  over {:4.1}  under {:4.1}",
+            kind.code(),
+            pct(k.zone_whiffs, k.zone_swings),
+            tg[0],
+            pct(k.side[0][1], k.side[0][0]),
+            tg[1],
+            pct(k.side[1][1], k.side[1][0]),
+            tg[2],
+            pct(k.miss[0], k.swings),
+            pct(k.miss[1], k.swings),
+            pct(k.miss[2], k.swings),
+            pct(k.miss[3], k.swings),
+            pct(k.miss[4], k.swings),
+            pct(k.miss[5], k.swings)
+        );
+    }
+    // MLB (Statcast sample, 9-parameter fit): spin-induced vertical and arm-side movement
+    // over the whole flight from release to the plate, in; mean plate height, ft.
+    const MLB_RISE: [f64; 8] = [16.6, 7.9, 8.6, 2.3, 1.1, -10.3, 5.0, 4.0];
+    const MLB_ARM: [f64; 8] = [9.1, 16.8, -0.9, -2.9, -12.7, -8.4, 16.0, 12.0];
+    #[rustfmt::skip]
+    let km: [[f64; 3]; 8] = [[MLB_RISE[0], MLB_ARM[0], 2.87], [MLB_RISE[1], MLB_ARM[1], 2.38], [MLB_RISE[2], MLB_ARM[2], 2.53], [MLB_RISE[3], MLB_ARM[3], 1.93],
+                             [MLB_RISE[4], MLB_ARM[4], 2.01], [MLB_RISE[5], MLB_ARM[5], 1.85], [MLB_RISE[6], MLB_ARM[6], 1.83], [MLB_RISE[7], MLB_ARM[7], 1.77]];
+    println!("  movement over the whole flight (in) and plate height (ft), sim/MLB: induced rise, arm-side, height");
+    for ((kind, _), tg) in kt.iter().zip(km) {
+        let k = &t.kinds[kind.index()];
+        println!(
+            "    {}  rise {:5.1}/{:5.1}  arm side {:5.1}/{:5.1}  height {:4.2}/{:4.2}",
+            kind.code(),
+            k.rise.mean(),
+            tg[0],
+            k.arm_side.mean(),
+            tg[1],
+            k.height.mean(),
+            tg[2]
+        );
+    }
     println!("  four-seam whiff per swing by velocity, sim/MLB:");
     let fb_t = [17.4, 19.2, 19.3, 21.5, 24.5, 25.4, 30.3, f64::NAN];
     let mut s = String::from("   ");
@@ -611,6 +655,63 @@ pub fn print(t: &Tally) {
         pct(cm[4], cmn),
         pct(cm[5], cmn)
     );
+    // MLB by pitch type (depth relative to the batter's own mean on balls in play): mean, SD,
+    // share more than 10 in late, share more than 10 in early, whiff % when more than
+    // 10 in late, 5-10 in late, within 5 in, 5-10 in early, more than 10 in early.
+    #[rustfmt::skip]
+    const KIND_DEPTH_MLB: [(PitchKind, [f64; 9]); 8] = [
+        (PitchKind::FourSeam, [-6.0, 7.4, 28.1, 1.5, 38.9, 20.0, 9.2, 4.2, 9.6]),
+        (PitchKind::Sinker, [-4.6, 7.3, 21.8, 2.1, 20.5, 11.2, 8.3, 12.5, 23.7]),
+        (PitchKind::Cutter, [-0.4, 9.1, 14.0, 12.2, 41.3, 20.1, 12.0, 14.3, 35.9]),
+        (PitchKind::Slider, [5.8, 10.1, 5.7, 33.0, 36.0, 17.8, 11.5, 18.7, 57.6]),
+        (PitchKind::Sweeper, [7.5, 10.0, 4.0, 40.0, 42.5, 20.3, 11.3, 16.8, 47.9]),
+        (PitchKind::Curve, [8.9, 10.2, 2.8, 44.9, 18.8, 7.9, 7.3, 14.0, 44.0]),
+        (PitchKind::Changeup, [6.9, 9.4, 3.4, 36.7, 18.2, 12.8, 12.1, 18.8, 53.8]),
+        (PitchKind::Splitter, [7.2, 9.5, 3.7, 37.9, 27.8, 7.8, 17.1, 23.9, 57.1]),
+    ];
+    let usual = g.depth[2].mean();
+    // The histogram is in steps of 2.5 in from -40 in; classes are taken about the mean depth of balls in play.
+    let shift = (usual / 2.5).round() as i64;
+    println!("  timing by pitch type (sim / MLB), depth of contact relative to the mean of balls in play, + = out in front:");
+    println!("        mean in       SD           >10 in late %  >10 in early % | whiff %: >10 late    5-10 late    within 5     5-10 early   >10 early");
+    for (kind, m) in KIND_DEPTH_MLB {
+        let kd = &g.kind_depth[kind.index()];
+        let class = |lo: i64, hi: i64| {
+            let (mut n, mut w) = (0.0, 0.0);
+            for (i, h) in kd.hist.iter().enumerate() {
+                let j = i as i64 - 16 - shift;
+                if j >= lo && j < hi {
+                    n += h[0];
+                    w += h[1];
+                }
+            }
+            (n, w)
+        };
+        let all = kd.depth.n.max(1.0);
+        let c = [class(-99, -4), class(-4, -2), class(-2, 2), class(2, 4), class(4, 99)];
+        println!(
+            "    {}  {:+5.1}/{:+5.1}  {:5.1}/{:5.1}   {:5.1}/{:5.1}    {:5.1}/{:5.1}   |        {:5.1}/{:5.1}  {:5.1}/{:5.1}  {:5.1}/{:5.1}  {:5.1}/{:5.1}  {:5.1}/{:5.1}",
+            kind.code(),
+            kd.depth.mean() - usual,
+            m[0],
+            kd.depth.sd(),
+            m[1],
+            pct(c[0].0, all),
+            m[2],
+            pct(c[4].0, all),
+            m[3],
+            pct(c[0].1, c[0].0),
+            m[4],
+            pct(c[1].1, c[1].0),
+            m[5],
+            pct(c[2].1, c[2].0),
+            m[6],
+            pct(c[3].1, c[3].0),
+            m[7],
+            pct(c[4].1, c[4].0),
+            m[8]
+        );
+    }
     println!("    elevation off the bat      fouls, % of swings (EV, mph)        in play, % of swings (EV, mph)");
     for i in 0..NE {
         let m = &CENTRED_MLB[i];

@@ -142,10 +142,20 @@ impl Fit {
 pub const DEPTH_EDGES: [f64; 11] = [-60.0, -25.0, -15.0, -8.0, -3.0, 1.0, 5.0, 10.0, 17.0, 25.0, 60.0];
 pub const ND: usize = DEPTH_EDGES.len() - 1;
 
+/// Contact depth of the full swings at one type of pitch: mean and spread, and a
+/// histogram in steps of 2.5 in from -40 to +40 in of [swings, misses].
+#[derive(Clone, Copy, Default)]
+pub struct KindDepth {
+    pub depth: Mean,
+    pub hist: [[f64; 2]; 32],
+}
+
 /// Swing geometry (full swings, 60 mph and up, bunts excluded), for comparison with
 /// Statcast bat tracking. Outcome index: 0 = whiff, 1 = foul, 2 = in play.
 #[derive(Clone, Copy, Default)]
 pub struct SwingGeo {
+    /// Timing by pitch type.
+    pub kind_depth: [KindDepth; 8],
     /// All swings and those under 60 mph, by outcome.
     pub all: [f64; 3],
     pub slow: [f64; 3],
@@ -212,6 +222,12 @@ impl SwingGeo {
         }
         for i in 0..6 {
             self.centred_miss[i] += o.centred_miss[i];
+        }
+        for (a, b) in self.kind_depth.iter_mut().zip(&o.kind_depth) {
+            a.depth.merge(&b.depth);
+            for (x, y) in a.hist.iter_mut().zip(&b.hist) {
+                add_arr(x, y);
+            }
         }
         for i in 0..NE {
             self.centred_foul[i].merge(&o.centred_foul[i]);
@@ -315,6 +331,17 @@ pub struct KindStat {
     pub la: Mean,
     pub gb: f64,
     pub bip: f64,
+    /// Swings at pitches in the zone, and the misses among them.
+    pub zone_swings: f64,
+    pub zone_whiffs: f64,
+    /// Swings and misses by cause: early, late, off the end, jammed, over, under.
+    pub miss: [f64; 6],
+    /// Swings by batter side: same side as the pitcher [swings, misses], opposite side.
+    pub side: [[f64; 2]; 2],
+    /// Induced vertical movement over the whole flight (in), arm-side movement (in), plate height (ft).
+    pub rise: Mean,
+    pub arm_side: Mean,
+    pub height: Mean,
 }
 
 #[derive(Clone)]
@@ -683,6 +710,15 @@ impl Tally {
             a.out_n += b.out_n;
             a.gb += b.gb;
             a.bip += b.bip;
+            a.rise.merge(&b.rise);
+            a.arm_side.merge(&b.arm_side);
+            a.height.merge(&b.height);
+            a.zone_swings += b.zone_swings;
+            a.zone_whiffs += b.zone_whiffs;
+            add_arr(&mut a.miss, &b.miss);
+            for (x, y) in a.side.iter_mut().zip(&b.side) {
+                add_arr(x, y);
+            }
             a.speed.merge(&b.speed);
             a.ev.merge(&b.ev);
             a.la.merge(&b.la);
@@ -887,6 +923,13 @@ impl Observer for Tally {
                 g.speed[outcome].add(mph);
                 g.depth[outcome].add(depth);
                 g.direction[outcome].add(dir);
+                let kd = &mut g.kind_depth[e.thrown.kind.index()];
+                kd.depth.add(depth);
+                let h = (((depth + 40.0) / 2.5).floor().clamp(0.0, 31.0)) as usize;
+                kd.hist[h][0] += 1.0;
+                if outcome == 0 {
+                    kd.hist[h][1] += 1.0;
+                }
                 let bin_i = bin(&DEPTH_EDGES, depth);
                 // Ball centre more than 8.5 cm inside the edge of the zone, within 3.7 cm of leaving it, or beyond.
                 let zone = if e.zone_distance < -0.085 {
@@ -978,6 +1021,9 @@ impl Observer for Tally {
         let k = &mut self.kinds[kind.index()];
         k.n += 1.0;
         k.speed.add(e.thrown.spec.speed / MPH);
+        k.rise.add(e.thrown.flight.move_z / INCH);
+        k.arm_side.add(e.thrown.flight.move_x / INCH * if e.pitcher_hand == Hand::Right { -1.0 } else { 1.0 });
+        k.height.add(e.thrown.flight.plate_pos.z / FT);
         if inz {
             self.zone += 1.0;
             self.z_n += 1.0;
@@ -1010,7 +1056,19 @@ impl Observer for Tally {
             if whiff {
                 k.whiffs += 1.0;
             }
+            if let Some(m) = e.miss {
+                k.miss[m as usize] += 1.0;
+            }
+            let opposite = usize::from(e.batter_hand != e.pitcher_hand);
+            k.side[opposite][0] += 1.0;
+            if whiff {
+                k.side[opposite][1] += 1.0;
+            }
             if inz {
+                k.zone_swings += 1.0;
+                if whiff {
+                    k.zone_whiffs += 1.0;
+                }
                 self.z_swings += 1.0;
                 self.count_zswing[b][s] += 1.0;
             } else {
