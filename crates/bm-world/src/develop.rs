@@ -213,11 +213,12 @@ pub fn grows(a: Attr, pitcher: bool) -> bool {
     }
 }
 
-/// How the clubs of one league shape their players beyond the run values every club shares
-/// (`careers.json` styles): shifts of a ceiling, in standard deviations, for hitters' power,
-/// bat-to-ball skills (contact, timing, bat control) and plate discipline and for pitchers'
-/// stuff (stuff and deception). Choosing players by value alone gathers power and discipline
-/// at the top of every league; these keep each league's own balance.
+/// How the amateur game and the clubs of one league shape their players beyond the run
+/// values every club shares (`careers.json` styles): shifts, in standard deviations, of a new
+/// amateur's hitting power, bat-to-ball skills (contact, timing, bat control) and plate
+/// discipline, or of his stuff (stuff, deception and the grades of his pitches). Choosing
+/// players by value alone gathers power and discipline at the top of every league; these keep
+/// each league's own balance.
 #[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq)]
 pub struct Style {
     #[serde(default)]
@@ -230,20 +231,29 @@ pub struct Style {
     pub stuff: f32,
 }
 
-impl Potential {
-    /// Shift the ceiling by the style of the league the player grows up in.
-    pub fn style(&mut self, player: &Player, style: &Style) {
+impl Style {
+    /// Shift a new amateur by the style of the league he grows up in, before his ceiling is
+    /// drawn: the ceiling moves with him. Shifting the ceiling alone moved nothing where it
+    /// lies below the player (a player only grows towards it): the NPB's power and the
+    /// majors' plate discipline, whose level gaps close by the peak, kept the values the
+    /// amateurs came in with.
+    pub fn shape(&self, player: &mut Player) {
         use Attr::*;
         if player.is_pitcher() {
             for a in [Stuff, Deception] {
-                self.attrs[a] += style.stuff;
+                player.attrs[a] += self.stuff;
+            }
+            if let Some(p) = player.pitching.as_mut() {
+                for pitch in &mut p.pitches {
+                    pitch.grade += self.stuff;
+                }
             }
         } else {
-            self.attrs[Power] += style.power;
+            player.attrs[Power] += self.power;
             for a in [Contact, Timing, BatControl] {
-                self.attrs[a] += style.contact;
+                player.attrs[a] += self.contact;
             }
-            self.attrs[Discipline] += style.discipline;
+            player.attrs[Discipline] += self.discipline;
         }
     }
 }
@@ -365,5 +375,42 @@ mod tests {
         let mean = gained / n as f64;
         // Most of the 2.2 standard deviations of remaining growth at 20 arrive by 27.
         assert!((1.6..2.4).contains(&mean), "contact gained {mean:.2} SD from 20 to 27");
+    }
+
+    #[test]
+    fn a_style_moves_the_amateur_and_his_ceiling() {
+        let t = AgingTable::bundled();
+        let style = Style { power: -0.4, contact: 0.3, discipline: -0.2, stuff: 0.5 };
+        let mut rng = Rng::new(5);
+        let hitter = position_player(&mut rng, 1, Some(Position::Short), &Talent::MAJOR);
+        let mut shaped = hitter.clone();
+        style.shape(&mut shaped);
+        for (a, by) in [
+            (Attr::Power, -0.4),
+            (Attr::Contact, 0.3),
+            (Attr::Timing, 0.3),
+            (Attr::BatControl, 0.3),
+            (Attr::Discipline, -0.2),
+            (Attr::Range, 0.0),
+            (Attr::Stuff, 0.0),
+        ] {
+            assert!((shaped.attrs[a] - hitter.attrs[a] - by).abs() < 1e-5, "{}", a.key());
+        }
+        // The ceiling drawn from the shaped amateur moves with him.
+        let (mut r1, mut r2) = (Rng::new(9), Rng::new(9));
+        let plain = Potential::draw(&hitter, 19.0, 1.0, &t, &mut r1);
+        let moved = Potential::draw(&shaped, 19.0, 1.0, &t, &mut r2);
+        assert!((moved.attrs[Attr::Power] - plain.attrs[Attr::Power] + 0.4).abs() < 1e-5);
+        let arm = pitcher(&mut rng, 2, Role::Starter, &Talent::MAJOR);
+        let mut shaped = arm.clone();
+        style.shape(&mut shaped);
+        for (a, by) in [(Attr::Stuff, 0.5), (Attr::Deception, 0.5), (Attr::Control, 0.0), (Attr::Power, 0.0)] {
+            assert!((shaped.attrs[a] - arm.attrs[a] - by).abs() < 1e-5, "{}", a.key());
+        }
+        let grades = |p: &Player| p.pitching.as_ref().map(|x| x.pitches.iter().map(|s| s.grade).collect::<Vec<_>>()).unwrap_or_default();
+        assert!(!grades(&arm).is_empty());
+        for (g, h) in grades(&shaped).iter().zip(grades(&arm)) {
+            assert!((g - h - 0.5).abs() < 1e-5);
+        }
     }
 }

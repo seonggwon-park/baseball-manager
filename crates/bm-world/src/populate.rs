@@ -331,10 +331,9 @@ pub fn populate_with(world: &World, levels: &LevelTable, aging: &AgingTable, car
                 (Some(f), true) => (talent(&f.talent), talent(&f.talent)),
                 _ => (profile.talent(), levels.get(peak_level(&r.level)).talent()),
             };
+            // The league styles shape new amateurs (`Style::shape`): the first world's
+            // players already have their league's balance.
             pot.balance(p, &t, &peak, &closure);
-            if !is_foreign {
-                pot.style(p, &careers.style(peak_level(&r.level)));
-            }
             potentials.insert(p.id, pot);
         }
     }

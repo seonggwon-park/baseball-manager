@@ -795,7 +795,7 @@ impl Intake<'_> {
         let t = Talent { spread: self.table.intake_spread, tradeoff: self.table.intake_tradeoff, ..self.table.talent(class, self.levels) };
         let id = self.id();
         let is_pitcher = rng.chance(class.pitchers);
-        let player = if is_pitcher {
+        let mut player = if is_pitcher {
             let role = if rng.chance(self.table.starter_share) { Role::Starter } else { Role::Reliever };
             let t = Talent { pitching: t.pitching + self.table.pitcher_shift, ..t };
             pitcher(rng, id, role, &t)
@@ -803,11 +803,11 @@ impl Intake<'_> {
             let pos = self.position(rng);
             position_player(rng, id, pos, &t)
         };
+        self.table.style(&class.peak).shape(&mut player);
         let person = self.people.make(id, &class.birthplaces, &class.ages, self.date, rng);
         let factor = class.potential * if is_pitcher { self.table.pitcher_potential } else { 1.0 };
         let peak = self.levels.get(&class.peak).talent();
-        let mut potential = self.ceiling(&player, &person, &t, &peak, factor, rng);
-        potential.style(&player, &self.table.style(&class.peak));
+        let potential = self.ceiling(&player, &person, &t, &peak, factor, rng);
         Newcomer { player, person, potential }
     }
 

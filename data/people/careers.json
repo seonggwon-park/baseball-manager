@@ -248,6 +248,6 @@
   "mlb": {"power": 0.0, "contact": 0.0, "discipline": 0.0, "stuff": 0.0},
   "kbo": {"power": 0.0, "contact": 0.0, "discipline": 0.0, "stuff": 0.0},
   "npb": {"power": 0.0, "contact": 0.0, "discipline": 0.0, "stuff": 0.0},
-  "basis": "Shifts of the ceilings of the players each kind of league grows (mlb: the major-league organisations, kbo, npb), in standard deviations: hitters' power, bat-to-ball skills and plate discipline, pitchers' stuff. Choosing players by value alone gathers power and discipline at the top of every league; fitted so that the world after 30 offseasons plays each league's 2025-2026 records"
+  "basis": "Shifts of the new amateurs each kind of league takes in (mlb: the major-league organisations, kbo, npb), in standard deviations, applied to their attributes before their ceilings are drawn, so that both move: hitters' power, bat-to-ball skills (contact, timing, bat control) and plate discipline, pitchers' stuff (stuff, deception, pitch grades). The amateur game and the clubs of each league shape this mix; choosing players by value alone gathers power and discipline at the top of every league. Shifting the ceilings alone moved nothing where a ceiling lies below the player (the NPB's power, the majors' plate discipline: +0.4 moved them +0.004 and +0.037 after 30 offseasons; decision 2026-11-16). The first world's players already have their league's balance and are not shifted. Fitted so that the world after 30 offseasons plays each league's 2025-2026 records"
  }
 }
