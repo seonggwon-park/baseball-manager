@@ -203,6 +203,10 @@
   "basis": "Standard deviations of ability taken off a player's worth for each year of age past 30 when his organisation decides whom to keep: older players cost more (no salaries are modelled yet) and have less ahead of them. Assumption, fitted with `bm careers` to the ages of each level"
  },
  "pitcher_potential": {"value": 1.0, "basis": "Factor on the growth ahead of new pitchers against new position players. Assumption, fitted with `bm careers`"},
+ "pitcher_shift": {
+  "value": 0.0,
+  "basis": "Standard deviations added to new pitchers' pitching on top of their class's talent: how far behind the position players of their age they start. Assumption, fitted with `bm careers` to the ages of each level"
+ },
  "prospect_spread": {
   "value": 0.45,
   "basis": "Standard deviation of the logarithm of a player's personal growth factor (median 1). Assumption, fitted with `bm careers` to the reach rates by draft round and to each level's talent"

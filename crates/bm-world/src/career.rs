@@ -95,6 +95,8 @@ struct CareerFile {
     balance: Closure,
     prospect_spread: Valued<f64>,
     pitcher_potential: Valued<f32>,
+    #[serde(default)]
+    pitcher_shift: Option<Valued<f32>>,
     age_discount: Valued<f64>,
 }
 
@@ -118,6 +120,8 @@ pub struct CareerTable {
     pub prospect_spread: f64,
     /// Factor on the growth ahead of new pitchers against new position players.
     pub pitcher_potential: f32,
+    /// Standard deviations added to new pitchers' pitching on top of their class's talent.
+    pub pitcher_shift: f32,
     /// Standard deviations of ability an organisation takes off a player's worth for every
     /// year of age past 30, when it decides whom to keep.
     pub age_discount: f64,
@@ -160,6 +164,7 @@ impl CareerTable {
             balance: f.balance,
             prospect_spread: f.prospect_spread.value,
             pitcher_potential: f.pitcher_potential.value,
+            pitcher_shift: f.pitcher_shift.map_or(0.0, |v| v.value),
             age_discount: f.age_discount.value,
         })
     }
@@ -747,6 +752,7 @@ impl Intake<'_> {
         let is_pitcher = rng.chance(class.pitchers);
         let player = if is_pitcher {
             let role = if rng.chance(self.table.starter_share) { Role::Starter } else { Role::Reliever };
+            let t = Talent { pitching: t.pitching + self.table.pitcher_shift, ..t };
             pitcher(rng, id, role, &t)
         } else {
             let pos = self.position(rng);
