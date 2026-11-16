@@ -99,40 +99,83 @@ pub struct Options<'a> {
     pub json: Option<&'a std::path::Path>,
 }
 
-/// Each level's average ages of batters and pitchers as Baseball-Reference reports them
-/// (docs/research/world/levels.md 4): whole years of age on 30 June, batters weighted by
-/// AB + G, pitchers by 3 GS + G (Baseball-Reference adds saves, which the season does not
-/// keep), foreign players included. Whole years read half a year below exact ages: the MLB
-/// Stats API's 2025-2026 lines give Double-A batters 24.18 exact against 23.74 on
-/// Baseball-Reference, Single-A 21.28 against 20.79.
-fn level_ages(pop: &bm_world::Population, season: &Season) -> BTreeMap<String, (f64, f64)> {
+/// A level's ages as Baseball-Reference reports them (docs/research/world/levels.md 4):
+/// whole years of age on 30 June, batters weighted by AB + G, pitchers by 3 GS + G
+/// (Baseball-Reference adds saves, which the season does not keep), foreign players
+/// included. Whole years read half a year below exact ages: the MLB Stats API's 2025-2026
+/// lines give Double-A batters 24.18 exact against 23.74 on Baseball-Reference, Single-A
+/// 21.28 against 20.79.
+struct LevelAges {
+    /// Mean and standard deviation.
+    batters: (f64, f64),
+    pitchers: (f64, f64),
+    /// Mean weight of a player in each role of the roster he started the season on: lineup,
+    /// bench, reserve position player, starter, reliever, reserve pitcher.
+    roles: [f64; 6],
+}
+
+fn level_ages(pop: &bm_world::Population, season: &Season) -> BTreeMap<String, LevelAges> {
     let mid = Date::new(season.year, 6, 30);
     let age = |id: &u32| pop.people.get(id).map(|p| (mid.days_since(p.born) as f64 / 365.2425).floor());
-    let mut level_of_player: BTreeMap<u32, &str> = BTreeMap::new();
+    let mut place: BTreeMap<u32, (&str, usize)> = BTreeMap::new();
     for r in &pop.rosters {
-        for p in r.players() {
-            level_of_player.insert(p.id, r.level.as_str());
+        let l = r.level.as_str();
+        for (p, _) in &r.squad.hitters {
+            place.insert(p.id, (l, 0));
+        }
+        for (p, _) in &r.squad.bench {
+            place.insert(p.id, (l, 1));
+        }
+        for (p, _) in &r.reserves {
+            place.insert(p.id, (l, if p.is_pitcher() { 5 } else { 2 }));
+        }
+        for p in &r.squad.starters {
+            place.insert(p.id, (l, 3));
+        }
+        for p in &r.squad.relievers {
+            place.insert(p.id, (l, 4));
         }
     }
-    // (weighted age, weight) of batters and pitchers per level.
-    let mut sums: BTreeMap<&str, [f64; 4]> = BTreeMap::new();
+    // Weighted ages (age, weight) of batters and pitchers, and the weight and count by role.
+    #[derive(Default)]
+    struct Acc {
+        b: Vec<(f64, f64)>,
+        p: Vec<(f64, f64)>,
+        roles: [(f64, f64); 6],
+    }
+    let mut acc: BTreeMap<&str, Acc> = BTreeMap::new();
     for (id, b) in &season.batting {
-        if let (Some(l), Some(a)) = (level_of_player.get(id), age(id)) {
-            let s = sums.entry(l).or_default();
+        if let (Some(&(l, role)), Some(a)) = (place.get(id), age(id)) {
             let w = (b.ab + b.g) as f64;
-            s[0] += w * a;
-            s[1] += w;
+            let e = acc.entry(l).or_default();
+            e.b.push((a, w));
+            if role < 3 {
+                e.roles[role].0 += w;
+            }
         }
     }
     for (id, p) in &season.pitching {
-        if let (Some(l), Some(a)) = (level_of_player.get(id), age(id)) {
-            let s = sums.entry(l).or_default();
+        if let (Some(&(l, role)), Some(a)) = (place.get(id), age(id)) {
             let w = (3 * p.gs + p.g) as f64;
-            s[2] += w * a;
-            s[3] += w;
+            let e = acc.entry(l).or_default();
+            e.p.push((a, w));
+            if role >= 3 {
+                e.roles[role].0 += w;
+            }
         }
     }
-    sums.into_iter().filter(|(_, s)| s[1] > 0.0 && s[3] > 0.0).map(|(l, s)| (l.to_string(), (s[0] / s[1], s[2] / s[3]))).collect()
+    for &(l, role) in place.values() {
+        acc.entry(l).or_default().roles[role].1 += 1.0;
+    }
+    let moments = |v: &[(f64, f64)]| {
+        let w: f64 = v.iter().map(|x| x.1).sum();
+        let m = v.iter().map(|x| x.0 * x.1).sum::<f64>() / w;
+        (m, (v.iter().map(|x| x.1 * (x.0 - m).powi(2)).sum::<f64>() / w).sqrt())
+    };
+    acc.into_iter()
+        .filter(|(_, a)| a.b.iter().any(|x| x.1 > 0.0) && a.p.iter().any(|x| x.1 > 0.0))
+        .map(|(l, a)| (l.to_string(), LevelAges { batters: moments(&a.b), pitchers: moments(&a.p), roles: a.roles.map(|(w, n)| w / n.max(1.0)) }))
+        .collect()
 }
 
 /// Each level's batting totals and team games in a season (all its leagues together).
@@ -231,8 +274,14 @@ pub fn run(tuning: &Tuning, seed: u64, threads: usize, o: &Options) {
                     .into_iter()
                     .filter(|(_, (t, g))| t.pa > 0 && *g > 0)
                     .map(|(k, (t, g))| {
-                        let (age_b, age_p) = ages.get(&k).copied().unwrap_or((f64::NAN, f64::NAN));
-                        let v = serde_json::json!({"games": g, "pa": t.pa, "rates": rates(&t, g), "age_b": age_b, "age_p": age_p});
+                        let mut v = serde_json::json!({"games": g, "pa": t.pa, "rates": rates(&t, g)});
+                        if let Some(a) = ages.get(&k) {
+                            v["age_b"] = a.batters.0.into();
+                            v["age_b_sd"] = a.batters.1.into();
+                            v["age_p"] = a.pitchers.0.into();
+                            v["age_p_sd"] = a.pitchers.1.into();
+                            v["roles"] = serde_json::json!(a.roles);
+                        }
                         (k, v)
                     })
                     .collect();
