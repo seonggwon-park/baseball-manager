@@ -8,6 +8,7 @@
 //! (`docs/research/world/aging.md`).
 
 use crate::attr::{Attr, Attributes, N_ATTR};
+use crate::generate::Talent;
 use crate::player::Player;
 use bm_engine::Rng;
 use serde::{Deserialize, Serialize};
@@ -134,6 +135,45 @@ impl Potential {
         }
         Potential { attrs }
     }
+
+    /// Take the skill gaps of the player's level out of his ceiling: minor-leaguers have
+    /// more raw power than bat-to-ball skill, weaker defence and bodies, and far worse
+    /// command than major-leaguers (the `power`, `fielding`, `physical` and `command`
+    /// parts of the level's talent). A share `closure` of each gap closes by the player's
+    /// peak, so that the players who reach theirs have the balance of a major-leaguer.
+    pub fn balance(&mut self, player: &Player, t: &Talent, closure: &Closure) {
+        use Attr::*;
+        let mut shift = |attrs: &[Attr], by: f32| {
+            for &a in attrs {
+                self.attrs[a] += by;
+            }
+        };
+        const FIELD: [Attr; 11] = [Hands, Range, Reads, ArmAccuracy, Footwork, Baserunning, Stealing, Framing, Blocking, GameCalling, ThrowingOut];
+        if player.is_pitcher() {
+            let base = t.pitching;
+            shift(&[Control, Command], -closure.command * t.command);
+            shift(&FIELD[..5], closure.fielding * (base - t.fielding));
+            shift(&[Strength, Durability, Agility], closure.physical * (base - t.physical));
+        } else {
+            let base = t.hitting;
+            shift(&[Power], -closure.power * t.power);
+            shift(&FIELD, closure.fielding * (base - t.fielding));
+            shift(&[Strength, Stamina, Durability, Agility, Speed, Acceleration, ArmStrength], closure.physical * (base - t.physical));
+        }
+    }
+}
+
+/// Shares of a level's skill gaps that close by a player's peak (`Potential::balance`).
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
+pub struct Closure {
+    pub power: f32,
+    pub fielding: f32,
+    pub physical: f32,
+    pub command: f32,
+}
+
+impl Closure {
+    pub const NONE: Closure = Closure { power: 0.0, fielding: 0.0, physical: 0.0, command: 0.0 };
 }
 
 /// One year of development for a player who was `age` at his last birthday. The ceiling

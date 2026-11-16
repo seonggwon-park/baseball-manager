@@ -8,6 +8,7 @@
 //! league averages, roster sizes from the 2026 rules (`docs/research/world/`).
 
 use crate::calendar::Date;
+use crate::career::{record_season, Career, CareerTable};
 use crate::develop::{AgingTable, Potential};
 use crate::generate::{pitcher, position_player, Squad, Talent};
 use crate::league::{Club, Level, World};
@@ -138,6 +139,13 @@ pub struct Population {
     /// Every player's ceiling (`develop.rs`).
     #[serde(default)]
     pub potentials: BTreeMap<u32, Potential>,
+    /// Foreign players of KBO and NPB clubs: the birthplace group they were signed from
+    /// (`kbo_foreign`, `kbo_asia`, `npb_foreign`).
+    #[serde(default)]
+    pub foreign: BTreeMap<u32, String>,
+    /// Everyone who has played in the world, retired players included (`career.rs`).
+    #[serde(default)]
+    pub careers: BTreeMap<u32, Career>,
 }
 
 impl Population {
@@ -180,7 +188,7 @@ fn reserve_positions(n: usize) -> Vec<Option<Position>> {
     (0..n).map(|i| if i % 2 == 0 { Some(Pitcher) } else { Some(fielders[(i / 2) % fielders.len()]) }).collect()
 }
 
-fn roster(club: String, key: &str, profile: &LevelProfile, maker: &mut Maker, rng: &mut Rng) -> Roster {
+fn roster(club: String, key: &str, profile: &LevelProfile, maker: &mut Maker, rng: &mut Rng) -> (Roster, BTreeMap<u32, String>) {
     let t = profile.talent();
     let base = maker.block();
     let mut squad = Squad::random(rng, base, &t);
@@ -235,44 +243,57 @@ fn roster(club: String, key: &str, profile: &LevelProfile, maker: &mut Maker, rn
         let group = foreign.get(&id).map_or(profile.birthplaces.as_str(), String::as_str);
         maker.person(id, is_pitcher, group, profile, rng);
     }
-    r
+    (r, foreign)
 }
 
 /// Fill every club of `world` and the development squads of the major-league organisations.
 pub fn populate(world: &World, levels: &LevelTable, date: Date, seed: u64) -> Population {
+    populate_with(world, levels, &AgingTable::bundled(), &CareerTable::bundled(), date, seed)
+}
+
+/// [`populate`] with other aging curves and career rules than the bundled ones.
+pub fn populate_with(world: &World, levels: &LevelTable, aging: &AgingTable, careers: &CareerTable, date: Date, seed: u64) -> Population {
     let people = PeopleMaker::new();
     let mut maker = Maker { people: &people, date, next: 1, out: BTreeMap::new() };
     let mut rng = Rng::new(seed ^ 0x9E0_91E);
     let mut rosters = Vec::new();
+    let mut foreign = BTreeMap::new();
     for club in world.clubs() {
         let key = level_key(world, club);
-        rosters.push(roster(club.id.clone(), key, levels.get(key), &mut maker, &mut rng));
+        let (r, f) = roster(club.id.clone(), key, levels.get(key), &mut maker, &mut rng);
+        rosters.push(r);
+        foreign.extend(f);
         if key == "mlb" {
             for dev in ["complex", "academy"] {
-                rosters.push(roster(format!("{}/{dev}", club.id), dev, levels.get(dev), &mut maker, &mut rng));
+                rosters.push(roster(format!("{}/{dev}", club.id), dev, levels.get(dev), &mut maker, &mut rng).0);
             }
         }
     }
     // Ceilings: the mean remaining growth at the player's age, times a personal factor
     // (log-normal, median 1) that makes some players prospects and others organisation
-    // depth. A separate stream, so that the rosters stay what they were.
-    let aging = AgingTable::bundled();
+    // depth, with the skill gaps of the level closing by the peak. A separate stream, so
+    // that the rosters stay what they were.
+    let closure = careers.balance;
     let mut prng = Rng::new(seed ^ 0x9E0_7E17);
     let mut potentials = BTreeMap::new();
     for r in &rosters {
+        let profile = levels.get(&r.level);
         for p in r.players() {
             let age = date.days_since(maker.out[&p.id].born) as f64 / 365.2425;
-            let scale = (PROSPECT_SPREAD * prng.gauss(0.0, 1.0)).exp() as f32;
-            potentials.insert(p.id, Potential::draw(p, age, scale, &aging, &mut prng));
+            let scale = (careers.prospect_spread * prng.gauss(0.0, 1.0)).exp() as f32;
+            let mut pot = Potential::draw(p, age, scale, aging, &mut prng);
+            let t = match (&profile.foreign, foreign.contains_key(&p.id)) {
+                (Some(f), true) => talent(&f.talent),
+                _ => profile.talent(),
+            };
+            pot.balance(p, &t, &closure);
+            potentials.insert(p.id, pot);
         }
     }
-    Population { date, people: maker.out, rosters, potentials }
+    let mut pop = Population { date, people: maker.out, rosters, potentials, foreign, careers: BTreeMap::new() };
+    record_season(world, &mut pop, date.year());
+    pop
 }
-
-/// Spread of the personal growth factor (standard deviation of its logarithm): about one
-/// young player in six has a ceiling 1.6 times the typical one. An assumption to be fitted
-/// to how many prospects reach the majors (docs/research/world/aging.md 4).
-pub const PROSPECT_SPREAD: f64 = 0.45;
 
 #[cfg(test)]
 mod tests {

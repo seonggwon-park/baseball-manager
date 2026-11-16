@@ -1,0 +1,139 @@
+{
+ "_comment": "How players come into the world, move between levels and leave it, season to season (crates/bm-world/src/career.rs). classes: kinds of new players, with their age on 1 November of the year they join, the share of pitchers, the level whose talent they start at ('like' a key of levels.json) and a shift from it in standard deviations, a factor on the mean growth still ahead of them ('potential', 1 = what aging.json gives for their age), and the birthplace group. drafts: one national draft per league each autumn, picked in reverse order of the standings; signings: other players each organisation adds every year. positions: primary positions of new position players. retirement: the chance of retiring in the offseason after a season at each age, on top of the players an organisation lets go. keep_potential: how much of the gap between a player's ceiling and his current ability his organisation counts when it decides whom to keep. board_noise: scouting error in the draft order, runs per 162 games. Each entry gives its source; 'assumption' marks values without published data. Edit freely.",
+ "classes": {
+  "us_college": {
+   "ages": {"mean": 22.25, "sd": 0.77, "min": 20.5, "max": 25.5},
+   "pitchers": 0.606,
+   "like": "single_a", "shift": 0.0, "potential": 1.0,
+   "birthplaces": "us_draft",
+   "basis": "MLB drafts 2021-2025, 2,277 four-year-college picks (MLB Stats API draft endpoint): 21.95 +- 0.77 years on draft day, 60.6 % pitchers. Starting talent and potential: assumption, fitted with `bm careers`"
+  },
+  "us_high_school": {
+   "ages": {"mean": 18.81, "sd": 0.44, "min": 17.8, "max": 20.2},
+   "pitchers": 0.439,
+   "like": "complex", "shift": 0.0, "potential": 1.0,
+   "birthplaces": "us_draft",
+   "basis": "MLB drafts 2021-2025, 594 high-school picks: 18.51 +- 0.44 years on draft day, 43.9 % pitchers"
+  },
+  "us_junior_college": {
+   "ages": {"mean": 20.89, "sd": 1.06, "min": 19.0, "max": 24.0},
+   "pitchers": 0.72,
+   "like": "complex", "shift": 0.3, "potential": 1.0,
+   "birthplaces": "us_draft",
+   "basis": "MLB drafts 2021-2025, 189 junior-college picks: 20.59 +- 1.06 years, 72 % pitchers"
+  },
+  "international": {
+   "ages": {"mean": 16.6, "sd": 0.4, "min": 16.0, "max": 18.5},
+   "pitchers": 0.5,
+   "like": "academy", "shift": -0.3, "potential": 1.0,
+   "birthplaces": "international",
+   "basis": "Signing rules: 16 before signing, 17 before 1 September of the next year (MLB.com, 2026-01-22). Age spread and share of pitchers: assumption"
+  },
+  "kbo_high_school": {
+   "ages": {"mean": 18.4, "sd": 0.3, "min": 17.8, "max": 19.5},
+   "pitchers": 0.56,
+   "like": "kbo2", "shift": -0.8, "potential": 1.0,
+   "birthplaces": "kbo_domestic",
+   "basis": "2027 KBO draft (2026-09-21): 87 of 110 picks high-school seniors, 62 pitchers (isplus, wikitree). Seniors are born in one calendar year, 17.7-18.7 on draft day"
+  },
+  "kbo_college": {
+   "ages": {"mean": 22.3, "sd": 0.6, "min": 20.8, "max": 25.0},
+   "pitchers": 0.56,
+   "like": "kbo2", "shift": -0.5, "potential": 1.0,
+   "birthplaces": "kbo_domestic",
+   "basis": "2027 KBO draft: 22 college players (4 early-draft juniors) and one player from abroad"
+  },
+  "npb_high_school": {
+   "ages": {"mean": 18.2, "sd": 0.3, "min": 17.6, "max": 19.2},
+   "pitchers": 0.52,
+   "like": "npb2", "shift": -0.9, "potential": 1.0,
+   "birthplaces": "npb_domestic",
+   "basis": "2025 NPB draft (2025-10-23): 19 of the 73 main-draft picks from high school, 38 pitchers among the 73 (team lists, spread-sports.jp)"
+  },
+  "npb_university": {
+   "ages": {"mean": 22.2, "sd": 0.4, "min": 21.3, "max": 24.0},
+   "pitchers": 0.52,
+   "like": "npb2", "shift": -0.4, "potential": 1.0,
+   "birthplaces": "npb_domestic",
+   "basis": "2025 NPB draft: 40 main-draft picks from universities"
+  },
+  "npb_corporate": {
+   "ages": {"mean": 24.0, "sd": 1.2, "min": 22.0, "max": 28.0},
+   "pitchers": 0.52,
+   "like": "npb2", "shift": -0.1, "potential": 1.0,
+   "birthplaces": "npb_domestic",
+   "basis": "2025 NPB draft: 12 main-draft picks from corporate teams and 2 from independent or other clubs. Ages: assumption (two to six years after high school or university)"
+  },
+  "npb_development": {
+   "ages": {"mean": 20.6, "sd": 2.2, "min": 17.6, "max": 26.0},
+   "pitchers": 0.47,
+   "like": "npb2", "shift": -1.0, "potential": 1.0,
+   "birthplaces": "npb_domestic",
+   "basis": "2025 NPB development draft: 43 picks, 14 high school, 14 university, 12 independent league, 3 other; 20 pitchers"
+  },
+  "kr_independent": {
+   "ages": {"mean": 24.5, "sd": 2.5, "min": 19.0, "max": 33.0},
+   "pitchers": 0.5,
+   "like": "kbo2", "shift": -0.3, "potential": 1.0,
+   "birthplaces": "kbo_domestic",
+   "basis": "Assumption: the independent Futures club signs players released by KBO clubs and undrafted amateurs"
+  },
+  "kr_military": {
+   "ages": {"mean": 23.0, "sd": 1.5, "min": 20.0, "max": 28.0},
+   "pitchers": 0.5,
+   "like": "kbo2", "shift": 0.0, "potential": 1.0,
+   "birthplaces": "kbo_domestic",
+   "basis": "Assumption standing in for military service (players on loan from KBO clubs for about 18 months); replaced when the service rules are modelled"
+  },
+  "jp_independent": {
+   "ages": {"mean": 24.5, "sd": 2.5, "min": 19.0, "max": 33.0},
+   "pitchers": 0.5,
+   "like": "npb2", "shift": -0.3, "potential": 1.0,
+   "birthplaces": "npb_domestic",
+   "basis": "Assumption: the two independent farm-league clubs sign released NPB players and amateurs"
+  }
+ },
+ "drafts": [
+  {
+   "orgs": "mlb", "rounds": 20,
+   "classes": [["us_college", 0.745], ["us_high_school", 0.193], ["us_junior_college", 0.062]],
+   "signed": [[10, 0.99], [20, 0.853]],
+   "basis": "20 rounds (615 picks in 2025 with the extra picks); MLB drafts 2021-2025: 74.1 % four-year college (0.4 % other counted with them), 19.3 % high school, 6.2 % junior college; signed 99 % in rounds 1-10 and 85.3 % in rounds 11-20 (a signing bonus recorded)"
+  },
+  {
+   "orgs": "kbo", "rounds": 11,
+   "classes": [["kbo_high_school", 0.79], ["kbo_college", 0.21]],
+   "signed": [[11, 1.0]],
+   "basis": "2026 and 2027 KBO drafts: 11 rounds, 110 picks; 2027: 87 high school, 22 college, 1 from abroad"
+  },
+  {
+   "orgs": "npb", "rounds": 6,
+   "classes": [["npb_high_school", 0.26], ["npb_university", 0.55], ["npb_corporate", 0.19]],
+   "signed": [[6, 1.0]],
+   "basis": "2025 NPB draft: 73 main-draft picks over 12 clubs (5-7 each; 6 here)"
+  }
+ ],
+ "signings": [
+  {"orgs": "mlb", "class": "international", "per_org": 34.0, "basis": "1,011 international amateurs signed in the 2025 period by 2025-12-02 (Francys Romero, World Baseball Network), about 34 per organisation"},
+  {"orgs": "npb", "class": "npb_development", "per_org": 3.6, "basis": "2025 NPB development draft: 43 picks over 12 clubs"},
+  {"orgs": "kr_independent", "class": "kr_independent", "per_org": 10.0, "basis": "Assumption: a quarter of a 40-man roster a year"},
+  {"orgs": "kr_military", "class": "kr_military", "per_org": 20.0, "basis": "Assumption: half the roster a year, for a service of about two seasons"},
+  {"orgs": "jp_independent", "class": "jp_independent", "per_org": 15.0, "basis": "Assumption: a quarter of a 60-man roster a year"}
+ ],
+ "positions": {
+  "weights": [["C", 15.5], ["1B", 10.0], ["2B", 8.1], ["3B", 9.8], ["SS", 17.2], ["LF", 12.8], ["CF", 12.8], ["RF", 12.8], ["DH", 0.7]],
+  "basis": "Position players in the MLB drafts 2021-2025 (MLB Stats API): OF 12.9 %, SS 7.2 %, C 6.5 %, 1B 4.2 %, 3B 4.1 %, 2B 3.4 %, CF 1.3 %, LF 1.0 %, RF 0.9 %, DH 0.3 % of all picks; the generic OF split evenly over the three outfield positions"
+ },
+ "starter_share": {"value": 0.6, "basis": "Assumption: most amateur pitchers start; clubs move the ones without the stamina to the bullpen"},
+ "retirement": {
+  "from_age": 33,
+  "chance": [0.03, 0.05, 0.08, 0.12, 0.18, 0.25, 0.35, 0.5, 0.7, 0.9, 1.0],
+  "basis": "Assumption, fitted to the age spread of each level (levels.json): most careers end when no organisation keeps the player; this adds the players who stop on their own"
+ },
+ "keep_potential": {"value": 0.6, "basis": "Assumption, fitted to how many draftees of each round reach the majors (Karcher 2017; docs/research/world/aging.md 4B)"},
+ "board_noise": {"value": 8.0, "basis": "Assumption, fitted to the same reach rates"},
+ "foreign_candidates": {"value": 1, "basis": "Assumption: each offseason a KBO or NPB club weighs one new foreign player against each of its own and keeps the better"},
+ "pitcher_potential": {"value": 1.0, "basis": "Factor on the growth ahead of new pitchers against new position players. Assumption, fitted with `bm careers`"},
+ "prospect_spread": {"value": 0.45, "basis": "Standard deviation of the logarithm of a player's personal growth factor (median 1). Assumption, fitted with `bm careers` to the reach rates by draft round and to each level's talent"},
+ "balance": {"power": 1.0, "fielding": 1.0, "physical": 1.0, "command": 1.0, "basis": "Share of a level's skill gaps (more raw power than bat-to-ball skill, weaker defence and bodies, poor command) that closes by a player's peak. Assumption, fitted with `bm careers` so that each level keeps the skill balance of its 2025-2026 statistics"}
+}

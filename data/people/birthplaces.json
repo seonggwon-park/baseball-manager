@@ -212,6 +212,50 @@
     "PR": 1,
     "CO": 1
    }
+  },
+  "us_draft": {
+   "source": "MLB drafts 2021-2025, every pick (3,072), birth country from the MLB Stats API draft endpoint; 8 picks born in countries without a name book (New Zealand 2, Iceland, France, Russia, Thailand, U.S. Virgin Islands) left out",
+   "weights": {
+    "US": 2901,
+    "CA": 68,
+    "PR": 48,
+    "DO": 12,
+    "VE": 5,
+    "AU": 4,
+    "NL": 4,
+    "GB": 3,
+    "PA": 3,
+    "CU": 3,
+    "KR": 3,
+    "IT": 2,
+    "TW": 2,
+    "MX": 2,
+    "JP": 2,
+    "NI": 1,
+    "BS": 1,
+    "ES": 1
+   }
+  },
+  "international": {
+   "source": "International amateur signings of the 2025 period by country (Francys Romero, World Baseball Network, 2025-12-03; 1,011 players by 2025-12-02, list cut off after Brazil); the 47 not listed are spread like the Dominican Summer League 'other' countries (assumption)",
+   "weights": {
+    "DO": 441,
+    "VE": 386,
+    "MX": 62,
+    "CU": 39,
+    "CO": 25,
+    "TW": 5,
+    "IT": 4,
+    "BR": 2,
+    "PA": 18,
+    "NI": 9,
+    "CW": 7,
+    "AW": 5,
+    "DE": 2,
+    "BS": 2,
+    "CR": 2,
+    "ES": 2
+   }
   }
  },
  "locales": {

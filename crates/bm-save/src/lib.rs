@@ -9,6 +9,11 @@
 //! * `rosters (club, level, slot, ord, player, position)`: who is where. `slot` is
 //!   `lineup`, `bench`, `rotation`, `bullpen` or `reserve`; `ord` is the order inside it.
 //! * `potentials (id, data)`: each player's ceiling (`bm_world::Potential`) as JSON.
+//! * `foreign (id, signed_from)`: foreign players of KBO and NPB clubs and the birthplace
+//!   group they were signed from.
+//! * `careers (id, data)`: how each player came into the world, his seasons and how he
+//!   left (`bm_world::Career`) as JSON, for everyone who has played, retired players
+//!   included.
 //!
 //! A save is written in one transaction into a fresh file, so an interrupted save never
 //! leaves a half-written game behind.
@@ -20,7 +25,7 @@ use std::fmt;
 use std::path::Path;
 
 /// Version of the table layout. Older files are refused rather than misread.
-pub const FORMAT: i64 = 2;
+pub const FORMAT: i64 = 3;
 
 #[derive(Debug)]
 pub enum SaveError {
@@ -78,6 +83,8 @@ CREATE TABLE rosters (club TEXT NOT NULL, level TEXT NOT NULL, slot TEXT NOT NUL
                       PRIMARY KEY (club, slot, ord));
 CREATE INDEX rosters_player ON rosters (player);
 CREATE TABLE potentials (id INTEGER PRIMARY KEY, data TEXT NOT NULL);
+CREATE TABLE foreign_players (id INTEGER PRIMARY KEY, signed_from TEXT NOT NULL);
+CREATE TABLE careers (id INTEGER PRIMARY KEY, data TEXT NOT NULL);
 ";
 
 fn position_code(p: Option<Position>) -> Option<String> {
@@ -114,6 +121,14 @@ pub fn save(path: &Path, game: &SaveGame) -> Result<(), SaveError> {
             let mut potentials = tx.prepare("INSERT INTO potentials (id, data) VALUES (?1, ?2)")?;
             for (id, p) in &game.population.potentials {
                 potentials.execute(params![id, serde_json::to_string(p)?])?;
+            }
+            let mut foreign = tx.prepare("INSERT INTO foreign_players (id, signed_from) VALUES (?1, ?2)")?;
+            for (id, group) in &game.population.foreign {
+                foreign.execute(params![id, group])?;
+            }
+            let mut careers = tx.prepare("INSERT INTO careers (id, data) VALUES (?1, ?2)")?;
+            for (id, c) in &game.population.careers {
+                careers.execute(params![id, serde_json::to_string(c)?])?;
             }
             let mut players = tx.prepare("INSERT INTO players (id, data) VALUES (?1, ?2)")?;
             let mut slots = tx.prepare("INSERT INTO rosters (club, level, slot, ord, player, position) VALUES (?1, ?2, ?3, ?4, ?5, ?6)")?;
@@ -184,6 +199,20 @@ pub fn load(path: &Path) -> Result<SaveGame, SaveError> {
         potentials.insert(id, serde_json::from_str(&data)?);
     }
 
+    let mut foreign = BTreeMap::new();
+    let mut q = db.prepare("SELECT id, signed_from FROM foreign_players")?;
+    for row in q.query_map([], |r| Ok((r.get::<_, u32>(0)?, r.get::<_, String>(1)?)))? {
+        let (id, group) = row?;
+        foreign.insert(id, group);
+    }
+
+    let mut careers = BTreeMap::new();
+    let mut q = db.prepare("SELECT id, data FROM careers")?;
+    for row in q.query_map([], |r| Ok((r.get::<_, u32>(0)?, r.get::<_, String>(1)?)))? {
+        let (id, data) = row?;
+        careers.insert(id, serde_json::from_str(&data)?);
+    }
+
     // Rosters in the order they were written: first appearance of each club.
     let mut rosters: Vec<Roster> = Vec::new();
     let mut index: BTreeMap<String, usize> = BTreeMap::new();
@@ -213,7 +242,7 @@ pub fn load(path: &Path) -> Result<SaveGame, SaveError> {
             other => return Err(SaveError::Format(format!("unknown roster slot '{other}'"))),
         }
     }
-    Ok(SaveGame { seed, population: Population { date, people, rosters, potentials } })
+    Ok(SaveGame { seed, population: Population { date, people, rosters, potentials, foreign, careers } })
 }
 
 #[cfg(test)]
@@ -239,6 +268,9 @@ mod tests {
         assert_eq!(json(&back.population), json(&game.population));
         assert_eq!(back.population.potentials, game.population.potentials);
         assert_eq!(back.population.potentials.len(), back.population.people.len());
+        assert_eq!(back.population.foreign, game.population.foreign);
+        assert_eq!(back.population.careers, game.population.careers);
+        assert!(!back.population.foreign.is_empty() && back.population.careers.len() == back.population.people.len());
         // Saving again over the file works and leaves no temporary file.
         save(&path, &back).unwrap();
         assert!(!path.with_extension("tmp").exists());

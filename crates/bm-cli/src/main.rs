@@ -12,11 +12,15 @@
 //!          [--vs-mlb-pitchers]                                     the foreign players of KBO and NPB clubs; wRC+ of the level's
 //!                                                                  hitters (and pitchers) against major-leaguers; `pool` = only that
 //! bm season [--seed S] [--until YYYY-MM-DD]                       generate the world and play a season of every league
+//! bm careers [--years N] [--every K] [--from N]                   offseasons back to back: each level's talent and ages (every
+//!            [--levels FILE] [--careers FILE] [--json FILE]       K years and averaged from offseason N), and how the drafted
+//!                                                                 and signed prospects turn out
 //! bm game [--seed S]                                              play one game and print the box score
 //! bm bench [--games N]                                            measure simulation speed
 //! bm serve [--port P] [--static DIR]                              session API over HTTP for the interface in a browser
 //! ```
 
+mod careers;
 mod level;
 mod players;
 mod report;
@@ -57,6 +61,13 @@ struct Args {
     vs_mlb_pitchers: bool,
     /// `bm season`: play up to this date instead of the whole season.
     until: Option<bm_world::Date>,
+    /// `bm careers`: offseasons to run, how often to print, other level and career files.
+    years: usize,
+    every: usize,
+    from: Option<usize>,
+    levels_file: Option<std::path::PathBuf>,
+    careers_file: Option<std::path::PathBuf>,
+    json: Option<std::path::PathBuf>,
     tuning: Tuning,
 }
 
@@ -79,6 +90,12 @@ fn parse_args() -> Args {
         cross_games: None,
         vs_mlb_pitchers: false,
         until: None,
+        years: 20,
+        every: 5,
+        from: None,
+        levels_file: None,
+        careers_file: None,
+        json: None,
         tuning: Tuning::new(),
     };
     let mut it = std::env::args().skip(1);
@@ -98,6 +115,12 @@ fn parse_args() -> Args {
         let v = it.next().unwrap_or_default();
         match k.as_str() {
             "--games" => a.games = v.parse().expect("--games N"),
+            "--years" => a.years = v.parse().expect("--years N"),
+            "--every" => a.every = v.parse().expect("--every K"),
+            "--from" => a.from = Some(v.parse().expect("--from N")),
+            "--levels" => a.levels_file = Some(v.into()),
+            "--careers" => a.careers_file = Some(v.into()),
+            "--json" => a.json = Some(v.into()),
             "--seed" => a.seed = v.parse().expect("--seed S"),
             "--threads" => a.threads = v.parse::<usize>().expect("--threads T").max(1),
             "--clubs" => a.clubs = v.parse::<usize>().expect("--clubs K").max(2),
@@ -381,6 +404,9 @@ fn main() {
             level::run(&args.level, args.talent, args.foreign, args.games, args.seed, args.threads, &args.tuning, vs)
         }
         "season" => season::run(&args.tuning, args.seed, args.threads, args.until),
+        "careers" => {
+            careers::run(args.years, args.seed, args.every, args.from, args.levels_file.as_deref(), args.careers_file.as_deref(), args.json.as_deref())
+        }
         "players" => players::run(&env, &args.tuning.baseline, args.tuning.style, args.seed, args.threads, args.clubs.min(60), args.games.min(400)),
         "game" => {
             let clubs = make_clubs(2, args.seed, level, world);
@@ -397,7 +423,7 @@ fn main() {
             }
         }
         other => {
-            eprintln!("unknown command {other}; use validate | attributes | players | level | season | game | bench | population | serve");
+            eprintln!("unknown command {other}; use validate | attributes | players | level | season | careers | game | bench | population | serve");
             std::process::exit(2);
         }
     }
