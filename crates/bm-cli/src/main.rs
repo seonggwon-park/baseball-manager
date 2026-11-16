@@ -182,8 +182,16 @@ fn parse_args() -> Args {
                     std::process::exit(2);
                 }
                 let extra = |i: usize| t.get(i).copied().unwrap_or(0.0);
-                let talent =
-                    bm_world::Talent { hitting: t[0], pitching: t[1], fielding: t[2], physical: t[3], power: extra(4), command: extra(5), velocity: extra(6) };
+                let talent = bm_world::Talent {
+                    hitting: t[0],
+                    pitching: t[1],
+                    fielding: t[2],
+                    physical: t[3],
+                    power: extra(4),
+                    command: extra(5),
+                    velocity: extra(6),
+                    spread: 1.0,
+                };
                 if k == "--talent" {
                     a.talent = talent;
                 } else {

@@ -95,6 +95,7 @@ struct CareerFile {
     signings: Vec<Signing>,
     positions: Positions,
     starter_share: Valued<f64>,
+    intake_spread: Valued<f32>,
     retirement: Retirement,
     keep_potential: Valued<f64>,
     board_noise: Valued<f64>,
@@ -116,6 +117,8 @@ pub struct CareerTable {
     /// Primary positions of new position players (`None` = designated hitter) and weights.
     pub positions: Vec<(Option<Position>, f64)>,
     pub starter_share: f64,
+    /// Spread of a new amateur's attributes around his class's means (`Talent::spread`).
+    pub intake_spread: f32,
     pub retire_from: u32,
     pub retire_chance: Vec<f64>,
     pub keep_potential: f64,
@@ -163,6 +166,7 @@ impl CareerTable {
             signings: f.signings,
             positions,
             starter_share: f.starter_share.value,
+            intake_spread: f.intake_spread.value,
             retire_from: f.retirement.from_age,
             retire_chance: f.retirement.chance,
             keep_potential: f.keep_potential.value,
@@ -761,7 +765,7 @@ impl Intake<'_> {
 
     /// A player of `class`.
     fn amateur(&mut self, class: &Class, rng: &mut Rng) -> Newcomer {
-        let t = self.table.talent(class, self.levels);
+        let t = Talent { spread: self.table.intake_spread, ..self.table.talent(class, self.levels) };
         let id = self.id();
         let is_pitcher = rng.chance(class.pitchers);
         let player = if is_pitcher {

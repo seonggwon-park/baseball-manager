@@ -30,14 +30,18 @@ pub struct Talent {
     /// Added to velocity on top of `pitching`: minor-league pitchers throw nearly as hard as
     /// major-leaguers while the rest of their game lags.
     pub velocity: f32,
+    /// Spread of the attributes around these means, in standard deviations of the
+    /// major-league distribution: 1 for every level; new amateurs come in narrower
+    /// (`careers.json` intake_spread), as growth and the years spread them out.
+    pub spread: f32,
 }
 
 impl Talent {
-    pub const MAJOR: Talent = Talent { hitting: 0.0, pitching: 0.0, fielding: 0.0, physical: 0.0, power: 0.0, command: 0.0, velocity: 0.0 };
+    pub const MAJOR: Talent = Talent { hitting: 0.0, pitching: 0.0, fielding: 0.0, physical: 0.0, power: 0.0, command: 0.0, velocity: 0.0, spread: 1.0 };
 }
 
-fn z(rng: &mut Rng, mean: f64) -> f32 {
-    rng.gauss_clamped(mean, 1.0, mean - 3.5, mean + 3.5) as f32
+fn z(rng: &mut Rng, mean: f64, sd: f64) -> f32 {
+    rng.gauss_clamped(mean, sd, mean - 3.5 * sd, mean + 3.5 * sd) as f32
 }
 
 fn hidden(rng: &mut Rng) -> Hidden {
@@ -76,13 +80,14 @@ fn hit_style(rng: &mut Rng) -> HitStyle {
 
 /// Mental and physical attributes common to everyone.
 fn common(rng: &mut Rng, a: &mut Attributes, t: &Talent) {
+    let s = t.spread as f64;
     for attr in
         [Attr::Composure, Attr::Concentration, Attr::BaseballIq, Attr::Anticipation, Attr::Determination, Attr::Leadership, Attr::Teamwork, Attr::Aggression]
     {
-        a[attr] = z(rng, 0.0);
+        a[attr] = z(rng, 0.0, s);
     }
     for attr in [Attr::Strength, Attr::Stamina, Attr::Durability, Attr::Agility] {
-        a[attr] = z(rng, t.physical as f64);
+        a[attr] = z(rng, t.physical as f64, s);
     }
 }
 
@@ -160,37 +165,38 @@ fn familiarity(rng: &mut Rng, primary: Option<Position>) -> [u8; 9] {
 pub fn position_player(rng: &mut Rng, id: u32, pos: Option<Position>, t: &Talent) -> Player {
     let mut a = Attributes::default();
     common(rng, &mut a, t);
+    let s = t.spread as f64;
     let hit = t.hitting as f64;
-    a[Attr::Power] = z(rng, hit + t.power as f64);
+    a[Attr::Power] = z(rng, hit + t.power as f64, s);
     let swing = a[Attr::Power] as f64 - hit - t.power as f64;
-    let mut traded = |rho: f64| (hit - rho * swing + (1.0 - rho * rho).sqrt() * rng.gauss_clamped(0.0, 1.0, -3.5, 3.5)) as f32;
+    let mut traded = |rho: f64| (hit - rho * swing + (1.0 - rho * rho).sqrt() * s * rng.gauss_clamped(0.0, 1.0, -3.5, 3.5)) as f32;
     a[Attr::Contact] = traded(shape::POWER_CONTACT);
     a[Attr::Timing] = traded(shape::POWER_TIMING);
     a[Attr::BatControl] = traded(shape::POWER_BAT_CONTROL);
     for attr in [Attr::Discipline, Attr::Recognition] {
-        a[attr] = z(rng, hit);
+        a[attr] = z(rng, hit, s);
     }
-    a[Attr::Bunt] = z(rng, 0.0);
+    a[Attr::Bunt] = z(rng, 0.0, s);
     let ((speed, speed_sd), (arm, arm_sd)) = position_tools(pos);
     let run = t.physical as f64;
-    a[Attr::Speed] = rng.gauss_clamped(speed + run, speed_sd, speed + run - 3.0, speed + run + 3.0) as f32;
+    a[Attr::Speed] = rng.gauss_clamped(speed + run, speed_sd * s, speed + run - 3.0 * s, speed + run + 3.0 * s) as f32;
     // Quick players accelerate well and steal: the three go together.
     let sp = a[Attr::Speed] as f64;
-    a[Attr::Acceleration] = (0.81 * sp + 0.58 * rng.gauss(0.0, 1.0)) as f32;
-    a[Attr::Stealing] = (0.92 * sp + 0.39 * rng.gauss(0.0, 1.0) + t.fielding as f64) as f32;
-    a[Attr::Baserunning] = z(rng, t.fielding as f64);
+    a[Attr::Acceleration] = (0.81 * sp + 0.58 * s * rng.gauss(0.0, 1.0)) as f32;
+    a[Attr::Stealing] = (0.92 * sp + 0.39 * s * rng.gauss(0.0, 1.0) + t.fielding as f64) as f32;
+    a[Attr::Baserunning] = z(rng, t.fielding as f64, s);
     let fld = t.fielding as f64;
     for attr in [Attr::Hands, Attr::Range, Attr::Reads, Attr::ArmAccuracy, Attr::Footwork] {
-        a[attr] = z(rng, fld);
+        a[attr] = z(rng, fld, s);
     }
-    let arm_dev = rng.gauss_clamped(0.0, 1.0, -3.0, 3.0);
+    let arm_dev = s * rng.gauss_clamped(0.0, 1.0, -3.0, 3.0);
     a[Attr::ArmStrength] = (arm + run + arm_sd * arm_dev) as f32;
     let catching = if pos == Some(Position::Catcher) { fld } else { fld - 3.0 };
     for attr in [Attr::Framing, Attr::Blocking, Attr::GameCalling] {
-        a[attr] = z(rng, catching);
+        a[attr] = z(rng, catching, s);
     }
     let rho = shape::EXCHANGE_ARM;
-    a[Attr::ThrowingOut] = (catching + rho * arm_dev + (1.0 - rho * rho).sqrt() * rng.gauss_clamped(0.0, 1.0, -3.0, 3.0)) as f32;
+    a[Attr::ThrowingOut] = (catching + rho * arm_dev + (1.0 - rho * rho).sqrt() * s * rng.gauss_clamped(0.0, 1.0, -3.0, 3.0)) as f32;
     let side = rng.f64();
     let bats = if side < 0.56 {
         Bats::Right
@@ -235,10 +241,11 @@ const ARSENAL: [(PitchKind, f64, f64); 8] = [
 ];
 
 fn pitch(rng: &mut Rng, kind: PitchKind, weight: f64, t: &Talent, works: f64) -> PitchSkill {
+    let s = t.spread as f64;
     PitchSkill {
         height: (works + rng.gauss(0.0, shape::AIM_HEIGHT_PITCH)) as f32,
         kind,
-        grade: z(rng, t.pitching as f64),
+        grade: z(rng, t.pitching as f64, s),
         speed: rng.gauss(0.0, 1.0 * MPH) as f32,
         spin: rng.gauss(0.0, 80.0 * RPM) as f32,
         active: rng.gauss(0.0, 0.05) as f32,
@@ -250,36 +257,37 @@ fn pitch(rng: &mut Rng, kind: PitchKind, weight: f64, t: &Talent, works: f64) ->
 pub fn pitcher(rng: &mut Rng, id: u32, role: Role, t: &Talent) -> Player {
     let mut a = Attributes::default();
     common(rng, &mut a, t);
+    let s = t.spread as f64;
     let pit = t.pitching as f64;
     // Relievers are selected for velocity; starters for the stamina to go deep.
-    a[Attr::Velocity] = z(rng, pit + t.velocity as f64 + if role == Role::Reliever { 0.27 } else { 0.0 });
+    a[Attr::Velocity] = z(rng, pit + t.velocity as f64 + if role == Role::Reliever { 0.27 } else { 0.0 }, s);
     for attr in [Attr::Stuff, Attr::Control, Attr::Command, Attr::Deception] {
         let command = if matches!(attr, Attr::Control | Attr::Command) { t.command as f64 } else { 0.0 };
-        a[attr] = z(rng, pit + command);
+        a[attr] = z(rng, pit + command, s);
     }
-    a[Attr::HoldRunners] = z(rng, 0.0);
+    a[Attr::HoldRunners] = z(rng, 0.0, s);
     a[Attr::Stamina] = match role {
         Role::Starter => rng.gauss_clamped(2.0, 0.44, 0.6, 3.3) as f32,
         Role::Reliever => rng.gauss_clamped(-2.0, 0.31, -2.9, -0.9) as f32,
     };
     // At the plate and on the bases a pitcher is a non-specialist.
-    a[Attr::Power] = z(rng, -2.0);
-    a[Attr::Contact] = z(rng, -3.1);
-    a[Attr::Timing] = z(rng, -3.0);
-    a[Attr::Recognition] = z(rng, -1.0);
+    a[Attr::Power] = z(rng, -2.0, s);
+    a[Attr::Contact] = z(rng, -3.1, s);
+    a[Attr::Timing] = z(rng, -3.0, s);
+    a[Attr::Recognition] = z(rng, -1.0, s);
     for attr in [Attr::Discipline, Attr::BatControl, Attr::Bunt, Attr::Baserunning] {
-        a[attr] = z(rng, -1.0);
+        a[attr] = z(rng, -1.0, s);
     }
-    a[Attr::Speed] = z(rng, -0.5);
+    a[Attr::Speed] = z(rng, -0.5, s);
     let sp = a[Attr::Speed] as f64;
-    a[Attr::Acceleration] = (0.81 * sp + 0.58 * rng.gauss(0.0, 1.0)) as f32;
-    a[Attr::Stealing] = (0.92 * sp + 0.39 * rng.gauss(0.0, 1.0) - 1.0) as f32;
+    a[Attr::Acceleration] = (0.81 * sp + 0.58 * s * rng.gauss(0.0, 1.0)) as f32;
+    a[Attr::Stealing] = (0.92 * sp + 0.39 * s * rng.gauss(0.0, 1.0) - 1.0) as f32;
     for attr in [Attr::Hands, Attr::Range, Attr::Reads, Attr::ArmAccuracy, Attr::Footwork] {
-        a[attr] = z(rng, t.fielding as f64);
+        a[attr] = z(rng, t.fielding as f64, s);
     }
-    a[Attr::ArmStrength] = z(rng, 0.6);
+    a[Attr::ArmStrength] = z(rng, 0.6, s);
     for attr in [Attr::Framing, Attr::Blocking, Attr::ThrowingOut, Attr::GameCalling] {
-        a[attr] = z(rng, -3.0);
+        a[attr] = z(rng, -3.0, s);
     }
 
     // Some pitchers live at the top of the zone, some at the knees.

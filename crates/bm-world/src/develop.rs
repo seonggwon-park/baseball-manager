@@ -31,7 +31,14 @@ struct AgingFile {
     from_age: u32,
     growth: Vec<f32>,
     remaining_growth: Vec<f32>,
+    /// Spread of a player's growth between attribute groups (relative standard deviation).
+    #[serde(default = "quarter")]
+    group_spread: f32,
     groups: BTreeMap<String, GroupFile>,
+}
+
+fn quarter() -> f32 {
+    0.25
 }
 
 /// The aging curves of every attribute.
@@ -40,6 +47,7 @@ pub struct AgingTable {
     from_age: u32,
     growth: Vec<f32>,
     remaining: Vec<f32>,
+    group_spread: f32,
     /// Per attribute: drift by age and yearly noise.
     drift: Vec<Vec<f32>>,
     noise: [f32; N_ATTR],
@@ -91,6 +99,7 @@ impl AgingTable {
             from_age: f.from_age,
             growth: f.growth,
             remaining: f.remaining_growth,
+            group_spread: f.group_spread,
             drift,
             noise,
             group_of,
@@ -141,13 +150,13 @@ pub struct Potential {
 impl Potential {
     /// A ceiling for a player of `age`: the table's mean remaining growth at that age,
     /// scaled by a personal factor (`scale`, 1 = typical) and spread a little between
-    /// attribute groups, in the attributes that grow (`grows`).
+    /// attribute groups (`group_spread`), in the attributes that grow (`grows`).
     pub fn draw(player: &Player, age: f64, scale: f32, table: &AgingTable, rng: &mut Rng) -> Potential {
         let mean = table.remaining_growth(age) * scale.max(0.0);
         let mut groups: BTreeMap<&str, f32> = BTreeMap::new();
         let mut attrs = player.attrs;
         for a in Attr::ALL {
-            let g = *groups.entry(table.group(a)).or_insert_with(|| (1.0 + 0.25 * rng.gauss(0.0, 1.0) as f32).max(0.0));
+            let g = *groups.entry(table.group(a)).or_insert_with(|| (1.0 + table.group_spread * rng.gauss(0.0, 1.0) as f32).max(0.0));
             if grows(a, player.is_pitcher()) {
                 attrs[a] = player.attrs[a] + mean * g;
             }
