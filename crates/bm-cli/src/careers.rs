@@ -97,17 +97,88 @@ fn stats(pop: &Population) -> BTreeMap<&'static str, LevelStats> {
 struct AttrMoments {
     /// level -> [hitters, pitchers] -> attribute -> (mean, sd)
     m: BTreeMap<&'static str, [[(f64, f64); N_ATTR]; 2]>,
+    /// level -> pitchers' pitch grades (usage-weighted, main fastball left out, as in
+    /// `ability::pitching_rate`): (mean, sd)
+    grades: BTreeMap<&'static str, (f64, f64)>,
+    /// level -> mean stamina of the rotations' starters and of the bullpens' relievers
+    staffs: BTreeMap<&'static str, (f64, f64)>,
+    /// level -> lineups (the designated hitter left out): share of regulars at their own
+    /// position, mean familiarity with the position played (0-1)
+    fields: BTreeMap<&'static str, (f64, f64)>,
+    /// level -> mean pitching rate (`ability::pitching_rate`) of the rotations and bullpens
+    rates: BTreeMap<&'static str, (f64, f64)>,
+    /// level -> correlations between attributes: hitters' contact-power, contact-discipline,
+    /// power-discipline; pitchers' stuff-command, stuff-velocity
+    corr: BTreeMap<&'static str, [f64; 5]>,
 }
 
 impl AttrMoments {
     fn of(pop: &Population) -> AttrMoments {
         let mut m = BTreeMap::new();
+        let mut grades = BTreeMap::new();
+        let mut staffs = BTreeMap::new();
+        let mut fields = BTreeMap::new();
+        let mut rates = BTreeMap::new();
+        let mut corr = BTreeMap::new();
         for key in LEVELS {
             let players: Vec<_> =
                 pop.rosters.iter().filter(|r| r.level == key).flat_map(|r| r.players()).filter(|p| !pop.foreign.contains_key(&p.id)).collect();
             if players.is_empty() {
                 continue;
             }
+            let g: Vec<f64> = players
+                .iter()
+                .filter_map(|p| p.pitching.as_ref())
+                .filter_map(|pit| {
+                    let main = bm_world::convert::main_fastball(&pit.pitches);
+                    let (s, w) = pit
+                        .pitches
+                        .iter()
+                        .enumerate()
+                        .filter(|(i, _)| Some(*i) != main)
+                        .fold((0.0, 0.0), |a, (_, k)| (a.0 + (k.usage * k.grade) as f64, a.1 + k.usage as f64));
+                    (w > 0.0).then(|| s / w)
+                })
+                .collect();
+            let stamina = |which: &dyn Fn(&bm_world::Roster) -> Vec<f64>| {
+                let v: Vec<f64> = pop.rosters.iter().filter(|r| r.level == key).flat_map(which).collect();
+                v.iter().sum::<f64>() / v.len().max(1) as f64
+            };
+            let rot = stamina(&|r| r.squad.starters.iter().map(|p| p.attrs.z(Attr::Stamina)).collect());
+            let pen = stamina(&|r| r.squad.relievers.iter().map(|p| p.attrs.z(Attr::Stamina)).collect());
+            staffs.insert(key, (rot, pen));
+            let rot_q = stamina(&|r| r.squad.starters.iter().map(ability::pitching_rate).collect());
+            let pen_q = stamina(&|r| r.squad.relievers.iter().map(ability::pitching_rate).collect());
+            rates.insert(key, (rot_q, pen_q));
+            let correlation = |pitchers: bool, a: Attr, b: Attr| {
+                let v: Vec<(f64, f64)> = players.iter().filter(|p| p.is_pitcher() == pitchers).map(|p| (p.attrs.z(a), p.attrs.z(b))).collect();
+                let n = v.len().max(1) as f64;
+                let (ma, mb) = (v.iter().map(|x| x.0).sum::<f64>() / n, v.iter().map(|x| x.1).sum::<f64>() / n);
+                let cov = v.iter().map(|x| (x.0 - ma) * (x.1 - mb)).sum::<f64>() / n;
+                let (sa, sb) = (v.iter().map(|x| (x.0 - ma).powi(2)).sum::<f64>() / n, v.iter().map(|x| (x.1 - mb).powi(2)).sum::<f64>() / n);
+                cov / (sa * sb).sqrt().max(1e-9)
+            };
+            corr.insert(
+                key,
+                [
+                    correlation(false, Attr::Contact, Attr::Power),
+                    correlation(false, Attr::Contact, Attr::Discipline),
+                    correlation(false, Attr::Power, Attr::Discipline),
+                    correlation(true, Attr::Stuff, Attr::Command),
+                    correlation(true, Attr::Stuff, Attr::Velocity),
+                ],
+            );
+            let slots: Vec<(bool, f64)> = pop
+                .rosters
+                .iter()
+                .filter(|r| r.level == key)
+                .flat_map(|r| r.squad.hitters.iter())
+                .filter_map(|(p, pos)| pos.map(|pos| (p.position == pos, p.familiarity(pos))))
+                .collect();
+            let n = slots.len().max(1) as f64;
+            fields.insert(key, (slots.iter().filter(|s| s.0).count() as f64 / n, slots.iter().map(|s| s.1).sum::<f64>() / n));
+            let gm = g.iter().sum::<f64>() / g.len().max(1) as f64;
+            grades.insert(key, (gm, (g.iter().map(|x| (x - gm).powi(2)).sum::<f64>() / g.len().max(1) as f64).sqrt()));
             let mut out = [[(0.0, 0.0); N_ATTR]; 2];
             for (side, pitchers) in [false, true].into_iter().enumerate() {
                 let group: Vec<_> = players.iter().filter(|p| p.is_pitcher() == pitchers).collect();
@@ -120,10 +191,36 @@ impl AttrMoments {
             }
             m.insert(key, out);
         }
-        AttrMoments { m }
+        AttrMoments { m, grades, staffs, fields, rates, corr }
     }
 
     fn add(&mut self, o: &AttrMoments, k: f64) {
+        for (key, g) in &o.grades {
+            let e = self.grades.entry(key).or_insert((0.0, 0.0));
+            e.0 += k * g.0;
+            e.1 += k * g.1;
+        }
+        for (key, g) in &o.staffs {
+            let e = self.staffs.entry(key).or_insert((0.0, 0.0));
+            e.0 += k * g.0;
+            e.1 += k * g.1;
+        }
+        for (key, g) in &o.fields {
+            let e = self.fields.entry(key).or_insert((0.0, 0.0));
+            e.0 += k * g.0;
+            e.1 += k * g.1;
+        }
+        for (key, g) in &o.rates {
+            let e = self.rates.entry(key).or_insert((0.0, 0.0));
+            e.0 += k * g.0;
+            e.1 += k * g.1;
+        }
+        for (key, c) in &o.corr {
+            let e = self.corr.entry(key).or_insert([0.0; 5]);
+            for i in 0..5 {
+                e[i] += k * c[i];
+            }
+        }
         for (key, sides) in &o.m {
             let e = self.m.entry(key).or_insert([[(0.0, 0.0); N_ATTR]; 2]);
             for s in 0..2 {
@@ -139,7 +236,36 @@ impl AttrMoments {
         let side = |v: &[(f64, f64); N_ATTR]| -> serde_json::Map<String, serde_json::Value> {
             Attr::ALL.iter().zip(v).map(|(a, (m, s))| (a.key().to_string(), serde_json::json!([m, s]))).collect()
         };
-        self.m.iter().map(|(k, v)| (k.to_string(), serde_json::json!({"h": side(&v[0]), "p": side(&v[1])}))).collect::<serde_json::Map<_, _>>().into()
+        self.m
+            .iter()
+            .map(|(k, v)| {
+                let mut p = side(&v[1]);
+                if let Some(g) = self.grades.get(k) {
+                    p.insert("grades".to_string(), serde_json::json!([g.0, g.1]));
+                }
+                if let Some(s) = self.staffs.get(k) {
+                    p.insert("rotation_stamina".to_string(), serde_json::json!([s.0, 0.0]));
+                    p.insert("bullpen_stamina".to_string(), serde_json::json!([s.1, 0.0]));
+                }
+                if let Some(s) = self.rates.get(k) {
+                    p.insert("rotation_rate".to_string(), serde_json::json!([s.0, 0.0]));
+                    p.insert("bullpen_rate".to_string(), serde_json::json!([s.1, 0.0]));
+                }
+                if let Some(c) = self.corr.get(k) {
+                    p.insert("corr".to_string(), serde_json::json!([c[3], c[4]]));
+                }
+                let mut h = side(&v[0]);
+                if let Some(c) = self.corr.get(k) {
+                    h.insert("corr".to_string(), serde_json::json!([c[0], c[1], c[2]]));
+                }
+                if let Some(f) = self.fields.get(k) {
+                    h.insert("own_position".to_string(), serde_json::json!([f.0, 0.0]));
+                    h.insert("familiarity".to_string(), serde_json::json!([f.1, 0.0]));
+                }
+                (k.to_string(), serde_json::json!({"h": h, "p": p}))
+            })
+            .collect::<serde_json::Map<_, _>>()
+            .into()
     }
 }
 

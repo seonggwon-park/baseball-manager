@@ -18,7 +18,10 @@
 //! bm careers [--years N] [--every K] [--from N]                   offseasons back to back: each level's talent and ages (every
 //!            [--levels FILE] [--careers FILE] [--aging FILE]      K years and averaged from offseason N), and how the drafted
 //!            [--json FILE]                                        and signed prospects turn out; --json adds each level's
-//!                                                                 attribute means and spreads (--years 0: the new world)
+//!                                                                 attribute means and spreads, pitch grades, the stamina and
+//!                                                                 quality of rotations and bullpens, how many regulars play
+//!                                                                 their own position, and attribute correlations (--years 0:
+//!                                                                 the new world)
 //! bm game [--seed S]                                              play one game and print the box score
 //! bm bench [--games N]                                            measure simulation speed
 //! bm serve [--port P] [--static DIR]                              session API over HTTP for the interface in a browser

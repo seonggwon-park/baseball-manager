@@ -934,11 +934,20 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
     let born: BTreeMap<u32, Date> = pop.people.iter().map(|(id, p)| (*id, p.born)).collect();
     let age_of = |id: u32, on: Date| born.get(&id).map_or(25.0, |b| on.days_since(*b) as f64 / 365.2425);
 
-    // Everyone off the rosters, by club.
+    // Everyone off the rosters, by club. A season as a regular at a position closes half
+    // the gap to full familiarity with it: a shortstop moved to third base or a centre
+    // fielder to a corner learns the position (without this, 41 % of the majors' regulars
+    // played a position they knew only in part, and balls in play fell for hits).
     let mut by_club: BTreeMap<String, Vec<Player>> = BTreeMap::new();
     let order: Vec<String> = pop.rosters.iter().map(|r| r.club.clone()).collect();
     for r in std::mem::take(&mut pop.rosters) {
-        let Roster { club, squad, reserves, .. } = r;
+        let Roster { club, mut squad, reserves, .. } = r;
+        for (p, pos) in squad.hitters.iter_mut() {
+            if let Some(pos) = pos {
+                let f = &mut p.positions[pos.index()];
+                *f += (20 - (*f).min(20)).div_ceil(2);
+            }
+        }
         let v = by_club.entry(club).or_default();
         v.extend(squad.hitters.into_iter().chain(squad.bench).chain(reserves).map(|(p, _)| p));
         v.extend(squad.starters.into_iter().chain(squad.relievers));
