@@ -1,5 +1,5 @@
 {
- "_comment": "Levels of play for generating the world's players. talent: offsets in standard deviations of the major-league attribute distribution, in the order hitting, pitching, fielding, physical, power (on top of hitting), command (on top of pitching), fitted with `bm level` (2026-11-16) to each level's 2025-2026 official rates relative to the simulated majors, the four-seam and exit-velocity gaps where Statcast tracks them (Triple-A, Florida State League; Double-A and High-A interpolated between them, an assumption), and published translations to the majors (hitters' wRC+ against major-league pitching: Triple-A 65, Double-A 52, High-A 40, Single-A 30, KBO 56, NPB 64). physical is fixed at the Triple-A fit (-0.215) wherever no tracking pins it (decision 2026-11-16). The KBO Futures and NPB farm hitters sit the Triple-A to Double-A gap below their first teams (assumption). The rookie complex and the Dominican academy have no statistics: their talent is the career model's steady state. ball_drag: factor on the batted ball's drag in the level's own games; the lower minors play with a ball of their own (fitted on Single-A, which has Statcast). batters/pitchers: ages on 1 February 2027; the means are Baseball-Reference league averages for 2025-2026 (docs/research/world/levels.md section 4), the spreads and limits, the KBO Futures and the two development squads are assumptions. roster: players per club (2026 rules). foreign: the foreign players a KBO or NPB club fields: hitters at wRC+ 88 against major-league pitching (Davenport 2016: EqA .247 against .260), pitchers symmetric (major-leaguers' wRC+ 112 against them; decision 2026-11-16). Edit freely.",
+ "_comment": "Levels of play for generating the world's players. talent: offsets in standard deviations of the major-league attribute distribution, in the order hitting, pitching, fielding, physical, power (on top of hitting), command (on top of pitching), velocity (on top of pitching), discipline (on top of hitting: plate discipline), fitted with `bm level` (2026-11-16) to each level's 2025-2026 official rates relative to the simulated majors, the four-seam and exit-velocity gaps where Statcast tracks them (Triple-A, Florida State League; Double-A and High-A interpolated between them, an assumption), and published translations to the majors (hitters' wRC+ against major-league pitching: Triple-A 65, Double-A 52, High-A 40, Single-A 30, KBO 56, NPB 64). The US minors were refitted (decisions 2026-11-16) with their plate discipline as well: zone %, swing % in the zone and chase % against the majors in 2026 (both on the batter-height zone), whiffs per swing in 2025-2026 (Statcast; Triple-A and the Florida State League, Double-A and High-A interpolated), and with no level above the level over it in hitting, pitching, fielding, command or discipline (measured from the majors). physical is fixed at the Triple-A fit (-0.215) wherever no tracking pins it (decision 2026-11-16). The KBO Futures and NPB farm hitters sit the Triple-A to Double-A gap below their first teams (assumption). The rookie complex and the Dominican academy have no statistics: their talent is the career model's steady state. ball_drag: factor on the batted ball's drag in the level's own games; the lower minors play with a ball of their own (fitted on Single-A, which has Statcast). batters/pitchers: ages on 1 February 2027; the means are Baseball-Reference league averages for 2025-2026 (docs/research/world/levels.md section 4), the spreads and limits, the KBO Futures and the two development squads are assumptions. roster: players per club (2026 rules). foreign: the foreign players a KBO or NPB club fields: hitters at wRC+ 88 against major-league pitching (Davenport 2016: EqA .247 against .260), pitchers symmetric (major-leaguers' wRC+ 112 against them; decision 2026-11-16). Edit freely.",
  "levels": {
   "mlb": {
    "talent": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -9,14 +9,14 @@
    "roster": 26
   },
   "aaa": {
-   "talent": [-0.755, -0.661, -1.125, -0.215, 0.372, -1.888],
+   "talent": [-0.735, -0.701, -1.104, -0.215, 0.367, -0.824, 0.123, 0.735],
    "batters": {"mean": 26.44, "sd": 2.9, "min": 19.0, "max": 38.0},
    "pitchers": {"mean": 27.25, "sd": 3.0, "min": 19.0, "max": 39.0},
    "birthplaces": "aaa",
    "roster": 28
   },
   "aa": {
-   "talent": [-1.329, -1.004, -1.128, -0.215, 1.051, -2.301, 0.302],
+   "talent": [-1.003, -0.701, -1.142, -0.215, 0.513, -0.824, -0.017, 1.003],
    "batters": {"mean": 23.74, "sd": 1.9, "min": 19.0, "max": 32.0},
    "pitchers": {"mean": 24.64, "sd": 2.1, "min": 19.0, "max": 33.0},
    "birthplaces": "aa",
@@ -24,7 +24,7 @@
    "ball_drag": 1.0164
   },
   "high_a": {
-   "talent": [-1.671, -1.448, -1.317, -0.215, 1.282, -2.522, 0.457],
+   "talent": [-1.428, -1.376, -1.348, -0.215, 0.921, -0.149, 0.578, 1.428],
    "batters": {"mean": 22.18, "sd": 1.5, "min": 18.0, "max": 29.0},
    "pitchers": {"mean": 23.09, "sd": 1.6, "min": 18.0, "max": 30.0},
    "birthplaces": "high_a",
@@ -32,7 +32,7 @@
    "ball_drag": 1.0164
   },
   "single_a": {
-   "talent": [-1.815, -1.701, -1.911, -0.215, 1.255, -2.34, 0.504],
+   "talent": [-1.702, -1.777, -2.132, -0.215, 0.869, 0.221, 0.834, 1.702],
    "batters": {"mean": 20.79, "sd": 1.3, "min": 17.0, "max": 27.0},
    "pitchers": {"mean": 21.86, "sd": 1.5, "min": 17.0, "max": 28.0},
    "birthplaces": "single_a",
