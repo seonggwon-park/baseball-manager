@@ -243,8 +243,8 @@ pub fn run(tuning: &Tuning, seed: u64, threads: usize, o: &Options) {
         } else {
             let r = bm_world::offseason(&ctx, &mut pop, year, Some(&season.standings), seed);
             println!(
-                "  offseason: retired {}, released {}, drafted {}, signed {}, foreign {} in / {} out",
-                r.retired, r.released, r.drafted, r.signed, r.foreign_signed, r.foreign_replaced
+                "  offseason: retired {}, released {}, minor-league free agents {}, drafted {}, signed {}, foreign {} in / {} out",
+                r.retired, r.released, r.minor_free_agents, r.drafted, r.signed, r.foreign_signed, r.foreign_replaced
             );
         }
     }

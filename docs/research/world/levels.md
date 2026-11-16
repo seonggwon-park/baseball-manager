@@ -475,6 +475,50 @@ Source: Baseball-Reference [reference DB].
 
 KBO pitchers are younger than KBO batters (27.2–27.4 vs 28.7). Every other level shows the reverse.
 
+### 4.1 Spread of ages in the US levels (MLB Stats API, 2025–2026)
+
+Added 2026-11-16 [Mine, MLB Stats API]. Every player's season line at each level (`/api/v1/stats?stats=season&group=hitting|pitching&sportId=1|11|12|13|14&season=2025|2026&playerPool=ALL`), birth dates from `/api/v1/people`, age on 30 June, batters weighted by AB + G and pitchers by 3 GS + G + SV (Baseball-Reference's weights). Both seasons pooled. Script: kept in the session scratchpad (`mlb_ages.py`), not in the repository.
+
+Whole years of age reproduce Baseball-Reference's league averages (table above) to within 0.07 years, so Baseball-Reference averages whole years; exact ages read about half a year higher.
+
+| Level | Side | Mean, whole years | SD | Mean, exact ages | p1 | p5 | p95 | p99 | Lines |
+|---|---|---|---|---|---|---|---|---|---|
+| MLB | batters | 27.86 | 3.67 | 28.38 | 21.9 | 23.0 | 34.9 | 37.3 | 1,516 |
+| MLB | pitchers | 29.16 | 3.77 | 29.66 | 22.9 | 24.2 | 36.4 | 38.7 | 1,741 |
+| Triple-A | batters | 26.39 | 3.03 | 26.87 | 21.4 | 22.5 | 32.5 | 34.8 | 1,847 |
+| Triple-A | pitchers | 27.25 | 3.27 | 27.76 | 22.2 | 23.2 | 34.1 | 37.2 | 2,532 |
+| Double-A | batters | 23.67 | 1.93 | 24.18 | 19.9 | 21.1 | 27.3 | 29.1 | 1,602 |
+| Double-A | pitchers | 24.63 | 2.10 | 25.15 | 21.0 | 22.0 | 28.7 | 30.9 | 2,061 |
+| High-A | batters | 22.11 | 1.61 | 22.64 | 19.3 | 20.1 | 25.3 | 26.6 | 1,626 |
+| High-A | pitchers | 23.08 | 1.84 | 23.59 | 19.9 | 20.9 | 26.4 | 28.2 | 2,130 |
+| Single-A | batters | 20.74 | 1.68 | 21.28 | 18.3 | 18.9 | 24.1 | 25.3 | 1,901 |
+| Single-A | pitchers | 21.86 | 1.83 | 22.37 | 18.9 | 19.6 | 25.1 | 27.5 | 2,551 |
+
+Percentiles are of exact ages on 30 June. The oldest lines in the lower levels (Double-A 37–40, High-A 34–42, Single-A 38–39) are mostly major-leaguers on rehabilitation assignments with one to seven games (checked for 2026: Gerrit Cole, Max Scherzer, Zack Wheeler and Marcus Semien among them); the few exceptions are journeymen such as Jorge Alfaro (33, 56 games in Double-A).
+
+Share of playing time by age (exact ages, %):
+
+| Level | Side | <20 | 20–21 | 22–23 | 24–25 | 26–27 | 28–29 | 30–31 | 32–33 | 34–35 | 36+ |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| MLB | batters | 0.0 | 1.7 | 10.1 | 17.2 | 21.3 | 17.6 | 14.5 | 9.8 | 5.7 | 2.2 |
+| MLB | pitchers | 0.0 | 0.2 | 3.9 | 12.7 | 22.0 | 19.1 | 16.1 | 11.2 | 8.8 | 6.1 |
+| Triple-A | batters | 0.1 | 2.3 | 14.8 | 24.4 | 26.9 | 15.7 | 9.4 | 4.2 | 1.8 | 0.3 |
+| Triple-A | pitchers | 0.0 | 0.6 | 9.1 | 22.7 | 26.7 | 19.3 | 10.7 | 5.7 | 3.3 | 1.9 |
+| Double-A | batters | 1.0 | 10.6 | 36.5 | 36.0 | 12.9 | 2.5 | 0.2 | 0.2 | 0.0 | 0.0 |
+| Double-A | pitchers | 0.2 | 4.4 | 25.9 | 38.7 | 22.6 | 6.4 | 1.3 | 0.2 | 0.2 | 0.1 |
+| High-A | batters | 4.3 | 30.5 | 47.4 | 15.6 | 2.1 | 0.1 | 0.0 | 0.0 | 0.0 | 0.0 |
+| High-A | pitchers | 1.8 | 14.9 | 46.1 | 30.0 | 6.1 | 0.5 | 0.2 | 0.1 | 0.1 | 0.1 |
+| Single-A | batters | 25.4 | 42.3 | 26.8 | 4.9 | 0.4 | 0.1 | 0.0 | 0.0 | 0.0 | 0.0 |
+| Single-A | pitchers | 8.8 | 30.3 | 47.6 | 11.2 | 1.4 | 0.4 | 0.2 | 0.2 | 0.1 | 0.0 |
+
+Below Triple-A almost nobody plays past the mid-twenties: older players who are not prospects are released or leave as minor-league free agents, and the veterans an organisation keeps play in Triple-A.
+
+### 4.2 Minor-league free agency
+
+- Since the minor-league collective bargaining agreement of 2023, a player who signed his first contract at 19 or older becomes a minor-league free agent after parts of six seasons in the minors if he is not on the 40-man roster; players who signed at 18 or younger (mainly high-school draftees and international amateurs) still need seven. Before 2023 every minor-leaguer needed parts of seven seasons. Sources: MLB Trade Rumors, "MLB, MLBPA Reach Tentative Agreement On Minor League CBA" (https://www.mlbtraderumors.com/2023/03/mlb-mlbpa-reach-tentative-agreement-on-minor-league-cba.html); Baseball America on the earlier seven-season wording (https://www.baseballamerica.com/?p=43318).
+- A fan-maintained rules guide (The Cub Reporter, https://media.thecubreporter.com/minor-league-free-agency) says the six-season rule applies only to first contracts signed on or after 5 June 2023. Secondary source; not checked against the agreement's text.
+- The same agreement brought minor-league roster limits that left many veteran minor-leaguers without contracts (Baseball America, https://www.baseballamerica.com/?p=1350383; Just Baseball, https://www.justbaseball.com/mlb/milb-roster-rules-veterans-without-a-job-mlb-free-agency/).
+
 ---
 
 ## 5. Open gaps

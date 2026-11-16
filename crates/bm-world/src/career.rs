@@ -333,6 +333,8 @@ pub enum Exit {
     Released,
     /// A KBO or NPB club signed a better foreign player in his place.
     Replaced,
+    /// His minor-league contract ran out while he was off the 40-man roster.
+    FreeAgent,
 }
 
 /// One season on a roster.
@@ -894,6 +896,28 @@ pub struct Offseason<'a> {
     pub people: &'a PeopleMaker,
 }
 
+/// Players on a major-league organisation's 40-man roster, out of reach of minor-league free
+/// agency.
+const FORTY_MAN: usize = 40;
+
+/// Whether a player who came into a major-league organisation by `origin` has played out his
+/// minor-league contract after the `year` season. Since the 2023 minor-league agreement a
+/// player who signed at 19 or older becomes a free agent after parts of six seasons, a
+/// younger one after seven (MLB Trade Rumors 2023; docs/research/world/levels.md 4.2).
+/// Draftees sign in July and play part of their draft year; international amateurs sign on
+/// 15 January and start that season. The first world's players have no signing date and are
+/// left alone.
+fn contract_ran_out(origin: &Origin, born: Date, year: i32) -> bool {
+    let (first_season, signed) = match origin {
+        Origin::Draft { year: y, .. } => (*y, Date::new(*y, 7, 15)),
+        Origin::Signed { year: y, .. } => (*y + 1, Date::new(*y + 1, 1, 15)),
+        Origin::Initial | Origin::Foreign { .. } => return false,
+    };
+    let age = signed.days_since(born) as f64 / 365.2425;
+    let seasons = if age >= 19.0 { 6 } else { 7 };
+    year - first_season + 1 >= seasons
+}
+
 /// What one offseason did.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Report {
@@ -903,6 +927,7 @@ pub struct Report {
     pub signed: usize,
     pub foreign_signed: usize,
     pub foreign_replaced: usize,
+    pub minor_free_agents: usize,
 }
 
 /// Order in which organisations of one kind pick in the draft: worst record first, or,
@@ -980,6 +1005,37 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
             }
         }
         *players = stay;
+    }
+
+    // Minor-league free agency (decision 2026-11-16): a major-league organisation's minor-
+    // leaguer off its 40-man roster leaves once his contract has run its parts of seasons.
+    // The 40-man roster: the major-league club's players and the organisation's next best by
+    // the value it keeps players by. No market signs them yet, so they leave the world.
+    for org in orgs.iter().filter(|o| o.kind == OrgKind::Major) {
+        let Some((first, minors)) = org.levels.split_first() else { continue };
+        let on_major_club = by_club.get(&first.0).map_or(0, Vec::len);
+        let worth = |p: &Player| {
+            let v = keep_value(p, pop.potentials.get(&p.id), ctx.careers.keep_potential);
+            (v - age_cost(age_of(p.id, date), ctx.careers.age_discount) * ability::per_sd(p)) / ability::per_sd(p)
+        };
+        let mut ranked: Vec<(f64, u32)> = minors.iter().flat_map(|(club, _)| by_club.get(club).into_iter().flatten()).map(|p| (worth(p), p.id)).collect();
+        ranked.sort_by(|a, b| b.0.total_cmp(&a.0));
+        let forty: BTreeSet<u32> = ranked.iter().take(FORTY_MAN.saturating_sub(on_major_club)).map(|x| x.1).collect();
+        let free: BTreeSet<u32> = ranked
+            .iter()
+            .map(|x| x.1)
+            .filter(|id| !forty.contains(id))
+            .filter(|id| pop.careers.get(id).zip(born.get(id)).is_some_and(|(c, b)| contract_ran_out(&c.origin, *b, year)))
+            .collect();
+        for (club, _) in minors {
+            if let Some(players) = by_club.get_mut(club) {
+                players.retain(|p| !free.contains(&p.id));
+            }
+        }
+        for id in free {
+            leave(pop, id, Exit::FreeAgent);
+            report.minor_free_agents += 1;
+        }
     }
 
     let mut intake = Intake {
@@ -1278,6 +1334,28 @@ mod tests {
         assert_eq!(t.retire_chance(30.0), 0.0);
         assert!(t.retire_chance(38.0) > t.retire_chance(34.0));
         assert_eq!(t.retire_chance(60.0), 1.0);
+    }
+
+    #[test]
+    fn minor_league_contracts_run_six_or_seven_seasons() {
+        let draft = |year| Origin::Draft { year, round: 3, pick: 75, class: "us_college".into() };
+        // A college pick (21.9 on draft day) plays part of 2030 and five more seasons.
+        let college = Date::new(2008, 9, 1);
+        assert!(!contract_ran_out(&draft(2030), college, 2034));
+        assert!(contract_ran_out(&draft(2030), college, 2035));
+        // A high-school pick (18.6) gets seven.
+        let school = Date::new(2011, 12, 1);
+        assert!(!contract_ran_out(&draft(2030), school, 2035));
+        assert!(contract_ran_out(&draft(2030), school, 2036));
+        // An international amateur signed that offseason (16.9 on 15 January 2031) starts in
+        // 2031 and gets seven.
+        let intl = Origin::Signed { year: 2030, class: "international".into() };
+        let teen = Date::new(2014, 3, 1);
+        assert!(!contract_ran_out(&intl, teen, 2036));
+        assert!(contract_ran_out(&intl, teen, 2037));
+        // Players of the first world and foreign players are left alone.
+        assert!(!contract_ran_out(&Origin::Initial, college, 2060));
+        assert!(!contract_ran_out(&Origin::Foreign { year: 2030 }, college, 2060));
     }
 
     #[test]
