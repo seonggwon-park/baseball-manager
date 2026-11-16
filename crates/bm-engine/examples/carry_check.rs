@@ -220,8 +220,8 @@ fn main() {
     for mb in 0..9 {
         let lo = (mb as i64 - 4) * 10;
         print!("{lo:4}..{:<4}", lo + 10);
-        for sec in 0..3 {
-            let (n, h) = check.margin[sec][mb];
+        for sector in &check.margin {
+            let (n, h) = sector[mb];
             print!("   {n:6.0} {:.2}", h / n.max(1.0));
         }
         println!();
