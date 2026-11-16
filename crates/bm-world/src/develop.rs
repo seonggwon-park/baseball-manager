@@ -21,6 +21,9 @@ struct GroupFile {
     attrs: Vec<String>,
     drift: Vec<f32>,
     noise: f32,
+    /// Years by which the group's growth towards the ceiling comes later than the others'.
+    #[serde(default)]
+    growth_delay: f32,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -42,8 +45,11 @@ pub struct AgingTable {
     noise: [f32; N_ATTR],
     /// Group of each attribute, by name (for pitch grades: the `stuff` group).
     group_of: [String; N_ATTR],
+    /// Per attribute: years by which its growth comes later.
+    delay: [f32; N_ATTR],
     stuff_drift: Vec<f32>,
     stuff_noise: f32,
+    stuff_delay: f32,
 }
 
 fn at(v: &[f32], from: u32, age: f64) -> f32 {
@@ -64,6 +70,7 @@ impl AgingTable {
         let mut drift = vec![Vec::new(); N_ATTR];
         let mut noise = [0.0f32; N_ATTR];
         let mut group_of: [String; N_ATTR] = std::array::from_fn(|_| String::new());
+        let mut delay = [0.0f32; N_ATTR];
         for (name, g) in &f.groups {
             for key in &g.attrs {
                 let a = Attr::ALL.iter().position(|a| a.key() == key).ok_or_else(|| format!("group {name}: unknown attribute '{key}'"))?;
@@ -72,6 +79,7 @@ impl AgingTable {
                 }
                 drift[a] = g.drift.clone();
                 noise[a] = g.noise;
+                delay[a] = g.growth_delay;
                 group_of[a] = name.clone();
             }
         }
@@ -86,8 +94,10 @@ impl AgingTable {
             drift,
             noise,
             group_of,
+            delay,
             stuff_drift: stuff.drift.clone(),
             stuff_noise: stuff.noise,
+            stuff_delay: stuff.growth_delay,
         })
     }
 
@@ -107,6 +117,13 @@ impl AgingTable {
     /// Share of the gap to the potential closed in the year after a birthday at `age`.
     pub fn growth(&self, age: f64) -> f32 {
         at(&self.growth, self.from_age, age)
+    }
+
+    /// The same for one attribute, whose growth may come later than the others'
+    /// (`growth_delay` of its group: command, for example, keeps improving into the late
+    /// twenties).
+    pub fn growth_of(&self, attr: Attr, age: f64) -> f32 {
+        at(&self.growth, self.from_age, age - self.delay[attr as usize] as f64)
     }
 
     /// Mean gap between a player's current attributes and his peak at `age`.
@@ -190,15 +207,15 @@ impl Closure {
 /// ages with the player and takes the same yearly noise, so the gap between them only
 /// closes through growth: a player at his ceiling simply follows the aging curves.
 pub fn develop(player: &mut Player, potential: &mut Potential, age: f64, table: &AgingTable, rng: &mut Rng) {
-    let growth = table.growth(age);
     let stuff_gap = (potential.attrs[Attr::Stuff] - player.attrs[Attr::Stuff]).max(0.0);
     for a in Attr::ALL {
         let gap = (potential.attrs[a] - player.attrs[a]).max(0.0);
         let shift = table.drift(a, age) + table.noise(a) * rng.gauss(0.0, 1.0) as f32;
         potential.attrs[a] = (potential.attrs[a] + shift).clamp(-6.0, 4.0);
-        player.attrs[a] = (player.attrs[a] + growth * gap + shift).clamp(-6.0, 4.0);
+        player.attrs[a] = (player.attrs[a] + table.growth_of(a, age) * gap + shift).clamp(-6.0, 4.0);
     }
     // Pitch grades age and grow with stuff.
+    let growth = at(&table.growth, table.from_age, age - table.stuff_delay as f64);
     if let Some(p) = player.pitching.as_mut() {
         for pitch in &mut p.pitches {
             let change = growth * stuff_gap + at(&table.stuff_drift, table.from_age, age) + table.stuff_noise * rng.gauss(0.0, 1.0) as f32;

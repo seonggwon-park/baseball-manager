@@ -94,13 +94,16 @@ pub struct Options<'a> {
     pub warmup: usize,
     pub levels_file: Option<&'a std::path::Path>,
     pub careers_file: Option<&'a std::path::Path>,
+    pub aging_file: Option<&'a std::path::Path>,
 }
 
 pub fn run(tuning: &Tuning, seed: u64, threads: usize, o: &Options) {
     let read = |p: &std::path::Path| std::fs::read_to_string(p).unwrap_or_else(|e| panic!("{}: {e}", p.display()));
     let world = World::bundled();
     let levels = o.levels_file.map_or_else(LevelTable::bundled, |p| LevelTable::from_json(&read(p)).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
-    let aging = bm_world::AgingTable::bundled();
+    let aging = o
+        .aging_file
+        .map_or_else(bm_world::AgingTable::bundled, |p| bm_world::AgingTable::from_json(&read(p)).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
     let careers = o
         .careers_file
         .map_or_else(bm_world::CareerTable::bundled, |p| bm_world::CareerTable::from_json(&read(p)).unwrap_or_else(|e| panic!("{}: {e}", p.display())));

@@ -16,7 +16,8 @@
 //!           [--warmup K] [--levels FILE] [--careers FILE]         (N seasons with offseasons between them, after K offseasons
 //!                                                                 without games)
 //! bm careers [--years N] [--every K] [--from N]                   offseasons back to back: each level's talent and ages (every
-//!            [--levels FILE] [--careers FILE] [--json FILE]       K years and averaged from offseason N), and how the drafted
+//!            [--levels FILE] [--careers FILE] [--aging FILE]      K years and averaged from offseason N), and how the drafted
+//!            [--json FILE]
 //!                                                                 and signed prospects turn out
 //! bm game [--seed S]                                              play one game and print the box score
 //! bm bench [--games N]                                            measure simulation speed
@@ -77,6 +78,7 @@ struct Args {
     from: Option<usize>,
     levels_file: Option<std::path::PathBuf>,
     careers_file: Option<std::path::PathBuf>,
+    aging_file: Option<std::path::PathBuf>,
     json: Option<std::path::PathBuf>,
     tuning: Tuning,
 }
@@ -109,6 +111,7 @@ fn parse_args() -> Args {
         from: None,
         levels_file: None,
         careers_file: None,
+        aging_file: None,
         json: None,
         tuning: Tuning::new(),
     };
@@ -142,6 +145,7 @@ fn parse_args() -> Args {
             "--levels" => a.levels_file = Some(v.into()),
             "--careers" => a.careers_file = Some(v.into()),
             "--json" => a.json = Some(v.into()),
+            "--aging" => a.aging_file = Some(v.into()),
             "--seed" => a.seed = v.parse().expect("--seed S"),
             "--threads" => a.threads = v.parse::<usize>().expect("--threads T").max(1),
             "--clubs" => a.clubs = v.parse::<usize>().expect("--clubs K").max(2),
@@ -439,11 +443,19 @@ fn main() {
                 warmup: args.warmup,
                 levels_file: args.levels_file.as_deref(),
                 careers_file: args.careers_file.as_deref(),
+                aging_file: args.aging_file.as_deref(),
             },
         ),
-        "careers" => {
-            careers::run(args.years, args.seed, args.every, args.from, args.levels_file.as_deref(), args.careers_file.as_deref(), args.json.as_deref())
-        }
+        "careers" => careers::run(
+            args.years,
+            args.seed,
+            args.every,
+            args.from,
+            args.levels_file.as_deref(),
+            args.careers_file.as_deref(),
+            args.aging_file.as_deref(),
+            args.json.as_deref(),
+        ),
         "players" => players::run(&env, &args.tuning.baseline, args.tuning.style, args.seed, args.threads, args.clubs.min(60), args.games.min(400)),
         "game" => {
             let clubs = make_clubs(2, args.seed, level, world);

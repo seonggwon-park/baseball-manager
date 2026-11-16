@@ -245,11 +245,21 @@ fn outcomes(pop: &Population, last_year: i32, follow: i32) -> serde_json::Value 
 
 /// Run `years` offseasons, print the levels every `every` years and their average from
 /// offseason `from` on.
-pub fn run(years: usize, seed: u64, every: usize, from: Option<usize>, levels_file: Option<&Path>, careers_file: Option<&Path>, json: Option<&Path>) {
+#[allow(clippy::too_many_arguments)]
+pub fn run(
+    years: usize,
+    seed: u64,
+    every: usize,
+    from: Option<usize>,
+    levels_file: Option<&Path>,
+    careers_file: Option<&Path>,
+    aging_file: Option<&Path>,
+    json: Option<&Path>,
+) {
     let read = |p: &Path| std::fs::read_to_string(p).unwrap_or_else(|e| panic!("{}: {e}", p.display()));
     let world = World::bundled();
     let levels = levels_file.map_or_else(LevelTable::bundled, |p| LevelTable::from_json(&read(p)).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
-    let aging = AgingTable::bundled();
+    let aging = aging_file.map_or_else(AgingTable::bundled, |p| AgingTable::from_json(&read(p)).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
     let careers = careers_file.map_or_else(CareerTable::bundled, |p| CareerTable::from_json(&read(p)).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
     let people = PeopleMaker::new();
     let ctx = Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people };
