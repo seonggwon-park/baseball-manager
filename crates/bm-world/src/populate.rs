@@ -100,6 +100,15 @@ impl LevelTable {
     }
 }
 
+/// The first-team level whose balance of skills the players of `level` grow into.
+pub fn peak_level(level: &str) -> &'static str {
+    match level {
+        "kbo" | "kbo2" => "kbo",
+        "npb" | "npb2" => "npb",
+        _ => "mlb",
+    }
+}
+
 /// Key of the level table that a club of the world plays at.
 pub fn level_key(world: &World, club: &Club) -> &'static str {
     match (world.level_of(club), club.country.as_str()) {
@@ -291,11 +300,13 @@ pub fn populate_with(world: &World, levels: &LevelTable, aging: &AgingTable, car
             let age = date.days_since(maker.out[&p.id].born) as f64 / 365.2425;
             let scale = (careers.prospect_spread * prng.gauss(0.0, 1.0)).exp() as f32;
             let mut pot = Potential::draw(p, age, scale, aging, &mut prng);
-            let t = match (&profile.foreign, foreign.contains_key(&p.id)) {
-                (Some(f), true) => talent(&f.talent),
-                _ => profile.talent(),
+            // A player grows into the balance of his league's first team; foreign players
+            // keep theirs.
+            let (t, peak) = match (&profile.foreign, foreign.contains_key(&p.id)) {
+                (Some(f), true) => (talent(&f.talent), talent(&f.talent)),
+                _ => (profile.talent(), levels.get(peak_level(&r.level)).talent()),
             };
-            pot.balance(p, &t, &closure);
+            pot.balance(p, &t, &peak, &closure);
             potentials.insert(p.id, pot);
         }
     }

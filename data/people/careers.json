@@ -1,5 +1,5 @@
 {
- "_comment": "How players come into the world, move between levels and leave it, season to season (crates/bm-world/src/career.rs). classes: kinds of new players, with their age on 1 November of the year they join, the share of pitchers, the level whose talent they start at ('like' a key of levels.json, a level with official statistics) and a shift from it in standard deviations (assumption: about 0.3 SD per year of age between the classes, fitted as a whole with `bm careers`), a factor on the mean growth still ahead of them ('potential', 1 = what aging.json gives for their age), and the birthplace group. drafts: one national draft per league each autumn, picked in reverse order of the standings; signings: other players each organisation adds every year. positions: primary positions of new position players. retirement: the chance of retiring in the offseason after a season at each age, on top of the players an organisation lets go. keep_potential: how much of the gap between a player's ceiling and his current ability his organisation counts when it decides whom to keep. board_noise: scouting error in the draft order, in standard deviations of ability. Each entry gives its source; 'assumption' marks values without published data. Edit freely.",
+ "_comment": "How players come into the world, move between levels and leave it, season to season (crates/bm-world/src/career.rs). classes: kinds of new players, with their age on 1 November of the year they join, the share of pitchers, the level whose talent they start at ('like' a key of levels.json, a level with official statistics) and a shift from it in standard deviations (assumption: about 0.3 SD per year of age between the classes, fitted as a whole with `bm careers`), a factor on the mean growth still ahead of them ('potential', 1 = what aging.json gives for their age), the first-team level whose balance of skills they grow into ('peak'), and the birthplace group. drafts: one national draft per league each autumn, picked in reverse order of the standings; signings: other players each organisation adds every year. positions: primary positions of new position players. retirement: the chance of retiring in the offseason after a season at each age, on top of the players an organisation lets go. keep_potential: how much of the gap between a player's ceiling and his current ability his organisation counts when it decides whom to keep. board_noise: scouting error in the draft order, in standard deviations of ability. Each entry gives its source; 'assumption' marks values without published data. Edit freely.",
  "classes": {
   "us_college": {
    "ages": {"mean": 22.25, "sd": 0.77, "min": 20.5, "max": 25.5},
@@ -7,6 +7,7 @@
    "like": "single_a",
    "shift": 0.0,
    "potential": 1.0,
+   "peak": "mlb",
    "birthplaces": "us_draft",
    "basis": "MLB drafts 2021-2025, 2,277 four-year-college picks (MLB Stats API draft endpoint): 21.95 +- 0.77 years on draft day, 60.6 % pitchers. Starting talent and potential: assumption, fitted with `bm careers`"
   },
@@ -16,6 +17,7 @@
    "like": "single_a",
    "shift": -1.0,
    "potential": 1.0,
+   "peak": "mlb",
    "birthplaces": "us_draft",
    "basis": "MLB drafts 2021-2025, 594 high-school picks: 18.51 +- 0.44 years on draft day, 43.9 % pitchers"
   },
@@ -25,6 +27,7 @@
    "like": "single_a",
    "shift": -0.5,
    "potential": 1.0,
+   "peak": "mlb",
    "birthplaces": "us_draft",
    "basis": "MLB drafts 2021-2025, 189 junior-college picks: 20.59 +- 1.06 years, 72 % pitchers"
   },
@@ -34,6 +37,7 @@
    "like": "single_a",
    "shift": -1.8,
    "potential": 1.0,
+   "peak": "mlb",
    "birthplaces": "international",
    "basis": "Signing rules: 16 before signing, 17 before 1 September of the next year (MLB.com, 2026-01-22). Age spread and share of pitchers: assumption"
   },
@@ -43,6 +47,7 @@
    "like": "kbo2",
    "shift": -0.8,
    "potential": 1.0,
+   "peak": "kbo",
    "birthplaces": "kbo_domestic",
    "basis": "2027 KBO draft (2026-09-21): 87 of 110 picks high-school seniors, 62 pitchers (isplus, wikitree). Seniors are born in one calendar year, 17.7-18.7 on draft day"
   },
@@ -52,6 +57,7 @@
    "like": "kbo2",
    "shift": -0.5,
    "potential": 1.0,
+   "peak": "kbo",
    "birthplaces": "kbo_domestic",
    "basis": "2027 KBO draft: 22 college players (4 early-draft juniors) and one player from abroad"
   },
@@ -61,6 +67,7 @@
    "like": "npb2",
    "shift": -0.9,
    "potential": 1.0,
+   "peak": "npb",
    "birthplaces": "npb_domestic",
    "basis": "2025 NPB draft (2025-10-23): 19 of the 73 main-draft picks from high school, 38 pitchers among the 73 (team lists, spread-sports.jp)"
   },
@@ -70,6 +77,7 @@
    "like": "npb2",
    "shift": -0.4,
    "potential": 1.0,
+   "peak": "npb",
    "birthplaces": "npb_domestic",
    "basis": "2025 NPB draft: 40 main-draft picks from universities"
   },
@@ -79,6 +87,7 @@
    "like": "npb2",
    "shift": -0.1,
    "potential": 1.0,
+   "peak": "npb",
    "birthplaces": "npb_domestic",
    "basis": "2025 NPB draft: 12 main-draft picks from corporate teams and 2 from independent or other clubs. Ages: assumption (two to six years after high school or university)"
   },
@@ -88,6 +97,7 @@
    "like": "npb2",
    "shift": -1.0,
    "potential": 1.0,
+   "peak": "npb",
    "birthplaces": "npb_domestic",
    "basis": "2025 NPB development draft: 43 picks, 14 high school, 14 university, 12 independent league, 3 other; 20 pitchers"
   },
@@ -97,6 +107,7 @@
    "like": "kbo2",
    "shift": -0.3,
    "potential": 1.0,
+   "peak": "kbo",
    "birthplaces": "kbo_domestic",
    "basis": "Assumption: the independent Futures club signs players released by KBO clubs and undrafted amateurs"
   },
@@ -106,6 +117,7 @@
    "like": "kbo2",
    "shift": 0.0,
    "potential": 1.0,
+   "peak": "kbo",
    "birthplaces": "kbo_domestic",
    "basis": "Assumption standing in for military service (players on loan from KBO clubs for about 18 months); replaced when the service rules are modelled"
   },
@@ -115,6 +127,7 @@
    "like": "npb2",
    "shift": -0.3,
    "potential": 1.0,
+   "peak": "npb",
    "birthplaces": "npb_domestic",
    "basis": "Assumption: the two independent farm-league clubs sign released NPB players and amateurs"
   }

@@ -136,12 +136,13 @@ impl Potential {
         Potential { attrs }
     }
 
-    /// Take the skill gaps of the player's level out of his ceiling: minor-leaguers have
-    /// more raw power than bat-to-ball skill, weaker defence and bodies, far worse command
-    /// and nearly major-league velocity (the `power`, `fielding`, `physical`, `command` and
-    /// `velocity` parts of the level's talent). A share `closure` of each gap closes by the player's
-    /// peak, so that the players who reach theirs have the balance of a major-leaguer.
-    pub fn balance(&mut self, player: &Player, t: &Talent, closure: &Closure) {
+    /// Move the skill balance of the player's level (`from`) towards that of the level he
+    /// is growing into (`to`): minor-leaguers have more raw power than bat-to-ball skill,
+    /// weaker defence and bodies, far worse command and nearly major-league velocity (the
+    /// `power`, `fielding`, `physical`, `command` and `velocity` parts of a level's talent),
+    /// and a Japanese prospect grows into the contact and control of the NPB rather than
+    /// into a major-leaguer. A share `closure` of each difference closes by the peak.
+    pub fn balance(&mut self, player: &Player, from: &Talent, to: &Talent, closure: &Closure) {
         use Attr::*;
         let mut shift = |attrs: &[Attr], by: f32| {
             for &a in attrs {
@@ -150,16 +151,18 @@ impl Potential {
         };
         const FIELD: [Attr; 11] = [Hands, Range, Reads, ArmAccuracy, Footwork, Baserunning, Stealing, Framing, Blocking, GameCalling, ThrowingOut];
         if player.is_pitcher() {
-            let base = t.pitching;
-            shift(&[Control, Command], -closure.command * t.command);
-            shift(&[Velocity], -closure.velocity * t.velocity);
-            shift(&FIELD[..5], closure.fielding * (base - t.fielding));
-            shift(&[Strength, Durability, Agility], closure.physical * (base - t.physical));
+            let rel = |t: &Talent| (t.command, t.velocity, t.fielding - t.pitching, t.physical - t.pitching);
+            let (a, b) = (rel(from), rel(to));
+            shift(&[Control, Command], closure.command * (b.0 - a.0));
+            shift(&[Velocity], closure.velocity * (b.1 - a.1));
+            shift(&FIELD[..5], closure.fielding * (b.2 - a.2));
+            shift(&[Strength, Durability, Agility], closure.physical * (b.3 - a.3));
         } else {
-            let base = t.hitting;
-            shift(&[Power], -closure.power * t.power);
-            shift(&FIELD, closure.fielding * (base - t.fielding));
-            shift(&[Strength, Stamina, Durability, Agility, Speed, Acceleration, ArmStrength], closure.physical * (base - t.physical));
+            let rel = |t: &Talent| (t.power, t.fielding - t.hitting, t.physical - t.hitting);
+            let (a, b) = (rel(from), rel(to));
+            shift(&[Power], closure.power * (b.0 - a.0));
+            shift(&FIELD, closure.fielding * (b.1 - a.1));
+            shift(&[Strength, Stamina, Durability, Agility, Speed, Acceleration, ArmStrength], closure.physical * (b.2 - a.2));
         }
     }
 }

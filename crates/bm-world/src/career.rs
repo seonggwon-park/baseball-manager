@@ -37,9 +37,16 @@ pub struct Class {
     pub shift: f32,
     /// Factor on the mean growth still ahead of a player of his age.
     pub potential: f32,
+    /// The level whose skill balance he grows into: `mlb`, `kbo` or `npb`.
+    #[serde(default = "mlb")]
+    pub peak: String,
     pub birthplaces: String,
     #[serde(default)]
     pub basis: String,
+}
+
+fn mlb() -> String {
+    "mlb".to_string()
 }
 
 /// A league's draft: `rounds` picks per organisation, each pick drawn from the classes in
@@ -760,7 +767,8 @@ impl Intake<'_> {
         };
         let person = self.people.make(id, &class.birthplaces, &class.ages, self.date, rng);
         let factor = class.potential * if is_pitcher { self.table.pitcher_potential } else { 1.0 };
-        let potential = self.ceiling(&player, &person, &t, factor, rng);
+        let peak = self.levels.get(&class.peak).talent();
+        let potential = self.ceiling(&player, &person, &t, &peak, factor, rng);
         Newcomer { player, person, potential }
     }
 
@@ -773,14 +781,14 @@ impl Intake<'_> {
             None => position_player(rng, id, slot.position, &slot.talent),
         };
         let person = self.people.make(id, &slot.birthplaces, &slot.ages, self.date, rng);
-        let potential = self.ceiling(&player, &person, &slot.talent, 1.0, rng);
+        let potential = self.ceiling(&player, &person, &slot.talent, &slot.talent, 1.0, rng);
         Newcomer { player, person, potential }
     }
 
-    fn ceiling(&self, p: &Player, person: &crate::people::Person, t: &Talent, factor: f32, rng: &mut Rng) -> Potential {
+    fn ceiling(&self, p: &Player, person: &crate::people::Person, t: &Talent, peak: &Talent, factor: f32, rng: &mut Rng) -> Potential {
         let scale = (self.table.prospect_spread * rng.gauss(0.0, 1.0)).exp() as f32 * factor;
         let mut pot = Potential::draw(p, self.age(person), scale, self.aging, rng);
-        pot.balance(p, t, &self.table.balance);
+        pot.balance(p, t, peak, &self.table.balance);
         pot
     }
 }
