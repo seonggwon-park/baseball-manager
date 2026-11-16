@@ -8,6 +8,7 @@
 //! league averages, roster sizes from the 2026 rules (`docs/research/world/`).
 
 use crate::calendar::Date;
+use crate::develop::{AgingTable, Potential};
 use crate::generate::{pitcher, position_player, Squad, Talent};
 use crate::league::{Club, Level, World};
 use crate::people::{AgeSpread, PeopleMaker, Person};
@@ -134,6 +135,9 @@ pub struct Population {
     pub date: Date,
     pub people: BTreeMap<u32, Person>,
     pub rosters: Vec<Roster>,
+    /// Every player's ceiling (`develop.rs`).
+    #[serde(default)]
+    pub potentials: BTreeMap<u32, Potential>,
 }
 
 impl Population {
@@ -249,8 +253,26 @@ pub fn populate(world: &World, levels: &LevelTable, date: Date, seed: u64) -> Po
             }
         }
     }
-    Population { date, people: maker.out, rosters }
+    // Ceilings: the mean remaining growth at the player's age, times a personal factor
+    // (log-normal, median 1) that makes some players prospects and others organisation
+    // depth. A separate stream, so that the rosters stay what they were.
+    let aging = AgingTable::bundled();
+    let mut prng = Rng::new(seed ^ 0x9E0_7E17);
+    let mut potentials = BTreeMap::new();
+    for r in &rosters {
+        for p in r.players() {
+            let age = date.days_since(maker.out[&p.id].born) as f64 / 365.2425;
+            let scale = (PROSPECT_SPREAD * prng.gauss(0.0, 1.0)).exp() as f32;
+            potentials.insert(p.id, Potential::draw(p, age, scale, &aging, &mut prng));
+        }
+    }
+    Population { date, people: maker.out, rosters, potentials }
 }
+
+/// Spread of the personal growth factor (standard deviation of its logarithm): about one
+/// young player in six has a ceiling 1.6 times the typical one. An assumption to be fitted
+/// to how many prospects reach the majors (docs/research/world/aging.md 4).
+pub const PROSPECT_SPREAD: f64 = 0.45;
 
 #[cfg(test)]
 mod tests {

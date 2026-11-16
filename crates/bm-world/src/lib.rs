@@ -5,6 +5,7 @@ pub mod attr;
 pub mod birthplace;
 pub mod calendar;
 pub mod convert;
+pub mod develop;
 pub mod generate;
 pub mod league;
 pub mod names;
@@ -18,6 +19,7 @@ pub use attr::{display, Attr, Attributes, Group, Hidden, Scale, ScaleAnchor, N_A
 pub use birthplace::Birthplaces;
 pub use calendar::{Date, Weekday};
 pub use convert::Baseline;
+pub use develop::{develop, AgingTable, Potential};
 pub use generate::{Squad, Talent};
 pub use league::{Ballpark, Club, Country, League, Level, World};
 pub use people::{AgeSpread, PeopleMaker, Person};

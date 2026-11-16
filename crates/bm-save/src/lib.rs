@@ -8,6 +8,7 @@
 //!   so that the attribute set can grow without a schema change.
 //! * `rosters (club, level, slot, ord, player, position)`: who is where. `slot` is
 //!   `lineup`, `bench`, `rotation`, `bullpen` or `reserve`; `ord` is the order inside it.
+//! * `potentials (id, data)`: each player's ceiling (`bm_world::Potential`) as JSON.
 //!
 //! A save is written in one transaction into a fresh file, so an interrupted save never
 //! leaves a half-written game behind.
@@ -19,7 +20,7 @@ use std::fmt;
 use std::path::Path;
 
 /// Version of the table layout. Older files are refused rather than misread.
-pub const FORMAT: i64 = 1;
+pub const FORMAT: i64 = 2;
 
 #[derive(Debug)]
 pub enum SaveError {
@@ -76,6 +77,7 @@ CREATE TABLE players (id INTEGER PRIMARY KEY, data TEXT NOT NULL);
 CREATE TABLE rosters (club TEXT NOT NULL, level TEXT NOT NULL, slot TEXT NOT NULL, ord INTEGER NOT NULL, player INTEGER NOT NULL, position TEXT,
                       PRIMARY KEY (club, slot, ord));
 CREATE INDEX rosters_player ON rosters (player);
+CREATE TABLE potentials (id INTEGER PRIMARY KEY, data TEXT NOT NULL);
 ";
 
 fn position_code(p: Option<Position>) -> Option<String> {
@@ -108,6 +110,10 @@ pub fn save(path: &Path, game: &SaveGame) -> Result<(), SaveError> {
             let mut people = tx.prepare("INSERT INTO people (id, name_ko, name_en, born, birthplace) VALUES (?1, ?2, ?3, ?4, ?5)")?;
             for p in game.population.people.values() {
                 people.execute(params![p.id, p.name.ko, p.name.en, p.born.to_string(), p.birthplace])?;
+            }
+            let mut potentials = tx.prepare("INSERT INTO potentials (id, data) VALUES (?1, ?2)")?;
+            for (id, p) in &game.population.potentials {
+                potentials.execute(params![id, serde_json::to_string(p)?])?;
             }
             let mut players = tx.prepare("INSERT INTO players (id, data) VALUES (?1, ?2)")?;
             let mut slots = tx.prepare("INSERT INTO rosters (club, level, slot, ord, player, position) VALUES (?1, ?2, ?3, ?4, ?5, ?6)")?;
@@ -171,6 +177,13 @@ pub fn load(path: &Path) -> Result<SaveGame, SaveError> {
         players.insert(id, serde_json::from_str(&data)?);
     }
 
+    let mut potentials = BTreeMap::new();
+    let mut q = db.prepare("SELECT id, data FROM potentials")?;
+    for row in q.query_map([], |r| Ok((r.get::<_, u32>(0)?, r.get::<_, String>(1)?)))? {
+        let (id, data) = row?;
+        potentials.insert(id, serde_json::from_str(&data)?);
+    }
+
     // Rosters in the order they were written: first appearance of each club.
     let mut rosters: Vec<Roster> = Vec::new();
     let mut index: BTreeMap<String, usize> = BTreeMap::new();
@@ -200,7 +213,7 @@ pub fn load(path: &Path) -> Result<SaveGame, SaveError> {
             other => return Err(SaveError::Format(format!("unknown roster slot '{other}'"))),
         }
     }
-    Ok(SaveGame { seed, population: Population { date, people, rosters } })
+    Ok(SaveGame { seed, population: Population { date, people, rosters, potentials } })
 }
 
 #[cfg(test)]
@@ -221,9 +234,11 @@ mod tests {
         assert_eq!(back.seed, 11);
         assert_eq!(back.population.date, date);
         assert_eq!(back.population.people, game.population.people);
-        // Rosters come back slot for slot, player for player.
+        // Rosters come back slot for slot, player for player, with every ceiling.
         let json = |p: &Population| serde_json::to_string(&p.rosters).unwrap();
         assert_eq!(json(&back.population), json(&game.population));
+        assert_eq!(back.population.potentials, game.population.potentials);
+        assert_eq!(back.population.potentials.len(), back.population.people.len());
         // Saving again over the file works and leaves no temporary file.
         save(&path, &back).unwrap();
         assert!(!path.with_extension("tmp").exists());
