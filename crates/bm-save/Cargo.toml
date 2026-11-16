@@ -1,0 +1,12 @@
+[package]
+name = "bm-save"
+description = "Saved games: the world's people, players and rosters in an SQLite file"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+bm-world = { path = "../bm-world" }
+rusqlite = { version = "0.32", features = ["bundled"] }
+serde_json = "1"

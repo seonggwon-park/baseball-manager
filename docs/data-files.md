@@ -78,3 +78,16 @@
 - 나이 평균은 Baseball-Reference의 2025–2026 리그 평균이다(`docs/research/world/levels.md` 4절). 나이의 퍼짐, KBO 퓨처스리그, 두 육성군의 나이는 자료가 없어 가정했다.
 - 로스터 크기는 2026년 규정이다. 트리플A·더블A 28명, 하이A·싱글A 30명, KBO 구단 68명(1군 28명, 퓨처스 40명), NPB 구단 지배하 70명(1군 29명)에 육성 선수 약 19명(2026년 7월 31일 12개 구단 평균). MLB 40인 명단 가운데 26인 밖의 선수는 산하 마이너리그 로스터에 들어간다.
 - `talent`는 `bm level`로 맞춘다. 목표는 그 수준의 2025·2026 공식 기록 평균을 시뮬레이션 MLB 대비 비율로 옮긴 값, 포심 구속과 타구 속도의 MLB 대비 차이(추적되는 수준만), MLB 투수 상대 타자의 wRC+(공개된 환산 계수)다. 외국인 선수는 MLB 투수 상대 wRC+ 88에 맞춘다(KBO로 간 트리플A 타자들의 MLB 환산 EqA .247, MLB 평균 .260).
+
+## 세이브 파일 (`bm-save`)
+
+세이브는 SQLite 파일 하나다. 아무 SQLite 도구로나 열어 볼 수 있다. 저장할 때는 옆에 새 파일을 다 쓴 다음 바꿔 넣으므로, 저장이 중간에 끊겨도 반쯤 쓰인 파일이 남지 않는다.
+
+| 표 | 열 |
+|---|---|
+| `meta` | `key`, `value`: 형식 버전(`format`), 게임 날짜(`date`), 세계를 만든 시드(`seed`) |
+| `people` | `id`, `name_ko`, `name_en`, `born`(YYYY-MM-DD), `birthplace`(ISO 국가 코드) |
+| `players` | `id`, `data`: 선수의 능력치·숨김 능력치·고유 특성(JSON). 능력치가 늘어도 표 구조를 바꾸지 않으려고 JSON으로 둔다 |
+| `rosters` | `club`, `level`, `slot`(`lineup`, `bench`, `rotation`, `bullpen`, `reserve`), `ord`, `player`, `position` |
+
+형식 버전이 다른 파일은 잘못 읽지 않도록 거부한다.

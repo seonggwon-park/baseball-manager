@@ -11,6 +11,7 @@
 //!          [--foreign h,p,f,x] [--cross-games N]                   mlb) in its own parks against its official rates; talent of
 //!          [--vs-mlb-pitchers]                                     the foreign players of KBO and NPB clubs; wRC+ of the level's
 //!                                                                  hitters (and pitchers) against major-leaguers; `pool` = only that
+//! bm season [--seed S] [--until YYYY-MM-DD]                       generate the world and play a season of every league
 //! bm game [--seed S]                                              play one game and print the box score
 //! bm bench [--games N]                                            measure simulation speed
 //! bm serve [--port P] [--static DIR]                              session API over HTTP for the interface in a browser
@@ -19,6 +20,7 @@
 mod level;
 mod players;
 mod report;
+mod season;
 mod sensitivity;
 mod serve;
 mod tally;
@@ -53,6 +55,8 @@ struct Args {
     /// and whether to play the level's pitchers against them too.
     cross_games: Option<usize>,
     vs_mlb_pitchers: bool,
+    /// `bm season`: play up to this date instead of the whole season.
+    until: Option<bm_world::Date>,
     tuning: Tuning,
 }
 
@@ -74,6 +78,7 @@ fn parse_args() -> Args {
         vs_mlb: false,
         cross_games: None,
         vs_mlb_pitchers: false,
+        until: None,
         tuning: Tuning::new(),
     };
     let mut it = std::env::args().skip(1);
@@ -120,6 +125,7 @@ fn parse_args() -> Args {
             "--only" => a.only = Some(v),
             "--level" => a.level = v,
             "--cross-games" => a.cross_games = Some(v.parse().expect("--cross-games N")),
+            "--until" => a.until = Some(bm_world::Date::parse(&v).expect("--until YYYY-MM-DD")),
             "--talent" | "--foreign" => {
                 let t: Vec<f32> = v.split(',').map(|x| x.trim().parse().expect("--talent hitting,pitching,fielding,physical[,power,command]")).collect();
                 if t.len() != 4 && t.len() != 6 {
@@ -374,6 +380,7 @@ fn main() {
             let vs = args.vs_mlb.then(|| level::VsMlb { games: args.cross_games.unwrap_or(args.games.max(400)), pitchers: args.vs_mlb_pitchers });
             level::run(&args.level, args.talent, args.foreign, args.games, args.seed, args.threads, &args.tuning, vs)
         }
+        "season" => season::run(&args.tuning, args.seed, args.threads, args.until),
         "players" => players::run(&env, &args.tuning.baseline, args.tuning.style, args.seed, args.threads, args.clubs.min(60), args.games.min(400)),
         "game" => {
             let clubs = make_clubs(2, args.seed, level, world);
@@ -390,7 +397,7 @@ fn main() {
             }
         }
         other => {
-            eprintln!("unknown command {other}; use validate | attributes | players | level | game | bench | population | serve");
+            eprintln!("unknown command {other}; use validate | attributes | players | level | season | game | bench | population | serve");
             std::process::exit(2);
         }
     }
