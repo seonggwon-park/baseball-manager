@@ -95,6 +95,41 @@ pub struct Options<'a> {
     pub levels_file: Option<&'a std::path::Path>,
     pub careers_file: Option<&'a std::path::Path>,
     pub aging_file: Option<&'a std::path::Path>,
+    /// Write each level's rates in the last season played here.
+    pub json: Option<&'a std::path::Path>,
+}
+
+/// Each level's batting totals and team games in a season (all its leagues together).
+fn level_totals(world: &World, pop: &bm_world::Population, season: &Season) -> BTreeMap<String, (Batting, u32)> {
+    let mut level_of_player: BTreeMap<u32, &str> = BTreeMap::new();
+    for r in &pop.rosters {
+        for p in r.players() {
+            level_of_player.insert(p.id, r.level.as_str());
+        }
+    }
+    let mut out: BTreeMap<String, (Batting, u32)> = BTreeMap::new();
+    for (id, b) in &season.batting {
+        if let Some(l) = level_of_player.get(id) {
+            let t = &mut out.entry(l.to_string()).or_default().0;
+            t.pa += b.pa;
+            t.ab += b.ab;
+            t.h += b.h;
+            t.doubles += b.doubles;
+            t.triples += b.triples;
+            t.hr += b.hr;
+            t.bb += b.bb;
+            t.hbp += b.hbp;
+            t.so += b.so;
+            t.sf += b.sf;
+            t.r += b.r;
+        }
+    }
+    for (club, s) in &season.standings {
+        if let Some(c) = world.club(club) {
+            out.entry(bm_world::populate::level_key(world, c).to_string()).or_default().1 += s.won + s.lost + s.tied;
+        }
+    }
+    out
 }
 
 pub fn run(tuning: &Tuning, seed: u64, threads: usize, o: &Options) {
@@ -154,6 +189,15 @@ pub fn run(tuning: &Tuning, seed: u64, threads: usize, o: &Options) {
             println!("  {}", line.join(" | "));
         }
         if k + 1 == seasons {
+            if let Some(path) = o.json {
+                let levels_json: serde_json::Map<String, serde_json::Value> = level_totals(&world, &pop, &season)
+                    .into_iter()
+                    .filter(|(_, (t, g))| t.pa > 0 && *g > 0)
+                    .map(|(k, (t, g))| (k, serde_json::json!({"games": g, "pa": t.pa, "rates": rates(&t, g)})))
+                    .collect();
+                std::fs::write(path, serde_json::to_string_pretty(&serde_json::json!({"year": year, "levels": levels_json})).unwrap())
+                    .unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+            }
             standings(&world, &season);
         } else {
             let r = bm_world::offseason(&ctx, &mut pop, year, Some(&season.standings), seed);

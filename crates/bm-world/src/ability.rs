@@ -72,6 +72,13 @@ pub const PITCH_GRADES: f64 = 0.203;
 /// here over a five-man rotation, and relievers the other 43 % over eight.
 pub const STARTER_SHARE: f64 = 0.57 / 5.0;
 pub const RELIEVER_SHARE: f64 = 0.43 / 8.0;
+/// Share of a team's innings one pitcher of a 13-man staff throws on average: the unit that
+/// ranks starters and relievers on one scale. The roles differ in innings, not in how well
+/// a pitcher gets batters out, and runs counted over a role's innings would rank a reliever
+/// ahead of a better starter whenever both are below the major-league average (the
+/// starter's deficit counts over twice the innings), which empties low-level staffs of
+/// starters.
+pub const STAFF_SHARE: f64 = 1.0 / 13.0;
 
 /// Runs per game per standard deviation of the regular at one position: his glove (range,
 /// reads, footwork, agility and hands moved together), his arm strength and his top speed,
@@ -222,24 +229,25 @@ pub fn can_start(p: &Player) -> bool {
 }
 
 /// Runs per 162 games that one standard deviation on every attribute that counts is
-/// worth to a player in his best role: the unit that puts position players, starters and
-/// relievers on one scale (about 72, 14 and 6.5; fielding averaged over the positions).
+/// worth to a player (`value`): the unit that puts position players and pitchers on one
+/// scale (about 72 and 9.4; fielding averaged over the positions).
 pub fn per_sd(p: &Player) -> f64 {
     if p.is_pitcher() {
         let rate: f64 = PITCHING.iter().map(|w| w.1).sum::<f64>() + PITCH_GRADES;
-        rate * 162.0 * if can_start(p) { STARTER_SHARE } else { RELIEVER_SHARE }
+        rate * 162.0 * STAFF_SHARE
     } else {
         let field: f64 = BY_POSITION.iter().map(|r| r.1 + r.2 + r.3).sum::<f64>() / 8.0;
         BATTING.iter().map(|w| w.1).sum::<f64>() * 162.0 / 9.0 + field * 162.0
     }
 }
 
-/// A player's value in his best role, runs per 162 games: the yardstick for ranking
-/// players of the same kind (pitchers against pitchers, position players against
-/// position players).
+/// A player's value, runs per 162 games: a position player at his best position, a
+/// pitcher over an average pitcher's share of the innings whatever his role (`STAFF_SHARE`).
+/// The yardstick for ranking players of the same kind (pitchers against pitchers, position
+/// players against position players); `per_sd` puts the two kinds on one scale.
 pub fn value(p: &Player) -> f64 {
     if p.is_pitcher() {
-        pitching(p, if can_start(p) { Role::Starter } else { Role::Reliever })
+        pitching_rate(p) * 162.0 * STAFF_SHARE
     } else {
         best_position(p).1
     }

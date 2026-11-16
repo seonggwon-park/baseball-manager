@@ -14,11 +14,11 @@
 //!                                                                  hitters (and pitchers) against major-leaguers; `pool` = only that
 //! bm season [--seed S] [--until YYYY-MM-DD] [--seasons N]         generate the world and play a season of every league
 //!           [--warmup K] [--levels FILE] [--careers FILE]         (N seasons with offseasons between them, after K offseasons
-//!                                                                 without games)
+//!           [--aging FILE] [--json FILE]                          without games); --json: each level's rates in the last season
 //! bm careers [--years N] [--every K] [--from N]                   offseasons back to back: each level's talent and ages (every
 //!            [--levels FILE] [--careers FILE] [--aging FILE]      K years and averaged from offseason N), and how the drafted
-//!            [--json FILE]
-//!                                                                 and signed prospects turn out
+//!            [--json FILE]                                        and signed prospects turn out; --json adds each level's
+//!                                                                 attribute means and spreads (--years 0: the new world)
 //! bm game [--seed S]                                              play one game and print the box score
 //! bm bench [--games N]                                            measure simulation speed
 //! bm serve [--port P] [--static DIR]                              session API over HTTP for the interface in a browser
@@ -444,6 +444,7 @@ fn main() {
                 levels_file: args.levels_file.as_deref(),
                 careers_file: args.careers_file.as_deref(),
                 aging_file: args.aging_file.as_deref(),
+                json: args.json.as_deref(),
             },
         ),
         "careers" => careers::run(

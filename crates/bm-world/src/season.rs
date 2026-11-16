@@ -63,6 +63,23 @@ fn on_or_after(d: Date, weekday: Weekday) -> Date {
     x
 }
 
+/// One of the data's 2027 dates in `year`: the same day of the year, moved to the nearest
+/// `weekday` (a 2027 date's weekday holds only in 2027). 2027 itself is unchanged when the
+/// date already falls on `weekday`.
+fn in_year(d: Option<Date>, year: i32, weekday: Weekday) -> Option<Date> {
+    d.map(|d| {
+        let (_, m, day) = d.ymd();
+        let x = Date::new(year, m, day.min(crate::calendar::days_in_month(year, m)));
+        let after = on_or_after(x, weekday);
+        let before = after.add_days(-7);
+        if after.days_since(x) <= x.days_since(before) {
+            after
+        } else {
+            before
+        }
+    })
+}
+
 /// Clubs of `league` in the order of its divisions (data order inside a division).
 fn clubs_by_division<'a>(world: &'a World, league: &League) -> Vec<&'a WorldClub> {
     let mut clubs: Vec<&WorldClub> = world.clubs().filter(|c| c.league == league.id).collect();
@@ -96,8 +113,8 @@ pub fn fixtures(world: &World, year: i32, seed: u64) -> Vec<Fixture> {
         let country = clubs[0].country.as_str();
         let games: Vec<schedule::Game> = match (league.level, country) {
             (Level::Top, "US") => {
-                let opening = on_or_after(parse(&dates.opening).unwrap_or(d(3, 25)), Weekday::Thursday);
-                let all_star_monday = parse(&dates.all_star).unwrap_or(d(7, 13)).add_days(-1);
+                let opening = on_or_after(in_year(parse(&dates.opening), year, Weekday::Thursday).unwrap_or(d(3, 25)), Weekday::Thursday);
+                let all_star_monday = in_year(parse(&dates.all_star), year, Weekday::Tuesday).unwrap_or(d(7, 13)).add_days(-1);
                 let index = |id: &str| clubs.iter().position(|c| c.id == id);
                 let mut rival: [usize; 15] = std::array::from_fn(|i| i);
                 for (a, b) in RIVALS {
@@ -110,19 +127,19 @@ pub fn fixtures(world: &World, year: i32, seed: u64) -> Vec<Fixture> {
                 schedule::mlb(opening, all_star_monday, &rival, year % 2 == 1, &mut rng)
             }
             (Level::Top, "KR") => {
-                let opening = on_or_after(parse(&dates.opening).unwrap_or(d(3, 26)), Weekday::Friday);
+                let opening = on_or_after(in_year(parse(&dates.opening), year, Weekday::Friday).unwrap_or(d(3, 26)), Weekday::Friday);
                 // Five clubs host 73 games and five 71, alternating by year.
                 let more_home: Vec<bool> = (0..clubs.len()).map(|i| (i + year as usize) % 2 == 0).collect();
                 schedule::kbo(clubs.len(), opening, (d(7, 9), d(7, 14)), &more_home, &mut rng)
             }
             (Level::Top, _) => {
-                let opening = parse(&dates.opening).unwrap_or(d(3, 26));
+                let opening = in_year(parse(&dates.opening), year, Weekday::Friday).unwrap_or(d(3, 26));
                 let inter = on_or_after(d(6, 1), Weekday::Tuesday);
                 let more_home: [bool; 12] = std::array::from_fn(|i| (i + year as usize) % 2 == 0);
                 schedule::npb(opening, inter, (d(7, 19), d(7, 22)), &more_home, year % 2 == 1, &mut rng)
             }
             _ => {
-                let opening = on_or_after(parse(&dates.opening).unwrap_or(d(4, 2)), Weekday::Friday);
+                let opening = on_or_after(in_year(parse(&dates.opening), year, Weekday::Friday).unwrap_or(d(4, 2)), Weekday::Friday);
                 let division: Vec<usize> =
                     clubs.iter().map(|c| league.divisions.iter().position(|x| Some(&x.id) == c.division.as_ref()).unwrap_or(0)).collect();
                 schedule::milb(&division, opening, generated_games(league), (d(7, 12), d(7, 15)), 0.6, &mut rng)
@@ -453,6 +470,22 @@ mod tests {
             .filter(|f| (f.home == "new-york-empires" && f.away == "new-york-ferrymen") || (f.away == "new-york-empires" && f.home == "new-york-ferrymen"))
             .count();
         assert_eq!(nyc, 6);
+    }
+
+    #[test]
+    fn every_season_is_played_in_its_own_year() {
+        let world = World::bundled();
+        let first = |fx: &[Fixture], league: &str| fx.iter().find(|f| f.league == league).unwrap().date;
+        assert_eq!(first(&fixtures(&world, 2027, 3), "us-major"), Date::new(2027, 3, 25));
+        for year in [2028, 2031, 2057] {
+            let fx = fixtures(&world, year, 3);
+            assert!(fx.iter().all(|f| f.date.year() == year), "{year}");
+            // The majors open on the Thursday nearest the data's day, the minors on a Friday.
+            let opening = first(&fx, "us-major");
+            let (_, m, d) = opening.ymd();
+            assert!(opening.weekday() == Weekday::Thursday && m == 3 && (21..=27).contains(&d), "{opening}");
+            assert_eq!(first(&fx, "us-aa-south").weekday(), Weekday::Friday, "{year}");
+        }
     }
 
     #[test]

@@ -6,7 +6,7 @@
 use bm_engine::Rng;
 use bm_world::ability;
 use bm_world::career::{offseason, talent_of, Offseason, Origin};
-use bm_world::{populate_with, AgingTable, CareerTable, Date, LevelTable, PeopleMaker, Population, Squad, Talent, World};
+use bm_world::{populate_with, AgingTable, Attr, CareerTable, Date, LevelTable, PeopleMaker, Population, Squad, Talent, World, N_ATTR};
 use std::collections::BTreeMap;
 use std::path::Path;
 use std::time::Instant;
@@ -89,6 +89,58 @@ fn stats(pop: &Population) -> BTreeMap<&'static str, LevelStats> {
         );
     }
     out
+}
+
+/// Mean and standard deviation of every attribute (z-score) of a level's domestic position
+/// players and pitchers: what the engine sees, beyond the talent parts.
+#[derive(Clone, Default)]
+struct AttrMoments {
+    /// level -> [hitters, pitchers] -> attribute -> (mean, sd)
+    m: BTreeMap<&'static str, [[(f64, f64); N_ATTR]; 2]>,
+}
+
+impl AttrMoments {
+    fn of(pop: &Population) -> AttrMoments {
+        let mut m = BTreeMap::new();
+        for key in LEVELS {
+            let players: Vec<_> =
+                pop.rosters.iter().filter(|r| r.level == key).flat_map(|r| r.players()).filter(|p| !pop.foreign.contains_key(&p.id)).collect();
+            if players.is_empty() {
+                continue;
+            }
+            let mut out = [[(0.0, 0.0); N_ATTR]; 2];
+            for (side, pitchers) in [false, true].into_iter().enumerate() {
+                let group: Vec<_> = players.iter().filter(|p| p.is_pitcher() == pitchers).collect();
+                let n = group.len().max(1) as f64;
+                for (i, a) in Attr::ALL.into_iter().enumerate() {
+                    let mean = group.iter().map(|p| p.attrs.z(a)).sum::<f64>() / n;
+                    let var = group.iter().map(|p| (p.attrs.z(a) - mean).powi(2)).sum::<f64>() / n;
+                    out[side][i] = (mean, var.sqrt());
+                }
+            }
+            m.insert(key, out);
+        }
+        AttrMoments { m }
+    }
+
+    fn add(&mut self, o: &AttrMoments, k: f64) {
+        for (key, sides) in &o.m {
+            let e = self.m.entry(key).or_insert([[(0.0, 0.0); N_ATTR]; 2]);
+            for s in 0..2 {
+                for i in 0..N_ATTR {
+                    e[s][i].0 += k * sides[s][i].0;
+                    e[s][i].1 += k * sides[s][i].1;
+                }
+            }
+        }
+    }
+
+    fn json(&self) -> serde_json::Value {
+        let side = |v: &[(f64, f64); N_ATTR]| -> serde_json::Map<String, serde_json::Value> {
+            Attr::ALL.iter().zip(v).map(|(a, (m, s))| (a.key().to_string(), serde_json::json!([m, s]))).collect()
+        };
+        self.m.iter().map(|(k, v)| (k.to_string(), serde_json::json!({"h": side(&v[0]), "p": side(&v[1])}))).collect::<serde_json::Map<_, _>>().into()
+    }
 }
 
 /// What a level's players would be worth if they were drawn at its talent: mean value of
@@ -273,6 +325,10 @@ pub fn run(
     let mut spreads = 0.0;
     let mut counted = 0.0;
     let mut last = 2027;
+    let mut moments: Vec<AttrMoments> = Vec::new();
+    if years == 0 {
+        moments.push(AttrMoments::of(&pop));
+    }
     for y in 0..years {
         let year = 2027 + y as i32;
         let r = offseason(&ctx, &mut pop, year, None, seed);
@@ -283,6 +339,7 @@ pub fn run(
             }
             spreads += spread(&pop, &world);
             counted += 1.0;
+            moments.push(AttrMoments::of(&pop));
         }
         if every > 0 && ((y + 1) % every == 0 || y + 1 == years) {
             println!(
@@ -322,7 +379,11 @@ pub fn run(
                 )
             })
             .collect();
-        let out = serde_json::json!({ "levels": levels_json, "spread": spreads / counted, "outcomes": summary });
+        let mut attrs = AttrMoments::default();
+        for m in &moments {
+            attrs.add(m, 1.0 / moments.len() as f64);
+        }
+        let out = serde_json::json!({ "levels": levels_json, "spread": spreads / counted, "outcomes": summary, "attrs": attrs.json() });
         std::fs::write(path, serde_json::to_string_pretty(&out).unwrap()).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     }
 }

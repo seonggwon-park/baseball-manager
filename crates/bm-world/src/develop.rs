@@ -141,14 +141,16 @@ pub struct Potential {
 impl Potential {
     /// A ceiling for a player of `age`: the table's mean remaining growth at that age,
     /// scaled by a personal factor (`scale`, 1 = typical) and spread a little between
-    /// attribute groups.
+    /// attribute groups, in the attributes that grow (`grows`).
     pub fn draw(player: &Player, age: f64, scale: f32, table: &AgingTable, rng: &mut Rng) -> Potential {
         let mean = table.remaining_growth(age) * scale.max(0.0);
         let mut groups: BTreeMap<&str, f32> = BTreeMap::new();
         let mut attrs = player.attrs;
         for a in Attr::ALL {
             let g = *groups.entry(table.group(a)).or_insert_with(|| (1.0 + 0.25 * rng.gauss(0.0, 1.0) as f32).max(0.0));
-            attrs[a] = player.attrs[a] + mean * g;
+            if grows(a, player.is_pitcher()) {
+                attrs[a] = player.attrs[a] + mean * g;
+            }
         }
         Potential { attrs }
     }
@@ -181,6 +183,22 @@ impl Potential {
             shift(&FIELD, closure.fielding * (b.1 - a.1));
             shift(&[Strength, Stamina, Durability, Agility, Speed, Acceleration, ArmStrength], closure.physical * (b.2 - a.2));
         }
+    }
+}
+
+/// Whether a prospect grows into `a`: the attributes in which the levels of play differ
+/// (the generator draws them from the level's talent). Mind, character, holding runners and
+/// bunting are drawn alike at every level, a pitcher's stamina by his role, a pitcher's
+/// batting, running and catching and a position player's pitching as constants; growth
+/// there would lift every newer generation above the scale's major-league anchor.
+pub fn grows(a: Attr, pitcher: bool) -> bool {
+    use Attr::*;
+    match a {
+        Composure | Concentration | BaseballIq | Anticipation | Determination | Leadership | Teamwork | Aggression | HoldRunners | Bunt => false,
+        Velocity | Stuff | Control | Command | Deception => pitcher,
+        Hands | Range | Reads | ArmAccuracy | Footwork | Agility | Strength | Durability => true,
+        Contact | Timing | Power | Discipline | Recognition | BatControl | Baserunning | Stealing | ArmStrength | Framing | Blocking | ThrowingOut
+        | GameCalling | Speed | Acceleration | Stamina => !pitcher,
     }
 }
 

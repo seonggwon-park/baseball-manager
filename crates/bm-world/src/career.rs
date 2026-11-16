@@ -359,7 +359,8 @@ pub fn record_season(world: &World, pop: &mut Population, year: i32) {
                 if i == 0 {
                     top.push(p.id);
                 } else {
-                    rest.push((ability::value(p), p.id));
+                    // Position players and pitchers on one scale: standard deviations.
+                    rest.push((ability::value(p) / ability::per_sd(p), p.id));
                 }
             }
         }
@@ -630,12 +631,13 @@ fn age_cost(age: f64, per_year: f64) -> f64 {
 /// player may still play at, `None` if none), so a player is kept only if everyone kept so
 /// far can still be placed: for every level k, the players who can go no lower than k fit
 /// on the levels down to k. `caps` holds the pitchers and position players of each level;
-/// at least `catchers` catchers are kept; `pinned` players (with their level) always are.
+/// at least `catchers` catchers and `starters` pitchers with a starter's stamina are kept;
+/// `pinned` players (with their level) always are.
 fn keep(
     players: Vec<Player>,
     value: &dyn Fn(&Player) -> f64,
     caps: &[(usize, usize)],
-    catchers: usize,
+    (catchers, starters): (usize, usize),
     deepest: &dyn Fn(&Player) -> Option<usize>,
     pinned: &BTreeMap<u32, usize>,
 ) -> (Vec<Player>, Vec<Player>) {
@@ -664,14 +666,17 @@ fn keep(
         true
     };
     let (mut kept, mut gone) = (Vec::new(), Vec::new());
-    // Pinned players, then catchers up to the minimum, then everyone else.
-    let mut k_c = 0;
+    // Pinned players, then catchers and starters up to their minimums, then everyone else.
+    let (mut k_c, mut k_s) = (0, 0);
     let mut rest = Vec::new();
     for (v, p) in scored {
-        let first = pinned.contains_key(&p.id) || (!p.is_pitcher() && p.position == Position::Catcher && k_c < catchers);
+        let catcher = !p.is_pitcher() && p.position == Position::Catcher;
+        let starter = p.is_pitcher() && ability::can_start(&p);
+        let first = pinned.contains_key(&p.id) || (catcher && k_c < catchers) || (starter && k_s < starters);
         if first && accept(&p) {
             if !pinned.contains_key(&p.id) {
-                k_c += 1;
+                k_c += usize::from(catcher);
+                k_s += usize::from(starter);
             }
             kept.push(p);
         } else {
@@ -1083,7 +1088,8 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
         let value = |p: &Player| {
             keep_value(p, pots.get(&p.id), ctx.careers.keep_potential) - age_cost(age_of(p.id, next_season), ctx.careers.age_discount) * ability::per_sd(p)
         };
-        let (kept, gone) = keep(std::mem::take(&mut pools[k]), &value, &caps, 2 * org.levels.len(), &deepest, &pinned[k]);
+        // Two catchers and six starters (a rotation and a spare) for every level.
+        let (kept, gone) = keep(std::mem::take(&mut pools[k]), &value, &caps, (2 * org.levels.len(), 6 * org.levels.len()), &deepest, &pinned[k]);
         for p in gone {
             leave(pop, p.id, Exit::Released);
             report.released += 1;
