@@ -33,7 +33,9 @@ pub const BATTING: [(Attr, f64); 16] = [
     (Attr::Strength, 0.322),
 ];
 
-/// Runs per game per standard deviation when all eight fielders change.
+/// Runs per game per standard deviation when all eight fielders change. Fielding is
+/// valued position by position ([`BY_POSITION`]); these split each position's glove
+/// between its five attributes.
 pub const FIELDING: [(Attr, f64); 7] = [
     (Attr::Hands, 0.020),
     (Attr::Range, 0.184),
@@ -71,13 +73,41 @@ pub const PITCH_GRADES: f64 = 0.203;
 pub const STARTER_SHARE: f64 = 0.57 / 5.0;
 pub const RELIEVER_SHARE: f64 = 0.43 / 8.0;
 
-/// How much each position's fielding counts against the average of the eight. Until
-/// they are measured position by position with the engine, every position counts the
-/// same.
-pub fn position_weight(pos: Position) -> f64 {
-    match pos {
-        Position::Pitcher => 0.0,
-        _ => 1.0,
+/// Runs per game per standard deviation of the regular at one position: his glove (range,
+/// reads, footwork, agility and hands moved together), his arm strength and his top speed,
+/// in the field only (`bm attributes --by-position --games 8000`, steps of 2 SD; standard
+/// error about 0.012; estimates below zero counted as zero). Summed over the eight
+/// positions they give back the values measured for all fielders at once (glove 0.623
+/// against 0.614, arm 0.258 against 0.257), and speed is worth 0.185 runs per game in the
+/// field on top of its 0.410 at the plate. The engine values the glove at third base and in
+/// the outfield corners above shortstop and centre field, the reverse of what the
+/// positional adjustment says about real fielders (`docs/attributes.md` 6).
+pub const BY_POSITION: [(Position, f64, f64, f64); 8] = [
+    (Position::Catcher, 0.008, 0.050, 0.0),
+    (Position::First, 0.055, 0.001, 0.0),
+    (Position::Second, 0.089, 0.020, 0.014),
+    (Position::Third, 0.140, 0.065, 0.025),
+    (Position::Short, 0.066, 0.031, 0.0),
+    (Position::Left, 0.097, 0.040, 0.061),
+    (Position::Center, 0.054, 0.009, 0.030),
+    (Position::Right, 0.114, 0.042, 0.060),
+];
+
+/// The glove attributes and their shares of the glove (from the all-fielder values).
+const GLOVE: [Attr; 5] = [Attr::Range, Attr::Reads, Attr::Footwork, Attr::Agility, Attr::Hands];
+
+fn weight(attr: Attr) -> f64 {
+    FIELDING.iter().find(|w| w.0 == attr).map_or(0.0, |w| w.1)
+}
+
+/// Runs per game per standard deviation of `attr` for the regular at `pos`.
+pub fn fielding_weight(attr: Attr, pos: Position) -> f64 {
+    let Some(&(_, glove, arm, speed)) = BY_POSITION.iter().find(|r| r.0 == pos) else { return 0.0 };
+    match attr {
+        Attr::ArmStrength => arm,
+        Attr::Speed => speed,
+        a if GLOVE.contains(&a) => glove * weight(a) / GLOVE.iter().map(|&g| weight(g)).sum::<f64>(),
+        _ => 0.0,
     }
 }
 
@@ -112,8 +142,9 @@ pub fn fielding(p: &Player, pos: Option<Position>) -> f64 {
         return 0.0;
     }
     let lost = 1.0 - p.familiarity(pos);
-    let per_game: f64 = FIELDING.iter().map(|&(a, w)| w * (p.attrs.z(a) - unfamiliar(a, pos) * lost)).sum::<f64>() * position_weight(pos);
-    let mut runs = per_game * 162.0 / 8.0;
+    let per_game: f64 =
+        GLOVE.iter().chain(&[Attr::ArmStrength, Attr::Speed]).map(|&a| fielding_weight(a, pos) * (p.attrs.z(a) - unfamiliar(a, pos) * lost)).sum();
+    let mut runs = per_game * 162.0;
     if pos == Position::Catcher {
         // Catching skills, and a big penalty for anyone who is not a catcher.
         runs += CATCHING.iter().map(|&(a, w)| w * p.attrs.z(a)).sum::<f64>() * 162.0;
@@ -192,13 +223,14 @@ pub fn can_start(p: &Player) -> bool {
 
 /// Runs per 162 games that one standard deviation on every attribute that counts is
 /// worth to a player in his best role: the unit that puts position players, starters and
-/// relievers on one scale (about 68, 14 and 6.5).
+/// relievers on one scale (about 72, 14 and 6.5; fielding averaged over the positions).
 pub fn per_sd(p: &Player) -> f64 {
     if p.is_pitcher() {
         let rate: f64 = PITCHING.iter().map(|w| w.1).sum::<f64>() + PITCH_GRADES;
         rate * 162.0 * if can_start(p) { STARTER_SHARE } else { RELIEVER_SHARE }
     } else {
-        BATTING.iter().map(|w| w.1).sum::<f64>() * 162.0 / 9.0 + FIELDING.iter().map(|w| w.1).sum::<f64>() * 162.0 / 8.0
+        let field: f64 = BY_POSITION.iter().map(|r| r.1 + r.2 + r.3).sum::<f64>() / 8.0;
+        BATTING.iter().map(|w| w.1).sum::<f64>() * 162.0 / 9.0 + field * 162.0
     }
 }
 
