@@ -88,6 +88,23 @@ struct Retirement {
     chance: Vec<f64>,
 }
 
+/// How long a major-league organisation holds a player on his first minor-league contract
+/// (`careers.json` minor_league_contract): parts of `seasons` seasons, or of
+/// `seasons_if_younger` for a player who signed before `younger_than` years of age, unless he
+/// is on the `forty_man` roster. Without it in the file, players never leave this way.
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+pub struct MinorContract {
+    pub seasons: i32,
+    pub seasons_if_younger: i32,
+    pub younger_than: f64,
+    pub forty_man: usize,
+    /// A player whose contract has run out may stay with his organisation on a new
+    /// minor-league deal, but only in Triple-A or above (the depth veterans sign for); without
+    /// it he leaves the world.
+    #[serde(default)]
+    pub stay_as_depth: bool,
+}
+
 #[derive(Deserialize)]
 struct CareerFile {
     classes: BTreeMap<String, Class>,
@@ -110,6 +127,8 @@ struct CareerFile {
     #[serde(default)]
     pitcher_shift: Option<Valued<f32>>,
     age_discount: Valued<f64>,
+    #[serde(default)]
+    minor_league_contract: Option<MinorContract>,
 }
 
 /// The styles of the three kinds of league (see `Style`).
@@ -154,6 +173,8 @@ pub struct CareerTable {
     /// Standard deviations of ability an organisation takes off a player's worth for every
     /// year of age past 30, when it decides whom to keep.
     pub age_discount: f64,
+    /// Minor-league free agency, if the rules have it.
+    pub minor_contract: Option<MinorContract>,
 }
 
 fn position_code(code: &str) -> Result<Option<Position>, String> {
@@ -204,6 +225,7 @@ impl CareerTable {
             pitcher_potential: f.pitcher_potential.value,
             pitcher_shift: f.pitcher_shift.map_or(0.0, |v| v.value),
             age_discount: f.age_discount.value,
+            minor_contract: f.minor_league_contract,
         })
     }
 
@@ -896,25 +918,20 @@ pub struct Offseason<'a> {
     pub people: &'a PeopleMaker,
 }
 
-/// Players on a major-league organisation's 40-man roster, out of reach of minor-league free
-/// agency.
-const FORTY_MAN: usize = 40;
-
 /// Whether a player who came into a major-league organisation by `origin` has played out his
-/// minor-league contract after the `year` season. Since the 2023 minor-league agreement a
-/// player who signed at 19 or older becomes a free agent after parts of six seasons, a
-/// younger one after seven (MLB Trade Rumors 2023; docs/research/world/levels.md 4.2).
-/// Draftees sign in July and play part of their draft year; international amateurs sign on
-/// 15 January and start that season. The first world's players have no signing date and are
-/// left alone.
-fn contract_ran_out(origin: &Origin, born: Date, year: i32) -> bool {
+/// minor-league contract after the `year` season (since the 2023 minor-league agreement: parts
+/// of six seasons for a player who signed at 19 or older, seven for a younger one; MLB Trade
+/// Rumors 2023, docs/research/world/levels.md 4.2). Draftees sign in July and play part of
+/// their draft year; international amateurs sign on 15 January and start that season. The
+/// first world's players have no signing date and are left alone.
+fn contract_ran_out(origin: &Origin, born: Date, year: i32, terms: &MinorContract) -> bool {
     let (first_season, signed) = match origin {
         Origin::Draft { year: y, .. } => (*y, Date::new(*y, 7, 15)),
         Origin::Signed { year: y, .. } => (*y + 1, Date::new(*y + 1, 1, 15)),
         Origin::Initial | Origin::Foreign { .. } => return false,
     };
     let age = signed.days_since(born) as f64 / 365.2425;
-    let seasons = if age >= 19.0 { 6 } else { 7 };
+    let seasons = if age >= terms.younger_than { terms.seasons } else { terms.seasons_if_younger };
     year - first_season + 1 >= seasons
 }
 
@@ -1011,7 +1028,9 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
     // leaguer off its 40-man roster leaves once his contract has run its parts of seasons.
     // The 40-man roster: the major-league club's players and the organisation's next best by
     // the value it keeps players by. No market signs them yet, so they leave the world.
+    let mut depth_only: BTreeSet<u32> = BTreeSet::new();
     for org in orgs.iter().filter(|o| o.kind == OrgKind::Major) {
+        let Some(terms) = ctx.careers.minor_contract else { break };
         let Some((first, minors)) = org.levels.split_first() else { continue };
         let on_major_club = by_club.get(&first.0).map_or(0, Vec::len);
         let worth = |p: &Player| {
@@ -1020,13 +1039,17 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
         };
         let mut ranked: Vec<(f64, u32)> = minors.iter().flat_map(|(club, _)| by_club.get(club).into_iter().flatten()).map(|p| (worth(p), p.id)).collect();
         ranked.sort_by(|a, b| b.0.total_cmp(&a.0));
-        let forty: BTreeSet<u32> = ranked.iter().take(FORTY_MAN.saturating_sub(on_major_club)).map(|x| x.1).collect();
+        let forty: BTreeSet<u32> = ranked.iter().take(terms.forty_man.saturating_sub(on_major_club)).map(|x| x.1).collect();
         let free: BTreeSet<u32> = ranked
             .iter()
             .map(|x| x.1)
             .filter(|id| !forty.contains(id))
-            .filter(|id| pop.careers.get(id).zip(born.get(id)).is_some_and(|(c, b)| contract_ran_out(&c.origin, *b, year)))
+            .filter(|id| pop.careers.get(id).zip(born.get(id)).is_some_and(|(c, b)| contract_ran_out(&c.origin, *b, year, &terms)))
             .collect();
+        if terms.stay_as_depth {
+            depth_only.extend(free);
+            continue;
+        }
         for (club, _) in minors {
             if let Some(players) = by_club.get_mut(club) {
                 players.retain(|p| !free.contains(&p.id));
@@ -1178,6 +1201,8 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
         let deepest = |p: &Player| -> Option<usize> {
             let age = age_of(p.id, next_season);
             let d = limits.iter().take_while(|(b, pt)| age <= if p.is_pitcher() { *pt } else { *b }).count().checked_sub(1)?;
+            // Past his minor-league contract: Triple-A depth or nothing.
+            let d = if depth_only.contains(&p.id) { d.min(1) } else { d };
             match academy_at {
                 Some(a) if d >= a && !international(p.id) => a.checked_sub(1),
                 _ => Some(d),
@@ -1205,8 +1230,13 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
         // Two catchers and six starters (a rotation and a spare) for every level.
         let (kept, gone) = keep(std::mem::take(&mut pools[k]), &value, &caps, (2 * org.levels.len(), 6 * org.levels.len()), &deepest, &pinned[k], &protected);
         for p in gone {
-            leave(pop, p.id, Exit::Released);
-            report.released += 1;
+            if depth_only.contains(&p.id) {
+                leave(pop, p.id, Exit::FreeAgent);
+                report.minor_free_agents += 1;
+            } else {
+                leave(pop, p.id, Exit::Released);
+                report.released += 1;
+            }
         }
         let lowest = |p: &Player| pinned[k].get(&p.id).copied().or_else(|| deepest(p)).unwrap_or(0);
         let mut pool = kept;
@@ -1255,16 +1285,39 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
                     .max_by(|a, b| rate(a.2).total_cmp(&rate(b.2)))
                     .map(|(j, q, _)| (j, q));
                 let Some((j, q)) = best else { break };
-                let worst = placed[i]
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, p)| p.is_pitcher() && !ability::can_start(p) && !pinned[k].contains_key(&p.id) && lowest(p) >= j)
-                    .min_by(|a, b| rate(a.1).total_cmp(&rate(b.1)))
-                    .map(|(w, _)| w);
-                let Some(w) = worst else { break };
-                // j > i: swap across the two levels.
-                let (upper, lower) = placed.split_at_mut(j);
-                std::mem::swap(&mut upper[i][w], &mut lower[0][q]);
+                let relievers = |placed: &[Vec<Player>], down: bool| {
+                    placed[i]
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, p)| p.is_pitcher() && !ability::can_start(p) && !pinned[k].contains_key(&p.id) && (!down || lowest(p) >= j))
+                        .min_by(|a, b| rate(a.1).total_cmp(&rate(b.1)))
+                        .map(|(w, _)| w)
+                };
+                if let Some(w) = relievers(&placed, true) {
+                    // j > i: swap across the two levels.
+                    let (upper, lower) = placed.split_at_mut(j);
+                    std::mem::swap(&mut upper[i][w], &mut lower[0][q]);
+                    continue;
+                }
+                // No reliever may go down (veterans kept as Triple-A depth, or players at
+                // their age limit): the organisation lets the weakest go, brings the starter
+                // up and fills his place from the players left over, if one may play there.
+                let Some(w) = relievers(&placed, false) else { break };
+                let gone = placed[i].swap_remove(w);
+                let starter = placed[j].swap_remove(q);
+                placed[i].push(starter);
+                if let Some(r) =
+                    pool.iter().enumerate().filter(|(_, p)| p.is_pitcher() && lowest(p) >= j).max_by(|a, b| rate(a.1).total_cmp(&rate(b.1))).map(|(r, _)| r)
+                {
+                    placed[j].push(pool.swap_remove(r));
+                }
+                if depth_only.contains(&gone.id) {
+                    report.minor_free_agents += 1;
+                } else {
+                    report.released += 1;
+                }
+                let exit = if depth_only.contains(&gone.id) { Exit::FreeAgent } else { Exit::Released };
+                leave(pop, gone.id, exit);
             }
         }
         for ((club, key), players) in org.levels.iter().zip(placed) {
@@ -1338,6 +1391,9 @@ mod tests {
 
     #[test]
     fn minor_league_contracts_run_six_or_seven_seasons() {
+        let terms = CareerTable::bundled().minor_contract.expect("careers.json: minor_league_contract");
+        assert_eq!((terms.seasons, terms.seasons_if_younger, terms.forty_man, terms.stay_as_depth), (6, 7, 40, true));
+        let contract_ran_out = |o: &Origin, b: Date, y: i32| contract_ran_out(o, b, y, &terms);
         let draft = |year| Origin::Draft { year, round: 3, pick: 75, class: "us_college".into() };
         // A college pick (21.9 on draft day) plays part of 2030 and five more seasons.
         let college = Date::new(2008, 9, 1);

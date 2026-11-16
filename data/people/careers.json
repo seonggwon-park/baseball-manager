@@ -222,6 +222,14 @@
   "basis": "Scouting error of the draft board, in standard deviations of ability (one board for pitchers and position players). Assumption, fitted to the same reach rates"
  },
  "foreign_candidates": {"value": 1, "basis": "Assumption: each offseason a KBO or NPB club weighs one new foreign player against each of its own and keeps the better"},
+ "minor_league_contract": {
+  "seasons": 6,
+  "seasons_if_younger": 7,
+  "younger_than": 19.0,
+  "forty_man": 40,
+  "stay_as_depth": true,
+  "basis": "Minor-league free agency in a major-league organisation (2023 minor-league agreement; MLB Trade Rumors 2023, docs/research/world/levels.md 4.2): off the 40-man roster, a player who signed his first contract at 19 or older becomes a free agent after parts of six seasons, a younger one after seven. Draftees count their draft year (they sign in July), international amateurs start the season after they sign (15 January). The 40-man roster is taken to be the major-league club and the organisation's next best by the value it keeps players by. With stay_as_depth a free agent re-signs with his organisation, but only for Triple-A or above, the depth veterans sign for (41 % of Triple-A pitchers' playing time goes to pitchers of 28 or older, MLB Stats API 2025-2026); one who does not make it leaves the world, as there is no market yet. Thirty offseasons on, with the same parameters (4 seeds, roster means): Triple-A pitchers 27.4 (Baseball-Reference 27.3; leaving at once gave 24.8, no rule 27.4), Double-A batters 25.6 (23.7; leaving 23.2, no rule 26.8). Remove the entry to turn the rule off (decisions 2026-11-16)"
+ },
  "age_discount": {
   "value": 0.2142,
   "basis": "Standard deviations of ability taken off a player's worth for each year of age past 30 when his organisation decides whom to keep: older players cost more (no salaries are modelled yet) and have less ahead of them. Assumption, fitted with `bm careers` to the ages of each level"
