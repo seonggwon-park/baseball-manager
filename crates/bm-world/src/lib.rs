@@ -8,6 +8,7 @@ pub mod generate;
 pub mod league;
 pub mod names;
 pub mod player;
+pub mod schedule;
 
 pub use attr::{display, Attr, Attributes, Group, Hidden, Scale, ScaleAnchor, N_ATTR};
 pub use calendar::{Date, Weekday};

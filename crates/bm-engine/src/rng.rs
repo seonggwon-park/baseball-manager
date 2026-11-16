@@ -107,6 +107,14 @@ impl Rng {
         }
         weights.len() - 1
     }
+
+    /// Put the items in a uniformly random order (Fisher-Yates).
+    pub fn shuffle<T>(&mut self, items: &mut [T]) {
+        for i in (1..items.len()).rev() {
+            let j = self.below(i + 1);
+            items.swap(i, j);
+        }
+    }
 }
 
 /// Logistic function.
@@ -118,6 +126,21 @@ pub fn sigmoid(x: f64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn shuffle_is_a_uniform_permutation() {
+        let mut rng = Rng::new(5);
+        let mut first = [0u32; 4];
+        for _ in 0..40_000 {
+            let mut v = [0, 1, 2, 3];
+            rng.shuffle(&mut v);
+            let mut sorted = v;
+            sorted.sort_unstable();
+            assert_eq!(sorted, [0, 1, 2, 3]);
+            first[v[0]] += 1;
+        }
+        assert!(first.iter().all(|&c| (9_400..10_600).contains(&c)), "{first:?}");
+    }
 
     #[test]
     fn deterministic_and_well_distributed() {
