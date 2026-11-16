@@ -25,7 +25,7 @@ fn main() {
         let total = 40000;
         for _ in 0..total {
             st.pitch_count = 10;
-            let th = throw_pitch(&pit, &mut st, &PitchChoice { idx, target_x: 0.0, target_z: zone.mid() }, &env, &mut rng);
+            let th = throw_pitch(&pit, &mut st, &PitchChoice { idx, target_x: 0.0, target_z: zone.mid() }, 1.0, &env, &mut rng);
             let per = perceive(&env.params, &b, &zone, 1, 1, &th, &exp, env.ball.radius, &mut rng);
             match swing(&env, &b, &zone, 1, &th, &exp, &per, &mut rng) {
                 Swing::Whiff { miss, .. } => {

@@ -10,7 +10,7 @@ fn main() {
     let env = MatchEnv::neutral_mlb();
     let fielders = [FielderProfile::league_average(); 9];
     let positions = standard_alignment();
-    let batter = Runner { player: 0, sprint: 27.0 * FT, accel: 4.9, aggr: 0.5, pitcher: 0, earned: true };
+    let batter = Runner { player: 0, sprint: 27.0 * FT, accel: 4.9, aggr: 0.5, judge: 1.0, pitcher: 0, earned: true };
     println!("  EV   LA spray | land(ft) hang  end(ft) | outcomes");
     let args: Vec<f64> = std::env::args().skip(1).filter_map(|a| a.parse().ok()).collect();
     let mut cases: Vec<(f64, f64, f64)> = vec![

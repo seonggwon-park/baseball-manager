@@ -7,7 +7,8 @@
 use crate::fielding::{B1, B2, B3, C, CF, LF, P, RF, SS};
 use crate::game::Team;
 use crate::profile::{
-    BatterProfile, CatcherProfile, FielderProfile, Hand, PitchDef, PitchKind, PitchShape, PitcherProfile, Player, AVERAGE_BAT_SPEED, NO_POSITION,
+    BatterProfile, CatcherProfile, FielderProfile, Hand, PitchDef, PitchKind, PitchShape, PitcherProfile, Player, AVERAGE_BAT_SPEED, AVERAGE_ERROR_RATIO,
+    NO_POSITION,
 };
 use crate::rng::Rng;
 use bm_physics::units::{FT, INCH, MPH, RPM};
@@ -80,6 +81,7 @@ pub fn random_batter(rng: &mut Rng, id: u32, level: &Level) -> Player {
     let sprint_ft = rng.gauss_clamped(27.0, 1.4, 23.0, 30.5);
     let batter = BatterProfile {
         hand,
+        switch: false,
         height: rng.gauss_clamped(1.855, 0.055, 1.68, 2.03),
         bat_speed: AVERAGE_BAT_SPEED + rng.gauss_clamped(0.0, 2.6, -8.9, 9.1) * MPH + level.bat_speed,
         bat_speed_sd: level.bat_speed_sd,
@@ -99,6 +101,13 @@ pub fn random_batter(rng: &mut Rng, id: u32, level: &Level) -> Player {
         baserunning: rng.gauss_clamped(0.5, 0.15, 0.0, 1.0),
         steal: ((sprint_ft - 25.5) / 4.0 + rng.gauss(0.0, 0.15)).clamp(0.0, 1.0),
         bunt: extra.gauss_clamped(0.5, 0.18, 0.05, 1.0),
+        foul_skill: 1.0,
+        adjust: 1.0,
+        lapse: 1.0,
+        speed_loss: 1.0,
+        judgement: 1.0,
+        eye_same: 0.0,
+        pressure: 0.0,
         bat: level.bat,
     };
     let fielder = FielderProfile {
@@ -175,7 +184,7 @@ const ARSENAL: [(PitchKind, f64, f64, f64, f64); 8] = [
 pub fn random_pitcher(rng: &mut Rng, id: u32, starter: bool, level: &Level) -> Player {
     let hand = if rng.chance(0.73) { Hand::Right } else { Hand::Left };
     let fb_delta = rng.gauss_clamped(if starter { -0.6 } else { 0.9 }, 2.2, -7.0, 7.0) * MPH + level.velocity;
-    let command_in = rng.gauss_clamped(6.6, 0.7, 5.0, 8.8) * level.command;
+    let command_in = rng.gauss_clamped(6.72, 0.71, 5.1, 8.95) * level.command;
     let mut pitches: Vec<PitchDef> = Vec::with_capacity(6);
     for &(kind, prob, weight, same, opp) in &ARSENAL {
         if pitches.len() >= 6 || !rng.chance(prob) {
@@ -207,6 +216,10 @@ pub fn random_pitcher(rng: &mut Rng, id: u32, starter: bool, level: &Level) -> P
         tilt_sd: rng.gauss_clamped(4.5, 0.6, 2.5, 7.0).to_radians(),
         stamina: if starter { rng.gauss_clamped(92.0, 7.0, 70.0, 112.0) } else { rng.gauss_clamped(28.0, 5.0, 15.0, 45.0) },
         time_to_plate: rng.gauss_clamped(1.38, 0.08, 1.15, 1.65),
+        error_ratio: AVERAGE_ERROR_RATIO,
+        wildness: 1.0,
+        deception: 0.0,
+        pressure: 0.0,
     };
     let mut p = random_batter(rng, id, level);
     p.position = P;

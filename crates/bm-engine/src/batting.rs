@@ -130,7 +130,11 @@ pub fn perceive(
     let f = &thrown.flight;
     // Recognition is close to all-or-nothing: the batter either picks the pitch up out
     // of the hand or commits to the wrong one.
-    let rho = if rng.chance(batter.eye) { 1.0 - rng.gauss(0.0, params.recognition_sd).abs().min(0.5) } else { rng.range(0.0, params.fooled_recognition) };
+    let rho = if rng.chance(batter.eye) {
+        1.0 - rng.gauss(0.0, params.recognition_sd).abs().min(0.5)
+    } else {
+        rng.range(0.0, (params.fooled_recognition * batter.adjust).min(0.95))
+    };
     let drop_act = f.move_z - 0.5 * G * f.time * f.time;
     // A pitch that differs a lot from the fastball is easier to identify, so the
     // misjudgement grows less than proportionally with the difference in movement.
@@ -140,7 +144,7 @@ pub fn perceive(
         (x * sat, z * sat)
     };
     // Mostly small errors, now and then a pitch that is badly misread.
-    let sd = batter.perception_sd * if rng.chance(params.misread_rate) { params.misread_factor } else { 1.0 };
+    let sd = batter.perception_sd * if rng.chance((params.misread_rate * batter.lapse).min(0.9)) { params.misread_factor } else { 1.0 };
     let px = f.plate_pos.x + (1.0 - rho) * dmx + rng.gauss(0.0, sd);
     let pz = f.plate_pos.z + (1.0 - rho) * dmz + rng.gauss(0.0, sd);
     let d_hat = zone.signed_distance(px, pz, ball_radius);
@@ -293,7 +297,7 @@ pub fn swing(
     let dt_raw = expected.time - f.time;
     let dt_bias = (1.0 - per.recognition) * dt_raw / (1.0 + dt_raw.abs() / p.recognition_time_scale);
     let fooled = (dt_bias.abs() / p.fooled_time).min(1.0);
-    let mut bat_speed = rng.gauss(batter.bat_speed, batter.bat_speed_sd) * (1.0 - p.fooled_speed_loss * fooled * fooled);
+    let mut bat_speed = rng.gauss(batter.bat_speed, batter.bat_speed_sd) * (1.0 - (p.fooled_speed_loss * batter.speed_loss).min(0.9) * fooled * fooled);
     if two {
         bat_speed *= p.two_strike_speed;
     }
@@ -301,7 +305,7 @@ pub fn swing(
     // up on. The barrel is not delivered properly, so they rarely square the ball up.
     let partial = rng.chance((p.partial_swing_rate * if two { p.partial_two_strike_gain } else { 1.0 } + p.partial_fooled_rate * fooled).min(0.9));
     if partial {
-        bat_speed *= rng.range(p.partial_speed_min, 0.92);
+        bat_speed *= 1.0 - ((1.0 - rng.range(p.partial_speed_min, 0.92)) * batter.speed_loss).min(0.9);
     }
     let prec = prec * if partial { p.partial_precision } else { 1.0 };
     bat_speed = bat_speed.max(8.0);
@@ -420,7 +424,7 @@ pub fn swing(
         let limit = env.ball.radius + bat.radius_at(along);
         let on_time = (-0.5 * ((dy - p.piece_centre) / p.piece_depth).powi(2)).exp();
         let protect = if two { p.piece_two_strikes } else { 1.0 };
-        if offset.abs() - limit < p.piece_reach && rng.chance((p.piece_rate * protect * on_time).min(0.95)) {
+        if offset.abs() - limit < p.piece_reach && rng.chance((p.piece_rate * protect * on_time * batter.foul_skill).min(0.95)) {
             // Mostly the thinnest of contact.
             let u = rng.f64();
             contact.offset = offset.signum() * (limit - 0.0002 - p.piece_band * u * u);
@@ -490,7 +494,7 @@ mod tests {
             let exp = expectation(pitcher, &st, &w[..k], env.params.expect_mix);
             let choice = choose_pitch(pitcher, batter.hand, &zone, balls, strikes, &w[..k], &env.params, &mut rng);
             st.pitch_count = 30;
-            let thrown = throw_pitch(pitcher, &mut st, &choice, &env, &mut rng);
+            let thrown = throw_pitch(pitcher, &mut st, &choice, 1.0, &env, &mut rng);
             t.pitches += 1;
             match respond(&env, batter, &zone, balls, strikes, &thrown, &exp, &mut rng) {
                 Swing::Take => {}
@@ -544,7 +548,7 @@ mod tests {
             let exp = expectation(&pitcher, &st, &w[..k], env.params.expect_mix);
             let choice = choose_pitch(&pitcher, batter.hand, &zone, balls, strikes, &w[..k], &env.params, &mut rng);
             st.pitch_count = 30;
-            let thrown = throw_pitch(&pitcher, &mut st, &choice, env, &mut rng);
+            let thrown = throw_pitch(&pitcher, &mut st, &choice, 1.0, env, &mut rng);
             match respond(env, &batter, &zone, balls, strikes, &thrown, &exp, &mut rng) {
                 Swing::Take => {}
                 Swing::Whiff { shape, .. } => out.push((shape, 0, 0.0)),
@@ -614,7 +618,7 @@ mod tests {
             let k = selection_weights(&pitcher, batter.hand, 0, 0, &env.params, &mut w);
             let choice = choose_pitch(&pitcher, batter.hand, &zone, 0, 0, &w[..k], &env.params, &mut rng);
             st.pitch_count = 30;
-            let thrown = throw_pitch(&pitcher, &mut st, &choice, &env, &mut rng);
+            let thrown = throw_pitch(&pitcher, &mut st, &choice, 1.0, &env, &mut rng);
             if i % 2 == 1 {
                 if let Swing::Whiff { .. } = bunt(&env, &good, &zone, &thrown, false, true, &mut rng) {
                     good_missed += 1.0;

@@ -755,7 +755,7 @@ impl GameSim {
                 let Some(old) = self.bases[base - 1] else { return Err(OrderError::NothingToReplace) };
                 self.replace_player(team, old.player, player);
                 let b = &self.sides[team].team.players[player].batter;
-                self.bases[base - 1] = Some(Runner { player, sprint: b.sprint, accel: b.accel, aggr: b.baserunning, ..old });
+                self.bases[base - 1] = Some(Runner { player, sprint: b.sprint, accel: b.accel, aggr: b.baserunning, judge: b.judgement, ..old });
                 obs.event(&GameEvent::PinchRunner { team, player, replaced: old.player, base: base as u8 });
             }
             Substitution::Fielder { position, player } => {
@@ -890,8 +890,15 @@ impl GameSim {
             let s = &self.sides[bat];
             let idx = s.lineup[(s.order + 8) % 9];
             let b = &s.team.players[idx].batter;
-            self.bases[1] =
-                Some(Runner { player: idx, sprint: b.sprint, accel: b.accel, aggr: b.baserunning, pitcher: self.sides[fld].pitcher, earned: false });
+            self.bases[1] = Some(Runner {
+                player: idx,
+                sprint: b.sprint,
+                accel: b.accel,
+                aggr: b.baserunning,
+                judge: b.judgement,
+                pitcher: self.sides[fld].pitcher,
+                earned: false,
+            });
         }
         self.half_open = true;
         obs.event(&GameEvent::HalfInning { inning: self.inning, top: self.top });
@@ -1152,6 +1159,16 @@ impl GameSim {
         rng.chance((style.intentional_walk * situation * sigmoid((gap - 0.04) / 0.04)).min(0.95))
     }
 
+    /// How much is at stake right now, 0..=1: late innings of a close game, more so
+    /// with runners in scoring position.
+    fn pressure(&self) -> f64 {
+        let late = ((self.inning as f64 - 5.0) / 4.0).clamp(0.0, 1.0);
+        let gap = (self.score[0] as f64 - self.score[1] as f64).abs();
+        let close = (1.0 - gap / 4.0).max(0.0);
+        let scoring = self.bases[1].is_some() as u8 + self.bases[2].is_some() as u8;
+        (late * close * (0.6 + 0.2 * scoring as f64)).min(1.0)
+    }
+
     fn bases_bits(&self) -> u8 {
         self.bases.iter().enumerate().fold(0, |acc, (i, b)| acc | ((b.is_some() as u8) << i))
     }
@@ -1162,8 +1179,16 @@ impl GameSim {
         let batter = &self.sides[bat].team.players[batter_idx].batter;
         let pitcher_idx = self.sides[fld].pitcher;
         let zone = StrikeZone::for_batter(batter.height, &self.env.rules);
-        let me = Runner { player: batter_idx, sprint: batter.sprint, accel: batter.accel, aggr: batter.baserunning, pitcher: pitcher_idx, earned: true };
-        let box_delay = match batter.hand {
+        let me = Runner {
+            player: batter_idx,
+            sprint: batter.sprint,
+            accel: batter.accel,
+            aggr: batter.baserunning,
+            judge: batter.judgement,
+            pitcher: pitcher_idx,
+            earned: true,
+        };
+        let box_delay = match batter.side_against(profile_of(&self.sides[fld].team, pitcher_idx).hand) {
             Hand::Right => params.box_delay_right,
             Hand::Left => params.box_delay_left,
         };
@@ -1208,9 +1233,19 @@ impl GameSim {
         let bat_team = Arc::clone(&self.sides[bat].team);
         let fld_team = Arc::clone(&self.sides[fld].team);
         let batter_idx = pa.batter_idx;
-        let batter = &bat_team.players[batter_idx].batter;
         let pitcher_idx = pa.pitcher_idx;
         let pprof = profile_of(&fld_team, pitcher_idx);
+        // The batter as he is against this pitcher in this situation.
+        let pressure = self.pressure();
+        let plain = &bat_team.players[batter_idx].batter;
+        let adjusted;
+        let batter = if plain.switch || pprof.deception != 0.0 || plain.eye_same != 0.0 || (pressure > 0.0 && plain.pressure != 0.0) {
+            adjusted = plain.facing(pprof, pressure);
+            &adjusted
+        } else {
+            plain
+        };
+        let command_scale = 1.0 + pressure * pprof.pressure;
         let zone = pa.zone;
         let catcher = self.sides[fld].catcher;
         let (balls, strikes) = (pa.balls, pa.strikes);
@@ -1249,7 +1284,7 @@ impl GameSim {
         let n = selection_weights(pprof, batter.hand, balls, strikes, params, &mut w);
         let exp = expectation(pprof, &self.sides[fld].pitcher_state, &w[..n], params.expect_mix);
         let choice = choose_pitch(pprof, batter.hand, &zone, balls, strikes, &w[..n], params, rng);
-        let thrown = throw_pitch(pprof, &mut self.sides[fld].pitcher_state, &choice, env, rng);
+        let thrown = throw_pitch(pprof, &mut self.sides[fld].pitcher_state, &choice, command_scale, env, rng);
         pa.pitches = pa.pitches.saturating_add(1);
 
         // ---- runners leaving with the pitch ----
@@ -1893,7 +1928,8 @@ mod tests {
     fn place_runner(g: &mut GameSim, base: usize, slot: usize) -> usize {
         let idx = g.sides[0].lineup[slot];
         let b = &g.sides[0].team.players[idx].batter;
-        g.bases[base - 1] = Some(Runner { player: idx, sprint: b.sprint, accel: b.accel, aggr: b.baserunning, pitcher: g.sides[1].pitcher, earned: true });
+        g.bases[base - 1] =
+            Some(Runner { player: idx, sprint: b.sprint, accel: b.accel, aggr: b.baserunning, judge: b.judgement, pitcher: g.sides[1].pitcher, earned: true });
         idx
     }
 

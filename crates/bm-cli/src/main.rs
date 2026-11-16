@@ -3,12 +3,15 @@
 //! ```text
 //! bm validate [--games N] [--seed S] [--threads T] [--clubs K]   compare simulated aggregates with MLB 2025
 //!             [--style none|mlb] [--set name=value]               AI manager preset, model constants
+//!             [--population engine|world]                         players drawn as physical profiles or from attributes
+//! bm attributes [--games N] [--only NAME]                         value of one standard deviation of each attribute
 //! bm game [--seed S]                                              play one game and print the box score
 //! bm bench [--games N]                                            measure simulation speed
 //! bm serve [--port P] [--static DIR]                              session API over HTTP for the interface in a browser
 //! ```
 
 mod report;
+mod sensitivity;
 mod serve;
 mod tally;
 mod tuning;
@@ -27,6 +30,9 @@ struct Args {
     seed: u64,
     threads: usize,
     clubs: usize,
+    /// Draw the players from the attribute system instead of the engine's own population.
+    world: bool,
+    only: Option<String>,
     tuning: Tuning,
 }
 
@@ -39,6 +45,8 @@ fn parse_args() -> Args {
         seed: 2025,
         threads: std::thread::available_parallelism().map_or(4, |n| n.get()),
         clubs: 300,
+        world: false,
+        only: None,
         tuning: Tuning::new(),
     };
     let mut it = std::env::args().skip(1);
@@ -53,6 +61,17 @@ fn parse_args() -> Args {
             "--threads" => a.threads = v.parse::<usize>().expect("--threads T").max(1),
             "--clubs" => a.clubs = v.parse::<usize>().expect("--clubs K").max(2),
             "--port" => a.port = v.parse().expect("--port P"),
+            "--population" => {
+                a.world = match v.as_str() {
+                    "world" => true,
+                    "engine" => false,
+                    other => {
+                        eprintln!("unknown population {other}; use engine | world");
+                        std::process::exit(2);
+                    }
+                }
+            }
+            "--only" => a.only = Some(v),
             "--static" => a.static_dir = Some(v.into()),
             "--style" => {
                 a.tuning.style = match v.as_str() {
@@ -81,8 +100,11 @@ fn parse_args() -> Args {
     a
 }
 
-fn make_clubs(n: usize, seed: u64, level: &Level) -> Vec<Club> {
+fn make_clubs(n: usize, seed: u64, level: &Level, world: bool) -> Vec<Club> {
     let mut rng = Rng::new(seed ^ 0xC1B5);
+    if world {
+        return (0..n).map(|i| bm_world::Squad::random(&mut rng, 1000 * (i as u32 + 1), &bm_world::Talent::MAJOR).to_engine()).collect();
+    }
     (0..n).map(|i| Club::random(&mut rng, 1000 * (i as u32 + 1), level)).collect()
 }
 
@@ -206,7 +228,7 @@ fn main() {
     let level: &Level = &args.tuning.level;
     match args.cmd.as_str() {
         "validate" => {
-            let clubs = make_clubs(args.clubs, args.seed, level);
+            let clubs = make_clubs(args.clubs, args.seed, level, args.world);
             let start = Instant::now();
             let t = simulate(&env, &clubs, args.tuning.style, args.games, args.seed, args.threads, true);
             let secs = start.elapsed().as_secs_f64();
@@ -222,7 +244,7 @@ fn main() {
             report::print(&t);
         }
         "bench" => {
-            let clubs = make_clubs(args.clubs, args.seed, level);
+            let clubs = make_clubs(args.clubs, args.seed, level, args.world);
             for threads in [1, args.threads] {
                 let start = Instant::now();
                 let t = simulate(&env, &clubs, args.tuning.style, args.games, args.seed, threads, false);
@@ -240,7 +262,7 @@ fn main() {
         "population" => {
             // Averages of the physical profiles in the random population (a sanity check
             // that two seeds describe the same league).
-            let clubs = make_clubs(args.clubs, args.seed, level);
+            let clubs = make_clubs(args.clubs, args.seed, level, args.world);
             let mut m = [tally::Mean::default(); 10];
             for c in &clubs {
                 for h in &c.hitters {
@@ -276,8 +298,9 @@ fn main() {
                 println!("  {:<22} mean {:8.3}  sd {:7.3}  n {:.0}", n, x.mean(), x.sd(), x.n);
             }
         }
+        "attributes" => sensitivity::run(&env, args.tuning.style, args.games, args.seed, args.threads, args.clubs.min(60), args.only.as_deref()),
         "game" => {
-            let clubs = make_clubs(2, args.seed, level);
+            let clubs = make_clubs(2, args.seed, level, args.world);
             let mut rng = Rng::new(args.seed);
             let away = clubs[0].team_for_game(0, env.rules.dh);
             let home = clubs[1].team_for_game(0, env.rules.dh);
@@ -291,7 +314,7 @@ fn main() {
             }
         }
         other => {
-            eprintln!("unknown command {other}; use validate | game | bench | population | serve");
+            eprintln!("unknown command {other}; use validate | attributes | game | bench | population | serve");
             std::process::exit(2);
         }
     }

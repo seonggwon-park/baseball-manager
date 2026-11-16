@@ -19,6 +19,8 @@ pub struct Runner {
     pub accel: f64,
     /// Base-running aggressiveness, 0..=1.
     pub aggr: f64,
+    /// Multiplier on the error of his estimate of when the throw will arrive (1 = average).
+    pub judge: f64,
     /// Index (in the fielding team) of the pitcher charged with this runner.
     pub pitcher: usize,
     /// False if the runner reached base through an error (run is unearned).
@@ -423,7 +425,7 @@ fn caught(inp: &PlayInput, fielder: usize, t: f64, pos: Vec3, fair: bool, rng: &
         let eta = clock.tag_up(&r, t, true);
         let arrive = throw_to(base_position(0));
         let margin = p.advance_margin * (1.2 - 0.6 * r.aggr);
-        if eta + margin < arrive + rng.gauss(0.0, 0.30) {
+        if eta + margin < arrive + rng.gauss(0.0, 0.30 * r.judge) {
             bases[2] = None;
             let safe = eta + rng.gauss(0.0, 0.05) < arrive + p.tag_time + rng.gauss(0.0, p.play_noise);
             if safe {
@@ -443,7 +445,7 @@ fn caught(inp: &PlayInput, fielder: usize, t: f64, pos: Vec3, fair: bool, rng: &
             let eta = clock.tag_up(&r, t, false);
             let arrive = throw_to(base_position(3));
             let margin = p.advance_margin * (1.3 - 0.6 * r.aggr);
-            if eta + margin < arrive + rng.gauss(0.0, 0.30) {
+            if eta + margin < arrive + rng.gauss(0.0, 0.30 * r.judge) {
                 bases[1] = None;
                 let safe = eta + rng.gauss(0.0, 0.05) < arrive + p.tag_time + rng.gauss(0.0, p.play_noise);
                 if safe {
@@ -759,7 +761,7 @@ fn outfield_play(inp: &PlayInput, clock: &Clock, pk: &crate::fielding::Pickup, h
         let mut target = to + 1;
         while target <= 4 && target < limit {
             let e = eta_to(target - from);
-            let throw_est = arrive[target] + extra + rng.gauss(0.0, 0.30);
+            let throw_est = arrive[target] + extra + rng.gauss(0.0, 0.30 * r.judge);
             if e + margin < throw_est {
                 to = target;
                 eta = e;
@@ -875,7 +877,7 @@ mod tests {
     use bm_physics::{spin_from_components, velocity_from_angles, BallState, BattedSim};
 
     fn runner(player: usize, ft_per_s: f64) -> Runner {
-        Runner { player, sprint: ft_per_s * 0.3048, accel: 4.3, aggr: 0.5, pitcher: 0, earned: true }
+        Runner { player, sprint: ft_per_s * 0.3048, accel: 4.3, aggr: 0.5, judge: 1.0, pitcher: 0, earned: true }
     }
 
     struct Rig {

@@ -16,7 +16,8 @@ pub struct ModelParams {
     /// SD of the intended target around the pitch type's typical location, m (x, z).
     pub target_sd_x: f64,
     pub target_sd_z: f64,
-    /// Fraction of pitches that are badly missed, and the error multiplier for those.
+    /// Fraction of pitches that get away from the pitcher, and the multiplier on the
+    /// error along the arm's swing for those.
     pub wild_fraction: f64,
     pub wild_factor: f64,
     /// Release-point scatter, m (side, height).
@@ -315,8 +316,8 @@ impl Default for ModelParams {
     fn default() -> Self {
         ModelParams {
             target_sd_x: 0.13,
-            target_sd_z: 0.14,
-            wild_fraction: 0.052,
+            target_sd_z: 0.155,
+            wild_fraction: 0.037,
             wild_factor: 2.0,
             release_sd_side: 2.1 * INCH,
             release_sd_height: 1.3 * INCH,
@@ -404,8 +405,8 @@ impl Default for ModelParams {
             two_strike_precision: 0.82,
 
             batter_body_x: 0.63,
-            hbp_width: 0.045,
-            hbp_no_evade: 0.60,
+            hbp_width: 0.063,
+            hbp_no_evade: 0.80,
             wild_pitch_prob: 0.13,
 
             catch_height: 2.6,

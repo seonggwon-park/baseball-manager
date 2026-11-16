@@ -237,7 +237,9 @@ pub struct Thrown {
 }
 
 /// Execute a pitch: add release scatter, command error and fatigue, then fly it.
-pub fn throw_pitch(profile: &PitcherProfile, state: &mut PitcherState, choice: &PitchChoice, env: &MatchEnv, rng: &mut Rng) -> Thrown {
+///
+/// `command_scale` multiplies the location error (1 in ordinary circumstances).
+pub fn throw_pitch(profile: &PitcherProfile, state: &mut PitcherState, choice: &PitchChoice, command_scale: f64, env: &MatchEnv, rng: &mut Rng) -> Thrown {
     let p = &env.params;
     let def = &profile.pitches[choice.idx];
     let mean = &state.means[choice.idx];
@@ -255,13 +257,24 @@ pub fn throw_pitch(profile: &PitcherProfile, state: &mut PitcherState, choice: &
     spec.release_pos.x += rng.gauss(0.0, p.release_sd_side);
     spec.release_pos.z += rng.gauss(0.0, p.release_sd_height);
 
-    let mut cmd = def.command * command_factor;
-    if rng.chance(p.wild_fraction) {
-        cmd *= p.wild_factor;
+    // The location error is an ellipse whose long axis follows the arm's swing: a
+    // release that is early sails high to the arm side, a late one is pulled low to the
+    // glove side (Shinya et al. 2017; 2025 Statcast: 25.9 cm along the axis against
+    // 19.1 cm across it, the axis at 34 deg for sidearmers and 72 deg over the top).
+    // The pitches that get away altogether are errors of release timing as well.
+    let cmd = def.command * command_factor * command_scale;
+    let r2 = profile.error_ratio * profile.error_ratio;
+    let mut along = cmd * (2.0 * r2 / (1.0 + r2)).sqrt();
+    let across = cmd * (2.0 / (1.0 + r2)).sqrt();
+    if rng.chance((p.wild_fraction * profile.wildness).min(0.9)) {
+        along *= p.wild_factor;
     }
+    let (sa, ca) = profile.error_axis().sin_cos();
+    let (u, v) = (rng.gauss(0.0, along), rng.gauss(0.0, across));
+    let (ex, ez) = (arm * ca * u - sa * v, sa * u + arm * ca * v);
     let mut angles = mean.aim.angles_for(choice.target_x, choice.target_z);
-    angles.horiz += rng.gauss(0.0, cmd / mean.aim.dx_dh.abs());
-    angles.vert += rng.gauss(0.0, cmd / mean.aim.dz_dv.abs());
+    angles.horiz += ex / mean.aim.dx_dh;
+    angles.vert += ez / mean.aim.dz_dv;
 
     let flight = spec.fly(&env.pitch_flight, angles, PITCH_DT);
     state.pitch_count += 1;
@@ -281,23 +294,58 @@ mod tests {
         let mut rng = Rng::new(3);
         let choice = PitchChoice { idx: 0, target_x: 0.10, target_z: 0.85 };
         let n = 4000;
-        let (mut sx, mut sz, mut sxx, mut szz, mut sv) = (0.0, 0.0, 0.0, 0.0, 0.0);
+        let (mut sx, mut sz, mut sxx, mut szz, mut sxz, mut sv) = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         for _ in 0..n {
             st.pitch_count = 20;
-            let t = throw_pitch(&prof, &mut st, &choice, &env, &mut rng);
+            let t = throw_pitch(&prof, &mut st, &choice, 1.0, &env, &mut rng);
             sx += t.flight.plate_pos.x;
             sz += t.flight.plate_pos.z;
             sxx += t.flight.plate_pos.x.powi(2);
             szz += t.flight.plate_pos.z.powi(2);
+            sxz += t.flight.plate_pos.x * t.flight.plate_pos.z;
             sv += t.spec.speed;
         }
         let nf = n as f64;
         let (mx, mz) = (sx / nf, sz / nf);
         let (sdx, sdz) = ((sxx / nf - mx * mx).sqrt(), (szz / nf - mz * mz).sqrt());
         assert!((mx - 0.10).abs() < 0.02 && (mz - 0.85).abs() < 0.02, "mean location ({mx}, {mz})");
-        // Command of 6.6 in per axis plus a 6 % share of bad misses and release scatter.
-        assert!(sdx > 6.0 * INCH && sdx < 9.0 * INCH, "sd x {} in", sdx / INCH);
-        assert!(sdz > 6.0 * INCH && sdz < 9.5 * INCH, "sd z {} in", sdz / INCH);
+        // Command of 6.72 in (root mean square of the two axes) plus the pitches that get
+        // away and the release scatter.
+        assert!(sdx > 5.5 * INCH && sdx < 8.5 * INCH, "sd x {} in", sdx / INCH);
+        assert!(sdz > 6.5 * INCH && sdz < 10.0 * INCH, "sd z {} in", sdz / INCH);
+        // The error is an ellipse along the arm's swing: a right-hander misses high toward
+        // the third-base side (-x) and low toward the first-base side.
+        let corr = (sxz / nf - mx * mz) / (sdx * sdz);
+        assert!(sdz > sdx && corr < -0.15 && corr > -0.55, "sd x {} in, sd z {} in, corr {corr}", sdx / INCH, sdz / INCH);
+        // A left-hander's ellipse is the mirror image.
+        let left = PitcherProfile::league_average(Hand::Left);
+        let mut st = PitcherState::new(&left, &env);
+        let (mut lx, mut lz, mut lxz) = (0.0, 0.0, 0.0);
+        let pts: Vec<(f64, f64)> = (0..n)
+            .map(|_| {
+                st.pitch_count = 20;
+                let t = throw_pitch(&left, &mut st, &choice, 1.0, &env, &mut rng);
+                (t.flight.plate_pos.x, t.flight.plate_pos.z)
+            })
+            .collect();
+        for &(x, z) in &pts {
+            lx += x;
+            lz += z;
+        }
+        for &(x, z) in &pts {
+            lxz += (x - lx / nf) * (z - lz / nf);
+        }
+        assert!(lxz > 0.0, "left-hander's errors should run from low on the first-base side... to high on it");
+        // Doubling the command scale doubles the scatter.
+        let mut st = PitcherState::new(&prof, &env);
+        let wide: f64 = (0..n)
+            .map(|_| {
+                st.pitch_count = 20;
+                (throw_pitch(&prof, &mut st, &choice, 2.0, &env, &mut rng).flight.plate_pos.z - 0.85).powi(2)
+            })
+            .sum::<f64>()
+            / nf;
+        assert!(wide.sqrt() > 1.6 * sdz, "scaled sd z {} in against {} in", wide.sqrt() / INCH, sdz / INCH);
         assert!((sv / nf / MPH - 94.5).abs() < 0.4);
     }
 
@@ -330,7 +378,7 @@ mod tests {
             (0..500)
                 .map(|_| {
                     st.pitch_count = count;
-                    throw_pitch(&prof, st, &choice, &env, rng).spec.speed
+                    throw_pitch(&prof, st, &choice, 1.0, &env, rng).spec.speed
                 })
                 .sum::<f64>()
                 / 500.0

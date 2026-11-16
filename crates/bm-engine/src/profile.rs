@@ -22,6 +22,13 @@ impl Hand {
             Hand::Left => 1.0,
         }
     }
+    #[inline]
+    pub fn opposite(self) -> Hand {
+        match self {
+            Hand::Right => Hand::Left,
+            Hand::Left => Hand::Right,
+        }
+    }
     /// x-direction of "away from the batter" for a batter of this handedness.
     #[inline]
     pub fn outside_sign(self) -> f64 {
@@ -150,7 +157,8 @@ pub struct PitchDef {
     pub usage_same: f64,
     /// Usage weight against opposite-handed batters.
     pub usage_opp: f64,
-    /// Command: standard deviation of the plate location error per axis, m.
+    /// Command: root-mean-square of the plate location error over its two axes, m
+    /// (see [`PitcherProfile::error_ratio`] for how it is split between them).
     pub command: f64,
 }
 
@@ -174,11 +182,27 @@ pub struct PitcherProfile {
     pub stamina: f64,
     /// Time from first movement to the plate with runners on, s.
     pub time_to_plate: f64,
+    /// Shape of the location error. Pitches scatter in an ellipse whose long axis lies
+    /// along the arm's swing (released early the ball sails high to the arm side, late
+    /// it is pulled low to the glove side); this is the ratio of the error along that
+    /// axis to the error across it.
+    pub error_ratio: f64,
+    /// Multiplier on how often a pitch gets away from him altogether (1 = average).
+    pub wildness: f64,
+    /// How well he hides the ball: subtracted from the batter's chance of picking up
+    /// the pitch type out of the hand (0 = average).
+    pub deception: f64,
+    /// Relative change of the command error at full pressure (0 = unaffected,
+    /// positive = worse when the game is on the line).
+    pub pressure: f64,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct BatterProfile {
+    /// Side of the plate he bats from (against a right-hander, for a switch hitter).
     pub hand: Hand,
+    /// Bats from the side opposite to the pitcher's throwing hand.
+    pub switch: bool,
     /// Standing height, m (sets the strike zone).
     pub height: f64,
     /// Mean bat speed at the sweet spot on a full swing, m/s.
@@ -218,6 +242,24 @@ pub struct BatterProfile {
     pub steal: f64,
     /// Bunting skill, 0..=1 (0.5 = average position player).
     pub bunt: f64,
+    /// Bat control: multiplier on the chance of getting a piece of a pitch the swing
+    /// would otherwise miss narrowly (1 = average).
+    pub foul_skill: f64,
+    /// Adjustment to a pitch he did not pick up out of the hand: multiplier on how much
+    /// of it he still recognises on the way (1 = average).
+    pub adjust: f64,
+    /// Multiplier on how often he badly misreads a pitch's location (1 = average).
+    pub lapse: f64,
+    /// Multiplier on the bat speed lost on swings he is fooled on or cuts short
+    /// (1 = average, lower = stronger).
+    pub speed_loss: f64,
+    /// Multiplier on the error of his reads on the bases (1 = average, lower is better).
+    pub judgement: f64,
+    /// Added to `eye` against pitchers who throw from his own side (0 = average).
+    pub eye_same: f64,
+    /// Relative change of the timing and barrel errors at full pressure (0 = unaffected,
+    /// positive = worse when the game is on the line).
+    pub pressure: f64,
     pub bat: BatSpec,
 }
 
@@ -270,7 +312,27 @@ pub struct Player {
     pub catcher: CatcherProfile,
 }
 
+/// Ratio of the location error along the arm's swing to the error across it for the
+/// average pitcher. With this value the engine reproduces the ellipse of four-seam
+/// fastball locations in the 2025 Statcast sample (25.9 cm along, 19.1 cm across,
+/// intended locations included).
+pub const AVERAGE_ERROR_RATIO: f64 = 1.6;
+
 impl PitcherProfile {
+    /// Arm angle at release, rad: 0 is sidearm, positive is over the top. Estimated
+    /// from the release point as pitch tracking does (ball relative to the shoulder).
+    pub fn arm_angle(&self) -> f64 {
+        (self.release_height - 1.25).atan2((self.release_side + 0.05).max(0.05))
+    }
+
+    /// Direction of the long axis of the location error at the plate, as the angle
+    /// above horizontal of the line that runs from low on the glove side to high on
+    /// the arm side. Measured on four-seam fastballs in the 2025 Statcast sample: 34 deg
+    /// for sidearm deliveries rising to 72 deg over the top, about 22 deg + 0.85 x arm angle.
+    pub fn error_axis(&self) -> f64 {
+        (22.0f64.to_radians() + 0.85 * self.arm_angle()).clamp(0.0, 1.5)
+    }
+
     /// League-average right-hander with a four-pitch mix (used in tests and as a
     /// template for population generation).
     pub fn league_average(hand: Hand) -> Self {
@@ -287,16 +349,20 @@ impl PitcherProfile {
             release_height: 5.8 * FT,
             extension: 6.45 * FT,
             pitches: vec![
-                mk(PitchKind::FourSeam, 0.48, 0.50, 6.6),
-                mk(PitchKind::Slider, 0.34, 0.18, 7.6),
-                mk(PitchKind::Changeup, 0.08, 0.22, 7.4),
-                mk(PitchKind::Curve, 0.10, 0.10, 8.0),
+                mk(PitchKind::FourSeam, 0.48, 0.50, 6.72),
+                mk(PitchKind::Slider, 0.34, 0.18, 7.75),
+                mk(PitchKind::Changeup, 0.08, 0.22, 7.55),
+                mk(PitchKind::Curve, 0.10, 0.10, 8.15),
             ],
             speed_sd: 1.05 * MPH,
             spin_sd: 85.0 * RPM,
             tilt_sd: 4.5f64.to_radians(),
             stamina: 95.0,
             time_to_plate: 1.38,
+            error_ratio: AVERAGE_ERROR_RATIO,
+            wildness: 1.0,
+            deception: 0.0,
+            pressure: 0.0,
         }
     }
 }
@@ -309,6 +375,7 @@ impl BatterProfile {
     pub fn league_average(hand: Hand) -> Self {
         BatterProfile {
             hand,
+            switch: false,
             height: 1.855,
             bat_speed: AVERAGE_BAT_SPEED,
             bat_speed_sd: 2.8 * MPH,
@@ -328,8 +395,38 @@ impl BatterProfile {
             baserunning: 0.5,
             steal: 0.3,
             bunt: 0.5,
+            foul_skill: 1.0,
+            adjust: 1.0,
+            lapse: 1.0,
+            speed_loss: 1.0,
+            judgement: 1.0,
+            eye_same: 0.0,
+            pressure: 0.0,
             bat: BatSpec::mlb_wood(),
         }
+    }
+
+    /// Side of the plate he takes against a pitcher who throws with `pitcher`.
+    pub fn side_against(&self, pitcher: Hand) -> Hand {
+        if self.switch {
+            pitcher.opposite()
+        } else {
+            self.hand
+        }
+    }
+
+    /// The batter as he is against a given pitcher with `pressure` (0..=1) on the
+    /// plate appearance: deception and the pitcher's side change what he picks up,
+    /// pressure changes how precisely he swings.
+    pub fn facing(&self, pitcher: &PitcherProfile, pressure: f64) -> BatterProfile {
+        let mut b = self.clone();
+        b.hand = self.side_against(pitcher.hand);
+        let same = if pitcher.hand == b.hand { self.eye_same } else { 0.0 };
+        b.eye = (self.eye - pitcher.deception + same).clamp(0.05, 0.99);
+        let noise = (1.0 + pressure * self.pressure).max(0.5);
+        b.timing_sd *= noise;
+        b.barrel_sd *= noise;
+        b
     }
 
     /// Rough offensive value used by the AI manager to compare hitters: bat speed,

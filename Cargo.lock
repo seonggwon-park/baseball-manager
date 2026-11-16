@@ -9,6 +9,7 @@ dependencies = [
  "bm-engine",
  "bm-physics",
  "bm-session",
+ "bm-world",
  "serde_json",
 ]
 
@@ -25,6 +26,16 @@ version = "0.1.0"
 
 [[package]]
 name = "bm-session"
+version = "0.1.0"
+dependencies = [
+ "bm-engine",
+ "bm-physics",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "bm-world"
 version = "0.1.0"
 dependencies = [
  "bm-engine",
