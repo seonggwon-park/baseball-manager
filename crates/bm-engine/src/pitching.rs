@@ -23,19 +23,39 @@ pub struct MatchEnv {
     pub park: Park,
     pub rules: Rules,
     pub params: ModelParams,
+    /// Flight time of the fastball the league's batters are used to, s (the league-average
+    /// four-seamer unless the world layer sets the league's own).
+    pub typical_fastball_time: f64,
+    /// Spin-induced vertical movement of the league-average pitch of each type, m, indexed
+    /// by `PitchKind::index`: what a batter who has recognised the pitch expects it to do.
+    pub typical_rise: [f64; 8],
 }
 
 impl MatchEnv {
     pub fn new(atmosphere: &Atmosphere, wind: Wind, park: Park, rules: Rules, params: ModelParams) -> Self {
         let ball = BallSpec::mlb();
-        MatchEnv {
+        let mut env = MatchEnv {
             ball,
             pitch_flight: FlightModel::new(&ball, AeroModel::pitched_2025(), atmosphere, wind),
             batted_flight: FlightModel::new(&ball, AeroModel::batted_2025(), atmosphere, wind),
             park,
             rules,
             params,
+            typical_fastball_time: 0.0,
+            typical_rise: [0.0; 8],
+        };
+        // The league-average pitch of every type, thrown from the average release point.
+        let mut typical = PitcherProfile::league_average(Hand::Right);
+        typical.pitches = PitchKind::ALL
+            .iter()
+            .map(|&kind| PitchDef { kind, shape: kind.league_average(), usage_same: 1.0, usage_opp: 1.0, command: 0.17, disguise: 0.0, aim_height: 0.0 })
+            .collect();
+        let state = PitcherState::new(&typical, &env);
+        for (kind, mean) in PitchKind::ALL.iter().zip(&state.means) {
+            env.typical_rise[kind.index()] = mean.aim.move_z;
         }
+        env.typical_fastball_time = state.means[PitchKind::FourSeam.index()].aim.time;
+        env
     }
 
     /// Neutral MLB-like conditions: about 24 C, 55 % humidity, 180 m elevation
@@ -218,6 +238,15 @@ pub fn choose_pitch(
         let (cx, cz) = chase_direction(kind);
         (x_out + cx * -intent, zf + cz * -intent)
     };
+    // The less precisely he throws the pitch, the closer to the middle he aims it.
+    let typical = params.aim_reference
+        * match kind.group() {
+            PitchGroup::Fastball => 1.0,
+            PitchGroup::Breaking => 1.12,
+            PitchGroup::Offspeed => 1.10,
+        };
+    let margin = if params.aim_adapt == 0.0 { 1.0 } else { (typical / profile.pitches[idx].command).powf(params.aim_adapt).clamp(0.5, 1.4) };
+    let (x, z_frac) = (x * margin, 0.5 + (z_frac - 0.5) * margin);
     let out = batter_hand.outside_sign();
     // When he has to throw a strike the pitcher also aims at a smaller area.
     let spread = 1.0 - 0.1 * intent.max(0.0);

@@ -16,6 +16,12 @@ pub struct ModelParams {
     /// SD of the intended target around the pitch type's typical location, m (x, z).
     pub target_sd_x: f64,
     pub target_sd_z: f64,
+    /// A pitcher who cannot hit his spots gives himself more margin. The intended
+    /// location is pulled toward the middle of the zone (or pushed toward the edges) by
+    /// the ratio of the typical location error (`aim_reference`, m, for a fastball) to
+    /// the pitch's own, raised to `aim_adapt` (0 = everybody aims at the same spots).
+    pub aim_adapt: f64,
+    pub aim_reference: f64,
     /// Fraction of pitches that get away from the pitcher, and the multiplier on the
     /// error along the arm's swing for those.
     pub wild_fraction: f64,
@@ -65,6 +71,13 @@ pub struct ModelParams {
     pub ride_bias: f64,
     /// Induced vertical movement (whole flight) of the generic fastball, m.
     pub ride_reference: f64,
+    /// Batters time a pitcher's fastball from the fastballs they see every day and adapt
+    /// to his own only in part: this share of the difference in flight time between the
+    /// league's typical fastball and this pitcher's stays in the swing as a timing error,
+    /// late against hard throwers and early against soft ones. 2025 Statcast bat
+    /// tracking: contact is 0.13-0.30 in deeper per mph of a pitcher's average fastball,
+    /// against 3 in per mph with no adaptation at all.
+    pub velocity_lag: f64,
     /// How far the batter's expectation leans from the main fastball toward the
     /// count's average pitch (0..1).
     pub expect_mix: f64,
@@ -317,6 +330,8 @@ impl Default for ModelParams {
         ModelParams {
             target_sd_x: 0.13,
             target_sd_z: 0.155,
+            aim_adapt: 0.0,
+            aim_reference: 6.72 * INCH,
             wild_fraction: 0.037,
             wild_factor: 2.0,
             release_sd_side: 2.1 * INCH,
@@ -339,8 +354,9 @@ impl Default for ModelParams {
             noise_residual: 0.05,
             recognition_scale: 0.8,
             recognition_time_scale: 0.181,
-            ride_bias: 0.098,
-            ride_reference: 0.36,
+            ride_bias: 0.30,
+            ride_reference: 0.38,
+            velocity_lag: 0.10,
             expect_mix: 0.0,
             misread_rate: 0.12,
             misread_factor: 2.5,
@@ -353,7 +369,7 @@ impl Default for ModelParams {
             barrel_outside_gain2: 70.0,
             barrel_outside_offset: 0.03,
             reach_limit: 0.40,
-            height_bias: 0.0542,
+            height_bias: 0.11,
             bat_tilt_mid: 32.0f64.to_radians(),
             bat_tilt_slope: 0.31,
             plan_angle_per_m: 0.2,

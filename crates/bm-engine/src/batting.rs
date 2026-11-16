@@ -309,7 +309,9 @@ pub fn swing(
     }
     let prec = prec * if partial { p.partial_precision } else { 1.0 };
     bat_speed = bat_speed.max(8.0);
-    let dt = batter.timing_bias + dt_bias + rng.gauss(0.0, batter.timing_sd * speed_ratio.powf(p.timing_speed_exp) * prec);
+    // Late against a pitcher who throws harder than the fastballs the batter sees every day.
+    let lag = p.velocity_lag * (env.typical_fastball_time - expected.time);
+    let dt = batter.timing_bias + dt_bias + lag + rng.gauss(0.0, batter.timing_sd * speed_ratio.powf(p.timing_speed_exp) * prec);
 
     // ---- depth of contact and direction of the barrel ----
     // A swing that is early meets the ball further out in front: ball and barrel
@@ -350,11 +352,15 @@ pub fn swing(
     let d_act = zone.signed_distance(f.plate_pos.x, f.plate_pos.z, env.ball.radius);
     let d_out = (d_act + p.barrel_outside_offset).max(0.0);
     let loc_gain = 1.0 + p.barrel_outside_gain * d_out + p.barrel_outside_gain2 * d_out * d_out;
+    // Batters adapt only in part to how much a pitch rises or sinks compared with what
+    // they expect of it: one generic fastball for four-seamers and sinkers alike, the
+    // league's typical pitch of its type for everything else.
+    let ride_expected = if matches!(thrown.kind, PitchKind::FourSeam | PitchKind::Sinker) { p.ride_reference } else { env.typical_rise[thrown.kind.index()] };
     let offset = rng.gauss(batter.barrel_aim, batter.barrel_sd * speed_ratio.powf(p.barrel_speed_exp) * loc_gain * prec)
         - p.tracking_residual * per.bias_z
         - p.noise_residual * (per.perceived_z - f.plate_pos.z - per.bias_z)
         + p.height_bias * (f.plate_pos.z - zone.mid())
-        + if matches!(thrown.kind, PitchKind::FourSeam | PitchKind::Sinker) { p.ride_bias * (f.move_z - p.ride_reference) } else { 0.0 }
+        + p.ride_bias * (f.move_z - ride_expected)
         + (descent.tan() - plane_pitch.tan()) * dy
         - arc_rise;
 
@@ -535,8 +541,15 @@ mod tests {
     /// Swings of the average matchup: geometry, outcome (0 miss, 1 foul tip or foul
     /// back, 2 put in front of the plate) and pull-side spray of the batted ones, rad.
     fn shapes(env: &MatchEnv, n: usize, seed: u64) -> Vec<(SwingShape, u8, f64)> {
+        shapes_against(env, &PitcherProfile::league_average(Hand::Right), n, seed)
+    }
+
+    /// Swings of the average right-handed batter against `pitcher`: the shape of each
+    /// swing, what came of it (0 = miss, 1 = foul tip or foul back, 2 = batted) and the
+    /// pull-side spray of batted balls.
+    fn shapes_against(env: &MatchEnv, pitcher: &PitcherProfile, n: usize, seed: u64) -> Vec<(SwingShape, u8, f64)> {
         let batter = BatterProfile::league_average(Hand::Right);
-        let pitcher = PitcherProfile::league_average(Hand::Right);
+        let pitcher = pitcher.clone();
         let mut st = PitcherState::new(&pitcher, env);
         let zone = StrikeZone::for_batter(batter.height, &env.rules);
         let mut rng = Rng::new(seed);
@@ -580,6 +593,53 @@ mod tests {
         assert!(front > deep + 15.0, "spray out in front {front}, deep {deep}");
         // The ball is met a little under its centre and somewhere on the barrel.
         assert!(batted.iter().all(|s| s.0.along > 0.0 && s.0.exit_speed > 0.0));
+    }
+
+    fn mean_of(v: &[(SwingShape, u8, f64)], f: impl Fn(&SwingShape) -> f64) -> f64 {
+        let batted: Vec<f64> = v.iter().filter(|x| x.1 == 2).map(|x| f(&x.0)).collect();
+        batted.iter().sum::<f64>() / batted.len() as f64
+    }
+
+    /// Against a pitcher who throws harder than the league's usual fastball the batter
+    /// is a little late (Statcast: 0.26-0.32 in deeper per mph of the pitcher's average).
+    #[test]
+    fn batters_are_late_on_hard_throwers() {
+        let env = MatchEnv::neutral_mlb();
+        let usual = PitcherProfile::league_average(Hand::Right);
+        let mut hard = usual.clone();
+        for d in hard.pitches.iter_mut() {
+            d.shape.speed += 5.0 * MPH;
+        }
+        let depth = |env: &MatchEnv, p: &PitcherProfile| mean_of(&shapes_against(env, p, 60000, 21), |s| s.depth);
+        let gap = depth(&env, &usual) - depth(&env, &hard);
+        // 5 mph at 0.3 in per mph is 1.5 in, or 0.038 m.
+        assert!(gap > 0.015 && gap < 0.075, "contact against the hard thrower is {gap} m deeper");
+        let mut flat = MatchEnv::neutral_mlb();
+        flat.params.velocity_lag = 0.0;
+        let none = depth(&flat, &usual) - depth(&flat, &hard);
+        assert!(none < gap - 0.012, "without the lag the gap should shrink: {none} m against {gap} m");
+    }
+
+    /// A fastball with more ride than batters expect is hit in the air, one that sinks
+    /// more is beaten into the ground; the same goes for a breaking ball against the
+    /// usual one of its kind.
+    #[test]
+    fn ride_lifts_the_ball_and_sink_buries_it() {
+        let env = MatchEnv::neutral_mlb();
+        let only = |kind: PitchKind, rpm: f64| {
+            let mut p = PitcherProfile::league_average(Hand::Right);
+            p.pitches.retain(|d| d.kind == PitchKind::FourSeam);
+            p.pitches[0].kind = kind;
+            p.pitches[0].shape = kind.league_average();
+            p.pitches[0].shape.spin_rate += rpm * bm_physics::units::RPM;
+            p
+        };
+        let launch = |p: &PitcherProfile| mean_of(&shapes_against(&env, p, 50000, 33), |s| s.elevation).to_degrees();
+        let (lively, flat) = (launch(&only(PitchKind::FourSeam, 300.0)), launch(&only(PitchKind::FourSeam, -300.0)));
+        assert!(lively > flat + 2.0, "four-seamer with more ride {lively} deg, with less {flat} deg");
+        // More spin on a curve is more drop.
+        let (sharp, lazy) = (launch(&only(PitchKind::Curve, 400.0)), launch(&only(PitchKind::Curve, -400.0)));
+        assert!(sharp < lazy - 1.0, "curve with more drop {sharp} deg, with less {lazy} deg");
     }
 
     #[test]

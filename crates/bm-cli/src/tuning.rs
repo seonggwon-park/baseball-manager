@@ -39,6 +39,8 @@ impl Tuning {
             [
                 target_sd_x,
                 target_sd_z,
+                aim_adapt,
+                aim_reference,
                 wild_fraction,
                 wild_factor,
                 release_sd_side,
@@ -60,6 +62,7 @@ impl Tuning {
                 recognition_time_scale,
                 ride_bias,
                 ride_reference,
+                velocity_lag,
                 misread_rate,
                 misread_factor,
                 barrel_outside_gain2,
