@@ -24,7 +24,13 @@ struct LevelStats {
     /// Mean value of the position players and of the pitchers, runs per 162 games.
     value_h: f64,
     value_p: f64,
+    /// Domestic batters and pitchers by whole years of age, from `HIST_FROM`.
+    hist_b: [f64; HIST_N],
+    hist_p: [f64; HIST_N],
 }
+
+const HIST_FROM: usize = 15;
+const HIST_N: usize = 30;
 
 impl LevelStats {
     fn add(&mut self, o: &LevelStats) {
@@ -36,6 +42,10 @@ impl LevelStats {
         for i in 0..8 {
             self.talent[i] += o.talent[i];
         }
+        for i in 0..HIST_N {
+            self.hist_b[i] += o.hist_b[i];
+            self.hist_p[i] += o.hist_p[i];
+        }
     }
 
     fn scaled(&self, k: f64) -> LevelStats {
@@ -46,6 +56,8 @@ impl LevelStats {
             talent: self.talent.map(|x| x * k),
             value_h: self.value_h * k,
             value_p: self.value_p * k,
+            hist_b: self.hist_b.map(|x| x * k),
+            hist_p: self.hist_p.map(|x| x * k),
         }
     }
 }
@@ -76,6 +88,14 @@ fn stats(pop: &Population) -> BTreeMap<&'static str, LevelStats> {
             let v: Vec<f64> = players.iter().filter(|p| p.is_pitcher() == pitchers).map(|p| worth(p)).collect();
             v.iter().sum::<f64>() / v.len().max(1) as f64
         };
+        let hist = |pitchers: bool| {
+            let mut h = [0.0; HIST_N];
+            for p in players.iter().filter(|p| p.is_pitcher() == pitchers) {
+                let i = (age(p.id).floor().max(0.0) as usize).saturating_sub(HIST_FROM).min(HIST_N - 1);
+                h[i] += 1.0;
+            }
+            h
+        };
         out.insert(
             key,
             LevelStats {
@@ -85,6 +105,8 @@ fn stats(pop: &Population) -> BTreeMap<&'static str, LevelStats> {
                 talent: talent_of(players.iter().copied()),
                 value_h: value(false),
                 value_p: value(true),
+                hist_b: hist(false),
+                hist_p: hist(true),
             },
         );
     }
@@ -502,6 +524,7 @@ pub fn run(
                         "target_age_b": target.batters.mean, "target_age_p": target.pitchers.mean,
                         "target_talent": (0..8).map(|i| target.talent.get(i).copied().unwrap_or(0.0)).collect::<Vec<f32>>(),
                         "gap_h": (s.value_h - v.h) / v.slope_h, "gap_p": (s.value_p - v.p) / v.slope_p,
+                        "hist_from": HIST_FROM, "hist_b": s.hist_b, "hist_p": s.hist_p,
                     }),
                 )
             })

@@ -100,12 +100,14 @@ pub struct Options<'a> {
 }
 
 /// Each level's average ages of batters and pitchers as Baseball-Reference reports them
-/// (docs/research/world/levels.md 4): age on 30 June, batters weighted by AB + G, pitchers by
-/// 3 GS + G (Baseball-Reference adds saves, which the season does not keep), foreign players
-/// included.
+/// (docs/research/world/levels.md 4): whole years of age on 30 June, batters weighted by
+/// AB + G, pitchers by 3 GS + G (Baseball-Reference adds saves, which the season does not
+/// keep), foreign players included. Whole years read half a year below exact ages: the MLB
+/// Stats API's 2025-2026 lines give Double-A batters 24.18 exact against 23.74 on
+/// Baseball-Reference, Single-A 21.28 against 20.79.
 fn level_ages(pop: &bm_world::Population, season: &Season) -> BTreeMap<String, (f64, f64)> {
     let mid = Date::new(season.year, 6, 30);
-    let age = |id: &u32| pop.people.get(id).map(|p| mid.days_since(p.born) as f64 / 365.2425);
+    let age = |id: &u32| pop.people.get(id).map(|p| (mid.days_since(p.born) as f64 / 365.2425).floor());
     let mut level_of_player: BTreeMap<u32, &str> = BTreeMap::new();
     for r in &pop.rosters {
         for p in r.players() {
