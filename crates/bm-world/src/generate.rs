@@ -27,10 +27,13 @@ pub struct Talent {
     /// Added to control and command on top of `pitching`: minor-league pitchers walk far
     /// more batters than their strikeout rates alone would suggest.
     pub command: f32,
+    /// Added to velocity on top of `pitching`: minor-league pitchers throw nearly as hard as
+    /// major-leaguers while the rest of their game lags.
+    pub velocity: f32,
 }
 
 impl Talent {
-    pub const MAJOR: Talent = Talent { hitting: 0.0, pitching: 0.0, fielding: 0.0, physical: 0.0, power: 0.0, command: 0.0 };
+    pub const MAJOR: Talent = Talent { hitting: 0.0, pitching: 0.0, fielding: 0.0, physical: 0.0, power: 0.0, command: 0.0, velocity: 0.0 };
 }
 
 fn z(rng: &mut Rng, mean: f64) -> f32 {
@@ -249,7 +252,7 @@ pub fn pitcher(rng: &mut Rng, id: u32, role: Role, t: &Talent) -> Player {
     common(rng, &mut a, t);
     let pit = t.pitching as f64;
     // Relievers are selected for velocity; starters for the stamina to go deep.
-    a[Attr::Velocity] = z(rng, pit + if role == Role::Reliever { 0.27 } else { 0.0 });
+    a[Attr::Velocity] = z(rng, pit + t.velocity as f64 + if role == Role::Reliever { 0.27 } else { 0.0 });
     for attr in [Attr::Stuff, Attr::Control, Attr::Command, Attr::Deception] {
         let command = if matches!(attr, Attr::Control | Attr::Command) { t.command as f64 } else { 0.0 };
         a[attr] = z(rng, pit + command);

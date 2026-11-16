@@ -348,8 +348,8 @@ pub fn run(level: &str, talent: Talent, foreign: Talent, games: usize, seed: u64
         // Players of one talent level only, against major-leaguers: for the foreign players of
         // the Asian leagues, whose level is set by their translated major-league production.
         println!(
-            "pool: 30 clubs, talent hitting {:+.2} pitching {:+.2} fielding {:+.2} physical {:+.2} power {:+.2} command {:+.2}",
-            talent.hitting, talent.pitching, talent.fielding, talent.physical, talent.power, talent.command
+            "pool: 30 clubs, talent hitting {:+.2} pitching {:+.2} fielding {:+.2} physical {:+.2} power {:+.2} command {:+.2} velocity {:+.2}",
+            talent.hitting, talent.pitching, talent.fielding, talent.physical, talent.power, talent.command, talent.velocity
         );
         let clubs: Vec<Club> = (0..30).map(|i| Squad::random(&mut rng, 1000 * (i + 1), &talent).to_engine_with(&tuning.baseline)).collect();
         against_mlb(&clubs, &vs_mlb.unwrap_or(VsMlb { games: games.max(400), pitchers: true }));
@@ -363,14 +363,15 @@ pub fn run(level: &str, talent: Talent, foreign: Talent, games: usize, seed: u64
         println!("  ball drag x{drag:.3} in the level's own games");
     }
     println!(
-        "level {level}: {} clubs, talent hitting {:+.2} pitching {:+.2} fielding {:+.2} physical {:+.2} power {:+.2} command {:+.2}; {games} games",
+        "level {level}: {} clubs, talent hitting {:+.2} pitching {:+.2} fielding {:+.2} physical {:+.2} power {:+.2} command {:+.2} velocity {:+.2}; {games} games",
         env.clubs.len(),
         talent.hitting,
         talent.pitching,
         talent.fielding,
         talent.physical,
         talent.power,
-        talent.command
+        talent.command,
+        talent.velocity
     );
     let (fs, fr, fh) = foreign_slots(level);
     if fs + fr + fh.len() > 0 {

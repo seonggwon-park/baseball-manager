@@ -137,9 +137,9 @@ impl Potential {
     }
 
     /// Take the skill gaps of the player's level out of his ceiling: minor-leaguers have
-    /// more raw power than bat-to-ball skill, weaker defence and bodies, and far worse
-    /// command than major-leaguers (the `power`, `fielding`, `physical` and `command`
-    /// parts of the level's talent). A share `closure` of each gap closes by the player's
+    /// more raw power than bat-to-ball skill, weaker defence and bodies, far worse command
+    /// and nearly major-league velocity (the `power`, `fielding`, `physical`, `command` and
+    /// `velocity` parts of the level's talent). A share `closure` of each gap closes by the player's
     /// peak, so that the players who reach theirs have the balance of a major-leaguer.
     pub fn balance(&mut self, player: &Player, t: &Talent, closure: &Closure) {
         use Attr::*;
@@ -152,6 +152,7 @@ impl Potential {
         if player.is_pitcher() {
             let base = t.pitching;
             shift(&[Control, Command], -closure.command * t.command);
+            shift(&[Velocity], -closure.velocity * t.velocity);
             shift(&FIELD[..5], closure.fielding * (base - t.fielding));
             shift(&[Strength, Durability, Agility], closure.physical * (base - t.physical));
         } else {
@@ -170,10 +171,16 @@ pub struct Closure {
     pub fielding: f32,
     pub physical: f32,
     pub command: f32,
+    #[serde(default = "one")]
+    pub velocity: f32,
+}
+
+fn one() -> f32 {
+    1.0
 }
 
 impl Closure {
-    pub const NONE: Closure = Closure { power: 0.0, fielding: 0.0, physical: 0.0, command: 0.0 };
+    pub const NONE: Closure = Closure { power: 0.0, fielding: 0.0, physical: 0.0, command: 0.0, velocity: 0.0 };
 }
 
 /// One year of development for a player who was `age` at his last birthday. The ceiling

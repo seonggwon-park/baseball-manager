@@ -21,15 +21,16 @@ use std::collections::BTreeMap;
 const LEVELS: &str = include_str!("../../../data/people/levels.json");
 
 /// Talent offsets as written in the data file: hitting, pitching, fielding, physical,
-/// power, command (see [`Talent`]).
-fn talent(v: &[f32; 6]) -> Talent {
-    Talent { hitting: v[0], pitching: v[1], fielding: v[2], physical: v[3], power: v[4], command: v[5] }
+/// power, command and, if given, velocity (see [`Talent`]).
+pub(crate) fn talent(v: &[f32]) -> Talent {
+    let at = |i: usize| v.get(i).copied().unwrap_or(0.0);
+    Talent { hitting: at(0), pitching: at(1), fielding: at(2), physical: at(3), power: at(4), command: at(5), velocity: at(6) }
 }
 
 /// Foreign players of a club in a league that limits them.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct ForeignSlots {
-    pub talent: [f32; 6],
+    pub talent: Vec<f32>,
     /// Birthplace group of the regular foreign players and, for the KBO's Asia quota, of
     /// the quota player.
     pub birthplaces: String,
@@ -48,7 +49,7 @@ pub struct ForeignSlots {
 /// One level of play as the data file describes it.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct LevelProfile {
-    pub talent: [f32; 6],
+    pub talent: Vec<f32>,
     pub batters: AgeSpread,
     pub pitchers: AgeSpread,
     /// Birthplace group of the club's own players (`data/people/birthplaces.json`).

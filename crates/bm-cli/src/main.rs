@@ -8,7 +8,7 @@
 //! bm attributes [--games N] [--only NAME]                         value of one standard deviation of each attribute
 //!               [--by-position]                                   fielding value of the regular at each position (2 SD steps)
 //! bm players [--clubs K] [--games G]                              season lines of individual players as CSV (G games per club)
-//! bm level --level L [--talent h,p,f,x[,pw,cm]] [--vs-mlb]         one level (aaa, aa, high_a, single_a, kbo, kbo2, npb, npb2,
+//! bm level --level L [--talent h,p,f,x[,pw,cm[,v]]] [--vs-mlb]    one level (aaa, aa, high_a, single_a, kbo, kbo2, npb, npb2,
 //!          [--foreign h,p,f,x] [--cross-games N]                   mlb) in its own parks against its official rates; talent of
 //!          [--vs-mlb-pitchers] [--ball-drag F]                     the foreign players of KBO and NPB clubs; wRC+ of the level's
 //!                                                                  hitters (and pitchers) against major-leaguers; `pool` = only that
@@ -167,13 +167,15 @@ fn parse_args() -> Args {
             "--cross-games" => a.cross_games = Some(v.parse().expect("--cross-games N")),
             "--until" => a.until = Some(bm_world::Date::parse(&v).expect("--until YYYY-MM-DD")),
             "--talent" | "--foreign" => {
-                let t: Vec<f32> = v.split(',').map(|x| x.trim().parse().expect("--talent hitting,pitching,fielding,physical[,power,command]")).collect();
-                if t.len() != 4 && t.len() != 6 {
-                    eprintln!("{k} needs four or six numbers: hitting,pitching,fielding,physical[,power,command]");
+                let t: Vec<f32> =
+                    v.split(',').map(|x| x.trim().parse().expect("--talent hitting,pitching,fielding,physical[,power,command[,velocity]]")).collect();
+                if ![4, 6, 7].contains(&t.len()) {
+                    eprintln!("{k} needs four, six or seven numbers: hitting,pitching,fielding,physical[,power,command[,velocity]]");
                     std::process::exit(2);
                 }
                 let extra = |i: usize| t.get(i).copied().unwrap_or(0.0);
-                let talent = bm_world::Talent { hitting: t[0], pitching: t[1], fielding: t[2], physical: t[3], power: extra(4), command: extra(5) };
+                let talent =
+                    bm_world::Talent { hitting: t[0], pitching: t[1], fielding: t[2], physical: t[3], power: extra(4), command: extra(5), velocity: extra(6) };
                 if k == "--talent" {
                     a.talent = talent;
                 } else {

@@ -212,6 +212,7 @@
   "fielding": 1.0,
   "physical": 1.0,
   "command": 1.0,
-  "basis": "Share of a level's skill gaps (more raw power than bat-to-ball skill, weaker defence and bodies, poor command) that closes by a player's peak. Assumption, fitted with `bm careers` so that each level keeps the skill balance of its 2025-2026 statistics"
+  "velocity": 1.0,
+  "basis": "Share of a level's skill gaps (more raw power than bat-to-ball skill, weaker defence and bodies, poor command, nearly major-league velocity) that closes by a player's peak. Assumption, fitted with `bm careers` so that each level keeps the skill balance of its 2025-2026 statistics"
  }
 }

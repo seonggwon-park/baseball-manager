@@ -797,7 +797,7 @@ fn foreign_slots(org: &Org, levels: &LevelTable) -> Vec<ForeignSlot> {
     for (i, (_, key)) in org.levels.iter().enumerate() {
         let profile = levels.get(key);
         let Some(f) = &profile.foreign else { continue };
-        let t = Talent { hitting: f.talent[0], pitching: f.talent[1], fielding: f.talent[2], physical: f.talent[3], power: f.talent[4], command: f.talent[5] };
+        let t = crate::populate::talent(&f.talent);
         let slot = |pitcher: Option<Role>, position: Option<Position>, group: &str| ForeignSlot {
             level: i,
             pitcher,
@@ -1117,22 +1117,23 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
 }
 
 /// The talent offsets (in the order of `levels.json`: hitting, pitching, fielding,
-/// physical, power on top of hitting, command on top of pitching) that a group of
-/// players shows on average.
-pub fn talent_of<'a>(players: impl Iterator<Item = &'a Player>) -> [f64; 6] {
+/// physical, power on top of hitting, command on top of pitching, velocity on top of
+/// pitching) that a group of players shows on average.
+pub fn talent_of<'a>(players: impl Iterator<Item = &'a Player>) -> [f64; 7] {
     use crate::attr::Attr::*;
     let mean = |p: &Player, a: &[crate::attr::Attr]| a.iter().map(|&x| p.attrs.z(x)).sum::<f64>() / a.len() as f64;
     let (mut h, mut pw, mut f, mut n_h) = (0.0, 0.0, 0.0, 0.0);
-    let (mut pt, mut cm, mut n_p) = (0.0, 0.0, 0.0);
+    let (mut pt, mut cm, mut vel, mut n_p) = (0.0, 0.0, 0.0, 0.0);
     let (mut ph, mut n) = (0.0, 0.0);
     for p in players {
         ph += mean(p, &[Strength, Durability, Agility]);
         n += 1.0;
         if p.is_pitcher() {
             let relief = if ability::can_start(p) { 0.0 } else { 0.27 };
-            let base = (p.attrs.z(Velocity) - relief + p.attrs.z(Stuff) + p.attrs.z(Deception)) / 3.0;
+            let base = mean(p, &[Stuff, Deception]);
             pt += base;
             cm += mean(p, &[Control, Command]) - base;
+            vel += p.attrs.z(Velocity) - relief - base;
             n_p += 1.0;
         } else {
             let hit = mean(p, &[Contact, Timing, BatControl, Discipline, Recognition]);
@@ -1143,7 +1144,7 @@ pub fn talent_of<'a>(players: impl Iterator<Item = &'a Player>) -> [f64; 6] {
         }
     }
     let d = |x: f64, k: f64| if k > 0.0 { x / k } else { 0.0 };
-    [d(h, n_h), d(pt, n_p), d(f, n_h), d(ph, n), d(pw, n_h), d(cm, n_p)]
+    [d(h, n_h), d(pt, n_p), d(f, n_h), d(ph, n), d(pw, n_h), d(cm, n_p), d(vel, n_p)]
 }
 
 #[cfg(test)]
