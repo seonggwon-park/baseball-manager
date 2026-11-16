@@ -12,8 +12,7 @@
     "cancel": "Cancel",
     "confirm": "OK",
     "none": "None",
-    "vs": "at",
-    "provisional": "provisional ratings"
+    "vs": "at"
   },
   "theme": {
     "dark": "Dark theme",
@@ -84,7 +83,8 @@
     "R": "R",
     "L": "L",
     "bats": "Bats {{hand}}",
-    "throws": "Throws {{hand}}"
+    "throws": "Throws {{hand}}",
+    "S": "S"
   },
   "pitch": {
     "FF": "Four-seam",
@@ -96,17 +96,70 @@
     "CH": "Changeup",
     "FS": "Splitter"
   },
-  "rating": {
+  "attr": {
     "contact": "Contact",
+    "timing": "Timing",
     "power": "Power",
-    "eye": "Eye",
-    "speed": "Speed",
-    "bunt": "Bunt",
-    "fielding": "Fielding",
-    "arm": "Arm",
+    "discipline": "Discipline",
+    "recognition": "Pitch recognition",
+    "bat_control": "Bat control",
+    "bunt": "Bunting",
+    "baserunning": "Baserunning",
+    "stealing": "Stealing",
+    "hands": "Hands",
+    "range": "Range",
+    "reads": "Reads",
+    "arm_strength": "Arm strength",
+    "arm_accuracy": "Arm accuracy",
+    "footwork": "Footwork",
+    "framing": "Framing",
+    "blocking": "Blocking",
+    "throwing_out": "Throwing out runners",
+    "game_calling": "Game calling",
     "velocity": "Velocity",
+    "stuff": "Stuff",
     "control": "Control",
-    "stamina": "Stamina"
+    "command": "Command",
+    "deception": "Deception",
+    "hold_runners": "Holding runners",
+    "composure": "Composure",
+    "concentration": "Concentration",
+    "baseball_iq": "Baseball IQ",
+    "anticipation": "Anticipation",
+    "determination": "Determination",
+    "leadership": "Leadership",
+    "teamwork": "Teamwork",
+    "aggression": "Aggression",
+    "speed": "Speed",
+    "acceleration": "Acceleration",
+    "agility": "Agility",
+    "strength": "Strength",
+    "stamina": "Stamina",
+    "durability": "Durability"
+  },
+  "attrGroup": {
+    "batting": "Batting",
+    "running": "Running",
+    "fielding": "Fielding",
+    "catching": "Catching",
+    "pitching": "Pitching",
+    "mental": "Mental",
+    "physical": "Physical"
+  },
+  "scale": {
+    "toggle": "Rating scale",
+    "to80": "20–80 scale",
+    "to20": "1–20 scale"
+  },
+  "card": {
+    "open": "Open the player's profile",
+    "body": "{{cm}} cm, {{kg}} kg",
+    "pitch": "Pitch",
+    "speed": "Avg speed",
+    "usage": "Usage",
+    "grade": "Grade",
+    "scale20": "1-20 scale: 13 is the major-league average, 20 an all-time great.",
+    "scale80": "20-80 scale: 50 is the major-league average, 10 points are one standard deviation."
   },
   "score": {
     "inning": "{{n}}",

@@ -1,0 +1,1363 @@
+{
+  "first": [
+    {
+      "real_name": "読売ジャイアンツ",
+      "league": "Central",
+      "city_ja": "東京都文京区",
+      "city_en": "Tokyo (Bunkyo Ward)",
+      "prefecture_en": "Tokyo",
+      "ballpark": "東京ドーム",
+      "ballpark_en": "Tokyo Dome",
+      "capacity": 43500,
+      "capacity_note": "Official site: about 43,500 for baseball (55,000 max for other events).",
+      "elevation_m": 3.3,
+      "elevation_note": "Not an officially published ballpark figure: ground elevation from the Geospatial Information Authority of Japan (GSI) DEM at the coordinates NPB publishes for the park; playing-field level can differ by a few metres. Tokyo Dome's official page states the playing surface is 5.5 m below ground level.",
+      "roof": "dome",
+      "surface": "turf",
+      "surface_detail": "Artificial turf, fully replaced in 2026 (first replacement since 2019) per the official site.",
+      "dims_m": {
+        "lf_line": 100,
+        "lcf": 110,
+        "cf": 122,
+        "rcf": 110,
+        "rf_line": 100
+      },
+      "wall_m": {
+        "lf": 4.24,
+        "cf": 4.24,
+        "rf": 4.24
+      },
+      "second_home": [
+        {
+          "ballpark": "京セラドーム大阪",
+          "city_en": "Osaka",
+          "home_games_2026": 2,
+          "home_games_2027_scheduled": 2,
+          "note": "Two home dates at Kyocera Dome in 2026 (1-2 Sep) and two in the 2027 schedule (31 Aug - 1 Sep); all other non-Tokyo Dome home games are one-off regional dates."
+        }
+      ],
+      "home_games_2026": {
+        "東京ドーム": 64,
+        "京セラドーム大阪": 2,
+        "長野": 1,
+        "前橋": 1,
+        "岐阜": 1,
+        "福井": 1,
+        "弘前": 1,
+        "盛岡": 1
+      },
+      "notes": "Lines/CF confirmed by the official site and the NPB stadium database (100/122). Alleys (110 m) from ja.wikipedia + secondary list, not on the official page. Wall: official page says 4 m; ja.wikipedia says 4.0 m rubber fence plus a 0.24 m net fence added in 2010 (4.24 m total) - 4.24 used here. 2027: Central League DH starts; scheduled non-Tokyo Dome home dates in 2027 are Kyocera Dome Osaka x2, Nagasaki, Hitachinaka, Toyama, Kanazawa, Kurashiki. No ballpark move announced.",
+      "unconfirmed": [
+        "dims_m.lcf",
+        "dims_m.rcf",
+        "wall_m (4.0 official vs 4.24 with net)",
+        "elevation_m (derived)"
+      ],
+      "sources": [
+        "https://www.tokyo-dome.co.jp/dome/about/",
+        "https://npb.jp/stadium/detail.html?081",
+        "https://ja.wikipedia.org/wiki/東京ドーム",
+        "https://no0blog.com/data-baseballpark-size/ (secondary list used only as a cross-check)",
+        "https://npb.jp/games/2026/schedule_04_detail.html (monthly pages schedule_03..10_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/games/2027/schedule_04_detail.html (monthly pages; announced 2026-11-04 CL / 2026-11-10 PL)",
+        "https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php (GSI elevation API queried at the lat/lng published in npb.jp/stadium/json/<id>.json)",
+        "Central League adopts the DH from the 2027 season (decided 2025-08-04): https://npb.jp/news/detail/20250804_05.html"
+      ]
+    },
+    {
+      "real_name": "阪神タイガース",
+      "league": "Central",
+      "city_ja": "兵庫県西宮市",
+      "city_en": "Nishinomiya",
+      "prefecture_en": "Hyogo",
+      "ballpark": "阪神甲子園球場",
+      "ballpark_en": "Hanshin Koshien Stadium",
+      "capacity": 47359,
+      "capacity_note": "Official figure (infield 28,356 + outfield 19,003). ja.wikipedia, citing Nikkan Sports, gives 43,359 for professional games - not on the official page.",
+      "elevation_m": 1.5,
+      "elevation_note": "Not an officially published ballpark figure: ground elevation from the Geospatial Information Authority of Japan (GSI) DEM at the coordinates NPB publishes for the park; playing-field level can differ by a few metres.",
+      "roof": "open",
+      "surface": "grass",
+      "surface_detail": "Dirt infield, natural-grass outfield.",
+      "dims_m": {
+        "lf_line": 95,
+        "lcf": 118,
+        "cf": 118,
+        "rcf": 118,
+        "rf_line": 95
+      },
+      "wall_m": {
+        "lf": 3.0,
+        "cf": 3.0,
+        "rf": 3.0
+      },
+      "second_home": [
+        {
+          "ballpark": "京セラドーム大阪",
+          "city_en": "Osaka",
+          "home_games_2026": 9,
+          "home_games_2027_scheduled": 8,
+          "note": "Used while Koshien hosts the national high-school tournaments: 31 Mar - 2 Apr and 7-9, 18-20 Aug in 2026; 26-28 Mar (opening series) and 10-12, 21-22 Aug in the 2027 schedule."
+        },
+        {
+          "ballpark": "倉敷マスカットスタジアム",
+          "city_en": "Kurashiki (Okayama)",
+          "home_games_2026": 1,
+          "home_games_2027_scheduled": 1,
+          "note": "One regional home date per year."
+        }
+      ],
+      "home_games_2026": {
+        "阪神甲子園球場": 62,
+        "京セラドーム大阪": 9,
+        "倉敷": 1
+      },
+      "notes": "Lines 95 m and CF 118 m confirmed by the official page and the NPB database. Alleys 118 m (very deep; no terrace since the Lucky Zone was removed for 1992) from ja.wikipedia + secondary list. Outfield wall height 3.0 m is from ja.wikipedia only; another secondary site lists 3.2 m - NOT confirmed by an official source. Hanshin declined to host the 2026 opener because the park was unavailable (NPB announcement). 2027: Central League DH starts.",
+      "unconfirmed": [
+        "wall_m (3.0 ja.wikipedia vs 3.2 other secondary)",
+        "dims_m.lcf",
+        "dims_m.rcf",
+        "elevation_m (derived)",
+        "capacity for pro games"
+      ],
+      "sources": [
+        "https://www.hanshin.co.jp/koshien/stadium_guide/seat.html",
+        "https://npb.jp/stadium/detail.html?181",
+        "https://ja.wikipedia.org/wiki/阪神甲子園球場",
+        "https://no0blog.com/data-baseballpark-size/ (secondary list used only as a cross-check)",
+        "https://www.rebolld.com/post/baseball-stadium-size-ranking/",
+        "https://npb.jp/news/detail/20251105_02.html",
+        "https://npb.jp/games/2026/schedule_04_detail.html (monthly pages schedule_03..10_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/games/2027/schedule_04_detail.html (monthly pages; announced 2026-11-04 CL / 2026-11-10 PL)",
+        "https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php (GSI elevation API queried at the lat/lng published in npb.jp/stadium/json/<id>.json)",
+        "Central League adopts the DH from the 2027 season (decided 2025-08-04): https://npb.jp/news/detail/20250804_05.html"
+      ]
+    },
+    {
+      "real_name": "横浜DeNAベイスターズ",
+      "league": "Central",
+      "city_ja": "神奈川県横浜市",
+      "city_en": "Yokohama",
+      "prefecture_en": "Kanagawa",
+      "ballpark": "横浜スタジアム",
+      "ballpark_en": "Yokohama Stadium",
+      "capacity": 34046,
+      "capacity_note": "34,046 = maximum for NPB games after the 2020 expansion (Yokohama city tourism site / Impress 2020). Other figures in circulation: 33,912 and 34,142; the official stadium site could not be read.",
+      "elevation_m": 1.3,
+      "elevation_note": "Not an officially published ballpark figure: ground elevation from the Geospatial Information Authority of Japan (GSI) DEM at the coordinates NPB publishes for the park; playing-field level can differ by a few metres.",
+      "roof": "open",
+      "surface": "turf",
+      "dims_m": {
+        "lf_line": 94.2,
+        "lcf": 111.4,
+        "cf": 117.7,
+        "rcf": 111.4,
+        "rf_line": 94.2
+      },
+      "wall_m": {
+        "lf": 5.0,
+        "cf": 5.0,
+        "rf": 5.0
+      },
+      "second_home": [],
+      "home_games_2026": {
+        "横浜スタジアム": 71,
+        "HARD OFF ECOスタジアム新潟": 1
+      },
+      "notes": "NPB database rounds the dimensions to 94 / 118; 94.2 / 117.7 and alleys 111.4 from ja.wikipedia + secondary list. Wall 5.0-5.3 m per ja.wikipedia (highest outfield wall of the 12 parks); 5.0 entered. One regional home game a year in Niigata (2026 and 2027). 2027: Central League DH starts.",
+      "unconfirmed": [
+        "capacity (conflicting figures)",
+        "wall_m (5.0-5.3 range)",
+        "dims_m.lcf",
+        "dims_m.rcf",
+        "elevation_m (derived)"
+      ],
+      "sources": [
+        "https://npb.jp/stadium/detail.html?093",
+        "https://ja.wikipedia.org/wiki/横浜スタジアム",
+        "https://www.welcome.city.yokohama.jp/blog/detail.php?blog_id=6",
+        "https://no0blog.com/data-baseballpark-size/ (secondary list used only as a cross-check)",
+        "https://npb.jp/games/2026/schedule_04_detail.html (monthly pages schedule_03..10_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/games/2027/schedule_04_detail.html (monthly pages; announced 2026-11-04 CL / 2026-11-10 PL)",
+        "https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php (GSI elevation API queried at the lat/lng published in npb.jp/stadium/json/<id>.json)",
+        "Central League adopts the DH from the 2027 season (decided 2025-08-04): https://npb.jp/news/detail/20250804_05.html"
+      ]
+    },
+    {
+      "real_name": "広島東洋カープ",
+      "league": "Central",
+      "city_ja": "広島県広島市",
+      "city_en": "Hiroshima",
+      "prefecture_en": "Hiroshima",
+      "ballpark": "MAZDA Zoom-Zoom スタジアム広島",
+      "ballpark_en": "Mazda Stadium (Hiroshima Municipal Stadium)",
+      "capacity": 33000,
+      "capacity_note": "Stated capacity 33,000 (club stadium outline cited by ja.wikipedia; the club page itself could not be fetched).",
+      "elevation_m": 2.2,
+      "elevation_note": "Not an officially published ballpark figure: ground elevation from the Geospatial Information Authority of Japan (GSI) DEM at the coordinates NPB publishes for the park; playing-field level can differ by a few metres.",
+      "roof": "open",
+      "surface": "grass",
+      "surface_detail": "Natural grass infield and outfield.",
+      "dims_m": {
+        "lf_line": 101,
+        "lcf": 116,
+        "cf": 122,
+        "rcf": 116,
+        "rf_line": 100
+      },
+      "wall_m": {
+        "lf": 3.6,
+        "cf": 2.5,
+        "rf": 3.4
+      },
+      "second_home": [],
+      "home_games_2026": {
+        "MAZDA Zoom-Zoom スタジアム広島": 71
+      },
+      "notes": "Asymmetric: LF 101 m / RF 100 m (NPB database: 101/100, CF 122). Alleys 116 m and wall heights from ja.wikipedia: about 2.5 m around centre (1.8 m rubber + 0.7 m wire), 3.6 m on the straight left-field section, 2.5-3.4 m in part of right field. All 2026 home games were at Mazda Stadium. 2027: Central League DH starts.",
+      "unconfirmed": [
+        "capacity (official page not reachable)",
+        "dims_m.lcf",
+        "dims_m.rcf",
+        "wall_m (ja.wikipedia only)",
+        "elevation_m (derived)"
+      ],
+      "sources": [
+        "https://npb.jp/stadium/detail.html?208",
+        "https://ja.wikipedia.org/wiki/MAZDA_Zoom-Zoom_スタジアム広島",
+        "https://no0blog.com/data-baseballpark-size/ (secondary list used only as a cross-check)",
+        "https://npb.jp/games/2026/schedule_04_detail.html (monthly pages schedule_03..10_detail.html; home games counted per park, cancellations excluded)",
+        "https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php (GSI elevation API queried at the lat/lng published in npb.jp/stadium/json/<id>.json)",
+        "Central League adopts the DH from the 2027 season (decided 2025-08-04): https://npb.jp/news/detail/20250804_05.html"
+      ]
+    },
+    {
+      "real_name": "東京ヤクルトスワローズ",
+      "league": "Central",
+      "city_ja": "東京都新宿区",
+      "city_en": "Tokyo (Shinjuku Ward)",
+      "prefecture_en": "Tokyo",
+      "ballpark": "明治神宮野球場",
+      "ballpark_en": "Meiji Jingu Stadium",
+      "capacity": 29943,
+      "capacity_note": "Official site: 29,943.",
+      "elevation_m": 30.3,
+      "elevation_note": "Not an officially published ballpark figure: ground elevation from the Geospatial Information Authority of Japan (GSI) DEM at the coordinates NPB publishes for the park; playing-field level can differ by a few metres.",
+      "roof": "open",
+      "surface": "turf",
+      "dims_m": {
+        "lf_line": 97.5,
+        "lcf": 112.3,
+        "cf": 120,
+        "rcf": 112.3,
+        "rf_line": 97.5
+      },
+      "wall_m": {
+        "lf": 3.3,
+        "cf": 3.3,
+        "rf": 3.3
+      },
+      "second_home": [],
+      "home_games_2026": {
+        "明治神宮野球場": 69,
+        "松山（坊っちゃんスタジアム）": 1,
+        "いわき": 1
+      },
+      "notes": "Lines 97.5 / CF 120 from the NPB database; alleys 112.3 from ja.wikipedia + secondary list. Wall = 1.8 m rubber fence + 1.5 m wire fence (official site). Regional home dates: Matsuyama and Iwaki in 2026; Matsuyama and Shizuoka scheduled in 2027. 2027: Central League DH starts; the farm team moves from Toda to Moriya (Ibaraki). Later: a replacement stadium is planned in the Jingu Gaien redevelopment (ja.wikipedia cites a 2021 report: completion 2031, use from 2032 - current timetable not verified).",
+      "unconfirmed": [
+        "dims_m.lcf",
+        "dims_m.rcf",
+        "elevation_m (derived)",
+        "timing of the replacement stadium"
+      ],
+      "sources": [
+        "https://www.jingu-stadium.com/about_kyujo/equipment/equipment.html",
+        "https://npb.jp/stadium/detail.html?082",
+        "https://ja.wikipedia.org/wiki/明治神宮野球場",
+        "https://no0blog.com/data-baseballpark-size/ (secondary list used only as a cross-check)",
+        "https://npb.jp/games/2026/schedule_04_detail.html (monthly pages schedule_03..10_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/games/2027/schedule_04_detail.html (monthly pages; announced 2026-11-04 CL / 2026-11-10 PL)",
+        "https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php (GSI elevation API queried at the lat/lng published in npb.jp/stadium/json/<id>.json)",
+        "Central League adopts the DH from the 2027 season (decided 2025-08-04): https://npb.jp/news/detail/20250804_05.html"
+      ]
+    },
+    {
+      "real_name": "中日ドラゴンズ",
+      "league": "Central",
+      "city_ja": "愛知県名古屋市",
+      "city_en": "Nagoya",
+      "prefecture_en": "Aichi",
+      "ballpark": "バンテリンドーム ナゴヤ",
+      "ballpark_en": "Vantelin Dome Nagoya (Nagoya Dome)",
+      "capacity": 36778,
+      "capacity_note": "36,778 for professional baseball in 2026 per ja.wikipedia and a ticketing site; not confirmed on an official page.",
+      "elevation_m": 12.5,
+      "elevation_note": "Not an officially published ballpark figure: ground elevation from the Geospatial Information Authority of Japan (GSI) DEM at the coordinates NPB publishes for the park; playing-field level can differ by a few metres.",
+      "roof": "dome",
+      "surface": "turf",
+      "dims_m": {
+        "lf_line": 100,
+        "lcf": 110,
+        "cf": 122,
+        "rcf": 110,
+        "rf_line": 100
+      },
+      "wall_m": {
+        "lf": 3.6,
+        "cf": 3.6,
+        "rf": 3.6
+      },
+      "second_home": [],
+      "home_games_2026": {
+        "バンテリンドーム ナゴヤ": 69,
+        "豊橋": 1,
+        "岐阜": 1
+      },
+      "notes": "CHANGED FOR 2026: terrace seating 'Home Run Wing' (128 seats on each side) was installed in the alleys; alleys shortened from 116 m to 110 m and the outfield fence lowered from 4.8 m to 3.6 m (2.6 m soft rubber + 1.0 m net); lines 100 m and CF 122 m unchanged (NPB column and club announcement). Use 116 m / 4.8 m for seasons through 2025. Regional home dates: Toyohashi and Gifu (2026 and 2027). 2027: Central League DH starts. Later: the club plans to move its farm base out of Nagoya Stadium in the early 2030s (site not chosen; NPB column and DIME).",
+      "unconfirmed": [
+        "capacity",
+        "elevation_m (derived)"
+      ],
+      "sources": [
+        "https://npb.jp/news/detail/20260319_01.html",
+        "https://npb.jp/news/detail/20260109_03.html",
+        "https://dime.jp/genre/2114047/",
+        "https://www.daily.co.jp/baseball/2025/08/25/0019392513.shtml",
+        "https://npb.jp/stadium/detail.html?151",
+        "https://ja.wikipedia.org/wiki/ナゴヤドーム",
+        "https://npb.jp/games/2026/schedule_04_detail.html (monthly pages schedule_03..10_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/games/2027/schedule_04_detail.html (monthly pages; announced 2026-11-04 CL / 2026-11-10 PL)",
+        "https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php (GSI elevation API queried at the lat/lng published in npb.jp/stadium/json/<id>.json)",
+        "Central League adopts the DH from the 2027 season (decided 2025-08-04): https://npb.jp/news/detail/20250804_05.html"
+      ]
+    },
+    {
+      "real_name": "福岡ソフトバンクホークス",
+      "league": "Pacific",
+      "city_ja": "福岡県福岡市",
+      "city_en": "Fukuoka",
+      "prefecture_en": "Fukuoka",
+      "ballpark": "みずほPayPayドーム福岡",
+      "ballpark_en": "Mizuho PayPay Dome Fukuoka (Fukuoka Dome)",
+      "capacity": 40122,
+      "capacity_note": "Official baseball capacity: 40,142 (2025), 40,122 (from March 2026), 39,894 (27 Jul - 31 Oct 2026, renovation work), 40,029 (from 1 Nov 2026).",
+      "elevation_m": 3.1,
+      "elevation_note": "Not an officially published ballpark figure: ground elevation from the Geospatial Information Authority of Japan (GSI) DEM at the coordinates NPB publishes for the park; playing-field level can differ by a few metres.",
+      "roof": "retractable",
+      "surface": "turf",
+      "surface_detail": "Artificial turf. Retractable three-panel roof that opens or closes in about 20 minutes (club site). How often games are played with the roof open was not researched.",
+      "dims_m": {
+        "lf_line": 100,
+        "lcf": 110,
+        "cf": 122,
+        "rcf": 110,
+        "rf_line": 100
+      },
+      "wall_m": {
+        "lf": 4.2,
+        "cf": 4.2,
+        "rf": 4.2
+      },
+      "second_home": [],
+      "home_games_2026": {
+        "みずほPayPayドーム福岡": 68,
+        "北九州": 1,
+        "熊本": 1,
+        "東京ドーム": 1,
+        "京セラドーム大阪": 1
+      },
+      "notes": "Club site: lines about 100 m, CF about 122 m. Alleys 110 m and fence 4.2 m are the 'Home Run Terrace' configuration in place since 2015 (previously 116 m and 5.84 m) - from ja.wikipedia + secondary list. No fixed second home: 2026 had single home dates in Kitakyushu, Kumamoto, Tokyo Dome and Kyocera Dome Osaka (a Kagoshima date was rained out). The 2027 schedule as first announced lists no outside home dates for the Hawks (the same was true of the first 2026 announcement, so this may change).",
+      "unconfirmed": [
+        "dims_m.lcf",
+        "dims_m.rcf",
+        "wall_m (ja.wikipedia)",
+        "elevation_m (derived)"
+      ],
+      "sources": [
+        "https://www.softbankhawks.co.jp/stadium/institution.html",
+        "https://www.softbankhawks.co.jp/news/detail/202601061085.html",
+        "https://npb.jp/stadium/detail.html?245",
+        "https://ja.wikipedia.org/wiki/福岡ドーム",
+        "https://no0blog.com/data-baseballpark-size/ (secondary list used only as a cross-check)",
+        "https://npb.jp/games/2027/schedule_note_pl.html",
+        "https://npb.jp/games/2026/schedule_04_detail.html (monthly pages schedule_03..10_detail.html; home games counted per park, cancellations excluded)",
+        "https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php (GSI elevation API queried at the lat/lng published in npb.jp/stadium/json/<id>.json)"
+      ]
+    },
+    {
+      "real_name": "北海道日本ハムファイターズ",
+      "league": "Pacific",
+      "city_ja": "北海道北広島市",
+      "city_en": "Kitahiroshima",
+      "prefecture_en": "Hokkaido",
+      "ballpark": "エスコンフィールドHOKKAIDO",
+      "ballpark_en": "ES CON Field Hokkaido",
+      "capacity": 35000,
+      "capacity_note": "Official F Village site: 35,000 (about 29,000 seats plus standing, per ja.wikipedia).",
+      "elevation_m": 51,
+      "elevation_note": "Not an officially published ballpark figure: ground elevation from the Geospatial Information Authority of Japan (GSI) DEM at the coordinates NPB publishes for the park; playing-field level can differ by a few metres. For this park the API returned only the coarse 10 m-mesh model, and the field is dug in below ground level, so treat as +/- 10 m.",
+      "roof": "retractable",
+      "surface": "grass",
+      "surface_detail": "Outfield natural grass; infield converted to artificial turf (Shaw B1K) from the 2025 season (all natural grass in 2023-2024).",
+      "dims_m": {
+        "lf_line": 97,
+        "lcf": 114,
+        "cf": 122,
+        "rcf": 110,
+        "rf_line": 99
+      },
+      "dims_alt_npb_database": {
+        "lf_line": 98,
+        "cf": 122,
+        "rf_line": 100
+      },
+      "wall_m": {
+        "lf": 2.8,
+        "cf": 2.8,
+        "rf": 2.8
+      },
+      "wall_exceptions": [
+        {
+          "section": "left-field foul pole to the visiting bullpen",
+          "height_m": 6.9,
+          "source": "ja.wikipedia footnote; other secondary lists say 5.6-6.8 m",
+          "confirmed": false
+        }
+      ],
+      "second_home": [],
+      "home_games_2026": {
+        "エスコンフィールドHOKKAIDO": 72
+      },
+      "notes": "SOURCES CONFLICT. Asymmetric park: LF 97 m / RF 99 m is what the club announced at opening (Sports Hochi report carried on the Pacific League site: 'left 97 m, right 99 m, most of the fence about 2.8 m'); NPB's own stadium database lists 98/100 and CF 122. CF appears as 121 m in the ja.wikipedia infobox and as 122 m in NPB's database and other lists - 122 entered. Alleys 114 m (left-centre) and 110 m (right-centre) come from a 2023 Full-Count article and a secondary list only. Outfield fence lines are straight segments. All 2026 home games were played here (no Sapporo or regional dates). Later: the farm team will move from Kamagaya (Chiba) to Eniwa, Hokkaido, targeted for about 2030 (announced 2026-07-02).",
+      "unconfirmed": [
+        "dims_m.lf_line / rf_line (97/99 vs 98/100)",
+        "dims_m.cf (121 vs 122)",
+        "dims_m.lcf",
+        "dims_m.rcf",
+        "wall_exceptions",
+        "elevation_m (derived, coarse)"
+      ],
+      "sources": [
+        "https://pacificleague.com/news/2023/3/10013078",
+        "https://pacificleague.com/news/2023/1/47557",
+        "https://npb.jp/stadium/detail.html?290",
+        "https://full-count.jp/2023/03/29/post1357742/2/",
+        "https://ja.wikipedia.org/wiki/エスコンフィールドHOKKAIDO",
+        "https://www.hkdballpark.com/about/esconfield/",
+        "https://no0blog.com/data-baseballpark-size/ (secondary list used only as a cross-check)",
+        "https://www.daily.co.jp/baseball/2026/07/02/0020542515.shtml",
+        "https://npb.jp/games/2026/schedule_04_detail.html (monthly pages schedule_03..10_detail.html; home games counted per park, cancellations excluded)",
+        "https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php (GSI elevation API queried at the lat/lng published in npb.jp/stadium/json/<id>.json)"
+      ]
+    },
+    {
+      "real_name": "オリックス・バファローズ",
+      "league": "Pacific",
+      "city_ja": "大阪府大阪市",
+      "city_en": "Osaka",
+      "prefecture_en": "Osaka",
+      "ballpark": "京セラドーム大阪",
+      "ballpark_en": "Kyocera Dome Osaka (Osaka Dome)",
+      "capacity": 36220,
+      "capacity_note": "36,220 = maximum seats for professional baseball (ja.wikipedia, 'from 2019'); official site blocked automated access.",
+      "elevation_m": 0.7,
+      "elevation_note": "Not an officially published ballpark figure: ground elevation from the Geospatial Information Authority of Japan (GSI) DEM at the coordinates NPB publishes for the park; playing-field level can differ by a few metres.",
+      "roof": "dome",
+      "surface": "turf",
+      "dims_m": {
+        "lf_line": 100,
+        "lcf": 116,
+        "cf": 122,
+        "rcf": 116,
+        "rf_line": 100
+      },
+      "wall_m": {
+        "lf": 4.2,
+        "cf": 4.2,
+        "rf": 4.2
+      },
+      "second_home": [
+        {
+          "ballpark": "ほっともっとフィールド神戸",
+          "city_en": "Kobe (Hyogo)",
+          "home_games_2026": 5,
+          "home_games_2027_scheduled": 6,
+          "dims_m": {
+            "lf_line": 99.1,
+            "lcf": 117,
+            "cf": 122,
+            "rcf": 117,
+            "rf_line": 99.1
+          },
+          "wall_m": 2.45,
+          "roof": "open",
+          "surface": "grass",
+          "capacity": 35000,
+          "elevation_m": 107.1,
+          "note": "Regular secondary home (6 dates scheduled, 5 played in 2026). Lines/CF from the NPB database; alleys, wall (1.05 m rubber + 1.40 m net) and capacity from ja.wikipedia; elevation derived from GSI DEM."
+        }
+      ],
+      "home_games_2026": {
+        "京セラドーム大阪": 65,
+        "ほっともっとフィールド神戸": 5,
+        "東京ドーム": 1
+      },
+      "notes": "Lines 100 / CF 122 from the NPB database; alleys 116 m and wall 4.2 m from ja.wikipedia (another secondary site lists the wall as 4.0 m). The artificial turf was replaced on 14-28 Feb 2026, the first renewal since 2018 (Pacific League site). 2027 schedule: Kobe x6 and Tokyo Dome x1 away from Kyocera Dome.",
+      "unconfirmed": [
+        "capacity",
+        "dims_m.lcf",
+        "dims_m.rcf",
+        "wall_m (4.2 vs 4.0)",
+        "elevation_m (derived)"
+      ],
+      "sources": [
+        "https://npb.jp/stadium/detail.html?175",
+        "https://npb.jp/stadium/detail.html?183",
+        "https://ja.wikipedia.org/wiki/大阪ドーム",
+        "https://ja.wikipedia.org/wiki/神戸総合運動公園野球場",
+        "https://no0blog.com/data-baseballpark-size/ (secondary list used only as a cross-check)",
+        "https://pacificleague.com/news/2026/2/10047038",
+        "https://npb.jp/games/2026/schedule_note_pl.html",
+        "https://npb.jp/games/2026/schedule_04_detail.html (monthly pages schedule_03..10_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/games/2027/schedule_04_detail.html (monthly pages; announced 2026-11-04 CL / 2026-11-10 PL)",
+        "https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php (GSI elevation API queried at the lat/lng published in npb.jp/stadium/json/<id>.json)"
+      ]
+    },
+    {
+      "real_name": "東北楽天ゴールデンイーグルス",
+      "league": "Pacific",
+      "city_ja": "宮城県仙台市",
+      "city_en": "Sendai",
+      "prefecture_en": "Miyagi",
+      "ballpark": "楽天モバイル 最強パーク宮城",
+      "ballpark_en": "Rakuten Mobile Saikyo Park Miyagi (Miyagi Stadium)",
+      "capacity": 31272,
+      "capacity_note": "31,272 is the figure ja.wikipedia cites from a 2022 yearbook; a 2026 figure after the fence/vision renovation was not found.",
+      "elevation_m": 15.9,
+      "elevation_note": "Not an officially published ballpark figure: ground elevation from the Geospatial Information Authority of Japan (GSI) DEM at the coordinates NPB publishes for the park; playing-field level can differ by a few metres.",
+      "roof": "open",
+      "surface": "grass",
+      "surface_detail": "Natural grass in fair territory (infield and outfield).",
+      "dims_m": {
+        "lf_line": 100.1,
+        "lcf": 110,
+        "cf": 122,
+        "rcf": 112,
+        "rf_line": 100.1
+      },
+      "wall_m": {
+        "lf": 2.0,
+        "cf": 2.0,
+        "rf": 2.0
+      },
+      "wall_exceptions": [
+        {
+          "section": "part of the left-side fence",
+          "height_m": 1.8,
+          "source": "club announcement 2025-11-26 ('fence height 2 m, partly 1.8 m' for the left side)",
+          "confirmed": true
+        }
+      ],
+      "second_home": [],
+      "home_games_2026": {
+        "楽天モバイル 最強パーク宮城": 65,
+        "弘前": 1,
+        "東京ドーム": 1,
+        "山形": 1,
+        "郡山": 1,
+        "秋田": 1,
+        "盛岡": 1
+      },
+      "notes": "CHANGED FOR 2026: (1) the park was renamed from 楽天モバイルパーク宮城 on 2026-01-01 (naming-rights contract to 2028-12-31); (2) a new outfield fence was built up to 6 m closer to home plate: left-centre 116 m -> max 110 m, right-centre 116 m -> max 112 m; lines (100.1 m) and CF (122 m) unchanged; new fence 2 m high (partly 1.8 m). The area behind the new left-field fence is the 'Iris Ohyama Left Home Run Zone'. Use 116 m alleys and a 2.5 m fence (left-centre 1.65 m) for 2016-2025 (ja.wikipedia). No fixed second home: five Tohoku regional dates plus one at Tokyo Dome in 2026; Koriyama, Akita, Yamagata, Morioka, Hirosaki scheduled in 2027.",
+      "unconfirmed": [
+        "capacity (2022 figure)",
+        "elevation_m (derived)"
+      ],
+      "sources": [
+        "https://www.rakuteneagles.jp/news/detail/202500956507.html",
+        "https://baseballking.jp/ns/682038/",
+        "https://sendai.keizai.biz/headline/4381/",
+        "https://npb.jp/stadium/detail.html?029",
+        "https://ja.wikipedia.org/wiki/宮城球場",
+        "https://npb.jp/games/2026/schedule_04_detail.html (monthly pages schedule_03..10_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/games/2027/schedule_04_detail.html (monthly pages; announced 2026-11-04 CL / 2026-11-10 PL)",
+        "https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php (GSI elevation API queried at the lat/lng published in npb.jp/stadium/json/<id>.json)"
+      ]
+    },
+    {
+      "real_name": "埼玉西武ライオンズ",
+      "league": "Pacific",
+      "city_ja": "埼玉県所沢市",
+      "city_en": "Tokorozawa",
+      "prefecture_en": "Saitama",
+      "ballpark": "ベルーナドーム",
+      "ballpark_en": "Belluna Dome (Seibu Dome)",
+      "capacity": 28104,
+      "capacity_note": "Club site: 31,552 overall, 28,104 for professional baseball.",
+      "elevation_m": 104.1,
+      "elevation_note": "Not an officially published ballpark figure: ground elevation from the Geospatial Information Authority of Japan (GSI) DEM at the coordinates NPB publishes for the park; playing-field level can differ by a few metres.",
+      "roof": "dome",
+      "surface": "turf",
+      "surface_detail": "Fixed roof built over an existing open stadium; there are no side walls, so the park is open to outside air (heat/humidity behave like an outdoor park).",
+      "dims_m": {
+        "lf_line": 100,
+        "lcf": 116,
+        "cf": 122,
+        "rcf": 116,
+        "rf_line": 100
+      },
+      "wall_m": {
+        "lf": 4.37,
+        "cf": 3.2,
+        "rf": 4.37
+      },
+      "second_home": [
+        {
+          "ballpark": "埼玉県営大宮公園野球場",
+          "city_en": "Saitama City",
+          "home_games_2026": 2,
+          "home_games_2027_scheduled": 1,
+          "note": "Annual dates in Omiya."
+        }
+      ],
+      "home_games_2026": {
+        "ベルーナドーム": 66,
+        "県営大宮": 2,
+        "那覇": 2,
+        "前橋": 1,
+        "東京ドーム": 1
+      },
+      "notes": "Lines 100 / CF 122 on the club site and NPB database. Alleys 116 m from ja.wikipedia + secondary list. Wall: about 3.2 m around centre, rising gradually toward the foul poles (ja.wikipedia infobox gives 3.2-4.37 m); the pole-side maximum is entered for lf/rf. 2026 also had two home dates in Naha (Okinawa), one in Maebashi and one at Tokyo Dome; 2027 schedule: Omiya, Maebashi, Tokyo Dome.",
+      "unconfirmed": [
+        "dims_m.lcf",
+        "dims_m.rcf",
+        "wall_m (ja.wikipedia)",
+        "elevation_m (derived)"
+      ],
+      "sources": [
+        "https://www.seibulions.jp/stadium/dome.html",
+        "https://npb.jp/stadium/detail.html?068",
+        "https://ja.wikipedia.org/wiki/西武ドーム",
+        "https://no0blog.com/data-baseballpark-size/ (secondary list used only as a cross-check)",
+        "https://www.rebolld.com/post/baseball-stadium-size-ranking/",
+        "https://npb.jp/games/2026/schedule_04_detail.html (monthly pages schedule_03..10_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/games/2027/schedule_04_detail.html (monthly pages; announced 2026-11-04 CL / 2026-11-10 PL)",
+        "https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php (GSI elevation API queried at the lat/lng published in npb.jp/stadium/json/<id>.json)"
+      ]
+    },
+    {
+      "real_name": "千葉ロッテマリーンズ",
+      "league": "Pacific",
+      "city_ja": "千葉県千葉市",
+      "city_en": "Chiba",
+      "prefecture_en": "Chiba",
+      "ballpark": "ZOZOマリンスタジアム",
+      "ballpark_en": "ZOZO Marine Stadium (Chiba Marine Stadium)",
+      "capacity": 29645,
+      "capacity_note": "29,645 as of March 2025 (Nikkan Sports via ja.wikipedia); a 2026 figure was not found.",
+      "elevation_m": 6.0,
+      "elevation_note": "Not an officially published ballpark figure: ground elevation from the Geospatial Information Authority of Japan (GSI) DEM at the coordinates NPB publishes for the park; playing-field level can differ by a few metres.",
+      "roof": "open",
+      "surface": "turf",
+      "surface_detail": "Artificial turf; seaside park known for strong wind.",
+      "dims_m": {
+        "lf_line": 99.5,
+        "lcf": 112.3,
+        "cf": 122,
+        "rcf": 112.3,
+        "rf_line": 99.5
+      },
+      "wall_m": {
+        "lf": 3.3,
+        "cf": 3.3,
+        "rf": 3.3
+      },
+      "second_home": [],
+      "home_games_2026": {
+        "ZOZOマリンスタジアム": 71
+      },
+      "notes": "Lines 99.5 / CF 122 from the NPB database. Alleys 112.3 m and fence 3.3 m are the 'Home Run Lagoon' terrace configuration in place since 2019 (fence moved in by up to 4 m) - ja.wikipedia + secondary list. All home games at ZOZO Marine in 2026 and in the 2027 schedule. Later: Chiba City, the club and AEON Mall signed an agreement in 2026 to draw up the basic plan for a replacement stadium in Makuhari (reports: opening around 2034, indoor/dome option under study); the farm team is due to move from Urawa (Saitama) to Kimitsu (Chiba) around 2030.",
+      "unconfirmed": [
+        "capacity (2025 figure)",
+        "dims_m.lcf",
+        "dims_m.rcf",
+        "wall_m (ja.wikipedia)",
+        "elevation_m (derived)",
+        "new-stadium timetable"
+      ],
+      "sources": [
+        "https://npb.jp/stadium/detail.html?073",
+        "https://ja.wikipedia.org/wiki/千葉マリンスタジアム",
+        "https://no0blog.com/data-baseballpark-size/ (secondary list used only as a cross-check)",
+        "https://www.city.chiba.jp/sogoseisaku/miraitoshi/marinesaiseibi/marine_kihonkeikaku_three_party_agreement.html",
+        "https://npb.jp/news/detail/20260109_03.html",
+        "https://npb.jp/games/2026/schedule_04_detail.html (monthly pages schedule_03..10_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/games/2027/schedule_04_detail.html (monthly pages; announced 2026-11-04 CL / 2026-11-10 PL)",
+        "https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php (GSI elevation API queried at the lat/lng published in npb.jp/stadium/json/<id>.json)"
+      ]
+    }
+  ],
+  "farm": [
+    {
+      "real_name": "東北楽天ゴールデンイーグルス（二軍）",
+      "parent": "東北楽天ゴールデンイーグルス",
+      "league": "ファーム・リーグ (Farm League)",
+      "division": "東地区 (East Division)",
+      "league_structure_2026": "2026: single 'ファーム・リーグ' (Farm League) with three regional divisions (East 5 / Central 5 / West 4). The Eastern League / Western League two-league structure was used through 2025 and was NOT used in 2026.",
+      "league_2025": "イースタン・リーグ",
+      "city_ja": "宮城県仙台市",
+      "city_en": "Sendai (Izumi Ward)",
+      "prefecture_en": "Miyagi",
+      "ballpark": "森林どりスタジアム泉",
+      "ballpark_en": "Shinrindori Stadium Izumi",
+      "ballpark_dims_m": {
+        "lines": 101.5,
+        "cf": 122
+      },
+      "ballpark_capacity_approx": 200,
+      "games_planned_2026": {
+        "total": 139,
+        "in_division": 86,
+        "interdivision": 53
+      },
+      "record_2026": {
+        "games": 117,
+        "w": 57,
+        "l": 55,
+        "t": 5,
+        "pct": 0.509,
+        "division_rank": 2
+      },
+      "home_games_2026": {
+        "森林どりスタジアム泉": 43,
+        "楽天モバイル 最強パーク宮城": 8,
+        "利府": 3,
+        "other regional": 5
+      },
+      "notes": "Capacity of the main farm park is listed by NPB as only about 200. The club's 2026 NPB staff list shows 'development' (育成) coaches but no third-team titles.",
+      "sources": [
+        "https://npb.jp/news/detail/20260122_01.html",
+        "https://npb.jp/farm/2026/schedule_note_2.html",
+        "https://npb.jp/farm/2026/schedule_note.html",
+        "https://npb.jp/campaign/2026/farm/",
+        "https://npb.jp/farm/2026/schedule_04_detail.html (monthly pages schedule_03..09_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/farm/2026/"
+      ]
+    },
+    {
+      "real_name": "オイシックス新潟アルビレックスBC",
+      "parent": null,
+      "league": "ファーム・リーグ (Farm League)",
+      "division": "東地区 (East Division)",
+      "league_structure_2026": "2026: single 'ファーム・リーグ' (Farm League) with three regional divisions (East 5 / Central 5 / West 4). The Eastern League / Western League two-league structure was used through 2025 and was NOT used in 2026.",
+      "league_2025": "イースタン・リーグ",
+      "city_ja": "新潟県新潟市",
+      "city_en": "Niigata",
+      "prefecture_en": "Niigata",
+      "ballpark": "HARD OFF ECOスタジアム新潟",
+      "ballpark_en": "HARD OFF ECO Stadium Niigata",
+      "ballpark_dims_m": {
+        "lines": 100,
+        "cf": 122
+      },
+      "ballpark_capacity_approx": 30000,
+      "games_planned_2026": {
+        "total": 140,
+        "in_division": 85,
+        "interdivision": 55
+      },
+      "record_2026": {
+        "games": 119,
+        "w": 46,
+        "l": 69,
+        "t": 4,
+        "pct": 0.4,
+        "division_rank": 5
+      },
+      "home_games_2026": {
+        "HARD OFF ECOスタジアム新潟": 41,
+        "長岡悠久山": 11,
+        "柏崎": 2,
+        "三条": 2
+      },
+      "notes": "FARM-ONLY CLUB (no first team, no NPB parent). Operated by 株式会社新潟アルビレックス・ベースボール・クラブ; admitted in NPB's 2023 farm-expansion review and played in the Eastern League in 2024-2025. NPB's FY2027 business plan lists an evaluation of the two farm-only clubs and consideration of a second public call for farm entrants.",
+      "sources": [
+        "https://npb.jp/news/detail/20260122_01.html",
+        "https://npb.jp/farm/2026/schedule_note_2.html",
+        "https://npb.jp/farm/2026/schedule_note.html",
+        "https://npb.jp/campaign/2026/farm/",
+        "https://npb.jp/farm/2026/schedule_04_detail.html (monthly pages schedule_03..09_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/farm/2026/",
+        "https://npb.jp/news/detail/20230929_03.html",
+        "https://npb.jp/organization/docpb_09_2026.pdf"
+      ]
+    },
+    {
+      "real_name": "東京ヤクルトスワローズ（二軍）",
+      "parent": "東京ヤクルトスワローズ",
+      "league": "ファーム・リーグ (Farm League)",
+      "division": "東地区 (East Division)",
+      "league_structure_2026": "2026: single 'ファーム・リーグ' (Farm League) with three regional divisions (East 5 / Central 5 / West 4). The Eastern League / Western League two-league structure was used through 2025 and was NOT used in 2026.",
+      "league_2025": "イースタン・リーグ",
+      "city_ja": "埼玉県戸田市",
+      "city_en": "Toda",
+      "prefecture_en": "Saitama",
+      "ballpark": "ヤクルト戸田球場",
+      "ballpark_en": "Yakult Toda Stadium",
+      "ballpark_dims_m": {
+        "lines": 100,
+        "cf": 122
+      },
+      "ballpark_capacity_approx": 270,
+      "games_planned_2026": {
+        "total": 135,
+        "in_division": 73,
+        "interdivision": 62
+      },
+      "record_2026": {
+        "games": 112,
+        "w": 48,
+        "l": 56,
+        "t": 8,
+        "pct": 0.462,
+        "division_rank": 4
+      },
+      "home_games_2026": {
+        "ヤクルト戸田球場": 54
+      },
+      "notes": "2026 was the 50th and final season at Toda. From 2027 the farm base moves to Moriya, Ibaraki ('Swallows Wings Square', opening March 2027; main field 100 m lines, 122 m centre, all artificial turf, 3,000 seats per the club). Which division the team plays in for 2027 had not been announced as of 2026-11-16.",
+      "sources": [
+        "https://npb.jp/news/detail/20260122_01.html",
+        "https://npb.jp/farm/2026/schedule_note_2.html",
+        "https://npb.jp/farm/2026/schedule_note.html",
+        "https://npb.jp/campaign/2026/farm/",
+        "https://npb.jp/farm/2026/schedule_04_detail.html (monthly pages schedule_03..09_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/farm/2026/",
+        "https://npb.jp/news/detail/20260109_03.html",
+        "https://yakult-swallows.co.jp/swallows_wings_square"
+      ]
+    },
+    {
+      "real_name": "千葉ロッテマリーンズ（二軍）",
+      "parent": "千葉ロッテマリーンズ",
+      "league": "ファーム・リーグ (Farm League)",
+      "division": "東地区 (East Division)",
+      "league_structure_2026": "2026: single 'ファーム・リーグ' (Farm League) with three regional divisions (East 5 / Central 5 / West 4). The Eastern League / Western League two-league structure was used through 2025 and was NOT used in 2026.",
+      "league_2025": "イースタン・リーグ",
+      "city_ja": "埼玉県さいたま市",
+      "city_en": "Saitama City (Minami Ward)",
+      "prefecture_en": "Saitama",
+      "ballpark": "ロッテ浦和球場",
+      "ballpark_en": "Lotte Urawa Stadium",
+      "ballpark_dims_m": {
+        "lines": 96,
+        "cf": 122
+      },
+      "ballpark_capacity_approx": 300,
+      "games_planned_2026": {
+        "total": 135,
+        "in_division": 78,
+        "interdivision": 57
+      },
+      "record_2026": {
+        "games": 114,
+        "w": 51,
+        "l": 56,
+        "t": 7,
+        "pct": 0.477,
+        "division_rank": 3
+      },
+      "home_games_2026": {
+        "ロッテ浦和球場": 41,
+        "ZOZOマリンスタジアム": 6,
+        "浦安": 3,
+        "江戸川": 2,
+        "other Chiba-area parks": 5
+      },
+      "notes": "Farm base is due to move to Kimitsu, Chiba, in 2030 (NPB column: 'around 2030'; Hokkaido Shimbun: basic agreement with Kimitsu City signed 2025-04-10).",
+      "sources": [
+        "https://npb.jp/news/detail/20260122_01.html",
+        "https://npb.jp/farm/2026/schedule_note_2.html",
+        "https://npb.jp/farm/2026/schedule_note.html",
+        "https://npb.jp/campaign/2026/farm/",
+        "https://npb.jp/farm/2026/schedule_04_detail.html (monthly pages schedule_03..09_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/farm/2026/",
+        "https://npb.jp/news/detail/20260109_03.html",
+        "https://www.hokkaido-np.co.jp/article/1315096/"
+      ]
+    },
+    {
+      "real_name": "北海道日本ハムファイターズ（二軍）",
+      "parent": "北海道日本ハムファイターズ",
+      "league": "ファーム・リーグ (Farm League)",
+      "division": "東地区 (East Division)",
+      "league_structure_2026": "2026: single 'ファーム・リーグ' (Farm League) with three regional divisions (East 5 / Central 5 / West 4). The Eastern League / Western League two-league structure was used through 2025 and was NOT used in 2026.",
+      "league_2025": "イースタン・リーグ",
+      "city_ja": "千葉県鎌ケ谷市",
+      "city_en": "Kamagaya",
+      "prefecture_en": "Chiba",
+      "ballpark": "ファイターズ鎌ケ谷スタジアム",
+      "ballpark_en": "Fighters Kamagaya Stadium",
+      "ballpark_dims_m": {
+        "lines": 100,
+        "cf": 122
+      },
+      "ballpark_capacity_approx": 2400,
+      "games_planned_2026": {
+        "total": 136,
+        "in_division": 74,
+        "interdivision": 62
+      },
+      "record_2026": {
+        "games": 111,
+        "w": 62,
+        "l": 42,
+        "t": 7,
+        "pct": 0.596,
+        "division_rank": 1
+      },
+      "home_games_2026": {
+        "ファイターズ鎌ケ谷スタジアム": 55,
+        "Hokkaido regional (Hakodate x2, Obihiro, Kushiro, Asahikawa)": 5,
+        "エスコンフィールドHOKKAIDO": 1
+      },
+      "notes": "2026 East Division champion and Farm Japan Champion (beat the Giants 5-2 in the final on 2026-10-04). Farm base to move to Eniwa, Hokkaido, targeted around 2030 (announced 2026-07-02).",
+      "sources": [
+        "https://npb.jp/news/detail/20260122_01.html",
+        "https://npb.jp/farm/2026/schedule_note_2.html",
+        "https://npb.jp/farm/2026/schedule_note.html",
+        "https://npb.jp/campaign/2026/farm/",
+        "https://npb.jp/farm/2026/schedule_04_detail.html (monthly pages schedule_03..09_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/farm/2026/",
+        "https://npb.jp/farmchamp/2026/",
+        "https://www.daily.co.jp/baseball/2026/07/02/0020542515.shtml"
+      ]
+    },
+    {
+      "real_name": "埼玉西武ライオンズ（二軍）",
+      "parent": "埼玉西武ライオンズ",
+      "league": "ファーム・リーグ (Farm League)",
+      "division": "中地区 (Central Division)",
+      "league_structure_2026": "2026: single 'ファーム・リーグ' (Farm League) with three regional divisions (East 5 / Central 5 / West 4). The Eastern League / Western League two-league structure was used through 2025 and was NOT used in 2026.",
+      "league_2025": "イースタン・リーグ",
+      "city_ja": "埼玉県所沢市",
+      "city_en": "Tokorozawa",
+      "prefecture_en": "Saitama",
+      "ballpark": "CAR3219フィールド",
+      "ballpark_en": "CAR3219 (Carmineek) Field",
+      "ballpark_dims_m": {
+        "lines": 100,
+        "cf": 122
+      },
+      "ballpark_capacity_approx": 300,
+      "games_planned_2026": {
+        "total": 143,
+        "in_division": 79,
+        "interdivision": 64
+      },
+      "record_2026": {
+        "games": 121,
+        "w": 69,
+        "l": 51,
+        "t": 1,
+        "pct": 0.575,
+        "division_rank": 3
+      },
+      "home_games_2026": {
+        "CAR3219フィールド": 44,
+        "ベルーナドーム": 12,
+        "越谷": 1,
+        "本庄": 1,
+        "上尾": 1
+      },
+      "notes": "Farm park is next to Belluna Dome. The club also runs a third team (三軍): see npb_notes.md.",
+      "sources": [
+        "https://npb.jp/news/detail/20260122_01.html",
+        "https://npb.jp/farm/2026/schedule_note_2.html",
+        "https://npb.jp/farm/2026/schedule_note.html",
+        "https://npb.jp/campaign/2026/farm/",
+        "https://npb.jp/farm/2026/schedule_04_detail.html (monthly pages schedule_03..09_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/farm/2026/",
+        "https://www.seibulions.jp/farm/schedule_third/",
+        "https://npb.jp/announcement/2026/managers_l.html"
+      ]
+    },
+    {
+      "real_name": "読売ジャイアンツ（二軍）",
+      "parent": "読売ジャイアンツ",
+      "league": "ファーム・リーグ (Farm League)",
+      "division": "中地区 (Central Division)",
+      "league_structure_2026": "2026: single 'ファーム・リーグ' (Farm League) with three regional divisions (East 5 / Central 5 / West 4). The Eastern League / Western League two-league structure was used through 2025 and was NOT used in 2026.",
+      "league_2025": "イースタン・リーグ",
+      "city_ja": "東京都稲城市",
+      "city_en": "Inagi",
+      "prefecture_en": "Tokyo",
+      "ballpark": "ジャイアンツタウンスタジアム",
+      "ballpark_en": "Giants Town Stadium",
+      "ballpark_dims_m": {
+        "lines": 100,
+        "cf": 122
+      },
+      "ballpark_capacity_approx": 2900,
+      "games_planned_2026": {
+        "total": 144,
+        "in_division": 82,
+        "interdivision": 62
+      },
+      "record_2026": {
+        "games": 124,
+        "w": 75,
+        "l": 47,
+        "t": 2,
+        "pct": 0.615,
+        "division_rank": 2
+      },
+      "home_games_2026": {
+        "ジャイアンツタウンスタジアム": 61,
+        "読売ジャイアンツ球場": 2,
+        "other (Fuji Hokuroku, Hitachinaka, Iwaki, Tokyo Dome)": 4
+      },
+      "notes": "Farm park opened in March 2025 (DIME). Wild card (best second-place team) in the 2026 Farm Japan Championship; lost the final. The club also runs a third team (三軍): see npb_notes.md.",
+      "sources": [
+        "https://npb.jp/news/detail/20260122_01.html",
+        "https://npb.jp/farm/2026/schedule_note_2.html",
+        "https://npb.jp/farm/2026/schedule_note.html",
+        "https://npb.jp/campaign/2026/farm/",
+        "https://npb.jp/farm/2026/schedule_04_detail.html (monthly pages schedule_03..09_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/farm/2026/",
+        "https://npb.jp/farmchamp/2026/",
+        "https://www.giants.jp/schedule/third-team/",
+        "https://npb.jp/announcement/2026/managers_g.html",
+        "https://dime.jp/genre/2114047/"
+      ]
+    },
+    {
+      "real_name": "横浜DeNAベイスターズ（二軍）",
+      "parent": "横浜DeNAベイスターズ",
+      "league": "ファーム・リーグ (Farm League)",
+      "division": "中地区 (Central Division)",
+      "league_structure_2026": "2026: single 'ファーム・リーグ' (Farm League) with three regional divisions (East 5 / Central 5 / West 4). The Eastern League / Western League two-league structure was used through 2025 and was NOT used in 2026.",
+      "league_2025": "イースタン・リーグ",
+      "city_ja": "神奈川県横須賀市",
+      "city_en": "Yokosuka",
+      "prefecture_en": "Kanagawa",
+      "ballpark": "横須賀スタジアム",
+      "ballpark_en": "Yokosuka Stadium",
+      "ballpark_dims_m": {
+        "lines": 98,
+        "cf": 122
+      },
+      "ballpark_capacity_approx": 5000,
+      "games_planned_2026": {
+        "total": 139,
+        "in_division": 81,
+        "interdivision": 58
+      },
+      "record_2026": {
+        "games": 122,
+        "w": 74,
+        "l": 40,
+        "t": 8,
+        "pct": 0.649,
+        "division_rank": 1
+      },
+      "home_games_2026": {
+        "横須賀スタジアム": 44,
+        "平塚（バッティングパレス相石スタジアムひらつか）": 16,
+        "小田原": 1
+      },
+      "notes": "2026 Central Division champion (best record of the three division winners). Hiratsuka is a regular secondary farm park.",
+      "sources": [
+        "https://npb.jp/news/detail/20260122_01.html",
+        "https://npb.jp/farm/2026/schedule_note_2.html",
+        "https://npb.jp/farm/2026/schedule_note.html",
+        "https://npb.jp/campaign/2026/farm/",
+        "https://npb.jp/farm/2026/schedule_04_detail.html (monthly pages schedule_03..09_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/farm/2026/"
+      ]
+    },
+    {
+      "real_name": "ハヤテベンチャーズ静岡",
+      "parent": null,
+      "league": "ファーム・リーグ (Farm League)",
+      "division": "中地区 (Central Division)",
+      "league_structure_2026": "2026: single 'ファーム・リーグ' (Farm League) with three regional divisions (East 5 / Central 5 / West 4). The Eastern League / Western League two-league structure was used through 2025 and was NOT used in 2026.",
+      "league_2025": "ウエスタン・リーグ",
+      "city_ja": "静岡県静岡市",
+      "city_en": "Shizuoka (Shimizu Ward)",
+      "prefecture_en": "Shizuoka",
+      "ballpark": "ちゅ～るスタジアム清水",
+      "ballpark_en": "Churu Stadium Shimizu (Shimizu Ihara Stadium)",
+      "ballpark_dims_m": {
+        "lines": 100,
+        "cf": 122
+      },
+      "ballpark_capacity_approx": 10000,
+      "games_planned_2026": {
+        "total": 140,
+        "in_division": 84,
+        "interdivision": 56
+      },
+      "record_2026": {
+        "games": 122,
+        "w": 37,
+        "l": 81,
+        "t": 4,
+        "pct": 0.314,
+        "division_rank": 5
+      },
+      "home_games_2026": {
+        "ちゅ～るスタジアム清水": 42,
+        "静岡 (NPB label; the prefectural Kusanagi park is presumed)": 9,
+        "浜松": 5,
+        "愛鷹": 2
+      },
+      "notes": "FARM-ONLY CLUB (no first team, no NPB parent). Listed by NPB in 2026 as ハヤテベンチャーズ静岡 / ハヤテ静岡 (it played 2024-2025 as くふうハヤテベンチャーズ静岡; the naming-rights partner くふうカンパニー terminated the tie-up in November 2025 per press reports, and the operating company Hayate 223 continues to run the club). Joined the farm system in 2024 in the Western League and moved to the Central Division in the 2026 reorganisation. The 2026 Farm Japan Championship was staged in its home city (Kusanagi).",
+      "sources": [
+        "https://npb.jp/news/detail/20260122_01.html",
+        "https://npb.jp/farm/2026/schedule_note_2.html",
+        "https://npb.jp/farm/2026/schedule_note.html",
+        "https://npb.jp/campaign/2026/farm/",
+        "https://npb.jp/farm/2026/schedule_04_detail.html (monthly pages schedule_03..09_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/farm/2026/",
+        "https://npb.jp/news/detail/20230929_03.html",
+        "https://npb.jp/bis/2026/stats/std_2c.html",
+        "https://npb.jp/farm/2025/",
+        "https://www.hb-nippon.com/articles/10325"
+      ]
+    },
+    {
+      "real_name": "中日ドラゴンズ（二軍）",
+      "parent": "中日ドラゴンズ",
+      "league": "ファーム・リーグ (Farm League)",
+      "division": "中地区 (Central Division)",
+      "league_structure_2026": "2026: single 'ファーム・リーグ' (Farm League) with three regional divisions (East 5 / Central 5 / West 4). The Eastern League / Western League two-league structure was used through 2025 and was NOT used in 2026.",
+      "league_2025": "ウエスタン・リーグ",
+      "city_ja": "愛知県名古屋市",
+      "city_en": "Nagoya (Nakagawa Ward)",
+      "prefecture_en": "Aichi",
+      "ballpark": "ナゴヤ球場",
+      "ballpark_en": "Nagoya Stadium",
+      "ballpark_dims_m": {
+        "lines": 100,
+        "cf": 122
+      },
+      "ballpark_capacity_approx": 4500,
+      "games_planned_2026": {
+        "total": 142,
+        "in_division": 86,
+        "interdivision": 56
+      },
+      "record_2026": {
+        "games": 123,
+        "w": 54,
+        "l": 64,
+        "t": 5,
+        "pct": 0.458,
+        "division_rank": 4
+      },
+      "home_games_2026": {
+        "ナゴヤ球場": 54,
+        "バンテリンドーム ナゴヤ": 8
+      },
+      "notes": "Moved from the Western League (2025) to the Central Division in 2026. The club plans to relocate the farm base from Nagoya Stadium to a municipality in the Tokai region (NPB column). Per DIME (2026): the policy was announced in November 2025, the target is the early 2030s, and a public call to Tokai municipalities was to open in fiscal 2026; the site had not been chosen as far as I could confirm.",
+      "sources": [
+        "https://npb.jp/news/detail/20260122_01.html",
+        "https://npb.jp/farm/2026/schedule_note_2.html",
+        "https://npb.jp/farm/2026/schedule_note.html",
+        "https://npb.jp/campaign/2026/farm/",
+        "https://npb.jp/farm/2026/schedule_04_detail.html (monthly pages schedule_03..09_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/farm/2026/",
+        "https://npb.jp/news/detail/20260109_03.html",
+        "https://npb.jp/farm/2025/",
+        "https://dime.jp/genre/2114047/"
+      ]
+    },
+    {
+      "real_name": "オリックス・バファローズ（二軍）",
+      "parent": "オリックス・バファローズ",
+      "league": "ファーム・リーグ (Farm League)",
+      "division": "西地区 (West Division)",
+      "league_structure_2026": "2026: single 'ファーム・リーグ' (Farm League) with three regional divisions (East 5 / Central 5 / West 4). The Eastern League / Western League two-league structure was used through 2025 and was NOT used in 2026.",
+      "league_2025": "ウエスタン・リーグ",
+      "city_ja": "大阪府大阪市",
+      "city_en": "Osaka (Konohana Ward, Maishima)",
+      "prefecture_en": "Osaka",
+      "ballpark": "杉本商事バファローズスタジアム舞洲",
+      "ballpark_en": "Sugimoto Shoji Buffaloes Stadium Maishima",
+      "ballpark_dims_m": {
+        "lines": 100,
+        "cf": 122
+      },
+      "ballpark_capacity_approx": 500,
+      "games_planned_2026": {
+        "total": 137,
+        "in_division": 100,
+        "interdivision": 37
+      },
+      "record_2026": {
+        "games": 119,
+        "w": 54,
+        "l": 57,
+        "t": 8,
+        "pct": 0.486,
+        "division_rank": 2
+      },
+      "home_games_2026": {
+        "杉本商事バファローズスタジアム舞洲": 31,
+        "ほっともっとフィールド神戸": 9,
+        "京セラドーム大阪": 3,
+        "other Kansai/Shikoku parks": 13
+      },
+      "notes": "Plays many home dates away from Maishima (Kobe, Kyocera Dome and small parks around Kansai and Tokushima).",
+      "sources": [
+        "https://npb.jp/news/detail/20260122_01.html",
+        "https://npb.jp/farm/2026/schedule_note_2.html",
+        "https://npb.jp/farm/2026/schedule_note.html",
+        "https://npb.jp/campaign/2026/farm/",
+        "https://npb.jp/farm/2026/schedule_04_detail.html (monthly pages schedule_03..09_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/farm/2026/"
+      ]
+    },
+    {
+      "real_name": "阪神タイガース（二軍）",
+      "parent": "阪神タイガース",
+      "league": "ファーム・リーグ (Farm League)",
+      "division": "西地区 (West Division)",
+      "league_structure_2026": "2026: single 'ファーム・リーグ' (Farm League) with three regional divisions (East 5 / Central 5 / West 4). The Eastern League / Western League two-league structure was used through 2025 and was NOT used in 2026.",
+      "league_2025": "ウエスタン・リーグ",
+      "city_ja": "兵庫県尼崎市",
+      "city_en": "Amagasaki",
+      "prefecture_en": "Hyogo",
+      "ballpark": "日鉄鋼板 SGLスタジアム 尼崎",
+      "ballpark_en": "Nittetsu Kohan SGL Stadium Amagasaki",
+      "ballpark_dims_m": {
+        "lines": 95,
+        "cf": 118
+      },
+      "ballpark_capacity_approx": 4400,
+      "games_planned_2026": {
+        "total": 146,
+        "in_division": 107,
+        "interdivision": 39
+      },
+      "record_2026": {
+        "games": 126,
+        "w": 49,
+        "l": 63,
+        "t": 14,
+        "pct": 0.438,
+        "division_rank": 3
+      },
+      "home_games_2026": {
+        "日鉄鋼板 SGLスタジアム 尼崎": 53,
+        "安芸": 2,
+        "丸亀": 2,
+        "姫路": 1,
+        "倉敷": 1,
+        "阪神甲子園球場": 1
+      },
+      "notes": "Farm park is built to Koshien's dimensions (95 m lines, 118 m centre per NPB). Largest planned schedule in the league (146).",
+      "sources": [
+        "https://npb.jp/news/detail/20260122_01.html",
+        "https://npb.jp/farm/2026/schedule_note_2.html",
+        "https://npb.jp/farm/2026/schedule_note.html",
+        "https://npb.jp/campaign/2026/farm/",
+        "https://npb.jp/farm/2026/schedule_04_detail.html (monthly pages schedule_03..09_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/farm/2026/"
+      ]
+    },
+    {
+      "real_name": "広島東洋カープ（二軍）",
+      "parent": "広島東洋カープ",
+      "league": "ファーム・リーグ (Farm League)",
+      "division": "西地区 (West Division)",
+      "league_structure_2026": "2026: single 'ファーム・リーグ' (Farm League) with three regional divisions (East 5 / Central 5 / West 4). The Eastern League / Western League two-league structure was used through 2025 and was NOT used in 2026.",
+      "league_2025": "ウエスタン・リーグ",
+      "city_ja": "山口県岩国市",
+      "city_en": "Iwakuni (Yuu)",
+      "prefecture_en": "Yamaguchi",
+      "ballpark": "広島東洋カープ由宇練習場",
+      "ballpark_en": "Hiroshima Toyo Carp Yuu Practice Field",
+      "ballpark_dims_m": {
+        "lines": 100,
+        "cf": 122
+      },
+      "ballpark_capacity_approx": 3500,
+      "games_planned_2026": {
+        "total": 137,
+        "in_division": 99,
+        "interdivision": 38
+      },
+      "record_2026": {
+        "games": 121,
+        "w": 47,
+        "l": 63,
+        "t": 11,
+        "pct": 0.427,
+        "division_rank": 4
+      },
+      "home_games_2026": {
+        "由宇練習場": 50,
+        "MAZDA Zoom-Zoom スタジアム広島": 4,
+        "other Chugoku-region parks": 6
+      },
+      "notes": "Farm base is in Yamaguchi Prefecture, not Hiroshima. The 2026 NPB staff list has a '三軍統括' (third-squad supervisor, also dormitory head at Ohno); no third-team game schedule was found.",
+      "sources": [
+        "https://npb.jp/news/detail/20260122_01.html",
+        "https://npb.jp/farm/2026/schedule_note_2.html",
+        "https://npb.jp/farm/2026/schedule_note.html",
+        "https://npb.jp/campaign/2026/farm/",
+        "https://npb.jp/farm/2026/schedule_04_detail.html (monthly pages schedule_03..09_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/farm/2026/",
+        "https://npb.jp/announcement/2026/managers_c.html"
+      ]
+    },
+    {
+      "real_name": "福岡ソフトバンクホークス（二軍）",
+      "parent": "福岡ソフトバンクホークス",
+      "league": "ファーム・リーグ (Farm League)",
+      "division": "西地区 (West Division)",
+      "league_structure_2026": "2026: single 'ファーム・リーグ' (Farm League) with three regional divisions (East 5 / Central 5 / West 4). The Eastern League / Western League two-league structure was used through 2025 and was NOT used in 2026.",
+      "league_2025": "ウエスタン・リーグ",
+      "city_ja": "福岡県筑後市",
+      "city_en": "Chikugo",
+      "prefecture_en": "Fukuoka",
+      "ballpark": "タマホーム スタジアム筑後",
+      "ballpark_en": "Tama Home Stadium Chikugo",
+      "ballpark_dims_m": {
+        "lines": 100,
+        "cf": 122
+      },
+      "ballpark_capacity_approx": 3000,
+      "games_planned_2026": {
+        "total": 141,
+        "in_division": 104,
+        "interdivision": 37
+      },
+      "record_2026": {
+        "games": 125,
+        "w": 70,
+        "l": 49,
+        "t": 6,
+        "pct": 0.588,
+        "division_rank": 1
+      },
+      "home_games_2026": {
+        "タマホーム スタジアム筑後": 65,
+        "みずほPayPayドーム福岡": 3
+      },
+      "notes": "2026 West Division champion. The club also runs third and fourth squads (三軍・四軍): see npb_notes.md.",
+      "sources": [
+        "https://npb.jp/news/detail/20260122_01.html",
+        "https://npb.jp/farm/2026/schedule_note_2.html",
+        "https://npb.jp/farm/2026/schedule_note.html",
+        "https://npb.jp/campaign/2026/farm/",
+        "https://npb.jp/farm/2026/schedule_04_detail.html (monthly pages schedule_03..09_detail.html; home games counted per park, cancellations excluded)",
+        "https://npb.jp/farm/2026/",
+        "https://www.softbankhawks.co.jp/farm/informal_game/schedule_third/2026/",
+        "https://npb.jp/announcement/2026/managers_h.html"
+      ]
+    }
+  ]
+}

@@ -16,17 +16,16 @@ pub fn r1(x: f64) -> f64 {
     (x * 10.0).round() / 10.0
 }
 
-/// Provisional 1-20 ratings derived from the physical profile, for display only.
-/// The attribute system proper replaces them.
+/// One attribute of a player as shown on the screen.
 #[derive(Clone, Debug, Serialize, PartialEq)]
-pub struct BattingRatings {
-    pub contact: u8,
-    pub power: u8,
-    pub eye: u8,
-    pub speed: u8,
-    pub bunt: u8,
-    pub fielding: u8,
-    pub arm: u8,
+pub struct AttrView {
+    /// Attribute key (`contact`, `velocity` ...); the interface translates it.
+    pub key: &'static str,
+    /// batting, running, fielding, catching, pitching, mental or physical.
+    pub group: &'static str,
+    /// Rating on the 1-20 scale and on the 20-80 scouting scale.
+    pub r20: u8,
+    pub r80: u8,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
@@ -36,15 +35,9 @@ pub struct PitchTypeView {
     pub speed_kmh: f64,
     /// Share of his pitches, 0..1 (average of both batter hands).
     pub usage: f64,
-}
-
-#[derive(Clone, Debug, Serialize, PartialEq)]
-pub struct PitchingRatings {
-    pub velocity: u8,
-    pub control: u8,
-    pub stamina: u8,
-    pub top_speed_kmh: f64,
-    pub repertoire: Vec<PitchTypeView>,
+    /// Grade of the pitch on the two scales.
+    pub r20: u8,
+    pub r80: u8,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
@@ -54,12 +47,18 @@ pub struct PlayerView {
     pub number: u8,
     /// P, C, 1B, 2B, 3B, SS, LF, CF, RF or DH.
     pub position: &'static str,
-    /// R or L.
+    /// R, L or S (switch hitter).
     pub bats: &'static str,
-    /// Throwing hand of pitchers.
-    pub throws: Option<&'static str>,
-    pub batting: BattingRatings,
-    pub pitching: Option<PitchingRatings>,
+    /// R or L.
+    pub throws: &'static str,
+    pub height_cm: u16,
+    pub weight_kg: u16,
+    /// Every attribute, in display order.
+    pub attrs: Vec<AttrView>,
+    /// Pitches of a pitcher, most used first (empty for position players).
+    pub repertoire: Vec<PitchTypeView>,
+    /// Average speed of his fastest pitch, km/h.
+    pub top_speed_kmh: Option<f64>,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]

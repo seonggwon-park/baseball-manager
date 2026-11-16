@@ -51,11 +51,15 @@ fn hidden(rng: &mut Rng) -> Hidden {
 }
 
 fn hit_style(rng: &mut Rng) -> HitStyle {
+    // Statcast 2025, qualified hitters: attack angle 9.8 deg with a spread of 3.5 deg.
+    let lift = rng.gauss_clamped(0.0, 1.0, -3.0, 3.0);
+    // Hitters who swing up also aim under the ball: lift is one habit seen in both.
+    let aim = shape::LIFT_AIM * lift + (1.0 - shape::LIFT_AIM * shape::LIFT_AIM).sqrt() * rng.gauss(0.0, 1.0);
     HitStyle {
-        attack_angle: rng.gauss_clamped(9.5, 3.0, -2.0, 21.0).to_radians() as f32,
+        attack_angle: (9.5 + shape::ATTACK_ANGLE_DEG * lift).to_radians() as f32,
         attack_sd: 5.5f64.to_radians() as f32,
-        barrel_aim: rng.gauss(0.0154, 0.003) as f32,
-        timing_bias: rng.gauss(0.0002, 0.0015) as f32,
+        barrel_aim: (0.0154 + shape::BARREL_AIM * aim) as f32,
+        timing_bias: rng.gauss(0.0002, shape::TIMING_BIAS) as f32,
         bat_speed_sd: (2.8 * MPH) as f32,
     }
 }
@@ -72,20 +76,49 @@ fn common(rng: &mut Rng, a: &mut Attributes, t: &Talent) {
     }
 }
 
-/// (speed, arm strength) of the regulars at each position relative to the average
-/// position player, in standard scores.
-fn position_tools(pos: Option<Position>) -> (f64, f64) {
+/// Speed and arm strength of the regulars at each position, as (mean, spread) in
+/// standard scores of all position players. Statcast 2025: sprint speed of players
+/// with 30 or more competitive runs (catchers 26.2 ft/s, centre fielders 28.7; 1.35
+/// over everyone) and arm strength of fielders with 50 or more throws (first basemen
+/// 76.8 mph, right fielders 89.3; 5.9 over everyone).
+fn position_tools(pos: Option<Position>) -> ((f64, f64), (f64, f64)) {
     match pos {
-        Some(Position::Catcher) => (-1.14, 0.0),
-        Some(Position::First) => (-0.71, -1.9),
-        Some(Position::Second) => (0.14, -1.25),
-        Some(Position::Third) => (-0.14, 0.0),
-        Some(Position::Short) => (0.36, 0.16),
-        Some(Position::Left) => (0.0, 0.31),
-        Some(Position::Center) => (0.79, 0.94),
-        Some(Position::Right) => (0.21, 1.56),
-        _ => (0.0, -0.6),
+        Some(Position::Catcher) => ((-0.93, 0.90), (0.25, 0.51)),
+        Some(Position::First) => ((-0.67, 0.91), (-1.20, 0.97)),
+        Some(Position::Second) => ((0.27, 0.76), (-0.64, 0.72)),
+        Some(Position::Third) => ((-0.10, 0.78), (-0.09, 0.65)),
+        Some(Position::Short) => ((0.33, 0.81), (-0.01, 0.59)),
+        Some(Position::Left) => ((0.27, 0.64), (0.40, 0.51)),
+        Some(Position::Center) => ((0.99, 0.63), (0.66, 0.73)),
+        Some(Position::Right) => ((0.27, 0.77), (0.92, 0.56)),
+        _ => ((-0.58, 0.89), (-0.44, 1.0)),
     }
+}
+
+/// How players differ from one another beyond the spread of each attribute.
+pub mod shape {
+    /// Bat speed is bought with accuracy: share of a hitter's bat-speed advantage that
+    /// comes off his contact, timing and bat control (Statcast 2025, qualified hitters:
+    /// bat speed against in-zone contact -0.63, against whiffs per swing +0.69, against
+    /// squared-up contact -0.67).
+    pub const POWER_CONTACT: f64 = 0.70;
+    pub const POWER_TIMING: f64 = 0.50;
+    pub const POWER_BAT_CONTROL: f64 = 0.45;
+    /// Between-hitter spreads of the swing's shape: attack angle (deg), aim under the
+    /// ball (m), timing bias (s).
+    pub const ATTACK_ANGLE_DEG: f64 = 3.5;
+    pub const BARREL_AIM: f64 = 0.010;
+    /// Correlation of the two.
+    pub const LIFT_AIM: f64 = 0.35;
+    pub const TIMING_BIAS: f64 = 0.0027;
+    /// Where pitchers like to work: between-pitcher spread of the intended height, m, for
+    /// the pitcher as a whole and for each pitch on top of that (2025 Statcast sample: the
+    /// average height of a pitcher's four-seamers spreads by 6.0 cm, sliders 8.2 cm).
+    pub const AIM_HEIGHT: f64 = 0.045;
+    pub const AIM_HEIGHT_PITCH: f64 = 0.04;
+    /// A catcher's exchange against his arm strength: the quick ones tend to have the
+    /// weaker arms (pop time spreads less than exchange and arm would if independent).
+    pub const EXCHANGE_ARM: f64 = -0.4;
 }
 
 /// Positions a player picks up from his own.
@@ -118,13 +151,19 @@ pub fn position_player(rng: &mut Rng, id: u32, pos: Option<Position>, t: &Talent
     let mut a = Attributes::default();
     common(rng, &mut a, t);
     let hit = t.hitting as f64;
-    for attr in [Attr::Contact, Attr::Timing, Attr::Power, Attr::Discipline, Attr::Recognition, Attr::BatControl] {
+    a[Attr::Power] = z(rng, hit);
+    let swing = a[Attr::Power] as f64 - hit;
+    let mut traded = |rho: f64| (hit - rho * swing + (1.0 - rho * rho).sqrt() * rng.gauss_clamped(0.0, 1.0, -3.5, 3.5)) as f32;
+    a[Attr::Contact] = traded(shape::POWER_CONTACT);
+    a[Attr::Timing] = traded(shape::POWER_TIMING);
+    a[Attr::BatControl] = traded(shape::POWER_BAT_CONTROL);
+    for attr in [Attr::Discipline, Attr::Recognition] {
         a[attr] = z(rng, hit);
     }
     a[Attr::Bunt] = z(rng, 0.0);
-    let (speed, arm) = position_tools(pos);
+    let ((speed, speed_sd), (arm, arm_sd)) = position_tools(pos);
     let run = t.physical as f64;
-    a[Attr::Speed] = z(rng, speed + run);
+    a[Attr::Speed] = rng.gauss_clamped(speed + run, speed_sd, speed + run - 3.0, speed + run + 3.0) as f32;
     // Quick players accelerate well and steal: the three go together.
     let sp = a[Attr::Speed] as f64;
     a[Attr::Acceleration] = (0.81 * sp + 0.58 * rng.gauss(0.0, 1.0)) as f32;
@@ -134,11 +173,14 @@ pub fn position_player(rng: &mut Rng, id: u32, pos: Option<Position>, t: &Talent
     for attr in [Attr::Hands, Attr::Range, Attr::Reads, Attr::ArmAccuracy, Attr::Footwork] {
         a[attr] = z(rng, fld);
     }
-    a[Attr::ArmStrength] = rng.gauss_clamped(arm + run, 0.78, arm - 3.0, arm + 3.0) as f32;
+    let arm_dev = rng.gauss_clamped(0.0, 1.0, -3.0, 3.0);
+    a[Attr::ArmStrength] = (arm + run + arm_sd * arm_dev) as f32;
     let catching = if pos == Some(Position::Catcher) { fld } else { fld - 3.0 };
-    for attr in [Attr::Framing, Attr::Blocking, Attr::ThrowingOut, Attr::GameCalling] {
+    for attr in [Attr::Framing, Attr::Blocking, Attr::GameCalling] {
         a[attr] = z(rng, catching);
     }
+    let rho = shape::EXCHANGE_ARM;
+    a[Attr::ThrowingOut] = (catching + rho * arm_dev + (1.0 - rho * rho).sqrt() * rng.gauss_clamped(0.0, 1.0, -3.0, 3.0)) as f32;
     let side = rng.f64();
     let bats = if side < 0.56 {
         Bats::Right
@@ -182,14 +224,15 @@ const ARSENAL: [(PitchKind, f64, f64); 8] = [
     (PitchKind::Splitter, 0.14, 20.0),
 ];
 
-fn pitch(rng: &mut Rng, kind: PitchKind, weight: f64, t: &Talent) -> PitchSkill {
+fn pitch(rng: &mut Rng, kind: PitchKind, weight: f64, t: &Talent, works: f64) -> PitchSkill {
     PitchSkill {
+        height: (works + rng.gauss(0.0, shape::AIM_HEIGHT_PITCH)) as f32,
         kind,
         grade: z(rng, t.pitching as f64),
         speed: rng.gauss(0.0, 1.0 * MPH) as f32,
-        spin: rng.gauss(0.0, 100.0 * RPM) as f32,
+        spin: rng.gauss(0.0, 80.0 * RPM) as f32,
         active: rng.gauss(0.0, 0.05) as f32,
-        tilt: rng.gauss(0.0, 8.0f64.to_radians()) as f32,
+        tilt: rng.gauss(0.0, 6.0f64.to_radians()) as f32,
         usage: (weight * rng.gauss(0.0, 0.30).exp()) as f32,
     }
 }
@@ -223,27 +266,29 @@ pub fn pitcher(rng: &mut Rng, id: u32, role: Role, t: &Talent) -> Player {
     for attr in [Attr::Hands, Attr::Range, Attr::Reads, Attr::ArmAccuracy, Attr::Footwork] {
         a[attr] = z(rng, t.fielding as f64);
     }
-    a[Attr::ArmStrength] = z(rng, 1.0);
+    a[Attr::ArmStrength] = z(rng, 0.6);
     for attr in [Attr::Framing, Attr::Blocking, Attr::ThrowingOut, Attr::GameCalling] {
         a[attr] = z(rng, -3.0);
     }
 
+    // Some pitchers live at the top of the zone, some at the knees.
+    let works = rng.gauss(0.0, shape::AIM_HEIGHT);
     let mut pitches: Vec<PitchSkill> = Vec::with_capacity(6);
     for &(kind, prob, weight) in &ARSENAL {
         if pitches.len() < 6 && rng.chance(prob) {
-            pitches.push(pitch(rng, kind, weight, t));
+            pitches.push(pitch(rng, kind, weight, t, works));
         }
     }
     // Everybody has a fastball and at least two other offerings.
     if !pitches.iter().any(|s| matches!(s.kind, PitchKind::FourSeam | PitchKind::Sinker)) {
-        pitches.insert(0, pitch(rng, PitchKind::FourSeam, ARSENAL[0].2, t));
+        pitches.insert(0, pitch(rng, PitchKind::FourSeam, ARSENAL[0].2, t, works));
     }
     let mut guard = 0;
     while pitches.len() < 3 && guard < 50 {
         guard += 1;
         let (kind, _, weight) = ARSENAL[2 + rng.below(6)];
         if !pitches.iter().any(|s| s.kind == kind) {
-            pitches.push(pitch(rng, kind, weight, t));
+            pitches.push(pitch(rng, kind, weight, t, works));
         }
     }
 
@@ -305,11 +350,15 @@ impl Squad {
 
     /// The squad as the match engine's club.
     pub fn to_engine(&self) -> Club {
-        let field = |v: &[(Player, Option<Position>)]| v.iter().map(|(p, pos)| convert::engine_player(p, *pos, false)).collect();
+        self.to_engine_with(&convert::Baseline::default())
+    }
+
+    pub fn to_engine_with(&self, base: &convert::Baseline) -> Club {
+        let field = |v: &[(Player, Option<Position>)]| v.iter().map(|(p, pos)| convert::engine_player_with(p, *pos, false, base)).collect();
         Club {
             hitters: field(&self.hitters),
-            starters: self.starters.iter().map(|p| convert::engine_player(p, Some(Position::Pitcher), false)).collect(),
-            relievers: self.relievers.iter().map(|p| convert::engine_player(p, Some(Position::Pitcher), true)).collect(),
+            starters: self.starters.iter().map(|p| convert::engine_player_with(p, Some(Position::Pitcher), false, base)).collect(),
+            relievers: self.relievers.iter().map(|p| convert::engine_player_with(p, Some(Position::Pitcher), true, base)).collect(),
             bench: field(&self.bench),
         }
     }
@@ -318,59 +367,74 @@ impl Squad {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bm_engine::{BatterProfile, Hand, Level};
 
-    /// The attribute population must describe the same league as the population the
-    /// engine was calibrated with: same averages and spreads of the physical profiles.
+    fn mean_sd(xs: &[f64]) -> (f64, f64) {
+        let m = xs.iter().sum::<f64>() / xs.len() as f64;
+        (m, (xs.iter().map(|x| (x - m) * (x - m)).sum::<f64>() / xs.len() as f64).sqrt())
+    }
+
+    fn corr(a: &[f64], b: &[f64]) -> f64 {
+        let ((ma, sa), (mb, sb)) = (mean_sd(a), mean_sd(b));
+        a.iter().zip(b).map(|(x, y)| (x - ma) * (y - mb)).sum::<f64>() / (a.len() as f64 * sa * sb)
+    }
+
+    /// The generated major-leaguers must spread the way the measured ones do.
     #[test]
-    fn generated_major_leaguers_match_the_calibrated_population() {
+    fn generated_major_leaguers_spread_like_the_measured_ones() {
+        use bm_physics::units::{FT, MPH};
         let mut rng = Rng::new(11);
-        let squads: Vec<Squad> = (0..120).map(|i| Squad::random(&mut rng, 1000 * (i + 1), &Talent::MAJOR)).collect();
-        let world: Vec<Club> = squads.iter().map(Squad::to_engine).collect();
-        let mut rng = Rng::new(12);
-        let level = Level::mlb();
-        let engine: Vec<Club> = (0..120).map(|i| Club::random(&mut rng, 1000 * (i + 1), &level)).collect();
+        let squads: Vec<Squad> = (0..150).map(|i| Squad::random(&mut rng, 1000 * (i + 1), &Talent::MAJOR)).collect();
+        let hitters: Vec<(&Player, Option<Position>)> = squads.iter().flat_map(|s| s.hitters.iter().map(|(p, pos)| (p, *pos))).collect();
+        let profile = |p: &Player| convert::batter(p);
 
-        let stat = |clubs: &[Club], f: &dyn Fn(&bm_engine::Player) -> f64, pitchers: bool| {
-            let xs: Vec<f64> = clubs
-                .iter()
-                .flat_map(|c| if pitchers { c.starters.iter().chain(c.relievers.iter()).collect::<Vec<_>>() } else { c.hitters.iter().collect() })
-                .map(f)
-                .collect();
-            let m = xs.iter().sum::<f64>() / xs.len() as f64;
-            (m, (xs.iter().map(|x| (x - m) * (x - m)).sum::<f64>() / xs.len() as f64).sqrt())
+        // Bat speed: 2.6 mph between hitters around the league average (Statcast: 2.64).
+        let speed: Vec<f64> = hitters.iter().map(|(p, _)| profile(p).bat_speed / MPH).collect();
+        let (m, sd) = mean_sd(&speed);
+        assert!((m - bm_engine::profile::AVERAGE_BAT_SPEED / MPH).abs() < 0.25 && (sd - 2.6).abs() < 0.25, "bat speed {m} +- {sd}");
+        // Bat speed is bought with accuracy.
+        let power: Vec<f64> = hitters.iter().map(|(p, _)| p.attrs.z(Attr::Power)).collect();
+        let contact: Vec<f64> = hitters.iter().map(|(p, _)| p.attrs.z(Attr::Contact)).collect();
+        let c = corr(&power, &contact);
+        assert!((c + shape::POWER_CONTACT).abs() < 0.06, "power against contact {c}");
+        let (_, sd) = mean_sd(&contact);
+        assert!((sd - 1.0).abs() < 0.08, "contact keeps a unit spread: {sd}");
+
+        // Speed and arm by position (Statcast: catchers 26.2 ft/s, centre fielders 28.7;
+        // first basemen throw 76.8 mph, right fielders 89.3).
+        let at = |pos: Position, f: &dyn Fn(&Player) -> f64| -> (f64, f64) {
+            mean_sd(&hitters.iter().filter(|(_, q)| *q == Some(pos)).map(|(p, _)| f(p)).collect::<Vec<_>>())
         };
-        let check = |name: &str, f: &dyn Fn(&bm_engine::Player) -> f64, pitchers: bool, tol_mean: f64, tol_sd: f64| {
-            let (mw, sw) = stat(&world, f, pitchers);
-            let (me, se) = stat(&engine, f, pitchers);
-            assert!((mw - me).abs() <= tol_mean * me.abs().max(1e-9), "{name}: mean {mw} vs {me}");
-            assert!((sw - se).abs() <= tol_sd * se.max(1e-9), "{name}: sd {sw} vs {se}");
-        };
-        check("bat speed", &|p| p.batter.bat_speed, false, 0.004, 0.12);
-        check("timing sd", &|p| p.batter.timing_sd, false, 0.015, 0.15);
-        check("barrel sd", &|p| p.batter.barrel_sd, false, 0.015, 0.15);
-        check("eye", &|p| p.batter.eye, false, 0.015, 0.15);
-        check("perception", &|p| p.batter.perception_sd, false, 0.015, 0.15);
-        check("sprint", &|p| p.batter.sprint, false, 0.006, 0.15);
-        check("accel", &|p| p.batter.accel, false, 0.01, 0.15);
-        check("steal", &|p| p.batter.steal, false, 0.08, 0.15);
-        check("attack angle", &|p| p.batter.attack_angle, false, 0.03, 0.15);
-        check("reaction", &|p| p.fielder.reaction, false, 0.02, 0.15);
-        check("fielding accel", &|p| p.fielder.accel, false, 0.01, 0.15);
-        check("arm", &|p| p.fielder.arm, false, 0.01, 0.2);
-        check("hands", &|p| p.fielder.hands, false, 0.03, 0.2);
-        check("fastball", &|p| p.pitcher.as_ref().unwrap().pitches[0].shape.speed, true, 0.004, 0.15);
-        check("command", &|p| p.pitcher.as_ref().unwrap().pitches[0].command, true, 0.02, 0.25);
-        check("stamina", &|p| p.pitcher.as_ref().unwrap().stamina, true, 0.03, 0.1);
-        check("repertoire", &|p| p.pitcher.as_ref().unwrap().pitches.len() as f64, true, 0.03, 0.15);
-        check("release side", &|p| p.pitcher.as_ref().unwrap().release_side, true, 0.05, 0.4);
-        check("release height", &|p| p.pitcher.as_ref().unwrap().release_height, true, 0.02, 0.4);
-        check("pitcher's bat", &|p| p.batter.bat_speed, true, 0.006, 0.2);
-        check("pitcher's barrel", &|p| p.batter.barrel_sd, true, 0.03, 0.25);
-        // Left-handed batters and switch hitters together are as common as the engine's left-handers.
-        let left = |clubs: &[Club]| stat(clubs, &|p: &bm_engine::Player| (p.batter.hand == Hand::Left) as u8 as f64, false).0;
-        assert!((left(&world) - left(&engine)).abs() < 0.05);
-        let _ = BatterProfile::league_average(Hand::Right);
+        let sprint = |p: &Player| profile(p).sprint / FT;
+        let (c_speed, c_sd) = at(Position::Catcher, &sprint);
+        let (cf_speed, cf_sd) = at(Position::Center, &sprint);
+        assert!((cf_speed - c_speed - 2.6).abs() < 0.4, "centre fielders {cf_speed}, catchers {c_speed}");
+        assert!((c_sd - 1.22).abs() < 0.25 && (cf_sd - 0.85).abs() < 0.2, "spreads {c_sd} {cf_sd}");
+        let arm = |pos: Position| at(pos, &|p: &Player| convert::fielder(p, Some(pos)).arm / MPH).0;
+        assert!((arm(Position::Right) - arm(Position::First) - 12.5).abs() < 1.5, "right {} first {}", arm(Position::Right), arm(Position::First));
+        // Pop time spreads less than exchange and arm would on their own (Statcast: 0.048 s).
+        let pops: Vec<f64> = hitters.iter().filter(|(_, q)| *q == Some(Position::Catcher)).map(|(p, _)| convert::catcher(p).pop_time).collect();
+        let (m, sd) = mean_sd(&pops);
+        assert!((m - 1.95).abs() < 0.03 && (sd - 0.048).abs() < 0.012, "pop time {m} +- {sd}");
+
+        // Pitchers: fastball velocity (Statcast: four-seamers of regular starters spread by
+        // 2.1 mph), and the spin axis following the arm slot.
+        let arms: Vec<&Player> = squads.iter().flat_map(|s| s.starters.iter()).collect();
+        let four: Vec<(f64, f64, f64)> = arms
+            .iter()
+            .filter_map(|p| {
+                let prof = convert::pitcher(p, false)?;
+                let ff = prof.pitches.iter().find(|d| d.kind == PitchKind::FourSeam)?;
+                Some((ff.shape.speed / MPH, ff.shape.tilt.to_degrees(), p.pitching.as_ref()?.arm_angle.to_degrees() as f64))
+            })
+            .collect();
+        let (m, sd) = mean_sd(&four.iter().map(|f| f.0).collect::<Vec<_>>());
+        assert!((m - 94.0).abs() < 0.5 && (sd - 2.1).abs() < 0.35, "four-seam velocity {m} +- {sd}");
+        let c = corr(&four.iter().map(|f| f.2).collect::<Vec<_>>(), &four.iter().map(|f| f.1).collect::<Vec<_>>());
+        assert!(c < -0.7, "a higher arm slot should stand the spin axis up: {c}");
+        // Where pitchers like to work: the height of a pitcher's fastballs spreads by about 6 cm.
+        let heights: Vec<f64> = arms.iter().filter_map(|p| p.pitching.as_ref()?.pitches.first().map(|k| k.height as f64)).collect();
+        let (_, sd) = mean_sd(&heights);
+        assert!((sd - 0.06).abs() < 0.012, "aim height spread {sd}");
     }
 
     #[test]

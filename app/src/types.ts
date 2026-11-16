@@ -15,29 +15,26 @@ export interface ClubInfo {
   colors: [string, string];
 }
 
-export interface BattingRatings {
-  contact: number;
-  power: number;
-  eye: number;
-  speed: number;
-  bunt: number;
-  fielding: number;
-  arm: number;
+export type AttrGroup = "batting" | "running" | "fielding" | "catching" | "pitching" | "mental" | "physical";
+
+/** One attribute of a player: its rating on the 1-20 scale and on the 20-80 scouting scale. */
+export interface AttrView {
+  key: string;
+  group: AttrGroup;
+  r20: number;
+  r80: number;
 }
 
 export interface PitchTypeView {
   kind: PitchKind;
   speed_kmh: number;
   usage: number;
+  r20: number;
+  r80: number;
 }
 
-export interface PitchingRatings {
-  velocity: number;
-  control: number;
-  stamina: number;
-  top_speed_kmh: number;
-  repertoire: PitchTypeView[];
-}
+/** How ratings are displayed. */
+export type RatingScale = "20" | "80";
 
 export type PitchKind = "FF" | "SI" | "FC" | "SL" | "ST" | "CU" | "CH" | "FS";
 export type PositionCode = "P" | "C" | "1B" | "2B" | "3B" | "SS" | "LF" | "CF" | "RF" | "DH";
@@ -47,10 +44,15 @@ export interface PlayerView {
   name: Localized;
   number: number;
   position: PositionCode;
-  bats: "R" | "L";
-  throws: "R" | "L" | null;
-  batting: BattingRatings;
-  pitching: PitchingRatings | null;
+  /** S = switch hitter. */
+  bats: "R" | "L" | "S";
+  throws: "R" | "L";
+  height_cm: number;
+  weight_kg: number;
+  attrs: AttrView[];
+  /** Pitches of a pitcher, most used first; empty for position players. */
+  repertoire: PitchTypeView[];
+  top_speed_kmh: number | null;
 }
 
 export interface TeamView {

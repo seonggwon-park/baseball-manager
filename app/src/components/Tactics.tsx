@@ -269,7 +269,7 @@ export function Tactics() {
                         <span className="num">{p.number}</span> {loc(p.name)}
                         <span className="muted small">
                           {" "}
-                          {t(`posShort.${p.position}`)} · {p.pitching ? t("hand.throws", { hand: t(`hand.${p.throws ?? "R"}`) }) : t("hand.bats", { hand: t(`hand.${p.bats}`) })}
+                          {t(`posShort.${p.position}`)} · {p.repertoire.length > 0 ? t("hand.throws", { hand: t(`hand.${p.throws}`) }) : t("hand.bats", { hand: t(`hand.${p.bats}`) })}
                         </span>
                       </span>
                       <PlayerRatings p={p} pitching={sub === "pitcher"} />

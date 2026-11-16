@@ -160,6 +160,13 @@ pub struct PitchDef {
     /// Command: root-mean-square of the plate location error over its two axes, m
     /// (see [`PitcherProfile::error_ratio`] for how it is split between them).
     pub command: f64,
+    /// How late batters pick this pitch up (arm speed that sells a change-up, a
+    /// breaking ball that looks like the fastball out of the hand): subtracted from
+    /// their chance of recognising it (0 = average).
+    pub disguise: f64,
+    /// Where he likes to throw it: added to the intended height, m (0 = the usual
+    /// spot for the pitch type, positive = higher).
+    pub aim_height: f64,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -342,6 +349,8 @@ impl PitcherProfile {
             usage_same: same,
             usage_opp: opp,
             command: cmd_in * INCH,
+            disguise: 0.0,
+            aim_height: 0.0,
         };
         PitcherProfile {
             hand,

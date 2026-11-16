@@ -12,8 +12,7 @@
     "cancel": "취소",
     "confirm": "확인",
     "none": "없음",
-    "vs": "대",
-    "provisional": "임시 능력치"
+    "vs": "대"
   },
   "theme": {
     "dark": "어두운 테마",
@@ -84,7 +83,8 @@
     "R": "우",
     "L": "좌",
     "bats": "{{hand}}타",
-    "throws": "{{hand}}투"
+    "throws": "{{hand}}투",
+    "S": "양"
   },
   "pitch": {
     "FF": "포심",
@@ -96,17 +96,70 @@
     "CH": "체인지업",
     "FS": "스플리터"
   },
-  "rating": {
-    "contact": "콘택트",
+  "attr": {
+    "contact": "컨택",
+    "timing": "타이밍",
     "power": "파워",
-    "eye": "선구안",
-    "speed": "주력",
+    "discipline": "선구안",
+    "recognition": "구종 판단",
+    "bat_control": "배트 컨트롤",
     "bunt": "번트",
-    "fielding": "수비",
-    "arm": "어깨",
+    "baserunning": "주루 판단",
+    "stealing": "도루",
+    "hands": "포구",
+    "range": "수비 범위",
+    "reads": "타구 판단",
+    "arm_strength": "송구 강도",
+    "arm_accuracy": "송구 정확도",
+    "footwork": "풋워크",
+    "framing": "프레이밍",
+    "blocking": "블로킹",
+    "throwing_out": "도루 저지",
+    "game_calling": "투수 리드",
     "velocity": "구속",
+    "stuff": "구위",
     "control": "제구",
-    "stamina": "체력"
+    "command": "커맨드",
+    "deception": "디셉션",
+    "hold_runners": "주자 견제",
+    "composure": "침착성",
+    "concentration": "집중력",
+    "baseball_iq": "야구 지능",
+    "anticipation": "예측력",
+    "determination": "승부 근성",
+    "leadership": "리더십",
+    "teamwork": "팀워크",
+    "aggression": "적극성",
+    "speed": "주력",
+    "acceleration": "가속",
+    "agility": "민첩성",
+    "strength": "근력",
+    "stamina": "지구력",
+    "durability": "내구성"
+  },
+  "attrGroup": {
+    "batting": "타격",
+    "running": "주루",
+    "fielding": "수비",
+    "catching": "포수",
+    "pitching": "투구",
+    "mental": "정신",
+    "physical": "신체"
+  },
+  "scale": {
+    "toggle": "능력치 표시 눈금",
+    "to80": "20–80 눈금",
+    "to20": "1–20 눈금"
+  },
+  "card": {
+    "open": "선수 정보 보기",
+    "body": "{{cm}} cm, {{kg}} kg",
+    "pitch": "구종",
+    "speed": "평균 구속",
+    "usage": "구사율",
+    "grade": "등급",
+    "scale20": "1–20 눈금: 13이 메이저리그 평균, 20이 역대 최고 수준입니다.",
+    "scale80": "20–80 눈금: 50이 메이저리그 평균, 10점이 표준편차 1입니다."
   },
   "score": {
     "inning": "{{n}}회",

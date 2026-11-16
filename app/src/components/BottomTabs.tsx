@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { innings, useLabels } from "../labels";
-import { useUi } from "../store";
+import { store, useUi } from "../store";
 import { POSITION_CODES } from "../types";
 
 type Tab = "log" | "box" | "lineup";
@@ -129,25 +129,36 @@ function Lineups() {
                 return (
                   <li key={slot} className={up ? "up" : ""}>
                     <span className="pos">{t(`posShort.${posOf(idx)}`)}</span>
-                    <span className="num">{p.number}</span> {loc(p.name)}
+                    <span className="num">{p.number}</span>{" "}
+                    <button className="link" onClick={() => store.showCard([team, idx])}>
+                      {loc(p.name)}
+                    </button>
                     <span className="muted small"> {t(`hand.${p.bats}`)}</span>
                   </li>
                 );
               })}
               <li className="pitcher-row">
                 <span className="pos">{t("posShort.P")}</span>
-                <span className="num">{player(team, defense[0]).number}</span> {loc(player(team, defense[0]).name)}
+                <span className="num">{player(team, defense[0]).number}</span>{" "}
+                <button className="link" onClick={() => store.showCard([team, defense[0]])}>
+                  {loc(player(team, defense[0]).name)}
+                </button>
               </li>
             </ol>
             {(["bench", "bullpen"] as const).map((kind) => {
-              const list = others.filter((p) => (kind === "bullpen" ? p.pitching != null : p.pitching == null));
+              const list = others.filter((p) => (kind === "bullpen" ? p.repertoire.length > 0 : p.repertoire.length === 0));
               return (
                 <div key={kind} className="reserve">
                   <span className="muted small">{t(`lineup.${kind}`)}</span>
                   {list.map((p) => (
-                    <span key={p.idx} className={used.has(p.idx) ? "tag used" : "tag"} title={used.has(p.idx) ? t("lineup.used") : undefined}>
+                    <button
+                      key={p.idx}
+                      className={used.has(p.idx) ? "tag used" : "tag"}
+                      title={used.has(p.idx) ? t("lineup.used") : undefined}
+                      onClick={() => store.showCard([team, p.idx])}
+                    >
                       {loc(p.name)}
-                    </span>
+                    </button>
                   ))}
                 </div>
               );

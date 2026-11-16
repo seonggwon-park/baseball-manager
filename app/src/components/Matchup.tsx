@@ -1,35 +1,36 @@
 import { innings, useLabels } from "../labels";
-import { useUi } from "../store";
-import type { PlayerView } from "../types";
+import { store, useUi } from "../store";
+import type { PlayerView, RatingScale } from "../types";
 
-function Rating({ label, value }: { label: string; value: number }) {
-  const tier = value >= 15 ? "hi" : value >= 11 ? "mid" : value >= 7 ? "low" : "poor";
+/** Colour tier of a rating: 13 on the 1-20 scale and 50 on the 20-80 scale are the major-league average. */
+export function tier(value: number, scale: RatingScale): string {
+  const [hi, mid, low] = scale === "20" ? [16, 12, 8] : [60, 45, 35];
+  return value >= hi ? "hi" : value >= mid ? "mid" : value >= low ? "low" : "poor";
+}
+
+export function Rating({ label, value, scale }: { label: string; value: number; scale: RatingScale }) {
   return (
     <div className="rating">
       <span>{label}</span>
-      <b className={tier}>{value}</b>
+      <b className={tier(value, scale)}>{value}</b>
     </div>
   );
 }
 
+const PITCHING_KEYS = ["velocity", "stuff", "control", "command", "stamina"];
+const BATTING_KEYS = ["contact", "timing", "power", "discipline", "speed"];
+
+/** The handful of ratings that matter most for the job at hand. */
 export function PlayerRatings({ p, pitching }: { p: PlayerView; pitching: boolean }) {
   const { t } = useLabels(null);
-  if (pitching && p.pitching) {
-    return (
-      <div className="ratings">
-        <Rating label={t("rating.velocity")} value={p.pitching.velocity} />
-        <Rating label={t("rating.control")} value={p.pitching.control} />
-        <Rating label={t("rating.stamina")} value={p.pitching.stamina} />
-      </div>
-    );
-  }
+  const scale = useUi().scale;
+  const keys = pitching && p.repertoire.length > 0 ? PITCHING_KEYS : BATTING_KEYS;
   return (
     <div className="ratings">
-      <Rating label={t("rating.contact")} value={p.batting.contact} />
-      <Rating label={t("rating.power")} value={p.batting.power} />
-      <Rating label={t("rating.eye")} value={p.batting.eye} />
-      <Rating label={t("rating.speed")} value={p.batting.speed} />
-      <Rating label={t("rating.bunt")} value={p.batting.bunt} />
+      {keys.map((key) => {
+        const a = p.attrs.find((x) => x.key === key);
+        return a ? <Rating key={key} label={t(`attr.${key}`)} value={scale === "20" ? a.r20 : a.r80} scale={scale} /> : null;
+      })}
     </div>
   );
 }
@@ -51,17 +52,17 @@ export function Matchup() {
     <section className="panel matchup">
       <div className="who">
         <div className="role">{t("matchup.pitcher")}</div>
-        <div className="name">
+        <button className="name link" onClick={() => store.showCard([s.fielding, pitcher.idx])} title={t("card.open")}>
           <span className="num">{pitcher.number}</span> {loc(pitcher.name)}
-        </div>
+        </button>
         <div className="muted small">
-          {t("hand.throws", { hand: t(`hand.${pitcher.throws ?? "R"}`) })} · {t("score.pitchCount", { n: s.pitch_count })}
+          {t("hand.throws", { hand: t(`hand.${pitcher.throws}`) })} · {t("score.pitchCount", { n: s.pitch_count })}
           {pLine && <> · {t("matchup.todayPitch", { ip: innings(pLine.outs), r: pLine.r, so: pLine.so })}</>}
         </div>
         <PlayerRatings p={pitcher} pitching />
-        {pitcher.pitching && (
+        {pitcher.repertoire.length > 0 && (
           <div className="chips">
-            {pitcher.pitching.repertoire.map((r) => (
+            {pitcher.repertoire.map((r) => (
               <span key={r.kind} className="chip-plain" title={`${Math.round(r.usage * 100)}%`}>
                 {t(`pitch.${r.kind}`)} {Math.round(r.speed_kmh)}
               </span>
@@ -73,9 +74,9 @@ export function Matchup() {
         <div className="role">
           {t("matchup.batter")} · {order > 0 ? `${order}` : "-"}
         </div>
-        <div className="name">
+        <button className="name link" onClick={() => store.showCard([s.batting, batter.idx])} title={t("card.open")}>
           <span className="num">{batter.number}</span> {loc(batter.name)}
-        </div>
+        </button>
         <div className="muted small">
           {t(`pos.${batter.position}`)} · {t("hand.bats", { hand: t(`hand.${batter.bats}`) })}
           {bLine && <> · {t("matchup.todayBat", { ab: bLine.ab, h: bLine.h })}</>}
@@ -85,7 +86,6 @@ export function Matchup() {
           {t("matchup.onDeck")}: {loc(onDeck.name)}
         </div>
       </div>
-      <div className="muted tiny provisional">{t("common.provisional")}</div>
     </section>
   );
 }

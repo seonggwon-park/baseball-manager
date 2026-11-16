@@ -130,7 +130,7 @@ pub fn perceive(
     let f = &thrown.flight;
     // Recognition is close to all-or-nothing: the batter either picks the pitch up out
     // of the hand or commits to the wrong one.
-    let rho = if rng.chance(batter.eye) {
+    let rho = if rng.chance((batter.eye - thrown.disguise).clamp(0.02, 0.99)) {
         1.0 - rng.gauss(0.0, params.recognition_sd).abs().min(0.5)
     } else {
         rng.range(0.0, (params.fooled_recognition * batter.adjust).min(0.95))

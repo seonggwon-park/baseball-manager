@@ -184,6 +184,17 @@ version = "0.1.0"
 dependencies = [
  "bm-engine",
  "bm-physics",
+ "bm-world",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "bm-world"
+version = "0.1.0"
+dependencies = [
+ "bm-engine",
+ "bm-physics",
  "serde",
  "serde_json",
 ]

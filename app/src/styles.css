@@ -548,9 +548,107 @@ input:not([type="checkbox"]):not([type="radio"]) {
   gap: 4px 12px;
 }
 
-.matchup .provisional {
-  grid-column: 1 / -1;
-  text-align: right;
+button.link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+button.link:hover:not(:disabled) {
+  background: none;
+  text-decoration: underline;
+}
+
+button.tag {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* player profile */
+
+.modal.card {
+  width: min(760px, calc(100vw - 32px));
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.card-name {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.card-pitches {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+
+.card-pitches th {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  padding: 2px 6px 2px 0;
+}
+
+.card-pitches td {
+  padding: 2px 6px 2px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.card-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px 18px;
+  margin-bottom: 8px;
+}
+
+.card-groups h5 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 2px;
+}
+
+.card-attr {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.card-attr b,
+.card-pitches b {
+  font-variant-numeric: tabular-nums;
+}
+
+.card-attr b.hi,
+.card-pitches b.hi {
+  color: var(--good);
+}
+
+.card-attr b.low,
+.card-pitches b.low {
+  color: var(--warn);
+}
+
+.card-attr b.poor,
+.card-pitches b.poor {
+  color: var(--bad);
 }
 
 .role {

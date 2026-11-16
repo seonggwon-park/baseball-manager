@@ -7,7 +7,7 @@
 //! the effect has the right sign on both sides of the average.
 
 use bm_engine::{play_game_styled, Club, GameEvent, ManagerStyle, MatchEnv, Observer, PaEvent, PaOutcome, PlayKind, Rng};
-use bm_world::{Attr, Player, Squad, Talent};
+use bm_world::{Attr, Baseline, Player, Squad, Talent};
 
 /// Batting line of one side.
 #[derive(Clone, Copy, Default)]
@@ -184,7 +184,7 @@ enum Who {
     Pitches,
 }
 
-fn shifted(squads: &[Squad], who: Who, attr: Attr, dz: f32) -> Vec<Club> {
+fn shifted(squads: &[Squad], base: &Baseline, who: Who, attr: Attr, dz: f32) -> Vec<Club> {
     squads
         .iter()
         .map(|s| {
@@ -199,16 +199,17 @@ fn shifted(squads: &[Squad], who: Who, attr: Attr, dz: f32) -> Vec<Club> {
                     }
                 }),
             }
-            s.to_engine()
+            s.to_engine_with(base)
         })
         .collect()
 }
 
-pub fn run(env: &MatchEnv, style: ManagerStyle, games: usize, seed: u64, threads: usize, n_clubs: usize, only: Option<&str>) {
+#[allow(clippy::too_many_arguments)]
+pub fn run(env: &MatchEnv, baseline: &Baseline, style: ManagerStyle, games: usize, seed: u64, threads: usize, n_clubs: usize, only: Option<&str>) {
     use Attr::*;
     let mut rng = Rng::new(seed ^ 0xA77);
     let squads: Vec<Squad> = (0..n_clubs).map(|i| Squad::random(&mut rng, 1000 * (i as u32 + 1), &Talent::MAJOR)).collect();
-    let base: Vec<Club> = squads.iter().map(Squad::to_engine).collect();
+    let base: Vec<Club> = squads.iter().map(|s| s.to_engine_with(baseline)).collect();
 
     // The reference: ordinary clubs against ordinary clubs, four times the games of one experiment.
     let reference = play(env, &base, &base, style, 4 * games, seed, threads);
@@ -263,8 +264,8 @@ pub fn run(env: &MatchEnv, style: ManagerStyle, games: usize, seed: u64, threads
         if only.is_some_and(|o| !name.contains(o)) {
             continue;
         }
-        let up = play(env, &shifted(&squads, who, attr, 1.0), &base, style, games, seed + 1 + 2 * k as u64, threads);
-        let down = play(env, &shifted(&squads, who, attr, -1.0), &base, style, games, seed + 2 + 2 * k as u64, threads);
+        let up = play(env, &shifted(&squads, baseline, who, attr, 1.0), &base, style, games, seed + 1 + 2 * k as u64, threads);
+        let down = play(env, &shifted(&squads, baseline, who, attr, -1.0), &base, style, games, seed + 2 + 2 * k as u64, threads);
         // Offence is measured on the runs the test clubs score, everything else on the runs they allow.
         let (plus, minus, reference_line, sign) = if offence { (up.test, down.test, r0, 1.0) } else { (up.opp, down.opp, a0, -1.0) };
         let d_up = sign * (plus.runs_per_game() - reference_line.runs_per_game());

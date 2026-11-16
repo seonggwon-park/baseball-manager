@@ -5,6 +5,7 @@ import { BottomTabs } from "./BottomTabs";
 import { Controls } from "./Controls";
 import { FieldView } from "./FieldView";
 import { Matchup } from "./Matchup";
+import { PlayerCard } from "./PlayerCard";
 import { Scoreboard } from "./Scoreboard";
 import { Tactics } from "./Tactics";
 import { ZonePanel } from "./ZonePanel";
@@ -32,6 +33,7 @@ export function MatchScreen({ theme, onToggleTheme }: { theme: Theme; onToggleTh
         </aside>
         <BottomTabs />
       </div>
+      <PlayerCard />
     </div>
   );
 }

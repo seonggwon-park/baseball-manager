@@ -209,6 +209,7 @@ pub fn choose_pitch(
 ) -> PitchChoice {
     let idx = rng.pick_weighted(weights);
     let kind = profile.pitches[idx].kind;
+    let aim_height = profile.pitches[idx].aim_height;
     let (x_out, zf) = kind.typical_target();
     let intent = params.zone_intent[balls.min(3)][strikes.min(2)];
     let (x, z_frac) = if intent >= 0.0 {
@@ -223,7 +224,7 @@ pub fn choose_pitch(
     PitchChoice {
         idx,
         target_x: out * (x + rng.gauss(0.0, params.target_sd_x * spread)),
-        target_z: zone.bottom + zone.height() * z_frac + rng.gauss(0.0, params.target_sd_z * spread),
+        target_z: zone.bottom + zone.height() * z_frac + aim_height + rng.gauss(0.0, params.target_sd_z * spread),
     }
 }
 
@@ -234,6 +235,8 @@ pub struct Thrown {
     pub kind: PitchKind,
     pub spec: PitchSpec,
     pub flight: PitchFlight,
+    /// The pitch's disguise (see [`PitchDef::disguise`]).
+    pub disguise: f64,
 }
 
 /// Execute a pitch: add release scatter, command error and fatigue, then fly it.
@@ -278,7 +281,7 @@ pub fn throw_pitch(profile: &PitcherProfile, state: &mut PitcherState, choice: &
 
     let flight = spec.fly(&env.pitch_flight, angles, PITCH_DT);
     state.pitch_count += 1;
-    Thrown { idx: choice.idx, kind: def.kind, spec, flight }
+    Thrown { idx: choice.idx, kind: def.kind, spec, flight, disguise: def.disguise }
 }
 
 #[cfg(test)]

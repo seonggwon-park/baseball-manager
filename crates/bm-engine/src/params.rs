@@ -346,8 +346,8 @@ impl Default for ModelParams {
             misread_factor: 2.5,
 
             ref_plate_speed: 86.0 * MPH,
-            timing_speed_exp: 2.0,
-            barrel_speed_exp: 1.76,
+            timing_speed_exp: 3.2,
+            barrel_speed_exp: 2.8,
             tracking_residual: 0.122,
             barrel_outside_gain: 6.95,
             barrel_outside_gain2: 70.0,

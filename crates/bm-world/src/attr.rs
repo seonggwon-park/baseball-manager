@@ -113,6 +113,21 @@ pub enum Group {
     Physical,
 }
 
+impl Group {
+    /// Stable identifier used as the translation key.
+    pub fn key(self) -> &'static str {
+        match self {
+            Group::Batting => "batting",
+            Group::Running => "running",
+            Group::Fielding => "fielding",
+            Group::Catching => "catching",
+            Group::Pitching => "pitching",
+            Group::Mental => "mental",
+            Group::Physical => "physical",
+        }
+    }
+}
+
 impl Attr {
     pub const ALL: [Attr; N_ATTR] = [
         Attr::Contact,

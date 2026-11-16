@@ -100,6 +100,14 @@ impl BatSpec {
         }
     }
 
+    /// The same bat made heavier or lighter by `factor`, the mass spread evenly along it.
+    pub fn weighted(mut self, factor: f64) -> Self {
+        self.mass *= factor;
+        self.inertia_cm *= factor;
+        self.inertia_long *= factor;
+        self
+    }
+
     /// Bat radius at a distance `d` from the tip, m.
     #[inline]
     pub fn radius_at(&self, d: f64) -> f64 {

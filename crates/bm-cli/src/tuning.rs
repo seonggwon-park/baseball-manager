@@ -9,6 +9,8 @@ pub struct Tuning {
     pub level: Level,
     pub ball: BallSpec,
     pub style: ManagerStyle,
+    /// League averages behind the attribute system (`--set w.<name>=value`).
+    pub baseline: bm_world::Baseline,
 }
 
 macro_rules! set_scalar {
@@ -19,7 +21,13 @@ macro_rules! set_scalar {
 
 impl Tuning {
     pub fn new() -> Self {
-        Tuning { params: ModelParams::default(), level: Level::mlb(), ball: BallSpec::mlb(), style: ManagerStyle::default() }
+        Tuning {
+            params: ModelParams::default(),
+            level: Level::mlb(),
+            ball: BallSpec::mlb(),
+            style: ManagerStyle::default(),
+            baseline: bm_world::Baseline::default(),
+        }
     }
 
     pub fn set(&mut self, key: &str, v: f64) -> Result<(), String> {
@@ -188,6 +196,17 @@ impl Tuning {
             ["lv", "reach_sd"] => l.reach_sd = v,
             ["lv", "bat_speed_sd_mph"] => l.bat_speed_sd = v * MPH,
             ["lv", "timing_bias"] => l.timing_bias = v,
+            ["w", "bat_speed_mph"] => self.baseline.bat_speed = v * MPH,
+            ["w", "timing_sd"] => self.baseline.timing_sd = v,
+            ["w", "barrel_sd"] => self.baseline.barrel_sd = v,
+            ["w", "reach_sd"] => self.baseline.reach_sd = v,
+            ["w", "eye"] => self.baseline.eye = v,
+            ["w", "perception_sd"] => self.baseline.perception_sd = v,
+            ["w", "chase"] => self.baseline.chase = v,
+            ["w", "aim"] => self.baseline.aim = v,
+            ["w", "steal"] => self.baseline.steal = v,
+            ["w", "command_in"] => self.baseline.command = v * bm_physics::units::INCH,
+            ["w", "velocity_mph"] => self.baseline.velocity = v * MPH,
             ["bat", "ex"] => l.bat.tangential_cor = v,
             ["bat", "mu"] => l.bat.friction = v,
             ["bat", "falloff"] => l.bat.cor_falloff = v,

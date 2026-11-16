@@ -1,0 +1,2282 @@
+[
+ {
+  "real_name": "Buffalo Bisons",
+  "level": "AAA",
+  "league": "International League",
+  "division": "East",
+  "city": "Buffalo",
+  "state_or_province": "New York",
+  "country": "USA",
+  "parent": "Toronto Blue Jays",
+  "ballpark": "Sahlen Field",
+  "elevation_ft": 589,
+  "capacity": 16600,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 404,
+   "rf_line": 325
+  },
+  "notes": "Capacity: since 2019; API 21,050 is the 1990-2003 figure."
+ },
+ {
+  "real_name": "Charlotte Knights",
+  "level": "AAA",
+  "league": "International League",
+  "division": "East",
+  "city": "Charlotte",
+  "state_or_province": "North Carolina",
+  "country": "USA",
+  "parent": "Chicago White Sox",
+  "ballpark": "Truist Field",
+  "elevation_ft": 717,
+  "capacity": 10200,
+  "dims_ft": {
+   "lf_line": 330,
+   "cf": 400,
+   "rf_line": 315
+  },
+  "notes": ""
+ },
+ {
+  "real_name": "Durham Bulls",
+  "level": "AAA",
+  "league": "International League",
+  "division": "East",
+  "city": "Durham",
+  "state_or_province": "North Carolina",
+  "country": "USA",
+  "parent": "Tampa Bay Rays",
+  "ballpark": "Durham Bulls Athletic Park",
+  "elevation_ft": 362,
+  "capacity": 10000,
+  "dims_ft": {
+   "lf_line": 305,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "Dims from MLB Stats API; Wikipedia lists 303/395/329."
+ },
+ {
+  "real_name": "Jacksonville Jumbo Shrimp",
+  "level": "AAA",
+  "league": "International League",
+  "division": "East",
+  "city": "Jacksonville",
+  "state_or_province": "Florida",
+  "country": "USA",
+  "parent": "Miami Marlins",
+  "ballpark": "Vystar Ballpark",
+  "elevation_ft": 7,
+  "capacity": 11000,
+  "dims_ft": {
+   "lf_line": 321,
+   "cf": 420,
+   "rf_line": 317
+  },
+  "notes": ""
+ },
+ {
+  "real_name": "Lehigh Valley IronPigs",
+  "level": "AAA",
+  "league": "International League",
+  "division": "East",
+  "city": "Allentown",
+  "state_or_province": "Pennsylvania",
+  "country": "USA",
+  "parent": "Philadelphia Phillies",
+  "ballpark": "Coca-Cola Park",
+  "elevation_ft": 362,
+  "capacity": 10178,
+  "dims_ft": {
+   "lf_line": 323,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "2027: ballpark renamed Jefferson Park (Coca-Cola naming rights end; announced 2026-09-10). Dims: LF 323 per Wikipedia and MLB.com guide; MLB Stats API lists 336. Capacity: 8,278 seats; API 8,100."
+ },
+ {
+  "real_name": "Norfolk Tides",
+  "level": "AAA",
+  "league": "International League",
+  "division": "East",
+  "city": "Norfolk",
+  "state_or_province": "Virginia",
+  "country": "USA",
+  "parent": "Baltimore Orioles",
+  "ballpark": "Harbor Park",
+  "elevation_ft": 5,
+  "capacity": 11856,
+  "dims_ft": {
+   "lf_line": 333,
+   "cf": 410,
+   "rf_line": 318
+  },
+  "notes": "Dims from MLB Stats API; Wikipedia lists CF 400 (MLB.com guide agrees with API: 410). Capacity: since 2015; API 12,067."
+ },
+ {
+  "real_name": "Rochester Red Wings",
+  "level": "AAA",
+  "league": "International League",
+  "division": "East",
+  "city": "Rochester",
+  "state_or_province": "New York",
+  "country": "USA",
+  "parent": "Washington Nationals",
+  "ballpark": "ESL Ballpark",
+  "elevation_ft": 490,
+  "capacity": 13500,
+  "dims_ft": {
+   "lf_line": 335,
+   "cf": 402,
+   "rf_line": 322
+  },
+  "notes": "Dims: RF 322 per Wikipedia and MLB.com ballpark guide; MLB Stats API lists 325. Capacity: Wikipedia and MLB.com guide (includes standing room); API 10,868."
+ },
+ {
+  "real_name": "Scranton/Wilkes-Barre RailRiders",
+  "level": "AAA",
+  "league": "International League",
+  "division": "East",
+  "city": "Moosic",
+  "state_or_province": "Pennsylvania",
+  "country": "USA",
+  "parent": "New York Yankees",
+  "ballpark": "PNC Field",
+  "elevation_ft": 870,
+  "capacity": 10000,
+  "dims_ft": {
+   "lf_line": 326,
+   "cf": 408,
+   "rf_line": 330
+  },
+  "notes": "2027: rebrands as the Scranton/Wilkes-Barre Highlanders (unveiled 2026-11-07); same ballpark and affiliation. Dims: LF line 326 per Wikipedia and MLB.com guide; MLB Stats API lists 330."
+ },
+ {
+  "real_name": "Syracuse Mets",
+  "level": "AAA",
+  "league": "International League",
+  "division": "East",
+  "city": "Syracuse",
+  "state_or_province": "New York",
+  "country": "USA",
+  "parent": "New York Mets",
+  "ballpark": "NBT Bank Stadium",
+  "elevation_ft": 371,
+  "capacity": 10815,
+  "dims_ft": {
+   "lf_line": 330,
+   "cf": 400,
+   "rf_line": 330
+  },
+  "notes": "Capacity: API 11,117."
+ },
+ {
+  "real_name": "Worcester Red Sox",
+  "level": "AAA",
+  "league": "International League",
+  "division": "East",
+  "city": "Worcester",
+  "state_or_province": "Massachusetts",
+  "country": "USA",
+  "parent": "Boston Red Sox",
+  "ballpark": "Polar Park",
+  "elevation_ft": 454,
+  "capacity": 9508,
+  "dims_ft": {
+   "lf_line": 329,
+   "cf": 402,
+   "rf_line": 320
+  },
+  "notes": "Capacity: API 10,000."
+ },
+ {
+  "real_name": "Columbus Clippers",
+  "level": "AAA",
+  "league": "International League",
+  "division": "West",
+  "city": "Columbus",
+  "state_or_province": "Ohio",
+  "country": "USA",
+  "parent": "Cleveland Guardians",
+  "ballpark": "Huntington Park",
+  "elevation_ft": 719,
+  "capacity": 10100,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 400,
+   "rf_line": 318
+  },
+  "notes": "Capacity: API 10,000."
+ },
+ {
+  "real_name": "Gwinnett Stripers",
+  "level": "AAA",
+  "league": "International League",
+  "division": "West",
+  "city": "Lawrenceville",
+  "state_or_province": "Georgia",
+  "country": "USA",
+  "parent": "Atlanta Braves",
+  "ballpark": "Gwinnett Field",
+  "elevation_ft": 1085,
+  "capacity": 10115,
+  "dims_ft": {
+   "lf_line": 335,
+   "cf": 400,
+   "rf_line": 335
+  },
+  "notes": "Capacity: MLB.com guide (Apr 2026); Wikipedia 10,427; API 10,000."
+ },
+ {
+  "real_name": "Indianapolis Indians",
+  "level": "AAA",
+  "league": "International League",
+  "division": "West",
+  "city": "Indianapolis",
+  "state_or_province": "Indiana",
+  "country": "USA",
+  "parent": "Pittsburgh Pirates",
+  "ballpark": "Victory Field",
+  "elevation_ft": 706,
+  "capacity": 14230,
+  "dims_ft": {
+   "lf_line": 320,
+   "cf": 402,
+   "rf_line": 320
+  },
+  "notes": "Capacity: 12,230 fixed seats plus lawn/standing; API 15,500."
+ },
+ {
+  "real_name": "Iowa Cubs",
+  "level": "AAA",
+  "league": "International League",
+  "division": "West",
+  "city": "Des Moines",
+  "state_or_province": "Iowa",
+  "country": "USA",
+  "parent": "Chicago Cubs",
+  "ballpark": "Principal Park",
+  "elevation_ft": 802,
+  "capacity": 11500,
+  "dims_ft": {
+   "lf_line": 335,
+   "cf": 400,
+   "rf_line": 335
+  },
+  "notes": "Capacity: API 10,800 is the pre-2004 figure."
+ },
+ {
+  "real_name": "Louisville Bats",
+  "level": "AAA",
+  "league": "International League",
+  "division": "West",
+  "city": "Louisville",
+  "state_or_province": "Kentucky",
+  "country": "USA",
+  "parent": "Cincinnati Reds",
+  "ballpark": "Louisville Slugger Field",
+  "elevation_ft": 450,
+  "capacity": 13131,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 405,
+   "rf_line": 340
+  },
+  "notes": ""
+ },
+ {
+  "real_name": "Memphis Redbirds",
+  "level": "AAA",
+  "league": "International League",
+  "division": "West",
+  "city": "Memphis",
+  "state_or_province": "Tennessee",
+  "country": "USA",
+  "parent": "St. Louis Cardinals",
+  "ballpark": "AutoZone Park",
+  "elevation_ft": 226,
+  "capacity": 10000,
+  "dims_ft": {
+   "lf_line": 319,
+   "cf": 400,
+   "rf_line": 322
+  },
+  "notes": "Capacity: since 2015 (about 6,500 fixed seats); API 14,200 is the old figure."
+ },
+ {
+  "real_name": "Nashville Sounds",
+  "level": "AAA",
+  "league": "International League",
+  "division": "West",
+  "city": "Nashville",
+  "state_or_province": "Tennessee",
+  "country": "USA",
+  "parent": "Milwaukee Brewers",
+  "ballpark": "First Horizon Park",
+  "elevation_ft": 410,
+  "capacity": 10000,
+  "dims_ft": {
+   "lf_line": 330,
+   "cf": 403,
+   "rf_line": 310
+  },
+  "notes": "Dims: CF 403 per Wikipedia (2022 media guide) and MLB.com ballpark guide; MLB Stats API lists 405."
+ },
+ {
+  "real_name": "Omaha Storm Chasers",
+  "level": "AAA",
+  "league": "International League",
+  "division": "West",
+  "city": "Papillion",
+  "state_or_province": "Nebraska",
+  "country": "USA",
+  "parent": "Kansas City Royals",
+  "ballpark": "Werner Park",
+  "elevation_ft": 1150,
+  "capacity": 9023,
+  "dims_ft": {
+   "lf_line": 310,
+   "cf": 402,
+   "rf_line": 315
+  },
+  "notes": "Capacity: 6,254 fixed seats; API value 3,500 is wrong."
+ },
+ {
+  "real_name": "St. Paul Saints",
+  "level": "AAA",
+  "league": "International League",
+  "division": "West",
+  "city": "St. Paul",
+  "state_or_province": "Minnesota",
+  "country": "USA",
+  "parent": "Minnesota Twins",
+  "ballpark": "CHS Field",
+  "elevation_ft": 721,
+  "capacity": 7210,
+  "dims_ft": {
+   "lf_line": 330,
+   "cf": 405,
+   "rf_line": 320
+  },
+  "notes": ""
+ },
+ {
+  "real_name": "Toledo Mud Hens",
+  "level": "AAA",
+  "league": "International League",
+  "division": "West",
+  "city": "Toledo",
+  "state_or_province": "Ohio",
+  "country": "USA",
+  "parent": "Detroit Tigers",
+  "ballpark": "Fifth Third Field",
+  "elevation_ft": 587,
+  "capacity": 10300,
+  "dims_ft": {
+   "lf_line": 320,
+   "cf": 400,
+   "rf_line": 320
+  },
+  "notes": "Dims: 320/400/320 per Wikipedia and MLB.com guide; MLB Stats API lists 320/406/315. Capacity: 8,943 fixed seats."
+ },
+ {
+  "real_name": "Albuquerque Isotopes",
+  "level": "AAA",
+  "league": "Pacific Coast League",
+  "division": "East",
+  "city": "Albuquerque",
+  "state_or_province": "New Mexico",
+  "country": "USA",
+  "parent": "Colorado Rockies",
+  "ballpark": "Isotopes Park",
+  "elevation_ft": 5137,
+  "capacity": 13500,
+  "dims_ft": {
+   "lf_line": 340,
+   "cf": 400,
+   "rf_line": 340
+  },
+  "notes": "Capacity: 11,124 fixed seats."
+ },
+ {
+  "real_name": "El Paso Chihuahuas",
+  "level": "AAA",
+  "league": "Pacific Coast League",
+  "division": "East",
+  "city": "El Paso",
+  "state_or_province": "Texas",
+  "country": "USA",
+  "parent": "San Diego Padres",
+  "ballpark": "Southwest University Park",
+  "elevation_ft": 3743,
+  "capacity": 9500,
+  "dims_ft": {
+   "lf_line": 322,
+   "cf": 406,
+   "rf_line": 322
+  },
+  "notes": "Dims: Lines 322 per Wikipedia and MLB.com guide (API: LF 324). CF is not settled: Wikipedia 406, MLB Stats API 403, MLB.com guide 400. Capacity: API and Wikipedia (7,500 fixed seats); MLB.com guide (Apr 2026) says approx. 10,000."
+ },
+ {
+  "real_name": "Oklahoma City Comets",
+  "level": "AAA",
+  "league": "Pacific Coast League",
+  "division": "East",
+  "city": "Oklahoma City",
+  "state_or_province": "Oklahoma",
+  "country": "USA",
+  "parent": "Los Angeles Dodgers",
+  "ballpark": "Chickasaw Bricktown Ballpark",
+  "elevation_ft": 1178,
+  "capacity": 9000,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "2025: renamed (previously Oklahoma City Baseball Club / Dodgers). Capacity: API 8,752."
+ },
+ {
+  "real_name": "Round Rock Express",
+  "level": "AAA",
+  "league": "Pacific Coast League",
+  "division": "East",
+  "city": "Round Rock",
+  "state_or_province": "Texas",
+  "country": "USA",
+  "parent": "Texas Rangers",
+  "ballpark": "Dell Diamond",
+  "elevation_ft": 662,
+  "capacity": 11631,
+  "dims_ft": {
+   "lf_line": 335,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "Dims: 335/400/325 per Wikipedia and MLB.com guide (Mar 2026); MLB Stats API lists 330/407/325. Capacity: API 10,000."
+ },
+ {
+  "real_name": "Sugar Land Space Cowboys",
+  "level": "AAA",
+  "league": "Pacific Coast League",
+  "division": "East",
+  "city": "Sugar Land",
+  "state_or_province": "Texas",
+  "country": "USA",
+  "parent": "Houston Astros",
+  "ballpark": "Constellation Field",
+  "elevation_ft": 78,
+  "capacity": 7500,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 405,
+   "rf_line": 323
+  },
+  "notes": ""
+ },
+ {
+  "real_name": "Las Vegas Aviators",
+  "level": "AAA",
+  "league": "Pacific Coast League",
+  "division": "West",
+  "city": "Las Vegas",
+  "state_or_province": "Nevada",
+  "country": "USA",
+  "parent": "Athletics",
+  "ballpark": "Las Vegas Ballpark",
+  "elevation_ft": 3010,
+  "capacity": 10000,
+  "dims_ft": {
+   "lf_line": 340,
+   "cf": 415,
+   "rf_line": 340
+  },
+  "notes": "Hosted six Athletics \"home\" games in June 2026; the Athletics plan to move to a new Las Vegas Strip ballpark in 2028."
+ },
+ {
+  "real_name": "Reno Aces",
+  "level": "AAA",
+  "league": "Pacific Coast League",
+  "division": "West",
+  "city": "Reno",
+  "state_or_province": "Nevada",
+  "country": "USA",
+  "parent": "Arizona Diamondbacks",
+  "ballpark": "Greater Nevada Field",
+  "elevation_ft": 4494,
+  "capacity": 9013,
+  "dims_ft": {
+   "lf_line": 339,
+   "cf": 410,
+   "rf_line": 340
+  },
+  "notes": "Capacity: API 10,000."
+ },
+ {
+  "real_name": "Sacramento River Cats",
+  "level": "AAA",
+  "league": "Pacific Coast League",
+  "division": "West",
+  "city": "West Sacramento",
+  "state_or_province": "California",
+  "country": "USA",
+  "parent": "San Francisco Giants",
+  "ballpark": "Sutter Health Park",
+  "elevation_ft": 42,
+  "capacity": 13416,
+  "dims_ft": {
+   "lf_line": 330,
+   "cf": 403,
+   "rf_line": 325
+  },
+  "notes": "Shares Sutter Health Park (West Sacramento) with the MLB Athletics, 2025-2027. Capacity: MLB Stats API (2025-26 configuration shared with the Athletics); 14,014 incl. lawn/standing per Wikipedia and MLB.com guide."
+ },
+ {
+  "real_name": "Salt Lake Bees",
+  "level": "AAA",
+  "league": "Pacific Coast League",
+  "division": "West",
+  "city": "South Jordan",
+  "state_or_province": "Utah",
+  "country": "USA",
+  "parent": "Los Angeles Angels",
+  "ballpark": "The Ballpark at America First Square",
+  "elevation_ft": 4882,
+  "capacity": 8000,
+  "dims_ft": {
+   "lf_line": 345,
+   "cf": 420,
+   "rf_line": 345
+  },
+  "notes": "2025: moved from Salt Lake City (Smith's Ballpark) to The Ballpark at America First Square in South Jordan. Capacity: 6,500 fixed seats plus berm; API 7,500."
+ },
+ {
+  "real_name": "Tacoma Rainiers",
+  "level": "AAA",
+  "league": "Pacific Coast League",
+  "division": "West",
+  "city": "Tacoma",
+  "state_or_province": "Washington",
+  "country": "USA",
+  "parent": "Seattle Mariners",
+  "ballpark": "Cheney Stadium",
+  "elevation_ft": 329,
+  "capacity": 6500,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 425,
+   "rf_line": 325
+  },
+  "notes": "Capacity: API lists 9,600 (pre-renovation figure)."
+ },
+ {
+  "real_name": "Binghamton Rumble Ponies",
+  "level": "AA",
+  "league": "Eastern League",
+  "division": "Northeast",
+  "city": "Binghamton",
+  "state_or_province": "New York",
+  "country": "USA",
+  "parent": "New York Mets",
+  "ballpark": "Mirabito Stadium",
+  "elevation_ft": 854,
+  "capacity": 6012,
+  "dims_ft": {
+   "lf_line": 330,
+   "cf": 400,
+   "rf_line": 330
+  },
+  "notes": ""
+ },
+ {
+  "real_name": "Hartford Yard Goats",
+  "level": "AA",
+  "league": "Eastern League",
+  "division": "Northeast",
+  "city": "Hartford",
+  "state_or_province": "Connecticut",
+  "country": "USA",
+  "parent": "Colorado Rockies",
+  "ballpark": "Dunkin' Park",
+  "elevation_ft": 70,
+  "capacity": 6121,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 400,
+   "rf_line": 308
+  },
+  "notes": "Capacity: API 9,000."
+ },
+ {
+  "real_name": "New Hampshire Fisher Cats",
+  "level": "AA",
+  "league": "Eastern League",
+  "division": "Northeast",
+  "city": "Manchester",
+  "state_or_province": "New Hampshire",
+  "country": "USA",
+  "parent": "Toronto Blue Jays",
+  "ballpark": "Delta Dental Stadium",
+  "elevation_ft": 159,
+  "capacity": 6500,
+  "dims_ft": {
+   "lf_line": 326,
+   "cf": 400,
+   "rf_line": 306
+  },
+  "notes": ""
+ },
+ {
+  "real_name": "Portland Sea Dogs",
+  "level": "AA",
+  "league": "Eastern League",
+  "division": "Northeast",
+  "city": "Portland",
+  "state_or_province": "Maine",
+  "country": "USA",
+  "parent": "Boston Red Sox",
+  "ballpark": "Delta Dental Park",
+  "elevation_ft": 22,
+  "capacity": 7368,
+  "dims_ft": {
+   "lf_line": 315,
+   "cf": 400,
+   "rf_line": 330
+  },
+  "notes": "Capacity: API 6,868."
+ },
+ {
+  "real_name": "Reading Fightin Phils",
+  "level": "AA",
+  "league": "Eastern League",
+  "division": "Northeast",
+  "city": "Reading",
+  "state_or_province": "Pennsylvania",
+  "country": "USA",
+  "parent": "Philadelphia Phillies",
+  "ballpark": "FirstEnergy Stadium",
+  "elevation_ft": 239,
+  "capacity": 10000,
+  "dims_ft": {
+   "lf_line": 330,
+   "cf": 400,
+   "rf_line": 330
+  },
+  "notes": "Capacity: approximate; API 9,000."
+ },
+ {
+  "real_name": "Somerset Patriots",
+  "level": "AA",
+  "league": "Eastern League",
+  "division": "Northeast",
+  "city": "Bridgewater",
+  "state_or_province": "New Jersey",
+  "country": "USA",
+  "parent": "New York Yankees",
+  "ballpark": "TD Bank Ballpark",
+  "elevation_ft": 38,
+  "capacity": 6100,
+  "dims_ft": {
+   "lf_line": 317,
+   "cf": 402,
+   "rf_line": 315
+  },
+  "notes": ""
+ },
+ {
+  "real_name": "Akron RubberDucks",
+  "level": "AA",
+  "league": "Eastern League",
+  "division": "Southwest",
+  "city": "Akron",
+  "state_or_province": "Ohio",
+  "country": "USA",
+  "parent": "Cleveland Guardians",
+  "ballpark": "7 17 Credit Union Park",
+  "elevation_ft": 966,
+  "capacity": 7630,
+  "dims_ft": {
+   "lf_line": 331,
+   "cf": 400,
+   "rf_line": 337
+  },
+  "notes": "Capacity: API 9,297 is an older figure."
+ },
+ {
+  "real_name": "Altoona Curve",
+  "level": "AA",
+  "league": "Eastern League",
+  "division": "Southwest",
+  "city": "Altoona",
+  "state_or_province": "Pennsylvania",
+  "country": "USA",
+  "parent": "Pittsburgh Pirates",
+  "ballpark": "Peoples Natural Gas Field",
+  "elevation_ft": 1022,
+  "capacity": 7210,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 405,
+   "rf_line": 325
+  },
+  "notes": "Capacity: API 7,200."
+ },
+ {
+  "real_name": "Chesapeake Baysox",
+  "level": "AA",
+  "league": "Eastern League",
+  "division": "Southwest",
+  "city": "Bowie",
+  "state_or_province": "Maryland",
+  "country": "USA",
+  "parent": "Baltimore Orioles",
+  "ballpark": "Prince George's Stadium",
+  "elevation_ft": 89,
+  "capacity": 10000,
+  "dims_ft": {
+   "lf_line": 309,
+   "cf": 405,
+   "rf_line": 309
+  },
+  "notes": "2025: renamed from Bowie Baysox; still plays at Prince George's Stadium in Bowie."
+ },
+ {
+  "real_name": "Erie SeaWolves",
+  "level": "AA",
+  "league": "Eastern League",
+  "division": "Southwest",
+  "city": "Erie",
+  "state_or_province": "Pennsylvania",
+  "country": "USA",
+  "parent": "Detroit Tigers",
+  "ballpark": "UPMC Park",
+  "elevation_ft": 639,
+  "capacity": 6000,
+  "dims_ft": {
+   "lf_line": 317,
+   "cf": 400,
+   "rf_line": 328
+  },
+  "notes": "Dims: CF 400 per Wikipedia and MLB.com guide (MLB Stats API 405); Wikipedia lists LF 316."
+ },
+ {
+  "real_name": "Harrisburg Senators",
+  "level": "AA",
+  "league": "Eastern League",
+  "division": "Southwest",
+  "city": "Harrisburg",
+  "state_or_province": "Pennsylvania",
+  "country": "USA",
+  "parent": "Washington Nationals",
+  "ballpark": "FNB Field",
+  "elevation_ft": 315,
+  "capacity": 6187,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "Capacity: API 6,300."
+ },
+ {
+  "real_name": "Richmond Flying Squirrels",
+  "level": "AA",
+  "league": "Eastern League",
+  "division": "Southwest",
+  "city": "Richmond",
+  "state_or_province": "Virginia",
+  "country": "USA",
+  "parent": "San Francisco Giants",
+  "ballpark": "CarMax Park",
+  "elevation_ft": 202,
+  "capacity": 9585,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "2026: moved into new CarMax Park (replacing The Diamond). Dims: New park (2026). 325/400/325 per club release, Wikipedia and MLB.com guide; MLB Stats API lists 325/405/325. Capacity: new CarMax Park; Wikipedia/baseballparks.com (6,800 fixed seats); MLB.com guide says approx. 10,000; API has no value."
+ },
+ {
+  "real_name": "Birmingham Barons",
+  "level": "AA",
+  "league": "Southern League",
+  "division": "North",
+  "city": "Birmingham",
+  "state_or_province": "Alabama",
+  "country": "USA",
+  "parent": "Chicago White Sox",
+  "ballpark": "Regions Field",
+  "elevation_ft": 586,
+  "capacity": 8500,
+  "dims_ft": {
+   "lf_line": 320,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": ""
+ },
+ {
+  "real_name": "Chattanooga Lookouts",
+  "level": "AA",
+  "league": "Southern League",
+  "division": "North",
+  "city": "Chattanooga",
+  "state_or_province": "Tennessee",
+  "country": "USA",
+  "parent": "Cincinnati Reds",
+  "ballpark": "Erlanger Park",
+  "elevation_ft": 667,
+  "capacity": 8032,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "2026: moved into new Erlanger Park (replacing AT&T Field). Capacity: new Erlanger Park; Wikipedia; API has no value."
+ },
+ {
+  "real_name": "Knoxville Smokies",
+  "level": "AA",
+  "league": "Southern League",
+  "division": "North",
+  "city": "Knoxville",
+  "state_or_province": "Tennessee",
+  "country": "USA",
+  "parent": "Chicago Cubs",
+  "ballpark": "Covenant Health Park",
+  "elevation_ft": 893,
+  "capacity": 6355,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 400,
+   "rf_line": 335
+  },
+  "notes": "2025: renamed from Tennessee Smokies and moved from Kodak to new Covenant Health Park in Knoxville. Capacity: API 7,500."
+ },
+ {
+  "real_name": "Rocket City Trash Pandas",
+  "level": "AA",
+  "league": "Southern League",
+  "division": "North",
+  "city": "Madison",
+  "state_or_province": "Alabama",
+  "country": "USA",
+  "parent": "Los Angeles Angels",
+  "ballpark": "Toyota Field",
+  "elevation_ft": 668,
+  "capacity": 7000,
+  "dims_ft": {
+   "lf_line": 326,
+   "cf": 400,
+   "rf_line": 326
+  },
+  "notes": ""
+ },
+ {
+  "real_name": "Biloxi Shuckers",
+  "level": "AA",
+  "league": "Southern League",
+  "division": "South",
+  "city": "Biloxi",
+  "state_or_province": "Mississippi",
+  "country": "USA",
+  "parent": "Milwaukee Brewers",
+  "ballpark": "Keesler Federal Park",
+  "elevation_ft": 22,
+  "capacity": 6098,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "Dims: 325/400/325 per Wikipedia (2025 media guide) and MLB.com guide; MLB Stats API lists 330/402/330. Capacity: 2025 media guide via Wikipedia; API 5,000."
+ },
+ {
+  "real_name": "Columbus Clingstones",
+  "level": "AA",
+  "league": "Southern League",
+  "division": "South",
+  "city": "Columbus",
+  "state_or_province": "Georgia",
+  "country": "USA",
+  "parent": "Atlanta Braves",
+  "ballpark": "Synovus Park",
+  "elevation_ft": 190,
+  "capacity": 5500,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "2025: franchise relocated from Pearl, MS (Mississippi Braves) to Columbus, GA. Dims: 325/400/325 per Wikipedia and MLB.com guide (renovated park, 2025); MLB Stats API lists 330/415/330. Capacity: API 5,000."
+ },
+ {
+  "real_name": "Montgomery Biscuits",
+  "level": "AA",
+  "league": "Southern League",
+  "division": "South",
+  "city": "Montgomery",
+  "state_or_province": "Alabama",
+  "country": "USA",
+  "parent": "Tampa Bay Rays",
+  "ballpark": "DABOS Park",
+  "elevation_ft": 152,
+  "capacity": 7000,
+  "dims_ft": {
+   "lf_line": 314,
+   "cf": 400,
+   "rf_line": 333
+  },
+  "notes": "Dims from MLB Stats API; Wikipedia lists 314/401/332 (MLB.com guide agrees with API). Capacity: 4,500 seats; API 6,000."
+ },
+ {
+  "real_name": "Pensacola Blue Wahoos",
+  "level": "AA",
+  "league": "Southern League",
+  "division": "South",
+  "city": "Pensacola",
+  "state_or_province": "Florida",
+  "country": "USA",
+  "parent": "Miami Marlins",
+  "ballpark": "Blue Wahoos Stadium",
+  "elevation_ft": 15,
+  "capacity": 5038,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 400,
+   "rf_line": 335
+  },
+  "notes": "Dims from MLB Stats API; three sources differ: Wikipedia 342/400/335, MLB.com guide 332/400/330."
+ },
+ {
+  "real_name": "Arkansas Travelers",
+  "level": "AA",
+  "league": "Texas League",
+  "division": "North",
+  "city": "North Little Rock",
+  "state_or_province": "Arkansas",
+  "country": "USA",
+  "parent": "Seattle Mariners",
+  "ballpark": "Dickey-Stephens Park",
+  "elevation_ft": 241,
+  "capacity": 7300,
+  "dims_ft": {
+   "lf_line": 332,
+   "cf": 400,
+   "rf_line": 330
+  },
+  "notes": "Capacity: 5,800 fixed seats (Wikipedia); MLB.com guide (Jan 2026) says 10,500; API 5,800."
+ },
+ {
+  "real_name": "Northwest Arkansas Naturals",
+  "level": "AA",
+  "league": "Texas League",
+  "division": "North",
+  "city": "Springdale",
+  "state_or_province": "Arkansas",
+  "country": "USA",
+  "parent": "Kansas City Royals",
+  "ballpark": "Arvest Ballpark",
+  "elevation_ft": 1310,
+  "capacity": 7305,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "Dims: LF 325 per Wikipedia and MLB.com ballpark guide; MLB Stats API lists 327. Capacity: 5,353 fixed seats; API 7,500."
+ },
+ {
+  "real_name": "Springfield Cardinals",
+  "level": "AA",
+  "league": "Texas League",
+  "division": "North",
+  "city": "Springfield",
+  "state_or_province": "Missouri",
+  "country": "USA",
+  "parent": "St. Louis Cardinals",
+  "ballpark": "Route 66 Stadium",
+  "elevation_ft": 1311,
+  "capacity": 10486,
+  "dims_ft": {
+   "lf_line": 315,
+   "cf": 400,
+   "rf_line": 330
+  },
+  "notes": "2027: rebrands as the Ozarks Springbirds (announced 2026-08-25, unveiled 2026-10-06); stays in Springfield and with St. Louis. Ballpark renamed Route 66 Stadium (ex-Hammons Field). Capacity: 7,986 seats plus general admission; API 7,500."
+ },
+ {
+  "real_name": "Tulsa Drillers",
+  "level": "AA",
+  "league": "Texas League",
+  "division": "North",
+  "city": "Tulsa",
+  "state_or_province": "Oklahoma",
+  "country": "USA",
+  "parent": "Los Angeles Dodgers",
+  "ballpark": "ONEOK Field",
+  "elevation_ft": 704,
+  "capacity": 7833,
+  "dims_ft": {
+   "lf_line": 330,
+   "cf": 400,
+   "rf_line": 307
+  },
+  "notes": "Capacity: API 6,200."
+ },
+ {
+  "real_name": "Wichita Wind Surge",
+  "level": "AA",
+  "league": "Texas League",
+  "division": "North",
+  "city": "Wichita",
+  "state_or_province": "Kansas",
+  "country": "USA",
+  "parent": "Minnesota Twins",
+  "ballpark": "Equity Bank Park",
+  "elevation_ft": 1301,
+  "capacity": 10025,
+  "dims_ft": {
+   "lf_line": 340,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "2027: rebrands as the Wichita Turbo Tubs (announced 2026-06-06); same ballpark and affiliation. Capacity: Wikipedia (seated); MLB.com guide (Mar 2026) says 8,800 with 6,300 fixed seats; API 10,000."
+ },
+ {
+  "real_name": "Amarillo Sod Poodles",
+  "level": "AA",
+  "league": "Texas League",
+  "division": "South",
+  "city": "Amarillo",
+  "state_or_province": "Texas",
+  "country": "USA",
+  "parent": "Arizona Diamondbacks",
+  "ballpark": "Hodgetown",
+  "elevation_ft": 3664,
+  "capacity": 6631,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "Capacity: API 8,500."
+ },
+ {
+  "real_name": "Corpus Christi Hooks",
+  "level": "AA",
+  "league": "Texas League",
+  "division": "South",
+  "city": "Corpus Christi",
+  "state_or_province": "Texas",
+  "country": "USA",
+  "parent": "Houston Astros",
+  "ballpark": "Whataburger Field",
+  "elevation_ft": 14,
+  "capacity": 7679,
+  "dims_ft": {
+   "lf_line": 315,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "Dims: LF 315 / RF 325 per Wikipedia and MLB.com guide; MLB Stats API lists the reverse (325/400/315). Capacity: 5,679 seats plus berms (Wikipedia); MLB.com guide (Mar 2026) says 5,391; API 5,000."
+ },
+ {
+  "real_name": "Frisco RoughRiders",
+  "level": "AA",
+  "league": "Texas League",
+  "division": "South",
+  "city": "Frisco",
+  "state_or_province": "Texas",
+  "country": "USA",
+  "parent": "Texas Rangers",
+  "ballpark": "Riders Field",
+  "elevation_ft": 700,
+  "capacity": 10216,
+  "dims_ft": {
+   "lf_line": 335,
+   "cf": 409,
+   "rf_line": 335
+  },
+  "notes": "Capacity: 7,748 fixed seats; API 10,000."
+ },
+ {
+  "real_name": "Midland RockHounds",
+  "level": "AA",
+  "league": "Texas League",
+  "division": "South",
+  "city": "Midland",
+  "state_or_province": "Texas",
+  "country": "USA",
+  "parent": "Athletics",
+  "ballpark": "Momentum Bank Ballpark",
+  "elevation_ft": 2889,
+  "capacity": 6669,
+  "dims_ft": {
+   "lf_line": 330,
+   "cf": 410,
+   "rf_line": 322
+  },
+  "notes": "Dims: 330/410/322 per Wikipedia and MLB.com guide; MLB Stats API lists 325/395/315."
+ },
+ {
+  "real_name": "San Antonio Missions",
+  "level": "AA",
+  "league": "Texas League",
+  "division": "South",
+  "city": "San Antonio",
+  "state_or_province": "Texas",
+  "country": "USA",
+  "parent": "San Diego Padres",
+  "ballpark": "Nelson Wolff Stadium",
+  "elevation_ft": 705,
+  "capacity": 9200,
+  "dims_ft": {
+   "lf_line": 310,
+   "cf": 402,
+   "rf_line": 340
+  },
+  "notes": "Planned new downtown ballpark delayed to April 2029 (TPR, 2026-07-31); no change for 2027. Capacity: API 6,200."
+ },
+ {
+  "real_name": "Dayton Dragons",
+  "level": "A+",
+  "league": "Midwest League",
+  "division": "East",
+  "city": "Dayton",
+  "state_or_province": "Ohio",
+  "country": "USA",
+  "parent": "Cincinnati Reds",
+  "ballpark": "Day Air Ballpark",
+  "elevation_ft": 737,
+  "capacity": 7230,
+  "dims_ft": {
+   "lf_line": 320,
+   "cf": 400,
+   "rf_line": 320
+  },
+  "notes": "Dims: 320/400/320 per MLB.com guide (Apr 2026), Wikipedia and StatsCrew; MLB Stats API lists 338/402/338. Capacity: API and Wikipedia; MLB.com guide (Apr 2026) says 6,446 seats with room for over 8,000."
+ },
+ {
+  "real_name": "Fort Wayne TinCaps",
+  "level": "A+",
+  "league": "Midwest League",
+  "division": "East",
+  "city": "Fort Wayne",
+  "state_or_province": "Indiana",
+  "country": "USA",
+  "parent": "San Diego Padres",
+  "ballpark": "Parkview Field",
+  "elevation_ft": 767,
+  "capacity": 6516,
+  "dims_ft": {
+   "lf_line": 336,
+   "cf": 400,
+   "rf_line": 318
+  },
+  "notes": "Dims: 336/400/318 per the club facts page, Wikipedia and MLB.com guide (LCF 374, RCF 383; walls 12 ft LF, 15 LCF, 10 CF, 10 RCF, 15 RF); MLB Stats API lists 320/400/320. Capacity: fixed seats only (Wikipedia); lawn/standing room extra; API has no value."
+ },
+ {
+  "real_name": "Great Lakes Loons",
+  "level": "A+",
+  "league": "Midwest League",
+  "division": "East",
+  "city": "Midland",
+  "state_or_province": "Michigan",
+  "country": "USA",
+  "parent": "Los Angeles Dodgers",
+  "ballpark": "Dow Diamond",
+  "elevation_ft": 624,
+  "capacity": 5500,
+  "dims_ft": {
+   "lf_line": 332,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": ""
+ },
+ {
+  "real_name": "Lake County Captains",
+  "level": "A+",
+  "league": "Midwest League",
+  "division": "East",
+  "city": "Eastlake",
+  "state_or_province": "Ohio",
+  "country": "USA",
+  "parent": "Cleveland Guardians",
+  "ballpark": "Classic Auto Group Park",
+  "elevation_ft": 630,
+  "capacity": 7273,
+  "dims_ft": {
+   "lf_line": 320,
+   "cf": 400,
+   "rf_line": 320
+  },
+  "notes": "Capacity: API and MLB.com guide (Mar 2026); Wikipedia 6,500."
+ },
+ {
+  "real_name": "Lansing Lugnuts",
+  "level": "A+",
+  "league": "Midwest League",
+  "division": "East",
+  "city": "Lansing",
+  "state_or_province": "Michigan",
+  "country": "USA",
+  "parent": "Athletics",
+  "ballpark": "Jackson Field",
+  "elevation_ft": 829,
+  "capacity": 11000,
+  "dims_ft": {
+   "lf_line": 305,
+   "cf": 404,
+   "rf_line": 305
+  },
+  "notes": "Dims: CF 404 per Wikipedia and MLB.com guide (deepest point 412 in right-center); MLB Stats API lists 412 as center. Capacity: including standing room (API and MLB.com guide); 7,527 seats per Wikipedia."
+ },
+ {
+  "real_name": "West Michigan Whitecaps",
+  "level": "A+",
+  "league": "Midwest League",
+  "division": "East",
+  "city": "Comstock Park",
+  "state_or_province": "Michigan",
+  "country": "USA",
+  "parent": "Detroit Tigers",
+  "ballpark": "LMCU Ballpark",
+  "elevation_ft": 619,
+  "capacity": 10923,
+  "dims_ft": {
+   "lf_line": 317,
+   "cf": 402,
+   "rf_line": 327
+  },
+  "notes": "Capacity: API 10,900; MLB.com guide (2023) says approx. 9,000."
+ },
+ {
+  "real_name": "Beloit Sky Carp",
+  "level": "A+",
+  "league": "Midwest League",
+  "division": "West",
+  "city": "Beloit",
+  "state_or_province": "Wisconsin",
+  "country": "USA",
+  "parent": "Miami Marlins",
+  "ballpark": "ABC Supply Stadium",
+  "elevation_ft": 770,
+  "capacity": 3850,
+  "dims_ft": {
+   "lf_line": 345,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": ""
+ },
+ {
+  "real_name": "Cedar Rapids Kernels",
+  "level": "A+",
+  "league": "Midwest League",
+  "division": "West",
+  "city": "Cedar Rapids",
+  "state_or_province": "Iowa",
+  "country": "USA",
+  "parent": "Minnesota Twins",
+  "ballpark": "Veterans Memorial Stadium",
+  "elevation_ft": 767,
+  "capacity": 5300,
+  "dims_ft": {
+   "lf_line": 315,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "Capacity: API 6,000."
+ },
+ {
+  "real_name": "Peoria Chiefs",
+  "level": "A+",
+  "league": "Midwest League",
+  "division": "West",
+  "city": "Peoria",
+  "state_or_province": "Illinois",
+  "country": "USA",
+  "parent": "St. Louis Cardinals",
+  "ballpark": "Dozer Park",
+  "elevation_ft": 489,
+  "capacity": 8500,
+  "dims_ft": {
+   "lf_line": 310,
+   "cf": 400,
+   "rf_line": 310
+  },
+  "notes": "Capacity: API 7,500."
+ },
+ {
+  "real_name": "Quad Cities River Bandits",
+  "level": "A+",
+  "league": "Midwest League",
+  "division": "West",
+  "city": "Davenport",
+  "state_or_province": "Iowa",
+  "country": "USA",
+  "parent": "Kansas City Royals",
+  "ballpark": "Modern Woodmen Park",
+  "elevation_ft": 561,
+  "capacity": 4024,
+  "dims_ft": {
+   "lf_line": 343,
+   "cf": 400,
+   "rf_line": 318
+  },
+  "notes": "Dims: 343/400/318 per Wikipedia and MLB.com guide; MLB Stats API lists 340/390/340. Capacity: Wikipedia (since 2004) and one MLB.com profile; another MLB.com page lists 7,140; API 5,200 - not settled."
+ },
+ {
+  "real_name": "South Bend Cubs",
+  "level": "A+",
+  "league": "Midwest League",
+  "division": "West",
+  "city": "South Bend",
+  "state_or_province": "Indiana",
+  "country": "USA",
+  "parent": "Chicago Cubs",
+  "ballpark": "Four Winds Field",
+  "elevation_ft": 709,
+  "capacity": 10500,
+  "dims_ft": {
+   "lf_line": 336,
+   "cf": 405,
+   "rf_line": 336
+  },
+  "notes": "Capacity: Wikipedia (current, after the ballpark expansion); API and the 2022 MLB.com guide list 5,000 - not settled."
+ },
+ {
+  "real_name": "Wisconsin Timber Rattlers",
+  "level": "A+",
+  "league": "Midwest League",
+  "division": "West",
+  "city": "Appleton",
+  "state_or_province": "Wisconsin",
+  "country": "USA",
+  "parent": "Milwaukee Brewers",
+  "ballpark": "Neuroscience Group Field",
+  "elevation_ft": 805,
+  "capacity": 6100,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "Capacity: MLB.com guide (Apr 2026); Wikipedia 5,900; API 5,500."
+ },
+ {
+  "real_name": "Eugene Emeralds",
+  "level": "A+",
+  "league": "Northwest League",
+  "division": null,
+  "city": "Eugene",
+  "state_or_province": "Oregon",
+  "country": "USA",
+  "parent": "San Francisco Giants",
+  "ballpark": "PK Park",
+  "elevation_ft": 420,
+  "capacity": 4000,
+  "dims_ft": {
+   "lf_line": 335,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "Club has been seeking a new ballpark; said in Aug 2025 it stays at PK Park through at least 2027. Medford stadium plan abandoned (Ballpark Digest, 2026-11-15). No relocation announced for 2027."
+ },
+ {
+  "real_name": "Everett AquaSox",
+  "level": "A+",
+  "league": "Northwest League",
+  "division": null,
+  "city": "Everett",
+  "state_or_province": "Washington",
+  "country": "USA",
+  "parent": "Seattle Mariners",
+  "ballpark": "Everett Memorial Stadium",
+  "elevation_ft": 82,
+  "capacity": 3682,
+  "dims_ft": {
+   "lf_line": 330,
+   "cf": 395,
+   "rf_line": 330
+  },
+  "notes": ""
+ },
+ {
+  "real_name": "Hillsboro Hops",
+  "level": "A+",
+  "league": "Northwest League",
+  "division": null,
+  "city": "Hillsboro",
+  "state_or_province": "Oregon",
+  "country": "USA",
+  "parent": "Arizona Diamondbacks",
+  "ballpark": "Hops Ballpark",
+  "elevation_ft": 222,
+  "capacity": 6000,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "2026: moved into new Hops Ballpark next to the former Ron Tonkin Field. Dims: New park (2026). 325/400/325 (LCF 370, RCF 352) from baseballparks.com only; not in MLB Stats API or the MLB.com guide - treat as unconfirmed. Capacity: new ballpark (2026): about 6,000 per Wikipedia/baseballparks.com (4,900 fixed); MLB.com guide says approx. 7,000 (4,700 seats); API value 4,500 is the old park."
+ },
+ {
+  "real_name": "Spokane Indians",
+  "level": "A+",
+  "league": "Northwest League",
+  "division": null,
+  "city": "Spokane",
+  "state_or_province": "Washington",
+  "country": "USA",
+  "parent": "Colorado Rockies",
+  "ballpark": "Avista Stadium",
+  "elevation_ft": 1926,
+  "capacity": 6803,
+  "dims_ft": {
+   "lf_line": 335,
+   "cf": 398,
+   "rf_line": 296
+  },
+  "notes": "Dims: RF 296 per Wikipedia and MLB.com guide; MLB Stats API lists 335. Capacity: API 7,162."
+ },
+ {
+  "real_name": "Tri-City Dust Devils",
+  "level": "A+",
+  "league": "Northwest League",
+  "division": null,
+  "city": "Pasco",
+  "state_or_province": "Washington",
+  "country": "USA",
+  "parent": "Los Angeles Angels",
+  "ballpark": "Gesa Stadium",
+  "elevation_ft": 522,
+  "capacity": 3654,
+  "dims_ft": {
+   "lf_line": 335,
+   "cf": 400,
+   "rf_line": 335
+  },
+  "notes": "Dims from MLB Stats API; MLB.com guide lists 320/400/320 (Wikipedia agrees with API). Capacity: API 3,730."
+ },
+ {
+  "real_name": "Vancouver Canadians",
+  "level": "A+",
+  "league": "Northwest League",
+  "division": null,
+  "city": "Vancouver",
+  "state_or_province": "British Columbia",
+  "country": "Canada",
+  "parent": "Toronto Blue Jays",
+  "ballpark": "Rogers Field at Nat Bailey Stadium",
+  "elevation_ft": 246,
+  "capacity": 6500,
+  "dims_ft": {
+   "lf_line": 320,
+   "cf": 385,
+   "rf_line": 335
+  },
+  "notes": "Dims: 320/385/335 per MLB.com guide (Wikipedia: RF 330); MLB Stats API lists 335/395/335. Elevation from Open-Meteo/Copernicus DEM (outside USGS coverage)."
+ },
+ {
+  "real_name": "Brooklyn Cyclones",
+  "level": "A+",
+  "league": "South Atlantic League",
+  "division": "North",
+  "city": "Brooklyn",
+  "state_or_province": "New York",
+  "country": "USA",
+  "parent": "New York Mets",
+  "ballpark": "Maimonides Park",
+  "elevation_ft": 7,
+  "capacity": 7000,
+  "dims_ft": {
+   "lf_line": 315,
+   "cf": 412,
+   "rf_line": 325
+  },
+  "notes": "Capacity: plus about 2,500 standing; API 7,500."
+ },
+ {
+  "real_name": "Frederick Keys",
+  "level": "A+",
+  "league": "South Atlantic League",
+  "division": "North",
+  "city": "Frederick",
+  "state_or_province": "Maryland",
+  "country": "USA",
+  "parent": "Baltimore Orioles",
+  "ballpark": "Nymeo Field",
+  "elevation_ft": 308,
+  "capacity": 5400,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "2026: returned to affiliated ball as Orioles High-A affiliate (replacing the Aberdeen IronBirds, who moved to the MLB Draft League)."
+ },
+ {
+  "real_name": "Greensboro Grasshoppers",
+  "level": "A+",
+  "league": "South Atlantic League",
+  "division": "North",
+  "city": "Greensboro",
+  "state_or_province": "North Carolina",
+  "country": "USA",
+  "parent": "Pittsburgh Pirates",
+  "ballpark": "First National Bank Field",
+  "elevation_ft": 802,
+  "capacity": 7599,
+  "dims_ft": {
+   "lf_line": 315,
+   "cf": 400,
+   "rf_line": 312
+  },
+  "notes": "Capacity: API 8,000."
+ },
+ {
+  "real_name": "Hudson Valley Renegades",
+  "level": "A+",
+  "league": "South Atlantic League",
+  "division": "North",
+  "city": "Wappingers Falls",
+  "state_or_province": "New York",
+  "country": "USA",
+  "parent": "New York Yankees",
+  "ballpark": "Heritage Financial Park",
+  "elevation_ft": 158,
+  "capacity": 5400,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "Capacity: API 4,494."
+ },
+ {
+  "real_name": "Jersey Shore BlueClaws",
+  "level": "A+",
+  "league": "South Atlantic League",
+  "division": "North",
+  "city": "Lakewood",
+  "state_or_province": "New Jersey",
+  "country": "USA",
+  "parent": "Philadelphia Phillies",
+  "ballpark": "ShoreTown Ballpark",
+  "elevation_ft": 66,
+  "capacity": 6588,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": ""
+ },
+ {
+  "real_name": "Wilmington Blue Rocks",
+  "level": "A+",
+  "league": "South Atlantic League",
+  "division": "North",
+  "city": "Wilmington",
+  "state_or_province": "Delaware",
+  "country": "USA",
+  "parent": "Washington Nationals",
+  "ballpark": "Frawley Stadium",
+  "elevation_ft": 10,
+  "capacity": 6404,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "Capacity: since 2016; API 6,532."
+ },
+ {
+  "real_name": "Asheville Tourists",
+  "level": "A+",
+  "league": "South Atlantic League",
+  "division": "South",
+  "city": "Asheville",
+  "state_or_province": "North Carolina",
+  "country": "USA",
+  "parent": "Houston Astros",
+  "ballpark": "HomeTrust Park",
+  "elevation_ft": 2122,
+  "capacity": 4000,
+  "dims_ft": {
+   "lf_line": 326,
+   "cf": 373,
+   "rf_line": 297
+  },
+  "notes": "Dims: 326/373/297 per Wikipedia and MLB.com guide (Apr 2026; MLB.com says the short dimensions were unchanged by the 2025-26 renovation); MLB Stats API lists 328/402/300."
+ },
+ {
+  "real_name": "Bowling Green Hot Rods",
+  "level": "A+",
+  "league": "South Atlantic League",
+  "division": "South",
+  "city": "Bowling Green",
+  "state_or_province": "Kentucky",
+  "country": "USA",
+  "parent": "Tampa Bay Rays",
+  "ballpark": "Bowling Green Ballpark",
+  "elevation_ft": 494,
+  "capacity": 4559,
+  "dims_ft": {
+   "lf_line": 318,
+   "cf": 400,
+   "rf_line": 326
+  },
+  "notes": ""
+ },
+ {
+  "real_name": "Greenville Drive",
+  "level": "A+",
+  "league": "South Atlantic League",
+  "division": "South",
+  "city": "Greenville",
+  "state_or_province": "South Carolina",
+  "country": "USA",
+  "parent": "Boston Red Sox",
+  "ballpark": "Fluor Field at the West End",
+  "elevation_ft": 985,
+  "capacity": 6700,
+  "dims_ft": {
+   "lf_line": 310,
+   "cf": 390,
+   "rf_line": 302
+  },
+  "notes": "Dims: CF 390 with a 420 deep-center triangle (Fenway-style park; Wikipedia lists a 33-ft left-field wall); MLB Stats API lists 420 as center. Capacity: API 5,700."
+ },
+ {
+  "real_name": "Hub City Spartanburgers",
+  "level": "A+",
+  "league": "South Atlantic League",
+  "division": "South",
+  "city": "Spartanburg",
+  "state_or_province": "South Carolina",
+  "country": "USA",
+  "parent": "Texas Rangers",
+  "ballpark": "Fifth Third Park",
+  "elevation_ft": 752,
+  "capacity": 5250,
+  "dims_ft": {
+   "lf_line": 328,
+   "cf": 410,
+   "rf_line": 327
+  },
+  "notes": "2025: franchise relocated from Kinston, NC (Down East Wood Ducks) to Spartanburg, SC and moved up to High-A (South Atlantic League). Dims: CF 410 per Wikipedia and MLB.com guide (Mar 2026); MLB Stats API lists 407. Capacity: 3,500 seated; API 5,000."
+ },
+ {
+  "real_name": "Rome Emperors",
+  "level": "A+",
+  "league": "South Atlantic League",
+  "division": "South",
+  "city": "Rome",
+  "state_or_province": "Georgia",
+  "country": "USA",
+  "parent": "Atlanta Braves",
+  "ballpark": "AdventHealth Stadium",
+  "elevation_ft": 596,
+  "capacity": 5105,
+  "dims_ft": {
+   "lf_line": 335,
+   "cf": 401,
+   "rf_line": 330
+  },
+  "notes": "Dims: CF 401 per Wikipedia and MLB.com guide; MLB Stats API lists 400."
+ },
+ {
+  "real_name": "Winston-Salem Dash",
+  "level": "A+",
+  "league": "South Atlantic League",
+  "division": "South",
+  "city": "Winston-Salem",
+  "state_or_province": "North Carolina",
+  "country": "USA",
+  "parent": "Chicago White Sox",
+  "ballpark": "Truist Stadium",
+  "elevation_ft": 858,
+  "capacity": 5500,
+  "dims_ft": {
+   "lf_line": 315,
+   "cf": 399,
+   "rf_line": 323
+  },
+  "notes": "Dims: CF 399 per Wikipedia and MLB.com guide (Feb 2026); MLB Stats API lists 390. Capacity: Wikipedia; API has no value."
+ },
+ {
+  "real_name": "Fresno Grizzlies",
+  "level": "A",
+  "league": "California League",
+  "division": "North",
+  "city": "Fresno",
+  "state_or_province": "California",
+  "country": "USA",
+  "parent": "Colorado Rockies",
+  "ballpark": "Chukchansi Park",
+  "elevation_ft": 290,
+  "capacity": 10650,
+  "dims_ft": {
+   "lf_line": 324,
+   "cf": 402,
+   "rf_line": 335
+  },
+  "notes": "Dims: CF 402 per Wikipedia and MLB.com guide (Mar 2026); MLB Stats API lists 400. Capacity: Wikipedia; MLB.com guide (Mar 2026) approx. 10,500; API 14,000."
+ },
+ {
+  "real_name": "San Jose Giants",
+  "level": "A",
+  "league": "California League",
+  "division": "North",
+  "city": "San Jose",
+  "state_or_province": "California",
+  "country": "USA",
+  "parent": "San Francisco Giants",
+  "ballpark": "Excite Ballpark",
+  "elevation_ft": 107,
+  "capacity": 5208,
+  "dims_ft": {
+   "lf_line": 320,
+   "cf": 390,
+   "rf_line": 320
+  },
+  "notes": "Capacity: API 4,000."
+ },
+ {
+  "real_name": "Stockton Ports",
+  "level": "A",
+  "league": "California League",
+  "division": "North",
+  "city": "Stockton",
+  "state_or_province": "California",
+  "country": "USA",
+  "parent": "Athletics",
+  "ballpark": "Banner Island Ballpark",
+  "elevation_ft": 6,
+  "capacity": 5200,
+  "dims_ft": {
+   "lf_line": 300,
+   "cf": 399,
+   "rf_line": 326
+  },
+  "notes": "Capacity: API 5,000."
+ },
+ {
+  "real_name": "Visalia Rawhide",
+  "level": "A",
+  "league": "California League",
+  "division": "North",
+  "city": "Visalia",
+  "state_or_province": "California",
+  "country": "USA",
+  "parent": "Arizona Diamondbacks",
+  "ballpark": "Valley Strong Ballpark",
+  "elevation_ft": 326,
+  "capacity": 2468,
+  "dims_ft": {
+   "lf_line": 320,
+   "cf": 405,
+   "rf_line": 320
+  },
+  "notes": "Capacity: 1,888 permanent seats; API 1,647."
+ },
+ {
+  "real_name": "Inland Empire 66ers",
+  "level": "A",
+  "league": "California League",
+  "division": "South",
+  "city": "San Bernardino",
+  "state_or_province": "California",
+  "country": "USA",
+  "parent": "Seattle Mariners",
+  "ballpark": "San Manuel Stadium",
+  "elevation_ft": 1019,
+  "capacity": 8000,
+  "dims_ft": {
+   "lf_line": 330,
+   "cf": 410,
+   "rf_line": 330
+  },
+  "notes": "2026: now the Mariners affiliate (was Angels); Modesto Nuts franchise (ex-Mariners) left Modesto after 2025. Capacity: API 5,000."
+ },
+ {
+  "real_name": "Lake Elsinore Storm",
+  "level": "A",
+  "league": "California League",
+  "division": "South",
+  "city": "Lake Elsinore",
+  "state_or_province": "California",
+  "country": "USA",
+  "parent": "San Diego Padres",
+  "ballpark": "The Diamond",
+  "elevation_ft": 1277,
+  "capacity": 7488,
+  "dims_ft": {
+   "lf_line": 330,
+   "cf": 400,
+   "rf_line": 310
+  },
+  "notes": "Capacity: MLB.com guide (2024); API 7,866; Wikipedia 4,835 - sources differ."
+ },
+ {
+  "real_name": "Ontario Tower Buzzers",
+  "level": "A",
+  "league": "California League",
+  "division": "South",
+  "city": "Ontario",
+  "state_or_province": "California",
+  "country": "USA",
+  "parent": "Los Angeles Dodgers",
+  "ballpark": "ONT Field",
+  "elevation_ft": 776,
+  "capacity": 6000,
+  "dims_ft": {
+   "lf_line": 328,
+   "cf": 401,
+   "rf_line": 326
+  },
+  "notes": "2026: new club at new ONT Field; replaced the Modesto Nuts in the California League and took over the Dodgers Single-A affiliation from Rancho Cucamonga. Dims from MLB Stats API; New park (2026). MLB.com guide lists 325/405/325. Capacity: new ONT Field: 6,000 seats per MLB.com guide (Apr 2026); Wikipedia 6,500; API 5,000."
+ },
+ {
+  "real_name": "Rancho Cucamonga Quakes",
+  "level": "A",
+  "league": "California League",
+  "division": "South",
+  "city": "Rancho Cucamonga",
+  "state_or_province": "California",
+  "country": "USA",
+  "parent": "Los Angeles Angels",
+  "ballpark": "Morongo Field",
+  "elevation_ft": 1187,
+  "capacity": 6615,
+  "dims_ft": {
+   "lf_line": 330,
+   "cf": 401,
+   "rf_line": 330
+  },
+  "notes": "2026: now the Angels affiliate (was Dodgers). Dims: 330/401/330 per Wikipedia and MLB.com guide (Jan 2026); MLB Stats API lists 335/400/335. Capacity: API (Wikipedia: 6,588 permanent seats); MLB.com guide (Jan 2026) says about 4,900."
+ },
+ {
+  "real_name": "Delmarva Shorebirds",
+  "level": "A",
+  "league": "Carolina League",
+  "division": "North",
+  "city": "Salisbury",
+  "state_or_province": "Maryland",
+  "country": "USA",
+  "parent": "Baltimore Orioles",
+  "ballpark": "Arthur W. Perdue Stadium",
+  "elevation_ft": 57,
+  "capacity": 5200,
+  "dims_ft": {
+   "lf_line": 309,
+   "cf": 402,
+   "rf_line": 309
+  },
+  "notes": ""
+ },
+ {
+  "real_name": "Fayetteville Woodpeckers",
+  "level": "A",
+  "league": "Carolina League",
+  "division": "North",
+  "city": "Fayetteville",
+  "state_or_province": "North Carolina",
+  "country": "USA",
+  "parent": "Houston Astros",
+  "ballpark": "SEGRA Stadium",
+  "elevation_ft": 102,
+  "capacity": 4786,
+  "dims_ft": {
+   "lf_line": 319,
+   "cf": 400,
+   "rf_line": 330
+  },
+  "notes": "Dims from MLB Stats API; API and Wikipedia both list figures identical to Columbia's Segra Park (319/400/330); treat with caution."
+ },
+ {
+  "real_name": "Fredericksburg Nationals",
+  "level": "A",
+  "league": "Carolina League",
+  "division": "North",
+  "city": "Fredericksburg",
+  "state_or_province": "Virginia",
+  "country": "USA",
+  "parent": "Washington Nationals",
+  "ballpark": "Virginia Credit Union Stadium",
+  "elevation_ft": 209,
+  "capacity": 5000,
+  "dims_ft": {
+   "lf_line": 326,
+   "cf": 402,
+   "rf_line": 327
+  },
+  "notes": ""
+ },
+ {
+  "real_name": "Hill City Howlers",
+  "level": "A",
+  "league": "Carolina League",
+  "division": "North",
+  "city": "Lynchburg",
+  "state_or_province": "Virginia",
+  "country": "USA",
+  "parent": "Cleveland Guardians",
+  "ballpark": "City Stadium",
+  "elevation_ft": 817,
+  "capacity": 4281,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 390,
+   "rf_line": 325
+  },
+  "notes": "2026: renamed from Lynchburg Hillcats; same city (Lynchburg) and ballpark. Capacity: API 4,000."
+ },
+ {
+  "real_name": "Salem RidgeYaks",
+  "level": "A",
+  "league": "Carolina League",
+  "division": "North",
+  "city": "Salem",
+  "state_or_province": "Virginia",
+  "country": "USA",
+  "parent": "Boston Red Sox",
+  "ballpark": "Carilion Clinic Field",
+  "elevation_ft": 1112,
+  "capacity": 6300,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 401,
+   "rf_line": 325
+  },
+  "notes": "2026: renamed from Salem Red Sox; same affiliation."
+ },
+ {
+  "real_name": "Wilson Warbirds",
+  "level": "A",
+  "league": "Carolina League",
+  "division": "North",
+  "city": "Wilson",
+  "state_or_province": "North Carolina",
+  "country": "USA",
+  "parent": "Milwaukee Brewers",
+  "ballpark": "Wilson Ballpark",
+  "elevation_ft": 111,
+  "capacity": 5000,
+  "dims_ft": {
+   "lf_line": 325,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "2026: franchise relocated from Zebulon, NC (Carolina Mudcats) to new Wilson Ballpark. Capacity: 3,700 fixed seats; API 4,000."
+ },
+ {
+  "real_name": "Augusta GreenJackets",
+  "level": "A",
+  "league": "Carolina League",
+  "division": "South",
+  "city": "North Augusta",
+  "state_or_province": "South Carolina",
+  "country": "USA",
+  "parent": "Atlanta Braves",
+  "ballpark": "SRP Park",
+  "elevation_ft": 138,
+  "capacity": 5000,
+  "dims_ft": {
+   "lf_line": 330,
+   "cf": 395,
+   "rf_line": 318
+  },
+  "notes": "Dims: CF 395 per Wikipedia and MLB.com guide; MLB Stats API lists 396. Capacity: API 4,782."
+ },
+ {
+  "real_name": "Charleston RiverDogs",
+  "level": "A",
+  "league": "Carolina League",
+  "division": "South",
+  "city": "Charleston",
+  "state_or_province": "South Carolina",
+  "country": "USA",
+  "parent": "Tampa Bay Rays",
+  "ballpark": "Joseph P. Riley, Jr. Ballpark",
+  "elevation_ft": 11,
+  "capacity": 6000,
+  "dims_ft": {
+   "lf_line": 305,
+   "cf": 398,
+   "rf_line": 337
+  },
+  "notes": "Dims: CF 398 per Wikipedia and MLB.com guide; MLB Stats API lists 399. Capacity: API 5,800."
+ },
+ {
+  "real_name": "Columbia Fireflies",
+  "level": "A",
+  "league": "Carolina League",
+  "division": "South",
+  "city": "Columbia",
+  "state_or_province": "South Carolina",
+  "country": "USA",
+  "parent": "Kansas City Royals",
+  "ballpark": "Segra Park",
+  "elevation_ft": 252,
+  "capacity": 9077,
+  "dims_ft": {
+   "lf_line": 319,
+   "cf": 400,
+   "rf_line": 330
+  },
+  "notes": "Ballpark renamed Prisma Health Park under a 15-year deal announced 2026-10-28 (name used from late 2026 / 2027 season). Dims from MLB Stats API; identical figures are listed for Fayetteville's Segra Stadium. Capacity: API 9,000."
+ },
+ {
+  "real_name": "Hickory Crawdads",
+  "level": "A",
+  "league": "Carolina League",
+  "division": "South",
+  "city": "Hickory",
+  "state_or_province": "North Carolina",
+  "country": "USA",
+  "parent": "Texas Rangers",
+  "ballpark": "L.P. Frans Stadium",
+  "elevation_ft": 1096,
+  "capacity": 5062,
+  "dims_ft": {
+   "lf_line": 330,
+   "cf": 401,
+   "rf_line": 330
+  },
+  "notes": "2025: moved from High-A South Atlantic League to Single-A Carolina League (swap with the Rangers' Spartanburg club)."
+ },
+ {
+  "real_name": "Kannapolis Cannon Ballers",
+  "level": "A",
+  "league": "Carolina League",
+  "division": "South",
+  "city": "Kannapolis",
+  "state_or_province": "North Carolina",
+  "country": "USA",
+  "parent": "Chicago White Sox",
+  "ballpark": "Atrium Health Ballpark",
+  "elevation_ft": 794,
+  "capacity": 4930,
+  "dims_ft": {
+   "lf_line": 330,
+   "cf": 400,
+   "rf_line": 310
+  },
+  "notes": "Dims from MLB Stats API; MLB.com guide (2021) lists 325/400/315. Capacity: 3,218 seated; API 4,700."
+ },
+ {
+  "real_name": "Myrtle Beach Pelicans",
+  "level": "A",
+  "league": "Carolina League",
+  "division": "South",
+  "city": "Myrtle Beach",
+  "state_or_province": "South Carolina",
+  "country": "USA",
+  "parent": "Chicago Cubs",
+  "ballpark": "Pelicans Ballpark",
+  "elevation_ft": 26,
+  "capacity": 6599,
+  "dims_ft": {
+   "lf_line": 308,
+   "cf": 400,
+   "rf_line": 328
+  },
+  "notes": "Dims: 308/400/328 per the club facts page, Wikipedia and MLB.com guide (Apr 2026); MLB Stats API lists 325/405/328. Capacity: including standing room (4,800 seats) per MLB.com guide (Apr 2026); API 4,324."
+ },
+ {
+  "real_name": "Daytona Tortugas",
+  "level": "A",
+  "league": "Florida State League",
+  "division": "East",
+  "city": "Daytona Beach",
+  "state_or_province": "Florida",
+  "country": "USA",
+  "parent": "Cincinnati Reds",
+  "ballpark": "Jackie Robinson Ballpark",
+  "elevation_ft": 5,
+  "capacity": 4200,
+  "dims_ft": {
+   "lf_line": 317,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "Capacity: API 4,000."
+ },
+ {
+  "real_name": "Jupiter Hammerheads",
+  "level": "A",
+  "league": "Florida State League",
+  "division": "East",
+  "city": "Jupiter",
+  "state_or_province": "Florida",
+  "country": "USA",
+  "parent": "Miami Marlins",
+  "ballpark": "Roger Dean Chevrolet Stadium",
+  "elevation_ft": 14,
+  "capacity": 6871,
+  "dims_ft": {
+   "lf_line": 335,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "Dims: RF 325 per Wikipedia and MLB.com guide (MLB Stats API lists 375, which is the right-center figure); MLB.com guide lists LF 330. Capacity: API 6,864."
+ },
+ {
+  "real_name": "Palm Beach Cardinals",
+  "level": "A",
+  "league": "Florida State League",
+  "division": "East",
+  "city": "Jupiter",
+  "state_or_province": "Florida",
+  "country": "USA",
+  "parent": "St. Louis Cardinals",
+  "ballpark": "Roger Dean Chevrolet Stadium",
+  "elevation_ft": 14,
+  "capacity": 6871,
+  "dims_ft": {
+   "lf_line": 335,
+   "cf": 400,
+   "rf_line": 325
+  },
+  "notes": "Dims: RF 325 per Wikipedia and MLB.com guide (MLB Stats API lists 375, which is the right-center figure); MLB.com guide lists LF 330. Capacity: API 6,864."
+ },
+ {
+  "real_name": "St. Lucie Mets",
+  "level": "A",
+  "league": "Florida State League",
+  "division": "East",
+  "city": "Port St. Lucie",
+  "state_or_province": "Florida",
+  "country": "USA",
+  "parent": "New York Mets",
+  "ballpark": "Clover Park",
+  "elevation_ft": 28,
+  "capacity": 7160,
+  "dims_ft": {
+   "lf_line": 338,
+   "cf": 410,
+   "rf_line": 338
+  },
+  "notes": "Dims: 338/410/338 per Wikipedia and MLB.com guide; MLB Stats API lists 330/405/330. Capacity: API 7,000."
+ },
+ {
+  "real_name": "Bradenton Marauders",
+  "level": "A",
+  "league": "Florida State League",
+  "division": "West",
+  "city": "Bradenton",
+  "state_or_province": "Florida",
+  "country": "USA",
+  "parent": "Pittsburgh Pirates",
+  "ballpark": "LECOM Park",
+  "elevation_ft": 21,
+  "capacity": 8500,
+  "dims_ft": {
+   "lf_line": 335,
+   "cf": 400,
+   "rf_line": 335
+  },
+  "notes": ""
+ },
+ {
+  "real_name": "Clearwater Threshers",
+  "level": "A",
+  "league": "Florida State League",
+  "division": "West",
+  "city": "Clearwater",
+  "state_or_province": "Florida",
+  "country": "USA",
+  "parent": "Philadelphia Phillies",
+  "ballpark": "BayCare Ballpark",
+  "elevation_ft": 23,
+  "capacity": 8500,
+  "dims_ft": {
+   "lf_line": 329,
+   "cf": 408,
+   "rf_line": 330
+  },
+  "notes": "Dims: CF 408 per Wikipedia and MLB.com guide; MLB Stats API lists 401."
+ },
+ {
+  "real_name": "Dunedin Blue Jays",
+  "level": "A",
+  "league": "Florida State League",
+  "division": "West",
+  "city": "Dunedin",
+  "state_or_province": "Florida",
+  "country": "USA",
+  "parent": "Toronto Blue Jays",
+  "ballpark": "TD Ballpark",
+  "elevation_ft": 24,
+  "capacity": 8500,
+  "dims_ft": {
+   "lf_line": 335,
+   "cf": 400,
+   "rf_line": 327
+  },
+  "notes": "Dims from MLB Stats API; three sources differ: Wikipedia 333/400/336, MLB.com guide 328/400/327. Capacity: since 2020; API 5,509 is the pre-renovation figure."
+ },
+ {
+  "real_name": "Fort Myers Mighty Mussels",
+  "level": "A",
+  "league": "Florida State League",
+  "division": "West",
+  "city": "Fort Myers",
+  "state_or_province": "Florida",
+  "country": "USA",
+  "parent": "Minnesota Twins",
+  "ballpark": "Lee Health Sports Complex",
+  "elevation_ft": 16,
+  "capacity": 9300,
+  "dims_ft": {
+   "lf_line": 330,
+   "cf": 405,
+   "rf_line": 330
+  },
+  "notes": ""
+ },
+ {
+  "real_name": "Lakeland Flying Tigers",
+  "level": "A",
+  "league": "Florida State League",
+  "division": "West",
+  "city": "Lakeland",
+  "state_or_province": "Florida",
+  "country": "USA",
+  "parent": "Detroit Tigers",
+  "ballpark": "Publix Field at Joker Marchant Stadium",
+  "elevation_ft": 160,
+  "capacity": 8500,
+  "dims_ft": {
+   "lf_line": 340,
+   "cf": 420,
+   "rf_line": 340
+  },
+  "notes": ""
+ },
+ {
+  "real_name": "Tampa Tarpons",
+  "level": "A",
+  "league": "Florida State League",
+  "division": "West",
+  "city": "Tampa",
+  "state_or_province": "Florida",
+  "country": "USA",
+  "parent": "New York Yankees",
+  "ballpark": "George M. Steinbrenner Field",
+  "elevation_ft": 33,
+  "capacity": 11026,
+  "dims_ft": {
+   "lf_line": 318,
+   "cf": 408,
+   "rf_line": 314
+  },
+  "notes": "Back at George M. Steinbrenner Field in 2026 after the Rays used it in 2025. Capacity: API 10,387."
+ }
+]

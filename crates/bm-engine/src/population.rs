@@ -246,7 +246,7 @@ fn make_pitch(rng: &mut Rng, kind: PitchKind, fb_delta: f64, command_in: f64, we
         crate::profile::PitchGroup::Breaking => 1.12,
         crate::profile::PitchGroup::Offspeed => 1.10,
     };
-    PitchDef { kind, shape, usage_same: w * same, usage_opp: w * opp, command: command_in * cmd_factor * INCH }
+    PitchDef { kind, shape, usage_same: w * same, usage_opp: w * opp, command: command_in * cmd_factor * INCH, disguise: 0.0, aim_height: 0.0 }
 }
 
 /// A club: enough players to field a team for any game.

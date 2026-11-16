@@ -123,6 +123,8 @@ pub struct PitchSkill {
     pub spin: f32,
     pub active: f32,
     pub tilt: f32,
+    /// Where he likes to throw it: height relative to the usual spot for the pitch type, m.
+    pub height: f32,
     /// How much he likes to throw it (relative weight, before the batter's side is taken into account).
     pub usage: f32,
 }

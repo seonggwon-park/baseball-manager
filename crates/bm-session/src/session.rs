@@ -6,12 +6,13 @@ use crate::view::*;
 use bm_engine::fielding::{B1, B2, B3, C, POSITION_CODES, SS};
 use bm_engine::profile::NO_POSITION;
 use bm_engine::{
-    Alignment, Approach, Auto, BatLine, BatterProfile, Club, DefenseOrders, GameEvent, GameSim, Hand, InfieldDepth, Level, MatchEnv, Miss, ModelParams,
-    Observer, OffenseOrders, OrderError, OutfieldDepth, PaEvent, PaOutcome, PitchEvent, PitchLine, PitchResult, PlayKind, Player, Rng, Rules, Shift,
-    StealOrder, Step, Substitution, Team, ZoneCall,
+    Alignment, Approach, Auto, BatLine, DefenseOrders, GameEvent, GameSim, Hand, InfieldDepth, MatchEnv, Miss, ModelParams, Observer, OffenseOrders,
+    OrderError, OutfieldDepth, PaEvent, PaOutcome, PitchEvent, PitchLine, PitchResult, PlayKind, Player, Rng, Rules, Shift, StealOrder, Step, Substitution,
+    Team, ZoneCall,
 };
-use bm_physics::units::{FT, INCH, MPH, RPM};
+use bm_physics::units::RPM;
 use bm_physics::{Atmosphere, Park, PathEnd, Vec3, Wind};
+use bm_world::{display, Attr, Bats, Scale, ScaleAnchor, Side, Squad, Talent};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -217,65 +218,87 @@ fn hand_code(h: Hand) -> &'static str {
     }
 }
 
-/// Map a value onto the 1-20 scale: the population mean lands on 10-11 and three
-/// standard deviations above it on 20.
-fn rating(z: f64) -> u8 {
-    (10.5 + 3.2 * z).round().clamp(1.0, 20.0) as u8
+/// The two ratings shown for a standard score.
+fn ratings(z: f32) -> (u8, u8) {
+    let anchor = ScaleAnchor::default();
+    (display(z, Scale::OneToTwenty, anchor), display(z, Scale::TwentyToEighty, anchor))
 }
 
-fn player_view(idx: usize, p: &Player, name: Localized, number: u8) -> PlayerView {
-    let b = &p.batter;
-    let f = &p.fielder;
-    // Spreads of the generated population: 12 % in barrel control, 10 % in timing, 2.6 mph in bat speed.
-    let avg = BatterProfile::league_average(b.hand);
-    let batting = BattingRatings {
-        contact: rating(-0.6 * (b.barrel_sd / avg.barrel_sd - 1.0) / 0.12 - 0.4 * (b.timing_sd / avg.timing_sd - 1.0) / 0.10),
-        power: rating((b.bat_speed - avg.bat_speed) / (2.6 * MPH)),
-        eye: rating((b.eye - 0.62) / 0.07),
-        speed: rating((b.sprint / FT - 27.0) / 1.5),
-        bunt: rating((b.bunt - 0.5) / 0.18),
-        fielding: rating(-(f.hands - 1.0) / 0.2 * 0.5 + (f.accel - 4.9) / 0.6 * 0.5),
-        arm: rating((f.arm / MPH - 86.0) / 3.5),
-    };
-    let pitching = p.pitcher.as_ref().map(|pp| {
+fn player_view(idx: usize, p: &Player, w: &bm_world::Player, name: Localized, number: u8) -> PlayerView {
+    let attrs = Attr::ALL
+        .iter()
+        .map(|&a| {
+            let (r20, r80) = ratings(w.attrs[a]);
+            AttrView { key: a.key(), group: a.group().key(), r20, r80 }
+        })
+        .collect();
+    let mut repertoire: Vec<PitchTypeView> = Vec::new();
+    let mut top_speed_kmh = None;
+    if let (Some(pp), Some(pit)) = (p.pitcher.as_ref(), w.pitching.as_ref()) {
         let top = pp.pitches.iter().map(|d| d.shape.speed).fold(0.0, f64::max);
+        top_speed_kmh = Some(r1(top / KMH));
         let total: f64 = pp.pitches.iter().map(|d| d.usage_same + d.usage_opp).sum();
-        let mut repertoire: Vec<PitchTypeView> = pp
+        let main = bm_world::convert::main_fastball(&pit.pitches);
+        repertoire = pp
             .pitches
             .iter()
-            .map(|d| PitchTypeView { kind: d.kind.code(), speed_kmh: r1(d.shape.speed / KMH), usage: r3((d.usage_same + d.usage_opp) / total) })
+            .zip(&pit.pitches)
+            .enumerate()
+            .map(|(i, (d, skill))| {
+                // The main fastball is graded by the pitcher's stuff.
+                let (r20, r80) = ratings(if Some(i) == main { w.attrs[Attr::Stuff] } else { skill.grade });
+                PitchTypeView { kind: d.kind.code(), speed_kmh: r1(d.shape.speed / KMH), usage: r3((d.usage_same + d.usage_opp) / total), r20, r80 }
+            })
             .collect();
         repertoire.sort_by(|a, b| b.usage.partial_cmp(&a.usage).unwrap_or(std::cmp::Ordering::Equal));
-        PitchingRatings {
-            velocity: rating((top / MPH - 94.8) / 2.3),
-            control: rating(-(pp.pitches[0].command / INCH - 6.6) / 0.7),
-            // Starters around 92 pitches, relievers around 28: one scale for both.
-            stamina: ((pp.stamina / 6.0).round().clamp(1.0, 20.0)) as u8,
-            top_speed_kmh: r1(top / KMH),
-            repertoire,
-        }
-    });
+    }
     PlayerView {
         idx,
         name,
         number,
         position: if p.position == NO_POSITION { "DH" } else { POSITION_CODES[p.position] },
-        bats: hand_code(b.hand),
-        throws: p.pitcher.as_ref().map(|pp| hand_code(pp.hand)),
-        batting,
-        pitching,
+        bats: match w.bats {
+            Bats::Right => "R",
+            Bats::Left => "L",
+            Bats::Switch => "S",
+        },
+        throws: match w.throws {
+            Side::Right => "R",
+            Side::Left => "L",
+        },
+        height_cm: (w.height * 100.0).round() as u16,
+        weight_kg: w.weight.round() as u16,
+        attrs,
+        repertoire,
+        top_speed_kmh,
     }
 }
 
-fn team_view(team: &Team, club: ClubInfo, names: &NameGenerator, rng: &mut Rng) -> TeamView {
+/// The squad's players in the order of the engine's team for a game started by
+/// `starter`: the nine hitters, the starter, the relievers, the bench.
+fn roster(squad: &Squad, starter: usize) -> Vec<&bm_world::Player> {
+    squad
+        .hitters
+        .iter()
+        .map(|(p, _)| p)
+        .chain(std::iter::once(&squad.starters[starter % squad.starters.len()]))
+        .chain(&squad.relievers)
+        .chain(squad.bench.iter().map(|(p, _)| p))
+        .collect()
+}
+
+fn team_view(team: &Team, squad: &Squad, club: ClubInfo, names: &NameGenerator, rng: &mut Rng) -> TeamView {
     let mut numbers: Vec<u8> = (1..=99).collect();
+    let world = roster(squad, 0);
+    assert_eq!(world.len(), team.players.len(), "the squad and the engine's team list the same players");
     let players = team
         .players
         .iter()
+        .zip(world)
         .enumerate()
-        .map(|(i, p)| {
+        .map(|(i, (p, w))| {
             let number = numbers.swap_remove(rng.below(numbers.len()));
-            player_view(i, p, names.next(rng), number)
+            player_view(i, p, w, names.next(rng), number)
         })
         .collect();
     TeamView { club, players }
@@ -504,10 +527,10 @@ impl Session {
             RuleSet::Npb => (Rules::npb_2025(true), Park::symmetric(100.0, 116.0, 122.0, 3.5), "npb"),
         };
         let env = MatchEnv::new(&Atmosphere::new(22.0, 760.0, 55.0, 50.0), Wind::CALM, park, rules, ModelParams::default());
-        let level = Level::mlb();
         let dh = env.rules.dh;
-        let away = Club::random(&mut rng, 1000, &level).team_for_game(0, dh);
-        let home = Club::random(&mut rng, 2000, &level).team_for_game(0, dh);
+        let squads = [Squad::random(&mut rng, 1000, &Talent::MAJOR), Squad::random(&mut rng, 2000, &Talent::MAJOR)];
+        let away = squads[0].to_engine().team_for_game(0, dh);
+        let home = squads[1].to_engine().team_for_game(0, dh);
 
         let (league, clubs) = korean_league();
         let find = |id: &Option<String>| id.as_ref().and_then(|id| clubs.iter().position(|c| &c.id == id));
@@ -517,7 +540,10 @@ impl Session {
             home_club = (away_club + 1 + rng.below(clubs.len() - 1)) % clubs.len();
         }
         let names = NameGenerator::korean();
-        let teams = [team_view(&away, clubs[away_club].clone(), &names, &mut rng), team_view(&home, clubs[home_club].clone(), &names, &mut rng)];
+        let teams = [
+            team_view(&away, &squads[0], clubs[away_club].clone(), &names, &mut rng),
+            team_view(&home, &squads[1], clubs[home_club].clone(), &names, &mut rng),
+        ];
 
         let user_team = match cfg.control {
             Control::Away => Some(0),

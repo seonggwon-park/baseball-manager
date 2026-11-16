@@ -5,7 +5,7 @@ import { useSyncExternalStore } from "react";
 import { api, ApiError } from "./api";
 import { eventEntry, pitchEntry, plateAppearanceEntry, type LogEntry } from "./commentary";
 import type { FieldScene, IdleState } from "./field/scene";
-import type { DefenseOrders, Delegate, EventView, MatchState, MatchView, Mode, NewMatch, OffenseOrders, PitchView, SubRequest } from "./types";
+import type { DefenseOrders, Delegate, EventView, MatchState, MatchView, Mode, NewMatch, OffenseOrders, PitchView, RatingScale, SubRequest } from "./types";
 
 /** The situation as shown while a batch of events is played back. */
 export interface Live {
@@ -39,6 +39,18 @@ export interface Ui {
   error: { code: string; message: string } | null;
   /** Translation key of the result flashed over the field. */
   banner: string | null;
+  /** Scale on which ratings are shown. */
+  scale: RatingScale;
+  /** Player whose profile is open: `[team, index]`. */
+  card: [number, number] | null;
+}
+
+function initialScale(): RatingScale {
+  try {
+    return localStorage.getItem("bm.scale") === "80" ? "80" : "20";
+  } catch {
+    return "20";
+  }
 }
 
 const defaultOffense = (): OffenseOrders => ({ steal: "auto" });
@@ -69,6 +81,8 @@ class MatchStore {
     delegate: defaultDelegate(),
     error: null,
     banner: null,
+    scale: initialScale(),
+    card: null,
   };
   private listeners = new Set<() => void>();
   private scene: FieldScene | null = null;
@@ -89,6 +103,22 @@ class MatchStore {
     this.listeners.forEach((fn) => fn());
   }
 
+  // ---- preferences and the player profile ----
+
+  toggleScale() {
+    const scale: RatingScale = this.ui.scale === "20" ? "80" : "20";
+    try {
+      localStorage.setItem("bm.scale", scale);
+    } catch {
+      // Storage can be unavailable; the choice then lasts for this session only.
+    }
+    this.set({ scale });
+  }
+
+  showCard(card: [number, number] | null) {
+    this.set({ card });
+  }
+
   // ---- scene ----
 
   attachScene(scene: FieldScene | null) {
@@ -105,10 +135,13 @@ class MatchStore {
     const s = state.situation;
     const bat = view.teams[s.batting];
     const batter = bat.players[live.batter];
+    // A switch hitter stands on the side opposite to the pitcher's arm.
+    const pitcher = view.teams[s.fielding].players[live.pitcher];
+    const side = batter.bats === "S" ? (pitcher.throws === "R" ? "L" : "R") : batter.bats;
     return {
       positions: state.positions,
       runners: live.bases.map((p) => (p == null ? null : bat.players[p].number)),
-      batter: s.over ? null : { number: batter.number, hand: batter.bats },
+      batter: s.over ? null : { number: batter.number, hand: side },
       fielding: { primary: view.teams[s.fielding].club.colors[0], secondary: view.teams[s.fielding].club.colors[1] },
       batting: { primary: bat.club.colors[1], secondary: bat.club.colors[0] },
     };

@@ -1,0 +1,782 @@
+[
+ {
+  "real_name": "Baltimore Orioles",
+  "league": "AL",
+  "division": "East",
+  "city": "Baltimore",
+  "state_or_province": "Maryland",
+  "country": "USA",
+  "ballpark": "Oriole Park at Camden Yards",
+  "capacity": 42455,
+  "elevation_ft": 33,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 333,
+   "lcf": 376,
+   "cf": 400,
+   "rcf": 373,
+   "rf_line": 318
+  },
+  "wall_ft": {
+   "lf": 8,
+   "cf": 7,
+   "rf": 21
+  },
+  "notes": "Capacity 42,455 for 2026 per MLB Stats API and Wikipedia (MLB.com guide still lists 44,970). Left-field wall was moved in and lowered for 2025: it runs from 333 at the line to a 373-ft notch, then 374-376 toward the bullpens; height is 8 ft in some areas and 6 ft 11 in in others (club announcement; was 13 ft in 2022-24). Deepest point 410 in left-center; 400 to straightaway center is not posted. CF wall 7 ft and the 21-ft right-field scoreboard wall are from Seamheads Ballparks Database (2025 configuration) / Clem's Baseball."
+ },
+ {
+  "real_name": "Boston Red Sox",
+  "league": "AL",
+  "division": "East",
+  "city": "Boston",
+  "state_or_province": "Massachusetts",
+  "country": "USA",
+  "ballpark": "Fenway Park",
+  "capacity": 37755,
+  "elevation_ft": 21,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 310,
+   "lcf": 379,
+   "cf": 390,
+   "rcf": 380,
+   "rf_line": 302
+  },
+  "wall_ft": {
+   "lf": 37,
+   "cf": 18,
+   "rf": 3
+  },
+  "notes": "Capacity 37,755 for night games (37,305 day). 37-ft Green Monster in left (MLB.com guide). Center field is posted 389 ft 9 in; deep right-center 'triangle' is 420. Right-field fence is 3-5 ft (Seamheads 3, Clem's Baseball 5). CF wall: about 18 ft per Clem's Baseball and Seamheads (left-center/center); Seamheads lists 9 ft at straightaway center and 5 ft in front of the bullpens - treat the cf wall as approximate."
+ },
+ {
+  "real_name": "New York Yankees",
+  "league": "AL",
+  "division": "East",
+  "city": "New York",
+  "state_or_province": "New York",
+  "country": "USA",
+  "ballpark": "Yankee Stadium",
+  "capacity": 46537,
+  "elevation_ft": 55,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 318,
+   "lcf": 399,
+   "cf": 408,
+   "rcf": 385,
+   "rf_line": 314
+  },
+  "wall_ft": {
+   "lf": 8.5,
+   "cf": 8.5,
+   "rf": 8
+  },
+  "notes": "Located in the Bronx. Wall is 8 ft 6 in from the left-field pole to the Yankees bullpen, then descends gradually to 8 ft at the right-field pole (MLB.com guide)."
+ },
+ {
+  "real_name": "Tampa Bay Rays",
+  "league": "AL",
+  "division": "East",
+  "city": "St. Petersburg",
+  "state_or_province": "Florida",
+  "country": "USA",
+  "ballpark": "Tropicana Field",
+  "capacity": 25025,
+  "elevation_ft": 15,
+  "roof": "fixed",
+  "surface": "turf",
+  "dims_ft": {
+   "lf_line": 315,
+   "lcf": 370,
+   "cf": 404,
+   "rcf": 370,
+   "rf_line": 322
+  },
+  "wall_ft": {
+   "lf": 11,
+   "cf": 9,
+   "rf": 11
+  },
+  "notes": "Returned to Tropicana Field on 2026-04-06 after the hurricane-damaged roof was replaced (played 2025 at George M. Steinbrenner Field, Tampa). Capacity 25,025 with the upper deck closed. MLB Stats API also lists deep alleys of 410 (LCF) and 404 (RCF). Wall heights from Seamheads Ballparks Database (2025 configuration) and Clem's Baseball (approximate). Planned move: a $2.36B ballpark on Hillsborough College's Dale Mabry campus in Tampa was approved by Tampa City Council (4-3, 2026-08-27) and Hillsborough County (5-2, 2026-08-28); local reporting gives a target of Opening Day 2029, after the Tropicana Field lease ends in 2028. No change for 2027."
+ },
+ {
+  "real_name": "Toronto Blue Jays",
+  "league": "AL",
+  "division": "East",
+  "city": "Toronto",
+  "state_or_province": "Ontario",
+  "country": "Canada",
+  "ballpark": "Rogers Centre",
+  "capacity": 39150,
+  "elevation_ft": 270,
+  "roof": "retractable",
+  "surface": "turf",
+  "dims_ft": {
+   "lf_line": 328,
+   "lcf": 381,
+   "cf": 400,
+   "rcf": 372,
+   "rf_line": 328
+  },
+  "wall_ft": {
+   "lf": 14.33,
+   "cf": 8,
+   "rf": 12.58
+  },
+  "notes": "Asymmetric since the 2023 renovation (club announcement): LF line 328 (wall 14 ft 4 in), left-centre 368 (11 ft 2 in), LC power alley 381 (12 ft 9 in), centre 400 (8 ft), RC power alley 372 (10 ft 9 in), right-centre 359 (14 ft 4 in), RF line 328 (12 ft 7 in). lcf/rcf here are the power-alley figures; wall_ft gives the foul-line and centre-field heights. Elevation: MLB Stats API (Open-Meteo DEM gives 272 ft). MLB.com guide gives capacity as 'over 41,000'; MLB Stats API and Wikipedia 39,150."
+ },
+ {
+  "real_name": "Chicago White Sox",
+  "league": "AL",
+  "division": "Central",
+  "city": "Chicago",
+  "state_or_province": "Illinois",
+  "country": "USA",
+  "ballpark": "Rate Field",
+  "capacity": 40615,
+  "elevation_ft": 595,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 330,
+   "lcf": 377,
+   "cf": 400,
+   "rcf": 372,
+   "rf_line": 335
+  },
+  "wall_ft": {
+   "lf": 8,
+   "cf": 8,
+   "rf": 8
+  },
+  "notes": "Renamed Rate Field in 2025 (ex-Guaranteed Rate Field). Alleys 377/372 are from the MLB Stats API; MLB.com guide and Wikipedia give 375 (not posted) for both, and the MLB.com guide lists RF 330. Capacity 40,615 per MLB.com guide and Wikipedia (MLB Stats API 40,126). 8-ft wall all around (Wikipedia, Seamheads)."
+ },
+ {
+  "real_name": "Cleveland Guardians",
+  "league": "AL",
+  "division": "Central",
+  "city": "Cleveland",
+  "state_or_province": "Ohio",
+  "country": "USA",
+  "ballpark": "Progressive Field",
+  "capacity": 33530,
+  "elevation_ft": 653,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 325,
+   "lcf": 370,
+   "cf": 405,
+   "rcf": 375,
+   "rf_line": 325
+  },
+  "wall_ft": {
+   "lf": 19,
+   "cf": 9,
+   "rf": 9
+  },
+  "notes": "Dimensions and wall heights from the MLB.com guide (Mar 2026): LF 325 with a 19-ft wall, CF 405 with a 9-ft wall, RF 325 with a 9-ft wall. Wikipedia lists the center-field marker as 400 with a 410 deep corner in left-center. Capacity 33,530 per MLB.com guide and Wikipedia (MLB Stats API still lists 34,830)."
+ },
+ {
+  "real_name": "Detroit Tigers",
+  "league": "AL",
+  "division": "Central",
+  "city": "Detroit",
+  "state_or_province": "Michigan",
+  "country": "USA",
+  "ballpark": "Comerica Park",
+  "capacity": 41083,
+  "elevation_ft": 600,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 342,
+   "lcf": 370,
+   "cf": 412,
+   "rcf": 365,
+   "rf_line": 330
+  },
+  "wall_ft": {
+   "lf": 7,
+   "cf": 7,
+   "rf": 7
+  },
+  "notes": "Since 2023 (club announcement): CF moved in from 422 to 412 and lowered from 8.5 to 7 ft; right-center lowered from 13 to 7 ft; RF from 8.5 to 7 ft; LF corner re-measured 345 -> 342. LF wall height was not changed in 2023 and is not stated by the club: Clem's Baseball lists 7 ft, Seamheads 6 ft - lf wall is unconfirmed. MLB Stats API still carries the pre-2023 figures (345/420). MLB.com guide gives capacity 40,988 (as of 2024); MLB Stats API and Wikipedia 41,083."
+ },
+ {
+  "real_name": "Kansas City Royals",
+  "league": "AL",
+  "division": "Central",
+  "city": "Kansas City",
+  "state_or_province": "Missouri",
+  "country": "USA",
+  "ballpark": "Kauffman Stadium",
+  "capacity": 38179,
+  "elevation_ft": 856,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 330,
+   "lcf": 379,
+   "cf": 410,
+   "rcf": 379,
+   "rf_line": 330
+  },
+  "wall_ft": {
+   "lf": 8.5,
+   "cf": 8.5,
+   "rf": 8.5
+  },
+  "notes": "Fences moved in for 2026 (club announcement 2026-01-13): alleys 387 -> 379, CF unchanged at 410, wall lowered from 10 ft to 8.5 ft 'in most places'. The club diagram measures the corners at 347 (LF) and 344 (RF) and straightaway LF/RF at 364; the MLB Stats API reports those as its line values, but the foul poles remain 330 (Wikipedia). Capacity for 2026: MLB Stats API 38,179, Wikipedia 38,053, MLB.com guide still 37,903 - unconfirmed which is official. Future: the Royals and Hallmark announced (2026-04-22) a new downtown ballpark at Crown Center (about 34,000 seats, open-air) planned to open for the 2030 season, with groundbreaking expected in Q1 2027; Kauffman remains the home park for 2027."
+ },
+ {
+  "real_name": "Minnesota Twins",
+  "league": "AL",
+  "division": "Central",
+  "city": "Minneapolis",
+  "state_or_province": "Minnesota",
+  "country": "USA",
+  "ballpark": "Target Field",
+  "capacity": 38544,
+  "elevation_ft": 828,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 339,
+   "lcf": 377,
+   "cf": 404,
+   "rcf": 367,
+   "rf_line": 328
+  },
+  "wall_ft": {
+   "lf": 8,
+   "cf": 8,
+   "rf": 23
+  },
+  "notes": "CF corners are 411 (left) and 403 (right). 23-ft wall in right and right-center; 8 ft elsewhere (Seamheads Ballparks Database (2025 configuration), Clem's Baseball)."
+ },
+ {
+  "real_name": "Athletics",
+  "league": "AL",
+  "division": "West",
+  "city": "West Sacramento",
+  "state_or_province": "California",
+  "country": "USA",
+  "ballpark": "Sutter Health Park",
+  "capacity": 13416,
+  "elevation_ft": 24,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 330,
+   "lcf": 380,
+   "cf": 403,
+   "rcf": 380,
+   "rf_line": 325
+  },
+  "wall_ft": {
+   "lf": null,
+   "cf": null,
+   "rf": null
+  },
+  "notes": "Temporary home 2025-2027 (shared with Triple-A Sacramento River Cats); MLB Stats API labels the city 'Sacramento' but the park is in West Sacramento. Club uses no city name. Six 2026 home games (June 8-14) were played at Las Vegas Ballpark. Planned move to a new ballpark on the Las Vegas Strip for the 2028 season (reported on schedule in May 2026). Capacity 13,416 per MLB Stats API; 14,014 including lawn/standing per MLB.com guide and Wikipedia (10,624 fixed seats). Outfield wall heights: no source found - null. Elevation 24 ft per MLB Stats API (USGS at the coordinates: 42 ft)."
+ },
+ {
+  "real_name": "Houston Astros",
+  "league": "AL",
+  "division": "West",
+  "city": "Houston",
+  "state_or_province": "Texas",
+  "country": "USA",
+  "ballpark": "Daikin Park",
+  "capacity": 41168,
+  "elevation_ft": 45,
+  "roof": "retractable",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 315,
+   "lcf": 362,
+   "cf": 409,
+   "rcf": 373,
+   "rf_line": 326
+  },
+  "wall_ft": {
+   "lf": 21,
+   "cf": 9,
+   "rf": 7
+  },
+  "notes": "Renamed Daikin Park in 2025 (ex-Minute Maid Park). 21-ft wall in left (Crawford Boxes side), 25 ft in left-center, 9 ft in center, 7 ft in right (Seamheads Ballparks Database (2025 configuration), Clem's Baseball). Wikipedia lists the alleys as 366/370 with deep points 399 (LC) and 408 (RC); the MLB.com guide's 'center field 399' appears to be the deep left-center marker. Capacity 41,168 per MLB Stats API and Wikipedia (MLB.com guide 41,592)."
+ },
+ {
+  "real_name": "Los Angeles Angels",
+  "league": "AL",
+  "division": "West",
+  "city": "Anaheim",
+  "state_or_province": "California",
+  "country": "USA",
+  "ballpark": "Angel Stadium",
+  "capacity": 45517,
+  "elevation_ft": 151,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 330,
+   "lcf": 390,
+   "cf": 396,
+   "rcf": 370,
+   "rf_line": 330
+  },
+  "wall_ft": {
+   "lf": 5,
+   "cf": 8,
+   "rf": 8
+  },
+  "notes": "IMPORTANT: the wall markers near the corners read 347 (LF) and 350 (RF) because since 2014 they show the true distance at the sign, which sits 15-20 ft from the pole; the foul lines themselves are 330 (MLB.com 2014; MLB Stats API). RCF: Wikipedia 370 (365 'shallow'); MLB Stats API 365. Walls: about 5 ft in the left-field corner rising to 8 ft through left-center and center; the right-field wall is 18 ft high but since 2018 the home-run line is at 8 ft (club announcement) - rf value is the home-run line."
+ },
+ {
+  "real_name": "Seattle Mariners",
+  "league": "AL",
+  "division": "West",
+  "city": "Seattle",
+  "state_or_province": "Washington",
+  "country": "USA",
+  "ballpark": "T-Mobile Park",
+  "capacity": 47378,
+  "elevation_ft": 10,
+  "roof": "retractable",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 331,
+   "lcf": 378,
+   "cf": 401,
+   "rcf": 381,
+   "rf_line": 326
+  },
+  "wall_ft": {
+   "lf": 8,
+   "cf": 8,
+   "rf": 8
+  },
+  "notes": "Dimensions since the 2013 fence move per Wikipedia and Seamheads; the MLB Stats API (331/390/405/387/327) and the MLB.com guide (331/409/327) still show legacy figures. Uniform 8-ft wall since 2013. Capacity: MLB Stats API 47,378; MLB.com guide 47,943; Wikipedia 47,368 - sources differ."
+ },
+ {
+  "real_name": "Texas Rangers",
+  "league": "AL",
+  "division": "West",
+  "city": "Arlington",
+  "state_or_province": "Texas",
+  "country": "USA",
+  "ballpark": "Globe Life Field",
+  "capacity": 40300,
+  "elevation_ft": 545,
+  "roof": "retractable",
+  "surface": "turf",
+  "dims_ft": {
+   "lf_line": 329,
+   "lcf": 372,
+   "cf": 407,
+   "rcf": 374,
+   "rf_line": 326
+  },
+  "wall_ft": {
+   "lf": 8,
+   "cf": 8,
+   "rf": 8
+  },
+  "notes": "Deepest points 410 on both sides of straightaway center. Capacity about 40,300 (MLB.com guide, Wikipedia; MLB Stats API 40,518). 8-ft walls (Seamheads Ballparks Database (2025 configuration), Clem's Baseball). Elevation 545 ft per MLB Stats API (USGS 580 ft at street level; the field is below grade)."
+ },
+ {
+  "real_name": "Atlanta Braves",
+  "league": "NL",
+  "division": "East",
+  "city": "Cumberland",
+  "state_or_province": "Georgia",
+  "country": "USA",
+  "ballpark": "Truist Park",
+  "capacity": 40819,
+  "elevation_ft": 1001,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 335,
+   "lcf": 385,
+   "cf": 400,
+   "rcf": 375,
+   "rf_line": 325
+  },
+  "wall_ft": {
+   "lf": 6,
+   "cf": 8,
+   "rf": 16
+  },
+  "notes": "The park is in Cumberland, unincorporated Cobb County (Atlanta mailing address), not in the City of Atlanta. MLB.com guide also lists 375 to straightaway left. Capacity 40,819 for 2026 per MLB Stats API (updated yearly; MLB.com guide 41,147; Wikipedia 41,108). Walls: about 6 ft in left, 8 ft in center, 16 ft in right (Seamheads Ballparks Database (2025 configuration), Clem's Baseball)."
+ },
+ {
+  "real_name": "Miami Marlins",
+  "league": "NL",
+  "division": "East",
+  "city": "Miami",
+  "state_or_province": "Florida",
+  "country": "USA",
+  "ballpark": "loanDepot park",
+  "capacity": 37442,
+  "elevation_ft": 10,
+  "roof": "retractable",
+  "surface": "turf",
+  "dims_ft": {
+   "lf_line": 344,
+   "lcf": 386,
+   "cf": 400,
+   "rcf": 387,
+   "rf_line": 335
+  },
+  "wall_ft": {
+   "lf": 7,
+   "cf": null,
+   "rf": 7
+  },
+  "notes": "Since 2020 (club announcement): CF 407 -> 400, RCF 392 -> 387; synthetic turf since 2020. MLB Stats API still lists 407/392. Sections of the LF and RF walls were lowered from 11.5 ft to about 7 ft (6.5-7.5) in 2016 (MLB.com); sections holding video boards remain taller. CF wall height unconfirmed (FanGraphs 2016: 8.5 ft; Seamheads lists 20 ft) - null. Capacity 37,442 incl. standing room (36,742 seats)."
+ },
+ {
+  "real_name": "New York Mets",
+  "league": "NL",
+  "division": "East",
+  "city": "New York",
+  "state_or_province": "New York",
+  "country": "USA",
+  "ballpark": "Citi Field",
+  "capacity": 41922,
+  "elevation_ft": 10,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 335,
+   "lcf": 370,
+   "cf": 408,
+   "rcf": 380,
+   "rf_line": 330
+  },
+  "wall_ft": {
+   "lf": 8,
+   "cf": 8,
+   "rf": 8
+  },
+  "notes": "Located in Flushing, Queens. lcf/rcf are the MLB Stats API power-alley figures (370/380, 2015 configuration); wall markers per Wikipedia read 335, 358 (LF), 385 (deep LC), 408, 398 (deep RC), 375/370 (RF), 330 - the alley values are the least certain in this file. The right-field nook was removed in 2023 (fence moved in about 8 ft there). Wall height uniform 8 ft since 2012/2015 per Clem's Baseball and Wikipedia; Seamheads lists 11 ft at center and 18 ft in right-center."
+ },
+ {
+  "real_name": "Philadelphia Phillies",
+  "league": "NL",
+  "division": "East",
+  "city": "Philadelphia",
+  "state_or_province": "Pennsylvania",
+  "country": "USA",
+  "ballpark": "Citizens Bank Park",
+  "capacity": 42901,
+  "elevation_ft": 20,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 329,
+   "lcf": 374,
+   "cf": 401,
+   "rcf": 369,
+   "rf_line": 330
+  },
+  "wall_ft": {
+   "lf": 11,
+   "cf": 6,
+   "rf": 13
+  },
+  "notes": "Power alleys 374 (LF) and 369 (RF); 'Monty's Angle' left of center runs 409 -> 381. Wall heights about 11 ft in left, 6 ft in center, 13 ft in right (Seamheads Ballparks Database (2025 configuration), Clem's Baseball)."
+ },
+ {
+  "real_name": "Washington Nationals",
+  "league": "NL",
+  "division": "East",
+  "city": "Washington",
+  "state_or_province": "District of Columbia",
+  "country": "USA",
+  "ballpark": "Nationals Park",
+  "capacity": 41373,
+  "elevation_ft": 35,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 336,
+   "lcf": 377,
+   "cf": 402,
+   "rcf": 370,
+   "rf_line": 335
+  },
+  "wall_ft": {
+   "lf": 8,
+   "cf": 12,
+   "rf": 12
+  },
+  "notes": "Dimensions from the club's Facts and Figures page (Wikipedia lists LF 337). Wall heights are from Seamheads Ballparks Database (2025 configuration) (LF 8, CF 12, RF 12); Clem's Baseball gives 10/10/16 with 9-ft sections - the right-field (scoreboard) wall height in particular is unconfirmed."
+ },
+ {
+  "real_name": "Chicago Cubs",
+  "league": "NL",
+  "division": "Central",
+  "city": "Chicago",
+  "state_or_province": "Illinois",
+  "country": "USA",
+  "ballpark": "Wrigley Field",
+  "capacity": 41649,
+  "elevation_ft": 595,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 355,
+   "lcf": 368,
+   "cf": 400,
+   "rcf": 368,
+   "rf_line": 353
+  },
+  "wall_ft": {
+   "lf": 11.5,
+   "cf": 11.5,
+   "rf": 11.5
+  },
+  "notes": "Ivy-covered brick wall 11 ft 6 in at the bleachers, 15 ft in the corner wells (Wikipedia); a wire basket overhangs the wall. Capacity 41,649 per MLB.com guide and Wikipedia (MLB Stats API 41,298). Hosts the 2027 All-Star Game (July 13, 2027)."
+ },
+ {
+  "real_name": "Cincinnati Reds",
+  "league": "NL",
+  "division": "Central",
+  "city": "Cincinnati",
+  "state_or_province": "Ohio",
+  "country": "USA",
+  "ballpark": "Great American Ball Park",
+  "capacity": 43500,
+  "elevation_ft": 535,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 328,
+   "lcf": 379,
+   "cf": 404,
+   "rcf": 370,
+   "rf_line": 325
+  },
+  "wall_ft": {
+   "lf": 12,
+   "cf": 8,
+   "rf": 8
+  },
+  "notes": "12-ft wall in left, 8 ft in center and right (Seamheads Ballparks Database (2025 configuration), Clem's Baseball). Capacity is NOT firmly confirmed: Wikipedia 43,500 (2021-present), MLB Stats API 42,319 (2008-2020 figure), MLB.com guide (Mar 2026) 45,814. Elevation 535 ft per MLB Stats API (USGS at the coordinates: 490 ft)."
+ },
+ {
+  "real_name": "Milwaukee Brewers",
+  "league": "NL",
+  "division": "Central",
+  "city": "Milwaukee",
+  "state_or_province": "Wisconsin",
+  "country": "USA",
+  "ballpark": "American Family Field",
+  "capacity": 40100,
+  "elevation_ft": 597,
+  "roof": "retractable",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 342,
+   "lcf": 371,
+   "cf": 400,
+   "rcf": 374,
+   "rf_line": 345
+  },
+  "wall_ft": {
+   "lf": 8,
+   "cf": 8,
+   "rf": 8
+  },
+  "notes": "LF marker is 342 since 2021 (originally 344, still in the MLB Stats API); RF posted 345. Capacity 40,100 per MLB Stats API (changed from 41,700 in 2025); MLB.com guide and Wikipedia still list 41,900. 8-ft walls per Clem's Baseball; Seamheads lists 6 ft in right."
+ },
+ {
+  "real_name": "Pittsburgh Pirates",
+  "league": "NL",
+  "division": "Central",
+  "city": "Pittsburgh",
+  "state_or_province": "Pennsylvania",
+  "country": "USA",
+  "ballpark": "PNC Park",
+  "capacity": 38747,
+  "elevation_ft": 780,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 325,
+   "lcf": 389,
+   "cf": 399,
+   "rcf": 375,
+   "rf_line": 320
+  },
+  "wall_ft": {
+   "lf": 6,
+   "cf": 10,
+   "rf": 21
+  },
+  "notes": "Deepest point 410 in left-center. LCF: 389 per MLB Stats API and Seamheads; MLB.com guide and Wikipedia list 383. 6-ft wall in left, 10 ft in center, 21-ft Clemente Wall in right (Seamheads Ballparks Database (2025 configuration), Clem's Baseball). Elevation 780 ft per MLB Stats API (USGS at the coordinates: 726 ft)."
+ },
+ {
+  "real_name": "St. Louis Cardinals",
+  "league": "NL",
+  "division": "Central",
+  "city": "St. Louis",
+  "state_or_province": "Missouri",
+  "country": "USA",
+  "ballpark": "Busch Stadium",
+  "capacity": 43435,
+  "elevation_ft": 460,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 336,
+   "lcf": 375,
+   "cf": 400,
+   "rcf": 375,
+   "rf_line": 335
+  },
+  "wall_ft": {
+   "lf": 8,
+   "cf": 8,
+   "rf": 8
+  },
+  "notes": "Capacity 43,435 for 2026 per MLB Stats API (updated yearly; MLB.com guide 44,494; Wikipedia 44,383). 8-ft walls (Seamheads Ballparks Database (2025 configuration), Clem's Baseball)."
+ },
+ {
+  "real_name": "Arizona Diamondbacks",
+  "league": "NL",
+  "division": "West",
+  "city": "Phoenix",
+  "state_or_province": "Arizona",
+  "country": "USA",
+  "ballpark": "Chase Field",
+  "capacity": 48263,
+  "elevation_ft": 1086,
+  "roof": "retractable",
+  "surface": "turf",
+  "dims_ft": {
+   "lf_line": 330,
+   "lcf": 374,
+   "cf": 407,
+   "rcf": 374,
+   "rf_line": 334
+  },
+  "wall_ft": {
+   "lf": 8,
+   "cf": 25,
+   "rf": 8
+  },
+  "notes": "Posted figures per Wikipedia (deep alleys 413 either side of center); the MLB Stats API carries re-measured values 328/376/407/376/335 (deep 412/414) and the MLB.com guide lists RF line 335. Synthetic turf since 2019. Walls about 7.5-8 ft with a 25-ft wall in center (Seamheads Ballparks Database (2025 configuration), Clem's Baseball). Capacity: MLB.com guide (Mar 2026) 48,263; Wikipedia 48,330; MLB Stats API 48,405."
+ },
+ {
+  "real_name": "Colorado Rockies",
+  "league": "NL",
+  "division": "West",
+  "city": "Denver",
+  "state_or_province": "Colorado",
+  "country": "USA",
+  "ballpark": "Coors Field",
+  "capacity": 46897,
+  "elevation_ft": 5190,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 347,
+   "lcf": 390,
+   "cf": 415,
+   "rcf": 375,
+   "rf_line": 350
+  },
+  "wall_ft": {
+   "lf": 13,
+   "cf": 8,
+   "rf": 16.5
+  },
+  "notes": "Elevation 5,190 ft per MLB Stats API (USGS 5,180 ft at the coordinates). Capacity 46,897 seats, 50,144 with standing room (MLB Stats API lists 50,480). Since 2016: fence 13 ft in the left-field corner, 8 ft through left-center and center, 16 ft 6 in from right-center to the right-field corner (Wikipedia, Seamheads)."
+ },
+ {
+  "real_name": "Los Angeles Dodgers",
+  "league": "NL",
+  "division": "West",
+  "city": "Los Angeles",
+  "state_or_province": "California",
+  "country": "USA",
+  "ballpark": "Dodger Stadium",
+  "capacity": 56000,
+  "elevation_ft": 515,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 330,
+   "lcf": 385,
+   "cf": 395,
+   "rcf": 385,
+   "rf_line": 330
+  },
+  "wall_ft": {
+   "lf": 8,
+   "cf": 8,
+   "rf": 8
+  },
+  "notes": "MLB's 2026 venue data lists the park as 'UNIQLO Field at Dodger Stadium'. Alleys 385 per the club/MLB Stats API/MLB.com guide; Wikipedia gives 'true' alleys of 375 and true center 400 (395 posted). Main wall 8 ft; low walls of about 4 ft in the corners near the foul poles (Seamheads Ballparks Database (2025 configuration), Clem's Baseball)."
+ },
+ {
+  "real_name": "San Diego Padres",
+  "league": "NL",
+  "division": "West",
+  "city": "San Diego",
+  "state_or_province": "California",
+  "country": "USA",
+  "ballpark": "Petco Park",
+  "capacity": 39860,
+  "elevation_ft": 23,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 336,
+   "lcf": 386,
+   "cf": 396,
+   "rcf": 391,
+   "rf_line": 322
+  },
+  "wall_ft": {
+   "lf": 4,
+   "cf": 7,
+   "rf": 10
+  },
+  "notes": "Capacity 39,860 fixed seats (MLB.com guide, Wikipedia; MLB Stats API 40,000). Wall heights from Seamheads Ballparks Database (2025 configuration) / Clem's Baseball: about 4 ft in the left-field corner (7.5 ft in left-center), 7 ft in center, 10 ft in right - not confirmed against a club source. The Western Metal Supply Co. building forms the left-field corner."
+ },
+ {
+  "real_name": "San Francisco Giants",
+  "league": "NL",
+  "division": "West",
+  "city": "San Francisco",
+  "state_or_province": "California",
+  "country": "USA",
+  "ballpark": "Oracle Park",
+  "capacity": 41331,
+  "elevation_ft": 0,
+  "roof": "open",
+  "surface": "grass",
+  "dims_ft": {
+   "lf_line": 339,
+   "lcf": 399,
+   "cf": 391,
+   "rcf": 415,
+   "rf_line": 309
+  },
+  "wall_ft": {
+   "lf": 8,
+   "cf": 7,
+   "rf": 24
+  },
+  "notes": "Since 2020 (bullpens moved to the outfield): LCF 399, CF 391, deepest right-center 415; straightaway right 365. Wall: 8 ft in left, 7 ft in center (10 ft at dead center), 20 ft in right-center, 24-ft brick wall in right (Wikipedia; MLB.com guide '24-foot brick wall'). Capacity 41,331 per Wikipedia (MLB Stats API 41,311; MLB.com guide 'approx. 42,300'). Elevation: MLB Stats API 0 ft; USGS 13 ft."
+ }
+]
