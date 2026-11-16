@@ -95,6 +95,7 @@ struct CareerFile {
     balance: Closure,
     prospect_spread: Valued<f64>,
     pitcher_potential: Valued<f32>,
+    age_discount: Valued<f64>,
 }
 
 /// The contents of `data/people/careers.json`.
@@ -117,6 +118,9 @@ pub struct CareerTable {
     pub prospect_spread: f64,
     /// Factor on the growth ahead of new pitchers against new position players.
     pub pitcher_potential: f32,
+    /// Standard deviations of ability an organisation takes off a player's worth for every
+    /// year of age past 30, when it decides whom to keep.
+    pub age_discount: f64,
 }
 
 fn position_code(code: &str) -> Result<Option<Position>, String> {
@@ -156,6 +160,7 @@ impl CareerTable {
             balance: f.balance,
             prospect_spread: f.prospect_spread.value,
             pitcher_potential: f.pitcher_potential.value,
+            age_discount: f.age_discount.value,
         })
     }
 
@@ -299,15 +304,15 @@ pub struct Stint {
 pub struct Career {
     pub origin: Origin,
     pub seasons: Vec<Stint>,
-    /// First season among his major-league organisation's forty best by ability: a
-    /// stand-in for the 40-man roster, and for having played in the majors.
-    pub forty_man: Option<i32>,
+    /// First season among his major-league organisation's best [`USED_PER_SEASON`] by
+    /// ability: a stand-in for having played in the majors.
+    pub majors: Option<i32>,
     pub left: Option<(i32, Exit)>,
 }
 
 impl Career {
     pub fn new(origin: Origin) -> Career {
-        Career { origin, seasons: Vec::new(), forty_man: None, left: None }
+        Career { origin, seasons: Vec::new(), majors: None, left: None }
     }
 
     pub fn reached(&self, level: &str) -> bool {
@@ -315,8 +320,13 @@ impl Career {
     }
 }
 
-/// Record the season every rostered player starts, and who is among the forty best of
-/// each major-league organisation.
+/// Players a major-league club uses in a season: 1,470 players appeared in 2025 MLB
+/// regular-season games (MLB Stats API season stats, hitting, pitching and fielding), 49 per
+/// club. The 26 on the roster plus the next best of the organisation stand in for them.
+pub const USED_PER_SEASON: usize = 49;
+
+/// Record the season every rostered player starts, and who is among the players each
+/// major-league organisation would use.
 pub fn record_season(world: &World, pop: &mut Population, year: i32) {
     for r in &pop.rosters {
         for p in r.players() {
@@ -343,11 +353,11 @@ pub fn record_season(world: &World, pop: &mut Population, year: i32) {
         }
         rest.sort_by(|a, b| b.0.total_cmp(&a.0));
         forty.extend(top);
-        forty.extend(rest.iter().take(40usize.saturating_sub(26)).map(|x| x.1));
+        forty.extend(rest.iter().take(USED_PER_SEASON.saturating_sub(26)).map(|x| x.1));
     }
     for id in forty {
         if let Some(c) = pop.careers.get_mut(&id) {
-            c.forty_man.get_or_insert(year);
+            c.majors.get_or_insert(year);
         }
     }
 }
@@ -597,68 +607,94 @@ pub fn keep_value(p: &Player, pot: Option<&Potential>, share: f64) -> f64 {
     }
 }
 
-/// How many players an organisation keeps.
-struct Room {
-    pitchers: usize,
-    hitters: usize,
-    catchers: usize,
-    /// Pitchers and position players its levels with an age limit cannot take (the
-    /// official levels above the development squads): players too old for the squads are
-    /// kept only while these have room.
-    old_pitchers: usize,
-    old_hitters: usize,
+/// What a year of age past 30 costs a player in his organisation's eyes, in standard
+/// deviations of his ability: older players cost more and have less ahead of them.
+fn age_cost(age: f64, per_year: f64) -> f64 {
+    per_year * (age - 30.0).max(0.0)
 }
 
 /// Split `players` into the ones an organisation keeps and the ones it lets go, best first
-/// by `value`; `pinned` players are always kept.
+/// by `value`. Every level takes players up to an age (`deepest` gives the lowest level a
+/// player may still play at, `None` if none), so a player is kept only if everyone kept so
+/// far can still be placed: for every level k, the players who can go no lower than k fit
+/// on the levels down to k. `caps` holds the pitchers and position players of each level;
+/// at least `catchers` catchers are kept; `pinned` players (with their level) always are.
 fn keep(
     players: Vec<Player>,
     value: &dyn Fn(&Player) -> f64,
-    room: &Room,
-    old: &dyn Fn(&Player) -> bool,
-    pinned: &BTreeSet<u32>,
+    caps: &[(usize, usize)],
+    catchers: usize,
+    deepest: &dyn Fn(&Player) -> Option<usize>,
+    pinned: &BTreeMap<u32, usize>,
 ) -> (Vec<Player>, Vec<Player>) {
-    let mut scored: Vec<(f64, Player)> = players.into_iter().map(|p| (if pinned.contains(&p.id) { f64::INFINITY } else { value(&p) }, p)).collect();
-    scored.sort_by(|a, b| b.0.total_cmp(&a.0));
-    let (mut kept, mut gone) = (Vec::new(), Vec::new());
-    let (mut k_p, mut k_h, mut old_p, mut old_h) = (0, 0, 0, 0);
-    let mut fits = |p: &Player, k_p: &mut usize, k_h: &mut usize| -> bool {
-        let is_old = old(p);
-        let ok = if p.is_pitcher() {
-            *k_p < room.pitchers && (!is_old || old_p < room.old_pitchers)
-        } else {
-            *k_h < room.hitters && (!is_old || old_h < room.old_hitters)
-        };
-        if ok {
-            if p.is_pitcher() {
-                *k_p += 1;
-                old_p += usize::from(is_old);
-            } else {
-                *k_h += 1;
-                old_h += usize::from(is_old);
-            }
-        }
-        ok
+    let n = caps.len();
+    let cum = |pitchers: bool| -> Vec<usize> {
+        caps.iter()
+            .scan(0, |acc, &(p, h)| {
+                *acc += if pitchers { p } else { h };
+                Some(*acc)
+            })
+            .collect()
     };
-    // Catchers first, up to the minimum.
+    let (cum_p, cum_h) = (cum(true), cum(false));
+    let (mut cnt_p, mut cnt_h) = (vec![0usize; n], vec![0usize; n]);
+    let mut scored: Vec<(f64, Player)> = players.into_iter().map(|p| (if pinned.contains_key(&p.id) { f64::INFINITY } else { value(&p) }, p)).collect();
+    scored.sort_by(|a, b| b.0.total_cmp(&a.0));
+    let mut accept = |p: &Player| -> bool {
+        let Some(d) = pinned.get(&p.id).copied().or_else(|| deepest(p)) else { return false };
+        let (cnt, cum) = if p.is_pitcher() { (&mut cnt_p, &cum_p) } else { (&mut cnt_h, &cum_h) };
+        if (d..n).any(|k| cnt[k] + 1 > cum[k]) {
+            return false;
+        }
+        for c in cnt.iter_mut().skip(d) {
+            *c += 1;
+        }
+        true
+    };
+    let (mut kept, mut gone) = (Vec::new(), Vec::new());
+    // Pinned players, then catchers up to the minimum, then everyone else.
     let mut k_c = 0;
     let mut rest = Vec::new();
     for (v, p) in scored {
-        if !p.is_pitcher() && p.position == Position::Catcher && k_c < room.catchers && fits(&p, &mut k_p, &mut k_h) {
-            k_c += 1;
+        let first = pinned.contains_key(&p.id) || (!p.is_pitcher() && p.position == Position::Catcher && k_c < catchers);
+        if first && accept(&p) {
+            if !pinned.contains_key(&p.id) {
+                k_c += 1;
+            }
             kept.push(p);
         } else {
             rest.push((v, p));
         }
     }
     for (_, p) in rest {
-        if fits(&p, &mut k_p, &mut k_h) {
+        if accept(&p) {
             kept.push(p);
         } else {
             gone.push(p);
         }
     }
     (kept, gone)
+}
+
+/// Players of one kind who must be placed at level `i` so that everyone left still fits
+/// below: for every deeper level k, those who can go no lower than k must fit on levels
+/// i+1..=k, and the best of any surplus play here.
+fn forced(pool: &[Player], i: usize, pitchers: bool, caps: &[(usize, usize)], deepest: &dyn Fn(&Player) -> usize) -> Vec<u32> {
+    let cap = |j: usize| if pitchers { caps[j].0 } else { caps[j].1 };
+    let mut cands: Vec<&Player> = pool.iter().filter(|p| p.is_pitcher() == pitchers).collect();
+    cands.sort_by(|a, b| ability::value(b).total_cmp(&ability::value(a)));
+    let mut chosen: BTreeSet<u32> = BTreeSet::new();
+    let mut below = 0;
+    for k in i..caps.len() {
+        if k > i {
+            below += cap(k);
+        }
+        let bound: Vec<&&Player> = cands.iter().filter(|p| deepest(p) <= k).collect();
+        let here = bound.iter().filter(|p| chosen.contains(&p.id)).count();
+        let need = bound.len().saturating_sub(below).saturating_sub(here);
+        chosen.extend(bound.iter().filter(|p| !chosen.contains(&p.id)).take(need).map(|p| p.id).collect::<Vec<_>>());
+    }
+    chosen.into_iter().collect()
 }
 
 // ---------------------------------------------------------------------------------------
@@ -967,7 +1003,9 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
                     x -= w;
                 }
                 let n = intake.amateur(&ctx.careers.classes[name], &mut rng);
-                let board = keep_value(&n.player, Some(&n.potential), ctx.careers.keep_potential) + rng.gauss(0.0, ctx.careers.board_noise);
+                // One board for pitchers and position players: worth in standard deviations.
+                let board = keep_value(&n.player, Some(&n.potential), ctx.careers.keep_potential) / ability::per_sd(&n.player)
+                    + rng.gauss(0.0, ctx.careers.board_noise);
                 (board, n, name.clone())
             })
             .collect();
@@ -1002,49 +1040,65 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
         }
     }
 
-    // Keep what the rosters hold and place it level by level.
+    // Keep what the rosters hold and place it level by level (newcomers have birthdays now).
     let next_season = Date::new(year + 1, 2, 1);
+    let born: BTreeMap<u32, Date> = pop.people.iter().map(|(id, p)| (*id, p.born)).collect();
+    let age_of = |id: u32, on: Date| born.get(&id).map_or(25.0, |b| on.days_since(*b) as f64 / 365.2425);
+    let intl: BTreeSet<u32> =
+        pop.careers.iter().filter(|(_, c)| matches!(&c.origin, Origin::Signed { class, .. } if class == "international")).map(|(id, _)| *id).collect();
     let mut built: BTreeMap<String, Roster> = BTreeMap::new();
     for (k, org) in orgs.iter().enumerate() {
         let sizes: Vec<usize> = org.levels.iter().map(|(_, key)| ctx.levels.get(key).roster.max(26)).collect();
-        let total = |range: std::ops::Range<usize>| sizes[range].iter().map(|&s| roster_split(s)).fold((0, 0), |a, b| (a.0 + b.0, a.1 + b.1));
-        // The development squads take players up to the oldest age of the rookie complex.
-        let first_dev = org.levels.iter().position(|(_, key)| key == "complex" || key == "academy").unwrap_or(org.levels.len());
-        let limit = org.levels.get(first_dev).map(|(_, key)| (ctx.levels.get(key).batters.max, ctx.levels.get(key).pitchers.max));
-        let old = |p: &Player| limit.is_some_and(|(b, pt)| age_of(p.id, next_season) > if p.is_pitcher() { pt } else { b });
-        let (cap_p, cap_h) = total(0..sizes.len());
-        let (off_p, off_h) = total(0..first_dev);
-        let room = Room { pitchers: cap_p, hitters: cap_h, catchers: 2 * org.levels.len(), old_pitchers: off_p, old_hitters: off_h };
-        let pins: BTreeSet<u32> = pinned[k].keys().copied().collect();
+        let caps: Vec<(usize, usize)> = sizes.iter().map(|&s| roster_split(s)).collect();
+        // Each level takes players up to the oldest age of its age spread (levels.json);
+        // the limits fall from the top level down.
+        let limits: Vec<(f64, f64)> = org.levels.iter().map(|(_, key)| (ctx.levels.get(key).batters.max, ctx.levels.get(key).pitchers.max)).collect();
+        // The Dominican academy is for international amateurs only (MLB's Dominican Summer
+        // League rosters are 99.5 % born outside the United States; birthplaces.json).
+        let academy_at = org.levels.iter().position(|(_, key)| key == "academy");
+        let international = |id: u32| intl.contains(&id);
+        let deepest = |p: &Player| -> Option<usize> {
+            let age = age_of(p.id, next_season);
+            let d = limits.iter().take_while(|(b, pt)| age <= if p.is_pitcher() { *pt } else { *b }).count().checked_sub(1)?;
+            match academy_at {
+                Some(a) if d >= a && !international(p.id) => a.checked_sub(1),
+                _ => Some(d),
+            }
+        };
         let pots = &pop.potentials;
-        let value = |p: &Player| keep_value(p, pots.get(&p.id), ctx.careers.keep_potential);
-        let (kept, gone) = keep(std::mem::take(&mut pools[k]), &value, &room, &old, &pins);
+        let value = |p: &Player| {
+            keep_value(p, pots.get(&p.id), ctx.careers.keep_potential) - age_cost(age_of(p.id, next_season), ctx.careers.age_discount) * ability::per_sd(p)
+        };
+        let (kept, gone) = keep(std::mem::take(&mut pools[k]), &value, &caps, 2 * org.levels.len(), &deepest, &pinned[k]);
         for p in gone {
             leave(pop, p.id, Exit::Released);
             report.released += 1;
         }
+        let lowest = |p: &Player| pinned[k].get(&p.id).copied().or_else(|| deepest(p)).unwrap_or(0);
         let mut pool = kept;
         let mut academy: Option<Vec<Player>> = None;
         for (i, (club, key)) in org.levels.iter().enumerate() {
-            let mut here: BTreeSet<u32> = pinned[k].iter().filter(|(_, l)| **l == i).map(|(id, _)| *id).collect();
-            if i < first_dev {
-                // Players too old for the squads must all fit on the levels above them:
-                // the best of any surplus play here.
-                let (below_p, below_h) = total(i + 1..first_dev);
-                for (pitchers, below) in [(true, below_p), (false, below_h)] {
-                    let mut olds: Vec<&Player> = pool.iter().filter(|p| p.is_pitcher() == pitchers && old(p)).collect();
-                    olds.sort_by(|a, b| ability::value(b).total_cmp(&ability::value(a)));
-                    let surplus = olds.len().saturating_sub(below);
-                    here.extend(olds.iter().take(surplus).map(|p| p.id));
-                }
-            }
+            // The academy takes the youngest international amateurs, before the complex
+            // takes its players from everyone left.
+            let youngest = |pool: &mut Vec<Player>, size: usize| -> Vec<Player> {
+                let (mut eligible, others): (Vec<Player>, Vec<Player>) = std::mem::take(pool).into_iter().partition(|p| international(p.id));
+                let out = take_youngest(&mut eligible, size, &|id| age_of(id, next_season));
+                pool.extend(eligible);
+                pool.extend(others);
+                out
+            };
             let players = if key == "academy" {
-                academy.take().unwrap_or_else(|| take_youngest(&mut pool, sizes[i], &|id| age_of(id, next_season)))
+                academy.take().unwrap_or_else(|| youngest(&mut pool, sizes[i]))
             } else {
                 if key == "complex" {
-                    if let Some(j) = org.levels.iter().position(|(_, k)| k == "academy") {
-                        academy = Some(take_youngest(&mut pool, sizes[j], &|id| age_of(id, next_season)));
+                    if let Some(j) = academy_at {
+                        academy = Some(youngest(&mut pool, sizes[j]));
                     }
+                }
+                // Foreign players at their level, and whoever can go no lower.
+                let mut here: BTreeSet<u32> = pinned[k].iter().filter(|(_, l)| **l == i).map(|(id, _)| *id).collect();
+                for pitchers in [true, false] {
+                    here.extend(forced(&pool, i, pitchers, &caps, &lowest));
                 }
                 take_level(&mut pool, sizes[i], &here)
             };

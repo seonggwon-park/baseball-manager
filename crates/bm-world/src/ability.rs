@@ -190,6 +190,18 @@ pub fn can_start(p: &Player) -> bool {
     p.attrs.z(Attr::Stamina) > 0.0
 }
 
+/// Runs per 162 games that one standard deviation on every attribute that counts is
+/// worth to a player in his best role: the unit that puts position players, starters and
+/// relievers on one scale (about 68, 14 and 6.5).
+pub fn per_sd(p: &Player) -> f64 {
+    if p.is_pitcher() {
+        let rate: f64 = PITCHING.iter().map(|w| w.1).sum::<f64>() + PITCH_GRADES;
+        rate * 162.0 * if can_start(p) { STARTER_SHARE } else { RELIEVER_SHARE }
+    } else {
+        BATTING.iter().map(|w| w.1).sum::<f64>() * 162.0 / 9.0 + FIELDING.iter().map(|w| w.1).sum::<f64>() * 162.0 / 8.0
+    }
+}
+
 /// A player's value in his best role, runs per 162 games: the yardstick for ranking
 /// players of the same kind (pitchers against pitchers, position players against
 /// position players).

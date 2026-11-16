@@ -181,7 +181,11 @@ const REACH: [(u32, u32, f64); 8] =
     [(1, 1, 0.667), (2, 2, 0.494), (3, 3, 0.397), (4, 4, 0.350), (5, 5, 0.333), (6, 10, 0.20), (11, 15, 0.127), (16, 20, 0.099)];
 
 fn outcomes(pop: &Population, last_year: i32, follow: i32) -> serde_json::Value {
-    println!("\nProspects drafted or signed by {}, followed {follow} or more years (reached = among the organisation's forty best):", last_year - follow);
+    println!(
+        "\nProspects drafted or signed by {}, followed {follow} or more years (reached = among the organisation's {} best):",
+        last_year - follow,
+        bm_world::career::USED_PER_SEASON
+    );
     let mut by_round: BTreeMap<usize, (f64, f64)> = BTreeMap::new();
     let mut intl = (0.0f64, 0.0f64);
     let mut debut = (0.0f64, 0.0f64);
@@ -190,7 +194,7 @@ fn outcomes(pop: &Population, last_year: i32, follow: i32) -> serde_json::Value 
             Origin::Draft { year, .. } | Origin::Signed { year, .. } | Origin::Foreign { year } => *year,
             Origin::Initial => continue,
         };
-        if let Some(y) = c.forty_man {
+        if let Some(y) = c.majors {
             if !matches!(c.origin, Origin::Foreign { .. }) {
                 debut.0 += Date::new(y, 7, 1).days_since(pop.people[id].born) as f64 / 365.2425;
                 debut.1 += 1.0;
@@ -199,7 +203,7 @@ fn outcomes(pop: &Population, last_year: i32, follow: i32) -> serde_json::Value 
         if joined > last_year - follow {
             continue;
         }
-        let reached = f64::from(u8::from(c.forty_man.is_some()));
+        let reached = f64::from(u8::from(c.majors.is_some()));
         match &c.origin {
             Origin::Draft { round, class, .. } if class.starts_with("us_") => {
                 if let Some(k) = REACH.iter().position(|(a, b, _)| (*a..=*b).contains(round)) {
@@ -226,7 +230,7 @@ fn outcomes(pop: &Population, last_year: i32, follow: i32) -> serde_json::Value 
         intl.1,
         100.0 * intl.0 / intl.1.max(1.0)
     );
-    println!("  age on 1 July of the first season among the forty best: {:.2} (MLB debuts 2015-2019: 25.0-25.3, Justice 2020)", debut.0 / debut.1.max(1.0));
+    println!("  age on 1 July of the first season among them: {:.2} (MLB debuts 2015-2019: 25.0-25.3, Justice 2020)", debut.0 / debut.1.max(1.0));
     let rounds: Vec<serde_json::Value> = REACH
         .iter()
         .enumerate()
