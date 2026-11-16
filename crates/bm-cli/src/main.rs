@@ -6,12 +6,14 @@
 //!             [--population world|engine]                         players drawn from attributes (default) or as physical profiles
 //!             [--parks world|neutral]                             the 30 major-league parks of the world data (default) or one average park
 //! bm attributes [--games N] [--only NAME]                         value of one standard deviation of each attribute
+//!               [--by-position]                                   fielding value of the regular at each position (2 SD steps)
 //! bm players [--clubs K] [--games G]                              season lines of individual players as CSV (G games per club)
 //! bm level --level L [--talent h,p,f,x[,pw,cm]] [--vs-mlb]         one level (aaa, aa, high_a, single_a, kbo, kbo2, npb, npb2,
 //!          [--foreign h,p,f,x] [--cross-games N]                   mlb) in its own parks against its official rates; talent of
 //!          [--vs-mlb-pitchers]                                     the foreign players of KBO and NPB clubs; wRC+ of the level's
 //!                                                                  hitters (and pitchers) against major-leaguers; `pool` = only that
-//! bm season [--seed S] [--until YYYY-MM-DD]                       generate the world and play a season of every league
+//! bm season [--seed S] [--until YYYY-MM-DD] [--seasons N]         generate the world and play a season of every league
+//!                                                                 (N seasons with offseasons between them)
 //! bm careers [--years N] [--every K] [--from N]                   offseasons back to back: each level's talent and ages (every
 //!            [--levels FILE] [--careers FILE] [--json FILE]       K years and averaged from offseason N), and how the drafted
 //!                                                                 and signed prospects turn out
@@ -59,10 +61,14 @@ struct Args {
     /// and whether to play the level's pitchers against them too.
     cross_games: Option<usize>,
     vs_mlb_pitchers: bool,
+    /// `bm attributes`: fielding value position by position instead of the attribute table.
+    by_position: bool,
     /// `bm season`: play up to this date instead of the whole season.
     until: Option<bm_world::Date>,
     /// `bm careers`: offseasons to run, how often to print, other level and career files.
     years: usize,
+    /// `bm season`: seasons to play in a row.
+    seasons: usize,
     every: usize,
     from: Option<usize>,
     levels_file: Option<std::path::PathBuf>,
@@ -89,8 +95,10 @@ fn parse_args() -> Args {
         vs_mlb: false,
         cross_games: None,
         vs_mlb_pitchers: false,
+        by_position: false,
         until: None,
         years: 20,
+        seasons: 1,
         every: 5,
         from: None,
         levels_file: None,
@@ -107,6 +115,10 @@ fn parse_args() -> Args {
             a.vs_mlb = true;
             continue;
         }
+        if k == "--by-position" {
+            a.by_position = true;
+            continue;
+        }
         if k == "--vs-mlb-pitchers" {
             a.vs_mlb = true;
             a.vs_mlb_pitchers = true;
@@ -116,6 +128,7 @@ fn parse_args() -> Args {
         match k.as_str() {
             "--games" => a.games = v.parse().expect("--games N"),
             "--years" => a.years = v.parse().expect("--years N"),
+            "--seasons" => a.seasons = v.parse().expect("--seasons N"),
             "--every" => a.every = v.parse().expect("--every K"),
             "--from" => a.from = Some(v.parse().expect("--from N")),
             "--levels" => a.levels_file = Some(v.into()),
@@ -396,6 +409,9 @@ fn main() {
                 println!("  {:<22} mean {:8.3}  sd {:7.3}  n {:.0}", n, x.mean(), x.sd(), x.n);
             }
         }
+        "attributes" if args.by_position => {
+            sensitivity::run_positions(&env, &args.tuning.baseline, args.tuning.style, args.games, args.seed, args.threads, args.clubs.min(60), 2.0)
+        }
         "attributes" => {
             sensitivity::run(&env, &args.tuning.baseline, args.tuning.style, args.games, args.seed, args.threads, args.clubs.min(60), args.only.as_deref())
         }
@@ -403,7 +419,7 @@ fn main() {
             let vs = args.vs_mlb.then(|| level::VsMlb { games: args.cross_games.unwrap_or(args.games.max(400)), pitchers: args.vs_mlb_pitchers });
             level::run(&args.level, args.talent, args.foreign, args.games, args.seed, args.threads, &args.tuning, vs)
         }
-        "season" => season::run(&args.tuning, args.seed, args.threads, args.until),
+        "season" => season::run(&args.tuning, args.seed, args.threads, args.until, args.seasons),
         "careers" => {
             careers::run(args.years, args.seed, args.every, args.from, args.levels_file.as_deref(), args.careers_file.as_deref(), args.json.as_deref())
         }

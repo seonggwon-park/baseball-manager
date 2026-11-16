@@ -299,3 +299,66 @@ pub fn run(env: &MatchEnv, baseline: &Baseline, style: ManagerStyle, games: usiz
     println!("The rate columns are half the difference between the +1 and -1 clubs: their own batting for batting rows, their opponents' batting otherwise.");
     println!("\"season\": runs per 162 games per standard deviation, for one lineup spot (batting) or for the whole staff or defence (other rows).");
 }
+
+/// Fielding value by position: the regular at one position gets a group of fielding
+/// attributes moved by `dz` standard deviations either way, and the runs his club allows
+/// are compared. Groups: glove (range, reads, footwork, agility, hands), arm strength, and
+/// speed (top speed and acceleration, here only for what they do in the field).
+#[allow(clippy::too_many_arguments)]
+pub fn run_positions(env: &MatchEnv, baseline: &Baseline, style: ManagerStyle, games: usize, seed: u64, threads: usize, n_clubs: usize, dz: f32) {
+    use bm_world::Position::*;
+    use Attr::*;
+    let mut rng = Rng::new(seed ^ 0xA77);
+    let squads: Vec<Squad> = (0..n_clubs).map(|i| Squad::random(&mut rng, 1000 * (i as u32 + 1), &Talent::MAJOR)).collect();
+    let base: Vec<Club> = squads.iter().map(|s| s.to_engine_with(baseline)).collect();
+    let reference = play(env, &base, &base, style, 4 * games, seed, threads);
+    println!(
+        "Fielding by position: the regular at one position gets a group of attributes moved by {dz} SD either way; {games} games per direction. Reference: {:.3} runs allowed per game.",
+        reference.opp.runs_per_game()
+    );
+    let noise = 3.15 / (games as f64).sqrt() / 2f64.sqrt() / dz as f64;
+    println!("Standard error of runs per game per SD: about {noise:.3}.\n");
+    println!("{:<4} {:<6} {:>9} {:>9} {:>9} {:>8} | {:>7} {:>7} {:>7}", "pos", "group", "+ runs", "- runs", "per SD", "season", "BABIP", "SB/G", "ROE/G");
+    let groups: [(&str, &[Attr]); 3] = [("glove", &[Range, Reads, Footwork, Agility, Hands]), ("arm", &[ArmStrength]), ("speed", &[Speed, Acceleration])];
+    let mut k = 0u64;
+    for pos in [Catcher, First, Second, Third, Short, Left, Center, Right] {
+        for (name, attrs) in groups {
+            let shifted = |d: f32| -> Vec<Club> {
+                squads
+                    .iter()
+                    .map(|s| {
+                        let mut s = s.clone();
+                        for (p, q) in s.hitters.iter_mut() {
+                            if *q == Some(pos) {
+                                for &a in attrs {
+                                    p.attrs[a] += d;
+                                }
+                            }
+                        }
+                        s.to_engine_with(baseline)
+                    })
+                    .collect()
+            };
+            k += 1;
+            let up = play(env, &shifted(dz), &base, style, games, seed + 2 * k, threads).opp;
+            let down = play(env, &shifted(-dz), &base, style, games, seed + 2 * k + 1, threads).opp;
+            let d_up = reference.opp.runs_per_game() - up.runs_per_game();
+            let d_down = reference.opp.runs_per_game() - down.runs_per_game();
+            let per_sd = (d_up - d_down) / 2.0 / dz as f64;
+            let half = |f: &dyn Fn(&Line) -> f64| (f(&up) - f(&down)) / 2.0 / dz as f64;
+            println!(
+                "{:<4} {:<6} {:>+9.3} {:>+9.3} {:>+9.3} {:>+8.1} | {:>+7.4} {:>+7.3} {:>+7.3}",
+                pos.code(),
+                name,
+                d_up,
+                d_down,
+                per_sd,
+                per_sd * 162.0,
+                half(&|l| l.babip()),
+                half(&|l| (l.sb + l.cs) / l.games),
+                half(&|l| l.roe / l.games)
+            );
+        }
+    }
+    println!("\n\"+ runs\"/\"- runs\": runs per game the club prevents with the attributes raised or lowered; \"season\": per 162 games and SD.");
+}

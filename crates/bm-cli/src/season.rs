@@ -1,6 +1,7 @@
 //! `bm season`: generate the world, play a whole season of every league pitch by pitch,
 //! and print each league's rates next to its official 2025-2026 averages, the
-//! major-league standings and the time it took.
+//! major-league standings and the time it took. With `--seasons N`, play N seasons with
+//! an offseason (development, retirements, drafts, rosters) between them.
 
 use crate::tuning::Tuning;
 use bm_world::season::{Batting, Play};
@@ -28,31 +29,8 @@ fn official(league: &str) -> Option<[f64; 7]> {
     })
 }
 
-pub fn run(tuning: &Tuning, seed: u64, threads: usize, until: Option<Date>) {
-    let world = World::bundled();
-    let levels = LevelTable::bundled();
-    let t0 = Instant::now();
-    let pop = populate(&world, &levels, Date::new(2027, 2, 1), seed);
-    let t_pop = t0.elapsed().as_secs_f64();
-    let mut season = Season::new(&world, 2027, seed);
-    let play = Play { params: tuning.params.clone(), baseline: tuning.baseline.clone(), style: tuning.style, threads };
-    let t1 = Instant::now();
-    match until {
-        Some(d) => season.play_until(&world, &pop, &play, d),
-        None => season.play_out(&world, &pop, &play),
-    }
-    let secs = t1.elapsed().as_secs_f64();
-    println!(
-        "{} players generated in {:.2} s; {} of {} games played in {:.1} s on {threads} threads ({:.0} games/s)",
-        pop.people.len(),
-        t_pop,
-        season.played,
-        season.fixtures.len(),
-        secs,
-        season.played as f64 / secs
-    );
-
-    // League totals from the players' lines: every player belongs to one club all season.
+/// League totals from the players' lines: every player belongs to one club all season.
+fn totals<'a>(world: &'a World, pop: &bm_world::Population, season: &Season) -> (BTreeMap<&'a str, Batting>, BTreeMap<&'a str, u32>) {
     let league_of: BTreeMap<&str, &str> = world.clubs().map(|c| (c.id.as_str(), c.league.as_str())).collect();
     let mut player_league: BTreeMap<u32, &str> = BTreeMap::new();
     for r in &pop.rosters {
@@ -85,26 +63,83 @@ pub fn run(tuning: &Tuning, seed: u64, threads: usize, until: Option<Date>) {
             *team_games.entry(l).or_default() += s.won + s.lost + s.tied;
         }
     }
+    (totals, team_games)
+}
+
+/// R/G, AVG, OBP, SLG, K %, BB %, HR % of a league's totals.
+fn rates(t: &Batting, games: u32) -> [f64; 7] {
+    let pa = t.pa.max(1) as f64;
+    [t.r as f64 / games.max(1) as f64, t.avg(), t.obp(), t.slg(), 100.0 * t.so as f64 / pa, 100.0 * t.bb as f64 / pa, 100.0 * t.hr as f64 / pa]
+}
+
+fn league_table(world: &World, pop: &bm_world::Population, season: &Season) {
+    let (totals, team_games) = totals(world, pop, season);
     println!("\nleague                 R/G     AVG    OBP    SLG     K%    BB%    HR%   (official 2025-26 mean below)");
     for league in world.leagues() {
         let (Some(t), Some(g)) = (totals.get(league.id.as_str()), team_games.get(league.id.as_str())) else { continue };
-        let pa = t.pa.max(1) as f64;
-        println!(
-            "  {:<20} {:5.2}   {:.3}  {:.3}  {:.3}  {:5.1}  {:5.1}  {:5.2}",
-            league.id,
-            t.r as f64 / (*g).max(1) as f64,
-            t.avg(),
-            t.obp(),
-            t.slg(),
-            100.0 * t.so as f64 / pa,
-            100.0 * t.bb as f64 / pa,
-            100.0 * t.hr as f64 / pa
-        );
+        let r = rates(t, *g);
+        println!("  {:<20} {:5.2}   {:.3}  {:.3}  {:.3}  {:5.1}  {:5.1}  {:5.2}", league.id, r[0], r[1], r[2], r[3], r[4], r[5], r[6]);
         if let Some(o) = official(&league.id) {
             println!("  {:<20} {:5.2}   {:.3}  {:.3}  {:.3}  {:5.1}  {:5.1}  {:5.2}", "", o[0], o[1], o[2], o[3], o[4], o[5], o[6]);
         }
     }
+}
 
+/// Play `seasons` seasons of every league, with an offseason between them.
+pub fn run(tuning: &Tuning, seed: u64, threads: usize, until: Option<Date>, seasons: usize) {
+    let world = World::bundled();
+    let levels = LevelTable::bundled();
+    let aging = bm_world::AgingTable::bundled();
+    let careers = bm_world::CareerTable::bundled();
+    let people = bm_world::PeopleMaker::new();
+    let ctx = bm_world::Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people };
+    let t0 = Instant::now();
+    let mut pop = populate(&world, &levels, Date::new(2027, 2, 1), seed);
+    let t_pop = t0.elapsed().as_secs_f64();
+    let play = Play { params: tuning.params.clone(), baseline: tuning.baseline.clone(), style: tuning.style, threads };
+    let seasons = seasons.max(1);
+    for k in 0..seasons {
+        let year = 2027 + k as i32;
+        let mut season = Season::new(&world, year, seed.wrapping_add(k as u64));
+        let t1 = Instant::now();
+        match until.filter(|_| seasons == 1) {
+            Some(d) => season.play_until(&world, &pop, &play, d),
+            None => season.play_out(&world, &pop, &play),
+        }
+        let secs = t1.elapsed().as_secs_f64();
+        println!(
+            "\n{year}: {} players{}; {} of {} games played in {:.1} s on {threads} threads ({:.0} games/s)",
+            pop.players().count(),
+            if k == 0 { format!(" generated in {t_pop:.2} s") } else { String::new() },
+            season.played,
+            season.fixtures.len(),
+            secs,
+            season.played as f64 / secs
+        );
+        if seasons == 1 || k == 0 || k + 1 == seasons {
+            league_table(&world, &pop, &season);
+        } else {
+            let (t, g) = totals(&world, &pop, &season);
+            let line: Vec<String> = ["us-major", "kr-top", "jp-top"]
+                .iter()
+                .filter_map(|l| t.get(l).zip(g.get(l)).map(|(t, g)| (l, rates(t, *g))))
+                .map(|(l, r)| format!("{l} {:.2} R/G, {:.3}/{:.3}/{:.3}, K {:.1} BB {:.1} HR {:.2}", r[0], r[1], r[2], r[3], r[4], r[5], r[6]))
+                .collect();
+            println!("  {}", line.join(" | "));
+        }
+        if k + 1 == seasons {
+            standings(&world, &season);
+        } else {
+            let r = bm_world::offseason(&ctx, &mut pop, year, Some(&season.standings), seed);
+            println!(
+                "  offseason: retired {}, released {}, drafted {}, signed {}, foreign {} in / {} out",
+                r.retired, r.released, r.drafted, r.signed, r.foreign_signed, r.foreign_replaced
+            );
+        }
+    }
+}
+
+fn standings(world: &World, season: &Season) {
     // Major-league standings by division.
     if let Some(major) = world.league("us-major") {
         println!("\nmajor-league standings");
