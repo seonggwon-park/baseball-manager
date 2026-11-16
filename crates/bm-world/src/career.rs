@@ -1097,10 +1097,13 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
         // The players who would make the first team on their ability now (less the same
         // discount for age) stay whatever the prospects behind them promise: no club
         // releases its regulars for draftees (ranked with the growth ahead of them, the
-        // KBO's high-school picks pushed the first teams three years below their age).
+        // KBO's high-school picks pushed the first teams three years below their age). A
+        // major-league organisation keeps its Triple-A depth the same way (the 40-man
+        // roster and the veterans it calls up); without it Triple-A was two years too young.
         let protected: BTreeSet<u32> = {
             let now = |p: &Player| ability::value(p) - age_cost(age_of(p.id, next_season), ctx.careers.age_discount) * ability::per_sd(p);
-            let (n_p, n_h) = caps[0];
+            let top = if org.kind == OrgKind::Major { 2 } else { 1 };
+            let (n_p, n_h) = caps[..top.min(caps.len())].iter().fold((0, 0), |a, c| (a.0 + c.0, a.1 + c.1));
             let (mut ps, mut hs): (Vec<&Player>, Vec<&Player>) = pools[k].iter().partition(|p| p.is_pitcher());
             ps.sort_by(|a, b| now(b).total_cmp(&now(a)));
             hs.sort_by(|a, b| now(b).total_cmp(&now(a)));
