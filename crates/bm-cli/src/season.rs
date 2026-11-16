@@ -5,7 +5,7 @@
 
 use crate::tuning::Tuning;
 use bm_world::season::{Batting, Play};
-use bm_world::{populate, Date, LevelTable, Season, World};
+use bm_world::{Date, LevelTable, Season, World};
 use std::collections::BTreeMap;
 use std::time::Instant;
 
@@ -86,20 +86,43 @@ fn league_table(world: &World, pop: &bm_world::Population, season: &Season) {
 }
 
 /// Play `seasons` seasons of every league, with an offseason between them.
-pub fn run(tuning: &Tuning, seed: u64, threads: usize, until: Option<Date>, seasons: usize) {
+/// What `bm season` plays: how many seasons, after how many offseasons without games, and
+/// with which level and career files.
+pub struct Options<'a> {
+    pub until: Option<Date>,
+    pub seasons: usize,
+    pub warmup: usize,
+    pub levels_file: Option<&'a std::path::Path>,
+    pub careers_file: Option<&'a std::path::Path>,
+}
+
+pub fn run(tuning: &Tuning, seed: u64, threads: usize, o: &Options) {
+    let read = |p: &std::path::Path| std::fs::read_to_string(p).unwrap_or_else(|e| panic!("{}: {e}", p.display()));
     let world = World::bundled();
-    let levels = LevelTable::bundled();
+    let levels = o.levels_file.map_or_else(LevelTable::bundled, |p| LevelTable::from_json(&read(p)).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
     let aging = bm_world::AgingTable::bundled();
-    let careers = bm_world::CareerTable::bundled();
+    let careers = o
+        .careers_file
+        .map_or_else(bm_world::CareerTable::bundled, |p| bm_world::CareerTable::from_json(&read(p)).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
     let people = bm_world::PeopleMaker::new();
     let ctx = bm_world::Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people };
     let t0 = Instant::now();
-    let mut pop = populate(&world, &levels, Date::new(2027, 2, 1), seed);
+    let mut pop = bm_world::populate_with(&world, &levels, &aging, &careers, Date::new(2027, 2, 1), seed);
     let t_pop = t0.elapsed().as_secs_f64();
+    // Offseasons without games before the first season played: the world settles into the
+    // steady state of the career model.
+    let first = 2027 + o.warmup as i32;
+    for y in 2027..first {
+        bm_world::offseason(&ctx, &mut pop, y, None, seed);
+    }
+    if o.warmup > 0 {
+        println!("{} offseasons without games: {} players, {} people so far", o.warmup, pop.players().count(), pop.people.len());
+    }
     let play = Play { params: tuning.params.clone(), baseline: tuning.baseline.clone(), style: tuning.style, threads, ..Play::default() }.with_balls(&levels);
+    let (until, seasons) = (o.until, o.seasons);
     let seasons = seasons.max(1);
     for k in 0..seasons {
-        let year = 2027 + k as i32;
+        let year = first + k as i32;
         let mut season = Season::new(&world, year, seed.wrapping_add(k as u64));
         let t1 = Instant::now();
         match until.filter(|_| seasons == 1) {

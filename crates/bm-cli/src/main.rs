@@ -13,7 +13,8 @@
 //!          [--vs-mlb-pitchers] [--ball-drag F]                     the foreign players of KBO and NPB clubs; wRC+ of the level's
 //!                                                                  hitters (and pitchers) against major-leaguers; `pool` = only that
 //! bm season [--seed S] [--until YYYY-MM-DD] [--seasons N]         generate the world and play a season of every league
-//!                                                                 (N seasons with offseasons between them)
+//!           [--warmup K] [--levels FILE] [--careers FILE]         (N seasons with offseasons between them, after K offseasons
+//!                                                                 without games)
 //! bm careers [--years N] [--every K] [--from N]                   offseasons back to back: each level's talent and ages (every
 //!            [--levels FILE] [--careers FILE] [--json FILE]       K years and averaged from offseason N), and how the drafted
 //!                                                                 and signed prospects turn out
@@ -69,8 +70,9 @@ struct Args {
     until: Option<bm_world::Date>,
     /// `bm careers`: offseasons to run, how often to print, other level and career files.
     years: usize,
-    /// `bm season`: seasons to play in a row.
+    /// `bm season`: seasons to play in a row, after this many offseasons without games.
     seasons: usize,
+    warmup: usize,
     every: usize,
     from: Option<usize>,
     levels_file: Option<std::path::PathBuf>,
@@ -102,6 +104,7 @@ fn parse_args() -> Args {
         until: None,
         years: 20,
         seasons: 1,
+        warmup: 0,
         every: 5,
         from: None,
         levels_file: None,
@@ -133,6 +136,7 @@ fn parse_args() -> Args {
             "--years" => a.years = v.parse().expect("--years N"),
             "--ball-drag" => a.ball_drag = v.parse().expect("--ball-drag F"),
             "--seasons" => a.seasons = v.parse().expect("--seasons N"),
+            "--warmup" => a.warmup = v.parse().expect("--warmup N"),
             "--every" => a.every = v.parse().expect("--every K"),
             "--from" => a.from = Some(v.parse().expect("--from N")),
             "--levels" => a.levels_file = Some(v.into()),
@@ -425,7 +429,18 @@ fn main() {
             let vs = args.vs_mlb.then(|| level::VsMlb { games: args.cross_games.unwrap_or(args.games.max(400)), pitchers: args.vs_mlb_pitchers });
             level::run(&args.level, args.talent, args.foreign, args.games, args.seed, args.threads, &args.tuning, vs, args.ball_drag)
         }
-        "season" => season::run(&args.tuning, args.seed, args.threads, args.until, args.seasons),
+        "season" => season::run(
+            &args.tuning,
+            args.seed,
+            args.threads,
+            &season::Options {
+                until: args.until,
+                seasons: args.seasons,
+                warmup: args.warmup,
+                levels_file: args.levels_file.as_deref(),
+                careers_file: args.careers_file.as_deref(),
+            },
+        ),
         "careers" => {
             careers::run(args.years, args.seed, args.every, args.from, args.levels_file.as_deref(), args.careers_file.as_deref(), args.json.as_deref())
         }
