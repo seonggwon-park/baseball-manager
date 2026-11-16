@@ -99,6 +99,40 @@ pub struct Options<'a> {
     pub json: Option<&'a std::path::Path>,
 }
 
+/// Each level's average ages of batters and pitchers as Baseball-Reference reports them
+/// (docs/research/world/levels.md 4): age on 30 June, batters weighted by AB + G, pitchers by
+/// 3 GS + G (Baseball-Reference adds saves, which the season does not keep), foreign players
+/// included.
+fn level_ages(pop: &bm_world::Population, season: &Season) -> BTreeMap<String, (f64, f64)> {
+    let mid = Date::new(season.year, 6, 30);
+    let age = |id: &u32| pop.people.get(id).map(|p| mid.days_since(p.born) as f64 / 365.2425);
+    let mut level_of_player: BTreeMap<u32, &str> = BTreeMap::new();
+    for r in &pop.rosters {
+        for p in r.players() {
+            level_of_player.insert(p.id, r.level.as_str());
+        }
+    }
+    // (weighted age, weight) of batters and pitchers per level.
+    let mut sums: BTreeMap<&str, [f64; 4]> = BTreeMap::new();
+    for (id, b) in &season.batting {
+        if let (Some(l), Some(a)) = (level_of_player.get(id), age(id)) {
+            let s = sums.entry(l).or_default();
+            let w = (b.ab + b.g) as f64;
+            s[0] += w * a;
+            s[1] += w;
+        }
+    }
+    for (id, p) in &season.pitching {
+        if let (Some(l), Some(a)) = (level_of_player.get(id), age(id)) {
+            let s = sums.entry(l).or_default();
+            let w = (3 * p.gs + p.g) as f64;
+            s[2] += w * a;
+            s[3] += w;
+        }
+    }
+    sums.into_iter().filter(|(_, s)| s[1] > 0.0 && s[3] > 0.0).map(|(l, s)| (l.to_string(), (s[0] / s[1], s[2] / s[3]))).collect()
+}
+
 /// Each level's batting totals and team games in a season (all its leagues together).
 fn level_totals(world: &World, pop: &bm_world::Population, season: &Season) -> BTreeMap<String, (Batting, u32)> {
     let mut level_of_player: BTreeMap<u32, &str> = BTreeMap::new();
@@ -190,10 +224,15 @@ pub fn run(tuning: &Tuning, seed: u64, threads: usize, o: &Options) {
         }
         if k + 1 == seasons {
             if let Some(path) = o.json {
+                let ages = level_ages(&pop, &season);
                 let levels_json: serde_json::Map<String, serde_json::Value> = level_totals(&world, &pop, &season)
                     .into_iter()
                     .filter(|(_, (t, g))| t.pa > 0 && *g > 0)
-                    .map(|(k, (t, g))| (k, serde_json::json!({"games": g, "pa": t.pa, "rates": rates(&t, g)})))
+                    .map(|(k, (t, g))| {
+                        let (age_b, age_p) = ages.get(&k).copied().unwrap_or((f64::NAN, f64::NAN));
+                        let v = serde_json::json!({"games": g, "pa": t.pa, "rates": rates(&t, g), "age_b": age_b, "age_p": age_p});
+                        (k, v)
+                    })
                     .collect();
                 std::fs::write(path, serde_json::to_string_pretty(&serde_json::json!({"year": year, "levels": levels_json})).unwrap())
                     .unwrap_or_else(|e| panic!("{}: {e}", path.display()));
