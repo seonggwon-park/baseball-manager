@@ -360,6 +360,169 @@ pub fn milb(division: &[usize], opening: Date, games: u32, all_star_break: (Date
     games_out
 }
 
+/// The major leagues (`docs/research/world/mlb_notes.md`, format of 2025-2027): two
+/// leagues of fifteen clubs in three divisions of five; 162 games per club, 81 at home.
+/// 52 against the division (13 against each rival: three three-game series and one of
+/// four), 62 against the rest of the league (two three-game series against eight clubs,
+/// a three- and a four-game series against two) and 48 interleague games (two series
+/// against the "prime" rival, one three-game series against each other club).
+///
+/// Clubs `0..15` are one league and `15..30` the other, five per division in order;
+/// `rival[i]` is the index in `0..15` of club `i`'s interleague rival in the other
+/// league. The season is 52 series: an opening series from Thursday to Sunday, two a
+/// week (Monday to Thursday and Friday to Sunday) and one from Thursday to Sunday after
+/// the All-Star break in the week of `all_star_monday`. Four-game series fit only the
+/// Monday-to-Thursday and Thursday-to-Sunday windows; a three-game series there leaves a
+/// day off. With 15 clubs per league every window needs an odd number of interleague
+/// series. `swap` reverses the hosts of the pairings, as every other year.
+pub fn mlb(opening: Date, all_star_monday: Date, rival: &[usize; 15], swap: bool, rng: &mut Rng) -> Vec<Game> {
+    assert_eq!(opening.weekday(), Weekday::Thursday, "the opening series runs Thursday to Sunday");
+    assert_eq!(all_star_monday.weekday(), Weekday::Monday);
+    for attempt in 0..1000 {
+        if let Some(games) = try_mlb(opening, all_star_monday, rival, swap, rng) {
+            return games;
+        }
+        assert!(attempt < 999, "no major-league schedule found");
+    }
+    unreachable!()
+}
+
+/// One series still to be played: its length and whether the lower-numbered club hosts it.
+type Series = (i32, bool);
+
+// Pairings are indexed by club numbers on both sides; index loops read more plainly here.
+#[allow(clippy::needless_range_loop)]
+fn try_mlb(opening: Date, all_star_monday: Date, rival: &[usize; 15], swap: bool, rng: &mut Rng) -> Option<Vec<Game>> {
+    let n = 30;
+    let league = |c: usize| c / 15;
+    let division = |c: usize| c / 5;
+    let is_rival = |a: usize, b: usize| a < 15 && b >= 15 && rival[a] == b - 15;
+    // Series of every pairing (a < b), with the host decided up front so that every club
+    // has 81 home games.
+    let mut left: Vec<Vec<Vec<Series>>> = vec![vec![Vec::new(); n]; n];
+    // Division: a regular tournament on each division (each club takes the larger share,
+    // the four-game series plus one three-game series, against two of its four rivals).
+    for a in 0..n {
+        for b in a + 1..n {
+            if league(a) == league(b) && division(a) == division(b) {
+                let d = (b - a) % 5; // 1..4 inside a division of five
+                let a_more = (d == 1 || d == 2) != swap;
+                left[a][b] = vec![(4, a_more), (3, a_more), (3, !a_more), (3, !a_more)];
+            }
+        }
+    }
+    // Rest of the league: two clubs per club get a three- and a four-game series (a
+    // 2-regular graph oriented around its cycles, so every club hosts one four-game
+    // series), the others two three-game series, one at each park.
+    for lg in 0..2 {
+        let clubs: Vec<usize> = (15 * lg..15 * lg + 15).collect();
+        let cycle_edges = loop {
+            let mut order = clubs.clone();
+            rng.shuffle(&mut order);
+            // A Hamiltonian cycle through clubs of different divisions: consecutive clubs
+            // differ in division, and so do the last and the first.
+            let ok = (0..15).all(|i| division(order[i]) != division(order[(i + 1) % 15]));
+            if ok {
+                break (0..15).map(|i| (order[i], order[(i + 1) % 15])).collect::<Vec<_>>();
+            }
+        };
+        for &(x, y) in &cycle_edges {
+            // `x` hosts the four-game series against `y`.
+            let (a, b) = (x.min(y), x.max(y));
+            let a_hosts_four = (a == x) != swap;
+            left[a][b] = vec![(4, a_hosts_four), (3, !a_hosts_four)];
+        }
+        for &a in &clubs {
+            for &b in &clubs {
+                if a < b && division(a) != division(b) && left[a][b].is_empty() {
+                    left[a][b] = vec![(3, true), (3, false)];
+                }
+            }
+        }
+    }
+    // Interleague: the rival home and away; every other club once, each club hosting
+    // seven of the fourteen.
+    for a in 0..15 {
+        for b in 15..30 {
+            if is_rival(a, b) {
+                left[a][b] = vec![(3, true), (3, false)];
+            } else {
+                let d = (b - 15 + 15 - rival[a]) % 15; // 1..14 for the non-rivals
+                left[a][b] = vec![(3, (d <= 7) != swap)];
+            }
+        }
+    }
+    // The 52 windows.
+    let mut windows: Vec<(Date, i32)> = vec![(opening, 4)];
+    let mut monday = opening.add_days(4);
+    while windows.len() < 52 {
+        if monday == all_star_monday {
+            windows.push((monday.add_days(3), 4));
+        } else {
+            windows.push((monday, 4));
+            windows.push((monday.add_days(4), 3));
+        }
+        monday = monday.add_days(7);
+    }
+    windows.truncate(52);
+    let mut games = Vec::new();
+    for &(start, days) in &windows {
+        // A perfect matching of the 30 clubs among the series still to be played: the club
+        // with the fewest possible opponents first, paired with the opponent it has the most
+        // series left against.
+        let fits = |l: &Vec<Series>| !l.is_empty() && (days == 4 || l.iter().any(|s| s.0 == 3));
+        let mut pairs = Vec::new();
+        let mut matched = false;
+        for _ in 0..60 {
+            let mut free: Vec<usize> = (0..n).collect();
+            pairs.clear();
+            let mut ok = true;
+            while !free.is_empty() {
+                let options =
+                    |c: usize, free: &Vec<usize>| -> Vec<usize> { free.iter().copied().filter(|&d| d != c && fits(&left[c.min(d)][c.max(d)])).collect() };
+                let (ci, _) =
+                    free.iter().enumerate().map(|(i, &c)| (i, options(c, &free).len() as f64 + 0.5 * rng.f64())).min_by(|x, y| x.1.total_cmp(&y.1)).unwrap();
+                let c = free.swap_remove(ci);
+                let opts = options(c, &free);
+                let Some(&d) = opts.iter().max_by(|&&x, &&y| {
+                    let lx = left[c.min(x)][c.max(x)].len() as f64 + rng.f64();
+                    let ly = left[c.min(y)][c.max(y)].len() as f64 + rng.f64();
+                    lx.total_cmp(&ly)
+                }) else {
+                    ok = false;
+                    break;
+                };
+                free.retain(|&x| x != d);
+                pairs.push((c.min(d), c.max(d)));
+            }
+            if ok {
+                matched = true;
+                break;
+            }
+        }
+        if !matched {
+            return None;
+        }
+        for &(a, b) in &pairs {
+            let l = &mut left[a][b];
+            // A four-game series when the window allows one, else a three-game series.
+            let i = l.iter().position(|s| days == 4 && s.0 == 4).or_else(|| l.iter().position(|s| s.0 == 3)).expect("a series that fits");
+            let (len, a_hosts) = l.swap_remove(i);
+            let (h, g) = if a_hosts { (a, b) } else { (b, a) };
+            // A three-game series in a Monday-to-Thursday window starts on Tuesday.
+            let first = if len == 3 && days == 4 { start.add_days(1) } else { start };
+            for k in 0..len {
+                games.push(Game { date: first.add_days(k), home: h, away: g });
+            }
+        }
+    }
+    if left.iter().flatten().any(|l| !l.is_empty()) {
+        return None;
+    }
+    games.sort_by_key(|g| (g.date, g.home));
+    Some(games)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -481,5 +644,67 @@ mod tests {
         // A league without divisions.
         let games = milb(&[0; 6], opening, 132, brk, 0.6, &mut rng);
         assert_eq!(games.len(), 6 * 132 / 2);
+    }
+
+    #[test]
+    fn the_major_league_season_has_the_real_shape() {
+        // Prime rivals pair clubs of the same position in the other league.
+        let rival: [usize; 15] = std::array::from_fn(|i| i);
+        let opening = Date::new(2027, 3, 25);
+        let all_star = Date::new(2027, 7, 12);
+        for seed in 0..3 {
+            let mut rng = Rng::new(seed);
+            let games = mlb(opening, all_star, &rival, seed == 1, &mut rng);
+            assert_eq!(games.len(), 30 * 162 / 2);
+            for club in 0..30 {
+                let mine: Vec<&Game> = games.iter().filter(|g| g.home == club || g.away == club).collect();
+                assert_eq!(mine.len(), 162, "club {club}");
+                assert_eq!(mine.iter().filter(|g| g.home == club).count(), 81, "club {club} home games");
+                let opp = |g: &Game| if g.home == club { g.away } else { g.home };
+                let (mut division, mut league, mut inter) = (0, 0, 0);
+                for g in &mine {
+                    let o = opp(g);
+                    if o / 15 != club / 15 {
+                        inter += 1;
+                    } else if o / 5 == club / 5 {
+                        division += 1;
+                    } else {
+                        league += 1;
+                    }
+                }
+                assert_eq!((division, league, inter), (52, 62, 48), "club {club}");
+                let mut sevens = 0;
+                for o in (0..30).filter(|&o| o != club) {
+                    let k = mine.iter().filter(|g| opp(g) == o).count();
+                    let expected = if o / 15 != club / 15 {
+                        if rival[club % 15] == o % 15 {
+                            6
+                        } else {
+                            3
+                        }
+                    } else if o / 5 == club / 5 {
+                        13
+                    } else {
+                        if k == 7 {
+                            sevens += 1;
+                        }
+                        if k == 7 {
+                            7
+                        } else {
+                            6
+                        }
+                    };
+                    assert_eq!(k, expected, "{club} v {o}");
+                }
+                assert_eq!(sevens, 2, "club {club}: seven-game pairings");
+                let mut days: Vec<Date> = mine.iter().map(|g| g.date).collect();
+                days.sort();
+                days.dedup();
+                assert_eq!(days.len(), 162, "club {club} plays twice on a day");
+            }
+            let last = games.iter().map(|g| g.date).max().unwrap();
+            assert_eq!(last, Date::new(2027, 9, 26), "season ends {last}");
+            assert!(games.iter().all(|g| g.date < all_star || g.date > all_star.add_days(2)), "nothing in the break");
+        }
     }
 }
