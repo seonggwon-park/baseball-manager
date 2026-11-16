@@ -1118,7 +1118,8 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
         let lowest = |p: &Player| pinned[k].get(&p.id).copied().or_else(|| deepest(p)).unwrap_or(0);
         let mut pool = kept;
         let mut academy: Option<Vec<Player>> = None;
-        for (i, (club, key)) in org.levels.iter().enumerate() {
+        let mut placed: Vec<Vec<Player>> = Vec::with_capacity(org.levels.len());
+        for (i, (_, key)) in org.levels.iter().enumerate() {
             // The academy takes the youngest international amateurs, before the complex
             // takes its players from everyone left.
             let youngest = |pool: &mut Vec<Player>, size: usize| -> Vec<Player> {
@@ -1143,6 +1144,37 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
                 }
                 take_level(&mut pool, sizes[i], &here)
             };
+            placed.push(players);
+        }
+        // A rotation needs five pitchers with a starter's stamina. A level the players who
+        // could go no lower left short of them trades its weakest relievers, one for one, for
+        // the best starters of the levels below, as long as the reliever may play at that
+        // level (age limit; the academy and a club's foreign players stay out of it): the
+        // organisation sends a reliever down rather than open the season with bullpen games.
+        let academy_level = academy_at.unwrap_or(usize::MAX);
+        let rate = ability::pitching_rate;
+        for i in 0..placed.len() {
+            while placed[i].iter().filter(|p| p.is_pitcher() && ability::can_start(p)).count() < 5 {
+                let best = (i + 1..placed.len())
+                    .filter(|&j| j != academy_level)
+                    .flat_map(|j| placed[j].iter().enumerate().map(move |(q, p)| (j, q, p)))
+                    .filter(|(_, _, p)| p.is_pitcher() && ability::can_start(p) && !pinned[k].contains_key(&p.id))
+                    .max_by(|a, b| rate(a.2).total_cmp(&rate(b.2)))
+                    .map(|(j, q, _)| (j, q));
+                let Some((j, q)) = best else { break };
+                let worst = placed[i]
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, p)| p.is_pitcher() && !ability::can_start(p) && !pinned[k].contains_key(&p.id) && lowest(p) >= j)
+                    .min_by(|a, b| rate(a.1).total_cmp(&rate(b.1)))
+                    .map(|(w, _)| w);
+                let Some(w) = worst else { break };
+                // j > i: swap across the two levels.
+                let (upper, lower) = placed.split_at_mut(j);
+                std::mem::swap(&mut upper[i][w], &mut lower[0][q]);
+            }
+        }
+        for ((club, key), players) in org.levels.iter().zip(placed) {
             built.insert(club.clone(), build_roster(club, key, players));
         }
         for p in pool {
@@ -1316,5 +1348,50 @@ mod tests {
             offseason(&ctx, &mut again, year, None, 5);
         }
         assert_eq!(serde_json::to_string(&again.rosters).unwrap(), serde_json::to_string(&pop.rosters).unwrap());
+    }
+
+    /// Mean of `attr` over the domestic pitchers (or position players) of one level.
+    fn level_mean(pop: &Population, level: &str, pitchers: bool, attr: crate::attr::Attr) -> f64 {
+        let v: Vec<f64> = pop
+            .rosters
+            .iter()
+            .filter(|r| r.level == level)
+            .flat_map(|r| r.players())
+            .filter(|p| p.is_pitcher() == pitchers && !pop.foreign.contains_key(&p.id))
+            .map(|p| p.attrs.z(attr))
+            .collect();
+        v.iter().sum::<f64>() / v.len().max(1) as f64
+    }
+
+    #[test]
+    fn twenty_offseasons_keep_the_staffs_and_the_scale() {
+        let (world, levels, aging, careers, people) = ctx_parts();
+        let ctx = Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people };
+        let mut pop = populate(&world, &levels, Date::new(2027, 2, 1), 11);
+        use crate::attr::Attr::*;
+        // Character counts for nobody's value, so neither growth nor selection may move it;
+        // composure counts for a pitcher's (selection lifts the majors' by about 0.4) and
+        // would rise past 1 if prospects grew into it as they grow into their skills.
+        let traits = [(Determination, 0.15), (Leadership, 0.15), (Teamwork, 0.15), (Composure, 0.6), (Concentration, 0.6)];
+        let before: Vec<(f64, f64)> = traits.iter().map(|&(a, _)| (level_mean(&pop, "mlb", true, a), level_mean(&pop, "mlb", false, a))).collect();
+        for year in 2027..2047 {
+            offseason(&ctx, &mut pop, year, None, 11);
+        }
+        // Every first team and Triple-A club still has a rotation of five pitchers with a
+        // starter's stamina (valuing starters over their innings once emptied the KBO's).
+        for r in pop.rosters.iter().filter(|r| ["mlb", "aaa", "kbo", "npb"].contains(&r.level.as_str())) {
+            assert!(r.squad.starters.iter().all(ability::can_start), "{}: rotation without a starter's stamina", r.club);
+        }
+        // What the levels do not differ in stays where it was in the majors: no growth
+        // lifts every new generation (composure of major-league pitchers had reached +1.2).
+        for (k, &(a, bound)) in traits.iter().enumerate() {
+            let (p, h) = (level_mean(&pop, "mlb", true, a), level_mean(&pop, "mlb", false, a));
+            assert!(
+                (p - before[k].0).abs() < bound && (h - before[k].1).abs() < bound,
+                "{a:?}: pitchers {:.2} -> {p:.2}, hitters {:.2} -> {h:.2}",
+                before[k].0,
+                before[k].1
+            );
+        }
     }
 }

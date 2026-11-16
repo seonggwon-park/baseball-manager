@@ -1,5 +1,5 @@
 {
- "_comment": "Development and aging of players, in standard deviations of the major-league attribute distribution per year of age. drift[i] applies in the year after a birthday at age from_age + i. growth[i] is the share of the gap to the player's potential he closes in that year. remaining_growth[i] is the mean gap to the peak at that age when players are created (Lichtman 2009, survivor-corrected delta method: +32 runs per 500 PA from 21 to the peak, about 2.1 standard deviations). Each group lists the evidence behind its curve (docs/research/world/aging.md); 'assumption' marks curves without published data. Edit freely.",
+ "_comment": "Development and aging of players, in standard deviations of the major-league attribute distribution per year of age. drift[i] applies in the year after a birthday at age from_age + i. growth[i] is the share of the gap to the player's potential he closes in that year. remaining_growth[i] is the mean gap to the peak at that age when players are created (Lichtman 2009, survivor-corrected delta method: +32 runs per 500 PA from 21 to the peak, about 2.1 standard deviations). Each group lists the evidence behind its curve (docs/research/world/aging.md); 'assumption' marks curves without published data. growth_delay: years by which a group's growth towards the ceiling comes later than the others'. noise: the groups' yearly spreads (sources in each basis) scaled by 0.731, fitted (2026-11-16) so that the levels keep their spread over decades; the mind's drift is fitted the same way. Edit freely.",
  "from_age": 16,
  "growth": [
   0.25,
@@ -65,7 +65,7 @@
   0.0,
   0.0
  ],
- "group_spread": 0.25,
+ "group_spread": 0.092,
  "groups": {
   "velocity": {
    "attrs": [
@@ -103,7 +103,7 @@
     -0.2,
     -0.2
    ],
-   "noise": 0.3,
+   "noise": 0.219,
    "basis": "Petti & Zimmerman 2012 (delta method, BIS fastballs 2002-2011): within 0.5 mph of peak through 28, about -1 mph by 29, -3.75 mph by 38; 1 SD = 2.2 mph. Year-to-year noise: assumption"
   },
   "power": {
@@ -143,7 +143,7 @@
     -0.12,
     -0.12
    ],
-   "noise": 0.2,
+   "noise": 0.146,
    "basis": "Bat speed flat until about 28-31, then -0.31 mph a year (docs/research/world/aging.md 2E); 1 SD = 2.6 mph. Changes beyond 1-1.5 mph a year are rare (Tango 2025)"
   },
   "speed": {
@@ -185,7 +185,7 @@
     -0.104,
     -0.104
    ],
-   "noise": 0.25,
+   "noise": 0.183,
    "basis": "Sprint speed -0.12 to -0.17 ft/s a year at every age 22-36, mean -0.14 (aging.md 2F); 1 SD = 1.35 ft/s. 23 % of year pairs lost 0.5 ft/s or more, 7 % gained as much (Petriello 2017)"
   },
   "bat_to_ball": {
@@ -228,7 +228,8 @@
     -0.13,
     -0.13
    ],
-   "noise": 0.2,
+   "noise": 0.146,
+   "growth_delay": -1.058,
    "basis": "Contact on pitches outside the zone falls 3.5 points at 28-32 and 4.4 at 33-37 (aging.md 2G), about a third of the spread between hitters per period; strikeouts rise faster after 30 (Zimmerman 2020)"
   },
   "discipline": {
@@ -267,7 +268,7 @@
     0.0,
     0.0
    ],
-   "noise": 0.15,
+   "noise": 0.11,
    "basis": "Walk rate holds or improves into the 30s (Tango 2002; Bradbury 2009 peak 32.3)"
   },
   "glove": {
@@ -310,7 +311,7 @@
     -0.1,
     -0.1
    ],
-   "noise": 0.2,
+   "noise": 0.146,
    "basis": "Shortstop range peaks at 24-28, then 5-9 fewer plays a year (aging.md 2H); the size per year in standard deviations is an assumption"
   },
   "arm": {
@@ -350,7 +351,7 @@
     -0.08,
     -0.08
    ],
-   "noise": 0.2,
+   "noise": 0.146,
    "basis": "Assumption: no aging curve for throwing arm strength was found (aging.md 6)"
   },
   "catching": {
@@ -391,7 +392,7 @@
     -0.05,
     -0.05
    ],
-   "noise": 0.15,
+   "noise": 0.11,
    "basis": "Assumption"
   },
   "stuff": {
@@ -431,7 +432,7 @@
     -0.04,
     -0.04
    ],
-   "noise": 0.15,
+   "noise": 0.11,
    "basis": "Spin declines mildly with age, four-seam movement roughly constant (aging.md 2B); size an assumption. Pitch grades follow this group"
   },
   "command": {
@@ -471,7 +472,8 @@
     -0.04,
     -0.04
    ],
-   "noise": 0.2,
+   "noise": 0.146,
+   "growth_delay": 3.3,
    "basis": "Starters' walk rates are best near 26-30 and stay within 1 BB/9 of the best later (Petti 2012; aging.md 2C); size an assumption"
   },
   "hold": {
@@ -510,7 +512,7 @@
     0.0,
     0.0
    ],
-   "noise": 0.1,
+   "noise": 0.073,
    "basis": "Assumption"
   },
   "stamina": {
@@ -550,7 +552,7 @@
     -0.08,
     -0.08
    ],
-   "noise": 0.15,
+   "noise": 0.11,
    "basis": "Assumption"
   },
   "mind": {
@@ -562,22 +564,22 @@
     "baserunning"
    ],
    "drift": [
-    0.03,
-    0.03,
-    0.03,
-    0.03,
-    0.03,
-    0.03,
-    0.03,
-    0.03,
-    0.03,
-    0.03,
-    0.03,
-    0.03,
-    0.03,
-    0.03,
-    0.03,
-    0.03,
+    0.006,
+    0.006,
+    0.006,
+    0.006,
+    0.006,
+    0.006,
+    0.006,
+    0.006,
+    0.006,
+    0.006,
+    0.006,
+    0.006,
+    0.006,
+    0.006,
+    0.006,
+    0.006,
     0.0,
     0.0,
     0.0,
@@ -593,8 +595,8 @@
     0.0,
     0.0
    ],
-   "noise": 0.15,
-   "basis": "Assumption: experience helps until the early 30s"
+   "noise": 0.11,
+   "basis": "Assumption: experience helps until the early 30s; the size is fitted so that the majors keep their composure (the generator draws the mind alike at every level and age)"
   },
   "character": {
    "attrs": [
@@ -635,7 +637,7 @@
     0.0,
     0.0
    ],
-   "noise": 0.1,
+   "noise": 0.073,
    "basis": "Assumption: character barely changes"
   }
  }
