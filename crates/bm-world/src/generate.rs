@@ -38,11 +38,26 @@ pub struct Talent {
     /// major-league distribution: 1 for every level; new amateurs come in narrower
     /// (`careers.json` intake_spread), as growth and the years spread them out.
     pub spread: f32,
+    /// Added to the shares of a hitter's power advantage that come off his bat-to-ball
+    /// skills (`shape::POWER_CONTACT` and the like, measured on major-league regulars): 0
+    /// for every level; new amateurs trade more (`careers.json` intake_tradeoff), as
+    /// choosing players by value weakens the trade among those who rise.
+    pub tradeoff: f32,
 }
 
 impl Talent {
-    pub const MAJOR: Talent =
-        Talent { hitting: 0.0, pitching: 0.0, fielding: 0.0, physical: 0.0, power: 0.0, command: 0.0, velocity: 0.0, discipline: 0.0, spread: 1.0 };
+    pub const MAJOR: Talent = Talent {
+        hitting: 0.0,
+        pitching: 0.0,
+        fielding: 0.0,
+        physical: 0.0,
+        power: 0.0,
+        command: 0.0,
+        velocity: 0.0,
+        discipline: 0.0,
+        spread: 1.0,
+        tradeoff: 0.0,
+    };
 }
 
 fn z(rng: &mut Rng, mean: f64, sd: f64) -> f32 {
@@ -174,7 +189,10 @@ pub fn position_player(rng: &mut Rng, id: u32, pos: Option<Position>, t: &Talent
     let hit = t.hitting as f64;
     a[Attr::Power] = z(rng, hit + t.power as f64, s);
     let swing = a[Attr::Power] as f64 - hit - t.power as f64;
-    let mut traded = |rho: f64| (hit - rho * swing + (1.0 - rho * rho).sqrt() * s * rng.gauss_clamped(0.0, 1.0, -3.5, 3.5)) as f32;
+    let mut traded = |rho: f64| {
+        let rho = (rho + t.tradeoff as f64).clamp(0.0, 0.95);
+        (hit - rho * swing + (1.0 - rho * rho).sqrt() * s * rng.gauss_clamped(0.0, 1.0, -3.5, 3.5)) as f32
+    };
     a[Attr::Contact] = traded(shape::POWER_CONTACT);
     a[Attr::Timing] = traded(shape::POWER_TIMING);
     a[Attr::BatControl] = traded(shape::POWER_BAT_CONTROL);

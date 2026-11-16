@@ -278,8 +278,18 @@ mod tests {
     #[test]
     fn minor_leaguers_are_worth_less_than_major_leaguers() {
         let mut rng = Rng::new(9);
-        let aaa =
-            Talent { hitting: -0.75, pitching: -0.66, fielding: -1.1, physical: -0.2, power: 0.37, command: -1.9, velocity: 0.0, discipline: 0.0, spread: 1.0 };
+        let aaa = Talent {
+            hitting: -0.75,
+            pitching: -0.66,
+            fielding: -1.1,
+            physical: -0.2,
+            power: 0.37,
+            command: -1.9,
+            velocity: 0.0,
+            discipline: 0.0,
+            spread: 1.0,
+            tradeoff: 0.0,
+        };
         let mean = |t: &Talent, rng: &mut Rng, pitchers: bool| -> f64 {
             (0..400)
                 .map(|i| if pitchers { value(&pitcher(rng, i, Role::Starter, t)) } else { value(&position_player(rng, i, Some(Position::Second), t)) })

@@ -197,6 +197,7 @@ fn parse_args() -> Args {
                     velocity: extra(6),
                     discipline: extra(7),
                     spread: 1.0,
+                    tradeoff: 0.0,
                 };
                 if k == "--talent" {
                     a.talent = talent;

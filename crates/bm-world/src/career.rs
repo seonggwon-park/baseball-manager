@@ -96,6 +96,8 @@ struct CareerFile {
     positions: Positions,
     starter_share: Valued<f64>,
     intake_spread: Valued<f32>,
+    #[serde(default)]
+    intake_tradeoff: Option<Valued<f32>>,
     retirement: Retirement,
     keep_potential: Valued<f64>,
     board_noise: Valued<f64>,
@@ -132,6 +134,8 @@ pub struct CareerTable {
     pub starter_share: f64,
     /// Spread of a new amateur's attributes around his class's means (`Talent::spread`).
     pub intake_spread: f32,
+    /// How much more a new amateur trades bat-to-ball skill for power (`Talent::tradeoff`).
+    pub intake_tradeoff: f32,
     pub retire_from: u32,
     pub retire_chance: Vec<f64>,
     pub keep_potential: f64,
@@ -188,6 +192,7 @@ impl CareerTable {
             positions,
             starter_share: f.starter_share.value,
             intake_spread: f.intake_spread.value,
+            intake_tradeoff: f.intake_tradeoff.map_or(0.0, |v| v.value),
             retire_from: f.retirement.from_age,
             retire_chance: f.retirement.chance,
             keep_potential: f.keep_potential.value,
@@ -787,7 +792,7 @@ impl Intake<'_> {
 
     /// A player of `class`.
     fn amateur(&mut self, class: &Class, rng: &mut Rng) -> Newcomer {
-        let t = Talent { spread: self.table.intake_spread, ..self.table.talent(class, self.levels) };
+        let t = Talent { spread: self.table.intake_spread, tradeoff: self.table.intake_tradeoff, ..self.table.talent(class, self.levels) };
         let id = self.id();
         let is_pitcher = rng.chance(class.pitchers);
         let player = if is_pitcher {

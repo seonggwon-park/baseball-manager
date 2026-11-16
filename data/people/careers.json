@@ -207,6 +207,10 @@
   "value": 0.9085,
   "basis": "Spread of a new amateur's attributes around his class's means, in standard deviations of the major-league distribution (every level is generated with 1). Assumption, fitted so that each level keeps its spread once growth and the years have spread the players out"
  },
+ "intake_tradeoff": {
+  "value": 0.0,
+  "basis": "Added to the shares of a new amateur's power advantage that come off his contact, timing and bat control (0.80, 0.60, 0.50, measured on major-league regulars: Statcast 2025). Choosing players by value weakens the trade among those who rise (thirty offseasons on, power against contact in the majors -0.57 where the regulars show -0.71), so the amateurs they rise from must trade more; fitted with the leagues' records"
+ },
  "retirement": {
   "from_age": 33,
   "chance": [0.0483, 0.0805, 0.1288, 0.1931, 0.2897, 0.4024, 0.5633, 0.8047, 1.0, 1.0, 1.0],
