@@ -294,7 +294,10 @@ pub fn resolve(inp: &PlayInput, rng: &mut Rng) -> PlayResult {
     let chance = best_catch(path, t_air_end, inp.fielders, inp.positions, p);
     if let Some(c) = chance {
         let reach_prob = sigmoid((c.margin - p.catch_margin_bias) / p.catch_margin_scale);
-        if rng.chance(reach_prob) {
+        // Balls hit high are hard to judge and draw two fielders to the same spot: some
+        // fall in although somebody could have been under them.
+        let lost = p.high_fly_drop * ((inp.info.launch_angle.to_degrees() - 35.0) / 10.0).clamp(0.0, 1.0);
+        if rng.chance(reach_prob * (1.0 - lost)) {
             let f = &inp.fielders[c.fielder];
             let fair = is_fair(c.pos);
             if rng.chance((p.error_fly * f.hands).min(0.5)) && fair {

@@ -19,7 +19,8 @@ use bm_physics::{collide, launch_angle, spin_components, spray_angle, BallSpec, 
 use std::io::{BufRead, BufWriter, Write};
 use std::path::Path;
 
-const HEADER: &str = "hand,kind,px,pz,zb,zt,vx,vy,vz,wx,wy,wz,bs,aa,dir,tilt,depth,la,ev,spray,offset,along,ax,ay,az,theta,move_z,move_x,time,res,hit,fbear";
+const HEADER: &str =
+    "hand,kind,px,pz,zb,zt,vx,vy,vz,wx,wy,wz,bs,aa,dir,tilt,depth,la,ev,spray,offset,along,ax,ay,az,theta,move_z,move_x,time,res,hit,fbear,play,fielder";
 
 #[derive(Default)]
 struct Rows {
@@ -52,7 +53,7 @@ impl Observer for Rows {
         let f = &e.thrown.flight;
         let pull = e.batter_hand.pull_sign();
         self.lines.push(format!(
-            "{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.2},{:.2},{:.2},{:.4},{:.5},{:.5},{:.5},{:.4},{:.5},{:.4},{:.5},{:.5},{:.4},{:.5},{:.5},{:.5},{:.5},{:.4},{:.4},{:.4},{},{},{:.4}",
+            "{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.2},{:.2},{:.2},{:.4},{:.5},{:.5},{:.5},{:.4},{:.5},{:.4},{:.5},{:.5},{:.4},{:.5},{:.5},{:.5},{:.5},{:.4},{:.4},{:.4},{},{},{:.4},{},{}",
             if e.batter_hand.outside_sign() > 0.0 { 'R' } else { 'L' },
             e.thrown.kind.code(),
             f.plate_pos.x,
@@ -86,6 +87,9 @@ impl Observer for Rows {
             e.play.map_or(-1, |p| i32::from(matches!(p.kind, PlayKind::Single | PlayKind::Double | PlayKind::Triple | PlayKind::HomeRun | PlayKind::GroundRuleDouble))),
             // Bearing of the spot where the ball was first touched (or left the field), + toward the pull side.
             e.play.map_or(f64::NAN, |p| p.field_pos.x.atan2(p.field_pos.y) * pull),
+            // The play, and the fielder who first played the ball (1 pitcher .. 9 right fielder).
+            e.play.map_or_else(|| "-".to_string(), |p| format!("{:?}", p.kind)),
+            e.play.map_or(0, |p| p.fielder + 1),
         ));
     }
 }

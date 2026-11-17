@@ -300,6 +300,13 @@ pub struct ModelParams {
     pub catch_height: f64,
     /// Scale of the catch probability in the time margin, s.
     pub catch_margin_scale: f64,
+    /// Share of balls hit 45 deg and higher that fall in although a fielder could reach
+    /// them (ramping in from 35 deg): lost in the sun or the wind, or left by two fielders
+    /// to each other. Without it the engine caught nearly every ball hit 40 deg and up
+    /// (hits on 0.0-0.5 % against 0.9-4.6 % in the 2025 Statcast sample when both are
+    /// flown alike and compared by the distance of the nearest fielder,
+    /// `tools/statcast/catch_check.py`).
+    pub high_fly_drop: f64,
     /// Margin offset so that an even race is caught at about 50 %, s.
     pub catch_margin_bias: f64,
     /// Time lost redirecting to a ball that dropped in after a flight, s.
@@ -532,6 +539,7 @@ impl Default for ModelParams {
 
             catch_height: 2.6,
             catch_margin_scale: 0.18,
+            high_fly_drop: 0.02,
             catch_margin_bias: 0.0,
             redirect_delay: 0.35,
             field_height: 1.5,

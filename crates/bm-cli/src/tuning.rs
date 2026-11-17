@@ -145,6 +145,7 @@ impl Tuning {
                 wild_pitch_prob,
                 catch_height,
                 catch_margin_scale,
+                high_fly_drop,
                 catch_margin_bias,
                 redirect_delay,
                 field_height,
