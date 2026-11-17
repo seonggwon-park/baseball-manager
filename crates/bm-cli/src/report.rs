@@ -296,6 +296,27 @@ pub fn print(t: &Tally) {
             tg[2]
         );
     }
+    // MLB (Statcast sample): plate location toward the outside edge, ft, and zone %,
+    // against same-side and opposite-side batters.
+    #[rustfmt::skip]
+    let kx: [[f64; 4]; 8] = [[0.161, 57.4, 0.123, 56.3], [-0.161, 57.8, 0.165, 58.6], [0.458, 52.7, -0.194, 54.0], [0.543, 45.9, -0.127, 49.3],
+                             [0.642, 43.7, -0.008, 48.0], [0.338, 44.0, 0.040, 44.3], [-0.050, 41.8, 0.449, 39.4], [-0.059, 36.6, 0.357, 35.9]];
+    println!("  location by the batter's side, sim/MLB: toward the outside edge (ft) and zone %, same-side batters, then opposite-side");
+    for ((kind, _), tg) in kt.iter().zip(kx) {
+        let k = &t.kinds[kind.index()];
+        println!(
+            "    {}  same  {:+5.2}/{:+5.2}  zone {:4.1}/{:4.1}   opposite  {:+5.2}/{:+5.2}  zone {:4.1}/{:4.1}",
+            kind.code(),
+            k.side_x[0].mean(),
+            tg[0],
+            pct(k.side_zone[0][1], k.side_zone[0][0]),
+            tg[1],
+            k.side_x[1].mean(),
+            tg[2],
+            pct(k.side_zone[1][1], k.side_zone[1][0]),
+            tg[3]
+        );
+    }
     println!("  four-seam whiff per swing by velocity, sim/MLB:");
     let fb_t = [17.4, 19.2, 19.3, 21.5, 24.5, 25.4, 30.3, f64::NAN];
     let mut s = String::from("   ");

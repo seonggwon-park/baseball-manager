@@ -70,10 +70,10 @@ impl BatSpec {
     ///   157 mph; continuing that trend gives roughly 0.2. Lower values bring the
     ///   backspin gained per degree of launch angle closer to Nathan's Statcast fit
     ///   but carry the ball further: at 0.0 the league hits 39 % more home runs.
-    /// * `cor_obliquity = 0.45`: not from the literature. The rigid-body model keeps
-    ///   too much exit speed on topped and skied balls; this term is fitted so that
-    ///   the mean exit velocity by launch angle follows 2025 Statcast (85.6 mph on
-    ///   ground balls, 77.6 mph on pop-ups against 94 mph on line drives).
+    /// * `cor_obliquity = 0.55`: not from the literature. The rigid-body model keeps
+    ///   too much exit speed on topped and skied balls; this term is fitted together with
+    ///   the swing constants to the 2025 Statcast comparisons of `bm validate` (it was
+    ///   0.45 before the vertical swing geometry was rebuilt from bat tracking).
     /// * `friction = 0.15`: impulse ratio at which gross slip sets in in the
     ///   high-speed experiment of Nathan et al. (2012); consistent with the lower
     ///   limit of 0.15 reported by Kensrud et al. (2017).
@@ -92,7 +92,7 @@ impl BatSpec {
             cor_falloff: 30.0,
             cor_floor: 0.25,
             bpf: 1.0,
-            cor_obliquity: 0.45,
+            cor_obliquity: 0.55826,
             tangential_cor: 0.20,
             friction: 0.15,
         }

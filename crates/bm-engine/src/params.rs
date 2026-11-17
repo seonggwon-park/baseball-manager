@@ -151,6 +151,23 @@ pub struct ModelParams {
     /// Health Sport Sci. 62, 475 (2017)). No mechanism was found. 4 deg brings the side
     /// spin against direction onto Nathan's Statcast fit; more pushes it past that fit.
     pub spray_turn: f64,
+    /// The AI manager shades its infield toward the pull side of left-handed (right-handed)
+    /// batters whose timing bias is below this, s (earlier = pulls more). Set so that
+    /// generated hitters (timing bias 2.6 +- 2.7 ms) are shaded as often as 2025 MLB
+    /// infields shaded (Statcast `if_fielding_alignment`: 46 % of left-handed batters'
+    /// pitches, 8 % of right-handed).
+    pub shade_left_below: f64,
+    pub shade_right_below: f64,
+    /// Every defence leans toward the batter's pull side, deg: corner infielders, middle
+    /// infielders, outfielders. Chosen among the values tried by the batting average of
+    /// ground balls by bearing in the 2025 Statcast sample: with these the pull-line side
+    /// matches (.234 against .238 from 30 deg pull-side out), and larger leans open the
+    /// opposite field further (already .60 against .42 beyond 30 deg there, because
+    /// simulated ground balls are pulled about 6 deg less than measured ones). The
+    /// outfield lean opened the opposite-field line and doubled the triples, so it is 0.
+    pub lean_corner: f64,
+    pub lean_middle: f64,
+    pub lean_outfield: f64,
     /// Pitch of the swing plane toward the pitcher: shift from the batter's average
     /// attack angle (rad), its change per metre of pitch height above the middle of the
     /// zone, per metre of depth of contact (+ = out in front), per metre of inside
@@ -387,6 +404,13 @@ pub struct ModelParams {
     pub hit_and_run_reach: f64,
 }
 
+impl ModelParams {
+    /// Lean of the defence toward the batter's pull side (corners, middle, outfield), deg.
+    pub fn lean(&self) -> [f64; 3] {
+        [self.lean_corner, self.lean_middle, self.lean_outfield]
+    }
+}
+
 impl Default for ModelParams {
     fn default() -> Self {
         ModelParams {
@@ -407,7 +431,7 @@ impl Default for ModelParams {
             ump_scale: 0.93 * INCH,
 
             swing_base: [[0.57, 0.92, 0.985], [0.74, 0.93, 0.985], [0.70, 0.93, 0.985], [0.14, 0.88, 0.985]],
-            swing_d0: 0.039,
+            swing_d0: 0.035461,
             swing_d0_one_strike: 0.020,
             swing_d0_two_strikes: 0.075,
             swing_width: 0.045,
@@ -417,9 +441,9 @@ impl Default for ModelParams {
             recognition_scale: 0.58,
             recognition_time_scale: 0.14501,
             timing_adjust: 0.68402,
-            location_adjust: 0.76,
+            location_adjust: 0.85689,
             fastball_misread: 0.0,
-            kind_recognition: [0.0, 0.0, 0.039755, -0.15307, -0.016916, 0.14844, -0.016253, -0.15819],
+            kind_recognition: [0.0, 0.0, 0.039755, -0.14075, 0.01281, 0.15936, 0.053355, -0.28168],
             ride_bias: 0.085453,
             ride_reference: 0.375,
             ride_confusion: 0.6,
@@ -436,12 +460,17 @@ impl Default for ModelParams {
             barrel_outside_gain2: 70.0,
             barrel_outside_offset: 0.03,
             reach_limit: 0.40,
-            height_bias: 0.080969,
+            height_bias: 0.076376,
             aim_kind: [0.0, -0.020825, -0.015385, -0.00096362, 0.0040549, -0.014046, -0.015621, -0.014987],
             plane_mismatch: 0.0,
-            mismatch_noise: 1.5862,
+            mismatch_noise: 1.7742,
             spray_turn: 0.0698,
-            attack_shift: -0.034921,
+            shade_left_below: 0.00233,
+            shade_right_below: -0.00119,
+            lean_corner: 3.0,
+            lean_middle: 5.0,
+            lean_outfield: 0.0,
+            attack_shift: -0.034162,
             attack_height: 0.1898,
             attack_depth: 0.20017,
             attack_inside: -0.2150,
@@ -459,11 +488,11 @@ impl Default for ModelParams {
             partial_two_strike_gain: 1.62,
             partial_fooled_rate: 0.12,
             partial_speed_min: 0.55,
-            off_end_gain: 0.95328,
+            off_end_gain: 0.67564,
             off_end_late: 0.1,
             pivot_radius: 2.25,
             off_end_linear: 0.015232,
-            off_end_max: 0.17063,
+            off_end_max: 0.17847,
             face_gain: 1.3212,
             face_lead: 0.0,
             face_sd: 0.108,
@@ -472,15 +501,15 @@ impl Default for ModelParams {
             roll_span: 0.261,
             roll_flatten: 0.757,
             swing_arc_radius: 1.0,
-            arc_scale: 0.032445,
-            arc_scale_early: 0.7785,
-            arc_centre: 0.057971,
-            arc_early_from: 0.31295,
+            arc_scale: 0.051319,
+            arc_scale_early: 0.78898,
+            arc_centre: 0.068661,
+            arc_early_from: 0.29812,
             max_depth: 0.90,
             bat_speed_depth_cap: 0.15,
             partial_precision: 1.5,
-            piece_rate: 0.57129,
-            piece_reach: 0.044193,
+            piece_rate: 0.53993,
+            piece_reach: 0.046436,
             piece_band: 0.022,
             piece_depth: 0.37,
             piece_centre: 0.11,
@@ -489,7 +518,7 @@ impl Default for ModelParams {
             bat_tilt_sd: 0.098,
             chop_foul_dist: 3.0,
             chop_foul_prob: 0.509,
-            contact_along: 0.03096,
+            contact_along: 0.021778,
             reach_per_m: 0.15,
             foul_tip_catch: 0.55,
             foul_tip_angle: 0.3,

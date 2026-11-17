@@ -85,10 +85,12 @@ pub struct Alignment {
 /// Fielder positions (m) for a set-up.
 ///
 /// * `pull_sign`: +1 if the batter's pull side is the first-base side (left-handed batter), -1 otherwise.
+/// * `lean`: degrees every defence leans toward the batter's pull side, for the corner
+///   infielders, the middle infielders and the outfielders.
 /// * `hold_first`: the first baseman holds a runner on.
 /// * `bunt_shown`: the batter has squared to bunt, so the corners charge.
 /// * `shift_restricted`: two infielders must stay on each side of second base.
-pub fn alignment(set: &Alignment, pull_sign: f64, hold_first: bool, bunt_shown: bool, shift_restricted: bool) -> [Vec3; 9] {
+pub fn alignment(set: &Alignment, pull_sign: f64, lean: [f64; 3], hold_first: bool, bunt_shown: bool, shift_restricted: bool) -> [Vec3; 9] {
     let polar = |r_ft: f64, deg: f64| {
         let a = deg.to_radians();
         Vec3::new(r_ft * FT * a.sin(), r_ft * FT * a.cos(), 0.0)
@@ -117,6 +119,14 @@ pub fn alignment(set: &Alignment, pull_sign: f64, hold_first: bool, bunt_shown: 
         OutfieldDepth::Shallow => f[4..].iter_mut().for_each(|p| p.0 *= 0.94),
         OutfieldDepth::Deep => f[4..].iter_mut().for_each(|p| p.0 *= 1.06),
     }
+    for (i, p) in f.iter_mut().enumerate() {
+        p.1 += pull_sign
+            * match i {
+                0 | 2 => lean[0],
+                1 | 3 => lean[1],
+                _ => lean[2],
+            };
+    }
     let shift = if set.shift == Shift::Full && shift_restricted { Shift::Shade } else { set.shift };
     match shift {
         Shift::None => {}
@@ -142,6 +152,11 @@ pub fn alignment(set: &Alignment, pull_sign: f64, hold_first: bool, bunt_shown: 
                 p.1 += pull_sign * 5.0;
             }
         }
+    }
+    if shift_restricted {
+        // Second baseman and shortstop stay on their own side of the bag.
+        f[1].1 = f[1].1.max(2.0);
+        f[3].1 = f[3].1.min(-2.0);
     }
     let mut pos = standard_alignment();
     for (i, &(r, a)) in f.iter().enumerate() {
@@ -309,13 +324,13 @@ mod tests {
 
     #[test]
     fn default_alignment_is_the_standard_one() {
-        let a = alignment(&Alignment::default(), -1.0, false, false, true);
+        let a = alignment(&Alignment::default(), -1.0, [0.0; 3], false, false, true);
         let s = standard_alignment();
         for (x, y) in a.iter().zip(&s) {
             assert!((*x - *y).norm() < 1e-9);
         }
         // Holding a runner moves only the first baseman, to the bag.
-        let h = alignment(&Alignment::default(), -1.0, true, false, true);
+        let h = alignment(&Alignment::default(), -1.0, [0.0; 3], true, false, true);
         assert!((h[B1] - Vec3::new(20.4, 22.4, 0.0)).norm() < 1e-9 && (h[SS] - s[SS]).norm() < 1e-9);
     }
 
@@ -323,22 +338,22 @@ mod tests {
     fn special_alignments_move_the_right_people() {
         let s = standard_alignment();
         let dist = |v: Vec3| (v.x * v.x + v.y * v.y).sqrt();
-        let inn = alignment(&Alignment { infield: InfieldDepth::In, ..Default::default() }, -1.0, false, false, true);
+        let inn = alignment(&Alignment { infield: InfieldDepth::In, ..Default::default() }, -1.0, [0.0; 3], false, false, true);
         for i in [B1, B2, B3, SS] {
             assert!(dist(inn[i]) < dist(s[i]) - 5.0);
         }
         assert!((inn[CF] - s[CF]).norm() < 1e-9);
-        let deep = alignment(&Alignment { outfield: OutfieldDepth::Deep, ..Default::default() }, -1.0, false, false, true);
+        let deep = alignment(&Alignment { outfield: OutfieldDepth::Deep, ..Default::default() }, -1.0, [0.0; 3], false, false, true);
         assert!(dist(deep[CF]) > dist(s[CF]) + 4.0);
         // A full shift against a left-handed batter puts three infielders right of second
         // base, unless the rules forbid it.
         let full = Alignment { shift: Shift::Full, ..Default::default() };
-        let free = alignment(&full, 1.0, false, false, false);
+        let free = alignment(&full, 1.0, [0.0; 3], false, false, false);
         assert_eq!([B1, B2, B3, SS].iter().filter(|&&i| free[i].x > 0.0).count(), 3);
-        let restricted = alignment(&full, 1.0, false, false, true);
+        let restricted = alignment(&full, 1.0, [0.0; 3], false, false, true);
         assert_eq!([B1, B2, B3, SS].iter().filter(|&&i| restricted[i].x > 0.0).count(), 2);
         // Corners charge a bunt.
-        let bunt = alignment(&Alignment::default(), -1.0, false, true, true);
+        let bunt = alignment(&Alignment::default(), -1.0, [0.0; 3], false, true, true);
         assert!(dist(bunt[B3]) < dist(s[B3]) - 10.0 && dist(bunt[B1]) < dist(s[B1]) - 10.0);
     }
 

@@ -1009,7 +1009,7 @@ mod tests {
         let third = [None, None, Some(runner(3, 27.0))];
         // Routine grounder to short with one out: the run scores against a normal infield.
         let back = rig.rate(88.0, -6.0, -13.0, third, 1, |r| r.n_scored == 1);
-        rig.positions = alignment(&Alignment { infield: InfieldDepth::In, ..Default::default() }, -1.0, false, false, true);
+        rig.positions = alignment(&Alignment { infield: InfieldDepth::In, ..Default::default() }, -1.0, [0.0; 3], false, false, true);
         let n = 300;
         let scored_in = (0..n).filter(|&s| rig.play_with(88.0, -6.0, -13.0, third, 1, [0.0; 3], true, s as u64 + 1).n_scored == 1).count() as f64 / n as f64;
         assert!(back > 0.9 && scored_in < 0.15, "run scores: infield back {back}, infield in {scored_in}");

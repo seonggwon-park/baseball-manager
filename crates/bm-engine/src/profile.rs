@@ -118,24 +118,30 @@ impl PitchKind {
         PitchShape { speed: mph * MPH, spin_rate: rpm * RPM, active, tilt: tilt.to_radians() }
     }
 
-    /// Typical intended location: (x toward the outside edge in m, height as a
+    /// Typical intended location against a batter on the pitcher's own side
+    /// (`same_side`) or the other side: (x toward the outside edge in m, height as a
     /// fraction of the strike zone from its bottom). The sideways values are the mean
-    /// plate locations in the Statcast sample. The heights put the pitches at the
+    /// plate locations in the 2025 Statcast sample by the batter's side: pitches that
+    /// move to the glove side go away from same-side batters and in on opposite-side
+    /// ones (cutters +0.46 and -0.19 ft, sliders +0.54 and -0.13 ft), and sinkers,
+    /// changeups and splitters the other way round. The heights put the pitches at the
     /// sample's mean plate heights (FF 2.87, SI 2.38, FC 2.53, SL 1.93, ST 2.01, CU 1.85,
     /// CH 1.83, FS 1.77 ft) once the count's intent and the pitcher's command have been
     /// applied: sinkers, breaking balls and offspeed pitches are buried in pitchers'
     /// counts, so they are aimed a little above those means on average.
-    pub fn typical_target(self) -> (f64, f64) {
-        match self {
-            PitchKind::FourSeam => (0.14 * FT, 0.69),
-            PitchKind::Sinker => (-0.03 * FT, 0.459),
-            PitchKind::Cutter => (0.07 * FT, 0.51),
-            PitchKind::Slider => (0.27 * FT, 0.217),
-            PitchKind::Sweeper => (0.41 * FT, 0.27),
-            PitchKind::Curve => (0.13 * FT, 0.203),
-            PitchKind::Changeup => (0.35 * FT, 0.174),
-            PitchKind::Splitter => (0.24 * FT, 0.14),
-        }
+    pub fn typical_target(self, same_side: bool) -> (f64, f64) {
+        let (same, opposite, height) = match self {
+            PitchKind::FourSeam => (0.161, 0.123, 0.69),
+            PitchKind::Sinker => (-0.161, 0.165, 0.459),
+            PitchKind::Cutter => (0.458, -0.194, 0.51),
+            PitchKind::Slider => (0.543, -0.127, 0.217),
+            PitchKind::Sweeper => (0.642, -0.008, 0.27),
+            PitchKind::Curve => (0.338, 0.040, 0.203),
+            PitchKind::Changeup => (-0.050, 0.449, 0.174),
+            PitchKind::Splitter => (-0.059, 0.357, 0.14),
+        };
+        let x = if same_side { same } else { opposite };
+        (x * FT, height)
     }
 }
 
@@ -382,7 +388,7 @@ impl PitcherProfile {
 
 /// Bat speed, m/s, and barrel error, m, of the average hitter of the generated MLB population.
 pub const AVERAGE_BAT_SPEED: f64 = 74.3 * MPH;
-pub const AVERAGE_BARREL_SD: f64 = 0.02706;
+pub const AVERAGE_BARREL_SD: f64 = 0.024712;
 
 impl BatterProfile {
     pub fn league_average(hand: Hand) -> Self {
@@ -396,11 +402,11 @@ impl BatterProfile {
             attack_sd: 3.9f64.to_radians(),
             timing_sd: 0.01078,
             barrel_sd: AVERAGE_BARREL_SD,
-            barrel_aim: 0.033799,
-            reach_sd: 0.070353,
+            barrel_aim: 0.035013,
+            reach_sd: 0.072176,
             eye: 0.613,
             perception_sd: 0.065,
-            chase: -0.0126,
+            chase: -0.016139,
             aggression: 1.0,
             timing_bias: 0.0026,
             sprint: 27.0 * FT,

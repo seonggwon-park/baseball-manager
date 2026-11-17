@@ -525,7 +525,7 @@ pub fn swing(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pitching::{choose_pitch, expectation, selection_weights, throw_pitch, PitcherState, MAX_PITCHES};
+    use crate::pitching::{choose_pitch, expectation, selection_weights, throw_pitch, PitchChoice, PitcherState, MAX_PITCHES};
     use crate::profile::{Hand, PitcherProfile};
     use bm_physics::units::MPH;
 
@@ -687,8 +687,19 @@ mod tests {
             p
         };
         let launch = |p: &PitcherProfile| mean_of(&shapes_against(&env, p, 50000, 33), |s| s.elevation).to_degrees();
-        let (lively, flat) = (launch(&only(PitchKind::FourSeam, 300.0)), launch(&only(PitchKind::FourSeam, -300.0)));
-        assert!(lively > flat + 2.0, "four-seamer with more ride {lively} deg, with less {flat} deg");
+        // Induced vertical movement of the pitch, in.
+        let ride = |p: &PitcherProfile| {
+            let mut st = PitcherState::new(p, &env);
+            let mut rng = Rng::new(5);
+            let choice = PitchChoice { idx: 0, target_x: 0.0, target_z: 0.75 };
+            (0..400).map(|_| throw_pitch(p, &mut st, &choice, 1.0, &env, &mut rng).flight.move_z).sum::<f64>() / 400.0 / bm_physics::units::INCH
+        };
+        let (up, down) = (only(PitchKind::FourSeam, 300.0), only(PitchKind::FourSeam, -300.0));
+        let (lively, flat) = (launch(&up), launch(&down));
+        let per_inch = (lively - flat) / (ride(&up) - ride(&down));
+        // 2025 Statcast, four-seamers compared between pitchers: 0.78 deg of launch angle
+        // per inch of ride.
+        assert!((0.5..1.2).contains(&per_inch), "four-seamer with more ride {lively} deg, with less {flat} deg: {per_inch} deg per inch");
         // More spin on a curve is more drop.
         let (sharp, lazy) = (launch(&only(PitchKind::Curve, 400.0)), launch(&only(PitchKind::Curve, -400.0)));
         assert!(sharp < lazy - 1.0, "curve with more drop {sharp} deg, with less {lazy} deg");

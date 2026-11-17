@@ -347,6 +347,10 @@ pub struct KindStat {
     pub rise: Mean,
     pub arm_side: Mean,
     pub height: Mean,
+    /// Plate location toward the outside edge (ft), and [pitches, pitches in the zone],
+    /// against same-side and opposite-side batters.
+    pub side_x: [Mean; 2],
+    pub side_zone: [[f64; 2]; 2],
 }
 
 #[derive(Clone)]
@@ -755,6 +759,12 @@ impl Tally {
             a.rise.merge(&b.rise);
             a.arm_side.merge(&b.arm_side);
             a.height.merge(&b.height);
+            for (x, y) in a.side_x.iter_mut().zip(&b.side_x) {
+                x.merge(y);
+            }
+            for (x, y) in a.side_zone.iter_mut().zip(&b.side_zone) {
+                add_arr(x, y);
+            }
             a.zone_swings += b.zone_swings;
             a.zone_whiffs += b.zone_whiffs;
             add_arr(&mut a.miss, &b.miss);
@@ -1103,6 +1113,12 @@ impl Observer for Tally {
         k.rise.add(e.thrown.flight.move_z / INCH);
         k.arm_side.add(e.thrown.flight.move_x / INCH * if e.pitcher_hand == Hand::Right { -1.0 } else { 1.0 });
         k.height.add(e.thrown.flight.plate_pos.z / FT);
+        let opposite = usize::from(e.batter_hand != e.pitcher_hand);
+        k.side_x[opposite].add(e.thrown.flight.plate_pos.x * e.batter_hand.outside_sign() / FT);
+        k.side_zone[opposite][0] += 1.0;
+        if inz {
+            k.side_zone[opposite][1] += 1.0;
+        }
         if inz {
             self.zone += 1.0;
             self.z_n += 1.0;

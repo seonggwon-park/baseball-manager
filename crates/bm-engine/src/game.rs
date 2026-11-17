@@ -5,11 +5,11 @@
 //! score.
 
 use crate::batting::{respond_with, Approach, BattedInfo, Miss, Swing, SwingShape};
-use crate::fielding::{alignment, move_time, Alignment, InfieldDepth, OutfieldDepth, C, P};
+use crate::fielding::{alignment, move_time, Alignment, InfieldDepth, OutfieldDepth, Shift, C, P};
 use crate::params::ModelParams;
 use crate::pitching::{choose_pitch, expectation, selection_weights, throw_pitch, MatchEnv, PitcherState, Thrown, MAX_PITCHES};
 use crate::play::{resolve, PlayInput, PlayKind, PlayResult, Runner};
-use crate::profile::{CatcherProfile, FielderProfile, Hand, PitcherProfile, Player};
+use crate::profile::{BatterProfile, CatcherProfile, FielderProfile, Hand, PitcherProfile, Player};
 use crate::rng::{sigmoid, Rng};
 use crate::rules::StrikeZone;
 use bm_physics::units::FT;
@@ -667,8 +667,8 @@ impl GameSim {
         let batter = &s.team.players[self.pa.as_ref().map_or(s.lineup[s.order], |pa| pa.batter_idx)].batter;
         let hold = self.pa.as_ref().map_or(self.half_open && self.bases[0].is_some() && self.bases[1].is_none(), |pa| pa.hold_first);
         let bunt = self.offense_orders.approach == Some(Approach::SacrificeBunt);
-        let set = self.defense_orders.alignment.unwrap_or_else(|| if self.half_open { self.ai_alignment(bat, fld) } else { Alignment::default() });
-        alignment(&set, batter.hand.pull_sign(), hold, bunt, self.env.rules.shift_restricted)
+        let set = self.defense_orders.alignment.unwrap_or_else(|| if self.half_open { self.ai_alignment(bat, fld, batter) } else { Alignment::default() });
+        alignment(&set, batter.hand.pull_sign(), self.env.params.lean(), hold, bunt, self.env.rules.shift_restricted)
     }
 
     // ---- orders ----
@@ -1105,11 +1105,22 @@ impl GameSim {
         Approach::Normal
     }
 
-    /// Defensive set-up chosen by the AI manager for the situation.
-    fn ai_alignment(&self, bat: usize, fld: usize) -> Alignment {
+    /// Defensive set-up chosen by the AI manager for the situation and the batter.
+    fn ai_alignment(&self, bat: usize, fld: usize, batter: &BatterProfile) -> Alignment {
         let mut a = Alignment::default();
         if !self.style[fld].situational_defence {
             return a;
+        }
+        // Infields shade toward the pull side of hitters who pull the ball, far more often
+        // against left-handed batters (2025 Statcast: 46 % of their plate appearances
+        // against 8 % for right-handed batters).
+        let p = &self.env.params;
+        let pull_hitter = match batter.hand {
+            Hand::Left => batter.timing_bias < p.shade_left_below,
+            Hand::Right => batter.timing_bias < p.shade_right_below,
+        };
+        if pull_hitter {
+            a.shift = Shift::Shade;
         }
         let lead = self.score[fld] as i32 - self.score[bat] as i32;
         let innings = self.env.rules.innings;
@@ -1272,13 +1283,14 @@ impl GameSim {
         let toward_third = offense.bunt_toward_third.unwrap_or(pa.ai_bunt_third);
         let set = match defense.alignment {
             Some(a) => a,
-            None if self.auto[fld].defense => self.ai_alignment(bat, fld),
+            None if self.auto[fld].defense => self.ai_alignment(bat, fld, batter),
             None => Alignment::default(),
         };
         // With a runner on first and second base open the first baseman holds him on,
         // which opens the hole on the right side.
         pa.hold_first = self.bases[0].is_some() && self.bases[1].is_none();
-        pa.positions = alignment(&set, batter.hand.pull_sign(), pa.hold_first, approach == Approach::SacrificeBunt, env.rules.shift_restricted);
+        pa.positions =
+            alignment(&set, batter.hand.pull_sign(), env.params.lean(), pa.hold_first, approach == Approach::SacrificeBunt, env.rules.shift_restricted);
 
         let mut w = [0.0; MAX_PITCHES];
         let n = selection_weights(pprof, batter.hand, balls, strikes, params, &mut w);

@@ -5,7 +5,7 @@ use crate::params::ModelParams;
 use crate::profile::{Hand, PitchDef, PitchGroup, PitchKind, PitcherProfile};
 use crate::rng::Rng;
 use crate::rules::{Rules, StrikeZone};
-use bm_physics::units::G;
+use bm_physics::units::{FT, G};
 use bm_physics::{AeroModel, AimModel, Atmosphere, BallSpec, FlightModel, Park, PitchFlight, PitchSpec, Vec3, Wind, RUBBER_Y};
 
 /// Integration step for pitches, s. With RK4 the plate location is converged to a
@@ -210,16 +210,25 @@ pub struct PitchChoice {
     pub target_z: f64,
 }
 
-/// Direction in which each pitch is "wasted" to induce a chase: (toward the outside, in zone heights).
-fn chase_direction(kind: PitchKind) -> (f64, f64) {
-    match kind {
-        PitchKind::FourSeam => (0.02, 0.32),
-        PitchKind::Sinker => (-0.08, -0.22),
-        PitchKind::Cutter => (0.12, 0.02),
-        PitchKind::Slider | PitchKind::Sweeper => (0.16, -0.28),
-        PitchKind::Curve => (0.05, -0.38),
-        PitchKind::Changeup | PitchKind::Splitter => (0.10, -0.33),
-    }
+/// Direction in which each pitch is "wasted" to induce a chase, per unit of chase intent,
+/// against a batter on the pitcher's own side or the other side: (toward the outside in m,
+/// in zone heights). The sideways part is how far the mean location moves in 0-2 and 1-2
+/// counts in the 2025 Statcast sample, by the batter's side: sliders further away from
+/// same-side batters and further in on opposite-side ones, changeups further away from
+/// opposite-side batters.
+fn chase_direction(kind: PitchKind, same_side: bool) -> (f64, f64) {
+    let (same, opposite, height) = match kind {
+        PitchKind::FourSeam => (0.084, 0.119, 0.32),
+        PitchKind::Sinker => (0.162, -0.239, -0.22),
+        PitchKind::Cutter => (0.276, 0.067, 0.02),
+        PitchKind::Slider => (0.404, -0.225, -0.28),
+        PitchKind::Sweeper => (0.500, -0.273, -0.28),
+        PitchKind::Curve => (0.266, -0.063, -0.38),
+        PitchKind::Changeup => (0.028, 0.272, -0.33),
+        PitchKind::Splitter => (0.165, 0.093, -0.33),
+    };
+    let x = if same_side { same } else { opposite };
+    (x * FT, height)
 }
 
 /// Choose a pitch and an intended location.
@@ -237,12 +246,13 @@ pub fn choose_pitch(
     let idx = rng.pick_weighted(weights);
     let kind = profile.pitches[idx].kind;
     let aim_height = profile.pitches[idx].aim_height;
-    let (x_out, zf) = kind.typical_target();
+    let same_side = profile.hand == batter_hand;
+    let (x_out, zf) = kind.typical_target(same_side);
     let intent = params.zone_intent[balls.min(3)][strikes.min(2)];
     let (x, z_frac) = if intent >= 0.0 {
         (x_out * (1.0 - 0.8 * intent), 0.5 + (zf - 0.5) * (1.0 - 0.8 * intent))
     } else {
-        let (cx, cz) = chase_direction(kind);
+        let (cx, cz) = chase_direction(kind, same_side);
         (x_out + cx * -intent, zf + cz * -intent)
     };
     // The less precisely he throws the pitch, the closer to the middle he aims it.

@@ -61,6 +61,8 @@ def stats(d, per_batter):
         out['off.' + k] = b[5 + i]
     out['off.sd'] = sd
     out['off.mean'] = y.mean()
+    for q in (10, 25, 50, 75, 90):
+        out['off.p%d' % q] = np.percentile(y, q)
     zrel = (h / (d['zt'] - d['zb']))
     for lo, hi in DEPTH_BINS:
         s = ok & (dy / 0.0254 >= lo) & (dy / 0.0254 < hi)
