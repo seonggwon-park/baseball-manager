@@ -232,6 +232,12 @@
   "value": 0.1815,
   "basis": "Standard deviations of ability taken off a player's worth for each year of age past 30 when his organisation decides whom to keep: older players cost more (no salaries are modelled yet) and have less ahead of them. Assumption, fitted with `bm careers` to the ages of each level"
  },
+ "league_age_discount": {
+  "mlb": 0.0,
+  "kbo": 0.0,
+  "npb": 0.0,
+  "basis": "Added to age_discount by the organisations of each league (decision 2026-11-17). KBO clubs keep their veterans far longer than the majors' organisations: Baseball-Reference 2025-2026 gives KBO batters an age spread of 5.45 years and 43.5 % of their playing time at 30 or older (NPB 3.95 years, MLB 3.67), which one discount for every league could not keep. Fitted with the leagues' ages and records"
+ },
  "pitcher_potential": {"value": 1.0028, "basis": "Factor on the growth ahead of new pitchers against new position players. Assumption, fitted with `bm careers`"},
  "pitcher_shift": {
   "value": -0.0176,

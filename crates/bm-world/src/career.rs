@@ -158,6 +158,8 @@ struct CareerFile {
     styles: Styles,
     #[serde(default)]
     league_pitcher_shift: LeagueShifts,
+    #[serde(default)]
+    league_age_discount: LeagueDiscounts,
     prospect_spread: Valued<f64>,
     pitcher_potential: Valued<f32>,
     #[serde(default)]
@@ -178,6 +180,17 @@ struct Styles {
     kbo: Style,
     #[serde(default)]
     npb: Style,
+}
+
+/// Added, per kind of organisation, to `age_discount`.
+#[derive(Default, Deserialize)]
+struct LeagueDiscounts {
+    #[serde(default)]
+    mlb: f64,
+    #[serde(default)]
+    kbo: f64,
+    #[serde(default)]
+    npb: f64,
 }
 
 /// Standard deviations added, per league, to `pitcher_shift` for the new pitchers it grows.
@@ -215,6 +228,9 @@ pub struct CareerTable {
     /// Added to `pitcher_shift` for the pitchers of each kind of league (`Class::peak`): the
     /// NPB farm's pitchers start further below their first team than its hitters do.
     pub league_pitcher_shift: BTreeMap<String, f32>,
+    /// Added to `age_discount` by the organisations of each league (`OrgKind::key`): KBO
+    /// clubs keep their veterans far longer than the majors' organisations do.
+    pub league_age_discount: BTreeMap<String, f64>,
     /// Spread (standard deviation of the logarithm) of the personal factor on a player's
     /// growth ahead: what makes some players prospects and others organisation depth.
     pub prospect_spread: f64,
@@ -239,6 +255,11 @@ fn position_code(code: &str) -> Result<Option<Position>, String> {
 }
 
 impl CareerTable {
+    /// What a year of age past 30 costs a player in the eyes of an organisation of `kind`.
+    pub fn age_discount_of(&self, kind: OrgKind) -> f64 {
+        (self.age_discount + self.league_age_discount.get(kind.key()).copied().unwrap_or(0.0)).max(0.0)
+    }
+
     /// The style of the league whose balance a player grows into (`Class::peak`, or a
     /// level's peak level): none for an unknown key.
     pub fn style(&self, peak: &str) -> Style {
@@ -276,6 +297,10 @@ impl CareerTable {
             balance: f.balance,
             styles: [("mlb", f.styles.mlb), ("kbo", f.styles.kbo), ("npb", f.styles.npb)].into_iter().map(|(k, s)| (k.to_string(), s)).collect(),
             league_pitcher_shift: [("mlb", f.league_pitcher_shift.mlb), ("kbo", f.league_pitcher_shift.kbo), ("npb", f.league_pitcher_shift.npb)]
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), v))
+                .collect(),
+            league_age_discount: [("mlb", f.league_age_discount.mlb), ("kbo", f.league_age_discount.kbo), ("npb", f.league_age_discount.npb)]
                 .into_iter()
                 .map(|(k, v)| (k.to_string(), v))
                 .collect(),
@@ -1307,7 +1332,7 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
         let on_major_club = by_club.get(&first.0).map_or(0, Vec::len);
         let worth = |p: &Player| {
             let v = keep_value(p, pop.potentials.get(&p.id), ctx.careers.keep_potential);
-            (v - age_cost(age_of(p.id, date), ctx.careers.age_discount) * ability::per_sd(p)) / ability::per_sd(p)
+            (v - age_cost(age_of(p.id, date), ctx.careers.age_discount_of(org.kind)) * ability::per_sd(p)) / ability::per_sd(p)
         };
         let mut ranked: Vec<(f64, u32)> = minors.iter().flat_map(|(club, _)| by_club.get(club).into_iter().flatten()).map(|p| (worth(p), p.id)).collect();
         ranked.sort_by(|a, b| b.0.total_cmp(&a.0));
@@ -1486,7 +1511,8 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
         };
         let pots = &pop.potentials;
         let value = |p: &Player| {
-            keep_value(p, pots.get(&p.id), ctx.careers.keep_potential) - age_cost(age_of(p.id, next_season), ctx.careers.age_discount) * ability::per_sd(p)
+            keep_value(p, pots.get(&p.id), ctx.careers.keep_potential)
+                - age_cost(age_of(p.id, next_season), ctx.careers.age_discount_of(org.kind)) * ability::per_sd(p)
         };
         // The players who would make the first team on their ability now (less the same
         // discount for age) stay whatever the prospects behind them promise: no club
@@ -1495,7 +1521,7 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
         // major-league organisation keeps its Triple-A depth the same way (the 40-man
         // roster and the veterans it calls up); without it Triple-A was two years too young.
         let protected: BTreeSet<u32> = {
-            let now = |p: &Player| ability::value(p) - age_cost(age_of(p.id, next_season), ctx.careers.age_discount) * ability::per_sd(p);
+            let now = |p: &Player| ability::value(p) - age_cost(age_of(p.id, next_season), ctx.careers.age_discount_of(org.kind)) * ability::per_sd(p);
             let top = if org.kind == OrgKind::Major { 2 } else { 1 };
             let (n_p, n_h) = caps[..top.min(caps.len())].iter().fold((0, 0), |a, c| (a.0 + c.0, a.1 + c.1));
             let (mut ps, mut hs): (Vec<&Player>, Vec<&Player>) = pools[k].iter().partition(|p| p.is_pitcher());
@@ -1902,31 +1928,36 @@ mod tests {
     fn twenty_offseasons_keep_the_staffs_and_the_scale() {
         let (world, levels, aging, careers, people) = ctx_parts();
         let ctx = Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people };
-        let mut pop = populate(&world, &levels, Date::new(2027, 2, 1), 11);
         use crate::attr::Attr::*;
         // Character counts for nobody's value, so neither growth nor selection may move it;
         // composure counts for a pitcher's (selection lifts the majors' by about 0.4) and
-        // would rise past 1 if prospects grew into it as they grow into their skills.
+        // would rise past 1 if prospects grew into it as they grow into their skills. A
+        // world's mean moves by about 0.08 between seeds (400 players a side), so the drift
+        // is judged on three.
         let traits = [(Determination, 0.15), (Leadership, 0.15), (Teamwork, 0.15), (Composure, 0.6), (Concentration, 0.6)];
-        let before: Vec<(f64, f64)> = traits.iter().map(|&(a, _)| (level_mean(&pop, "mlb", true, a), level_mean(&pop, "mlb", false, a))).collect();
-        for year in 2027..2047 {
-            offseason(&ctx, &mut pop, year, None, 11);
-        }
-        // Every first team and Triple-A club still has a rotation of five pitchers with a
-        // starter's stamina (valuing starters over their innings once emptied the KBO's).
-        for r in pop.rosters.iter().filter(|r| ["mlb", "aaa", "kbo", "npb"].contains(&r.level.as_str())) {
-            assert!(r.squad.starters.iter().all(ability::can_start), "{}: rotation without a starter's stamina", r.club);
+        let seeds = [11, 12, 13];
+        let mut drift = vec![(0.0, 0.0); traits.len()];
+        for seed in seeds {
+            let mut pop = populate(&world, &levels, Date::new(2027, 2, 1), seed);
+            let before: Vec<(f64, f64)> = traits.iter().map(|&(a, _)| (level_mean(&pop, "mlb", true, a), level_mean(&pop, "mlb", false, a))).collect();
+            for year in 2027..2047 {
+                offseason(&ctx, &mut pop, year, None, seed);
+            }
+            // Every first team and Triple-A club still has a rotation of five pitchers with a
+            // starter's stamina (valuing starters over their innings once emptied the KBO's).
+            for r in pop.rosters.iter().filter(|r| ["mlb", "aaa", "kbo", "npb"].contains(&r.level.as_str())) {
+                assert!(r.squad.starters.iter().all(ability::can_start), "seed {seed}, {}: rotation without a starter's stamina", r.club);
+            }
+            for (k, &(a, _)) in traits.iter().enumerate() {
+                drift[k].0 += (level_mean(&pop, "mlb", true, a) - before[k].0) / seeds.len() as f64;
+                drift[k].1 += (level_mean(&pop, "mlb", false, a) - before[k].1) / seeds.len() as f64;
+            }
         }
         // What the levels do not differ in stays where it was in the majors: no growth
         // lifts every new generation (composure of major-league pitchers had reached +1.2).
         for (k, &(a, bound)) in traits.iter().enumerate() {
-            let (p, h) = (level_mean(&pop, "mlb", true, a), level_mean(&pop, "mlb", false, a));
-            assert!(
-                (p - before[k].0).abs() < bound && (h - before[k].1).abs() < bound,
-                "{a:?}: pitchers {:.2} -> {p:.2}, hitters {:.2} -> {h:.2}",
-                before[k].0,
-                before[k].1
-            );
+            let (p, h) = drift[k];
+            assert!(p.abs() < bound && h.abs() < bound, "{a:?}: pitchers {p:+.2}, hitters {h:+.2} over 20 offseasons");
         }
     }
 }
