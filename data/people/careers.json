@@ -208,8 +208,8 @@
   "basis": "Spread of a new amateur's attributes around his class's means, in standard deviations of the major-league distribution (every level is generated with 1). Assumption, fitted so that each level keeps its spread once growth and the years have spread the players out"
  },
  "intake_tradeoff": {
-  "value": 0.0,
-  "basis": "Added to the shares of a new amateur's power advantage that come off his contact, timing and bat control (0.80, 0.60, 0.50, measured on major-league regulars: Statcast 2025). Choosing players by value weakens the trade among those who rise, so the amateurs they rise from may need to trade more. 0 for now: the refit of 2026-11-16 left it out by mistake; at its parameters thirty offseasons give the majors a power-contact correlation of -0.60 (the first world -0.69) and 0.3 gives -0.65, with the four validation seeds' objective at 679 against 635. Being fitted with the correlation as a target"
+  "value": 0.18,
+  "basis": "Added to the shares of a new amateur's power advantage that come off his contact, timing and bat control (0.80, 0.60, 0.50, measured on major-league regulars: Statcast 2025). Choosing players by value weakens the trade among those who rise, so the amateurs they rise from trade more. Fitted with the majors' power-contact correlation as a target (the first world's -0.694): 0.18 gives -0.654 thirty offseasons on (0: -0.595), at a cost to the leagues' records within the four seeds' noise (decision 2026-11-17)"
  },
  "retirement": {
   "from_age": 33,
@@ -238,6 +238,12 @@
  "pitcher_shift": {
   "value": -0.0176,
   "basis": "Standard deviations added to new pitchers' pitching on top of their class's talent: how far behind the position players of their age they start. Assumption, fitted with `bm careers` to the ages of each level"
+ },
+ "league_pitcher_shift": {
+  "mlb": 0.0,
+  "kbo": 0.0,
+  "npb": 0.0,
+  "basis": "Standard deviations added to pitcher_shift for the new pitchers of each kind of league. The NPB farm's pitchers sit 1.17 SD below the first team's (levels.json: pitching -2.60 against -1.43) where its hitters sit 0.57 below, and thirty offseasons on the first team's pitchers came out 0.7-1.0 SD weaker than its records ask (velocity -0.98, command -0.71; runs +0.72 a game). Fitted with the leagues' records (decision 2026-11-17)"
  },
  "prospect_spread": {
   "value": 0.1981,

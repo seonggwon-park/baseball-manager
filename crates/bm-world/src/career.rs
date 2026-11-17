@@ -122,6 +122,8 @@ struct CareerFile {
     balance: Closure,
     #[serde(default)]
     styles: Styles,
+    #[serde(default)]
+    league_pitcher_shift: LeagueShifts,
     prospect_spread: Valued<f64>,
     pitcher_potential: Valued<f32>,
     #[serde(default)]
@@ -140,6 +142,17 @@ struct Styles {
     kbo: Style,
     #[serde(default)]
     npb: Style,
+}
+
+/// Standard deviations added, per league, to `pitcher_shift` for the new pitchers it grows.
+#[derive(Default, Deserialize)]
+struct LeagueShifts {
+    #[serde(default)]
+    mlb: f32,
+    #[serde(default)]
+    kbo: f32,
+    #[serde(default)]
+    npb: f32,
 }
 
 /// The contents of `data/people/careers.json`.
@@ -163,6 +176,9 @@ pub struct CareerTable {
     pub balance: Closure,
     /// Styles of the leagues players grow up in, by peak level (`mlb`, `kbo`, `npb`).
     pub styles: BTreeMap<String, Style>,
+    /// Added to `pitcher_shift` for the pitchers of each kind of league (`Class::peak`): the
+    /// NPB farm's pitchers start further below their first team than its hitters do.
+    pub league_pitcher_shift: BTreeMap<String, f32>,
     /// Spread (standard deviation of the logarithm) of the personal factor on a player's
     /// growth ahead: what makes some players prospects and others organisation depth.
     pub prospect_spread: f64,
@@ -221,6 +237,10 @@ impl CareerTable {
             foreign_candidates: f.foreign_candidates.value,
             balance: f.balance,
             styles: [("mlb", f.styles.mlb), ("kbo", f.styles.kbo), ("npb", f.styles.npb)].into_iter().map(|(k, s)| (k.to_string(), s)).collect(),
+            league_pitcher_shift: [("mlb", f.league_pitcher_shift.mlb), ("kbo", f.league_pitcher_shift.kbo), ("npb", f.league_pitcher_shift.npb)]
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), v))
+                .collect(),
             prospect_spread: f.prospect_spread.value,
             pitcher_potential: f.pitcher_potential.value,
             pitcher_shift: f.pitcher_shift.map_or(0.0, |v| v.value),
@@ -821,7 +841,8 @@ impl Intake<'_> {
         let is_pitcher = rng.chance(class.pitchers);
         let mut player = if is_pitcher {
             let role = if rng.chance(self.table.starter_share) { Role::Starter } else { Role::Reliever };
-            let t = Talent { pitching: t.pitching + self.table.pitcher_shift, ..t };
+            let league = self.table.league_pitcher_shift.get(&class.peak).copied().unwrap_or(0.0);
+            let t = Talent { pitching: t.pitching + self.table.pitcher_shift + league, ..t };
             pitcher(rng, id, role, &t)
         } else {
             let pos = self.position(rng);
