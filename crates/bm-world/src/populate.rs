@@ -175,6 +175,17 @@ pub struct Population {
     /// Everyone who has played in the world, retired players included (`career.rs`).
     #[serde(default)]
     pub careers: BTreeMap<u32, Career>,
+    /// Korean players on active military duty, off every roster, with the organisation that
+    /// holds their rights (`career.rs`, military service).
+    #[serde(default)]
+    pub away: BTreeMap<u32, Away>,
+}
+
+/// A player away from the game for a while, and the organisation he comes back to.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct Away {
+    pub org: String,
+    pub player: Player,
 }
 
 impl Population {
@@ -337,7 +348,7 @@ pub fn populate_with(world: &World, levels: &LevelTable, aging: &AgingTable, car
             potentials.insert(p.id, pot);
         }
     }
-    let mut pop = Population { date, people: maker.out, rosters, potentials, foreign, careers: BTreeMap::new() };
+    let mut pop = Population { date, people: maker.out, rosters, potentials, foreign, careers: BTreeMap::new(), away: BTreeMap::new() };
     record_season(world, &mut pop, date.year());
     pop
 }

@@ -14,18 +14,20 @@
 //! * `careers (id, data)`: how each player came into the world, his seasons and how he
 //!   left (`bm_world::Career`) as JSON, for everyone who has played, retired players
 //!   included.
+//! * `away (id, org)`: Korean players on active military duty, off every roster, and the
+//!   organisation that holds their rights; their attributes are in `players`.
 //!
 //! A save is written in one transaction into a fresh file, so an interrupted save never
 //! leaves a half-written game behind.
 
-use bm_world::{Date, Person, Player, Population, Position, Roster, Squad};
+use bm_world::{Away, Date, Person, Player, Population, Position, Roster, Squad};
 use rusqlite::{params, Connection};
 use std::collections::BTreeMap;
 use std::fmt;
 use std::path::Path;
 
 /// Version of the table layout. Older files are refused rather than misread.
-pub const FORMAT: i64 = 3;
+pub const FORMAT: i64 = 4;
 
 #[derive(Debug)]
 pub enum SaveError {
@@ -85,6 +87,7 @@ CREATE INDEX rosters_player ON rosters (player);
 CREATE TABLE potentials (id INTEGER PRIMARY KEY, data TEXT NOT NULL);
 CREATE TABLE foreign_players (id INTEGER PRIMARY KEY, signed_from TEXT NOT NULL);
 CREATE TABLE careers (id INTEGER PRIMARY KEY, data TEXT NOT NULL);
+CREATE TABLE away (id INTEGER PRIMARY KEY, org TEXT NOT NULL);
 ";
 
 fn position_code(p: Option<Position>) -> Option<String> {
@@ -153,6 +156,11 @@ pub fn save(path: &Path, game: &SaveGame) -> Result<(), SaveError> {
                 for (i, (p, pos)) in r.reserves.iter().enumerate() {
                     put("reserve", i, p, *pos)?;
                 }
+            }
+            let mut away = tx.prepare("INSERT INTO away (id, org) VALUES (?1, ?2)")?;
+            for (id, a) in &game.population.away {
+                players.execute(params![id, serde_json::to_string(&a.player)?])?;
+                away.execute(params![id, a.org])?;
             }
         }
         tx.commit()?;
@@ -242,7 +250,14 @@ pub fn load(path: &Path) -> Result<SaveGame, SaveError> {
             other => return Err(SaveError::Format(format!("unknown roster slot '{other}'"))),
         }
     }
-    Ok(SaveGame { seed, population: Population { date, people, rosters, potentials, foreign, careers } })
+    let mut away = BTreeMap::new();
+    let mut q = db.prepare("SELECT id, org FROM away")?;
+    for row in q.query_map([], |r| Ok((r.get::<_, u32>(0)?, r.get::<_, String>(1)?)))? {
+        let (id, org) = row?;
+        let player = players.get(&id).cloned().ok_or_else(|| SaveError::Format(format!("player {id} away from {org} is unknown")))?;
+        away.insert(id, Away { org, player });
+    }
+    Ok(SaveGame { seed, population: Population { date, people, rosters, potentials, foreign, careers, away } })
 }
 
 #[cfg(test)]
@@ -253,8 +268,15 @@ mod tests {
     #[test]
     fn a_world_survives_a_save_and_a_load() {
         let world = World::bundled();
-        let date = Date::new(2027, 2, 1);
-        let game = SaveGame { seed: 11, population: populate(&world, &LevelTable::bundled(), date, 11) };
+        let levels = LevelTable::bundled();
+        let mut pop = populate(&world, &levels, Date::new(2027, 2, 1), 11);
+        // An offseason sends Korean players into military service, some off every roster.
+        let (aging, careers, people) = (bm_world::AgingTable::bundled(), bm_world::CareerTable::bundled(), bm_world::PeopleMaker::new());
+        let ctx = bm_world::Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people };
+        bm_world::offseason(&ctx, &mut pop, 2027, None, 11);
+        assert!(!pop.away.is_empty());
+        let date = pop.date;
+        let game = SaveGame { seed: 11, population: pop };
         let dir = std::env::temp_dir().join(format!("bm-save-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("world.bmsave");
@@ -267,9 +289,9 @@ mod tests {
         let json = |p: &Population| serde_json::to_string(&p.rosters).unwrap();
         assert_eq!(json(&back.population), json(&game.population));
         assert_eq!(back.population.potentials, game.population.potentials);
-        assert_eq!(back.population.potentials.len(), back.population.people.len());
         assert_eq!(back.population.foreign, game.population.foreign);
         assert_eq!(back.population.careers, game.population.careers);
+        assert_eq!(back.population.away, game.population.away);
         assert!(!back.population.foreign.is_empty() && back.population.careers.len() == back.population.people.len());
         // Saving again over the file works and leaves no temporary file.
         save(&path, &back).unwrap();

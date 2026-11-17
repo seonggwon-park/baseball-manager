@@ -111,16 +111,6 @@
    "birthplaces": "kbo_domestic",
    "basis": "Assumption: the independent Futures club signs players released by KBO clubs and undrafted amateurs"
   },
-  "kr_military": {
-   "ages": {"mean": 23.0, "sd": 1.5, "min": 20.0, "max": 28.0},
-   "pitchers": 0.5,
-   "like": "kbo2",
-   "shift": 0.4039,
-   "potential": 0.2509,
-   "peak": "kbo",
-   "birthplaces": "kbo_domestic",
-   "basis": "Assumption standing in for military service (players on loan from KBO clubs for about 18 months); replaced when the service rules are modelled"
-  },
   "jp_independent": {
    "ages": {"mean": 24.5, "sd": 2.5, "min": 19.0, "max": 33.0},
    "pitchers": 0.5,
@@ -182,7 +172,6 @@
   },
   {"orgs": "npb", "class": "npb_development", "per_org": 3.6, "basis": "2025 NPB development draft: 43 picks over 12 clubs"},
   {"orgs": "kr_independent", "class": "kr_independent", "per_org": 10.0, "basis": "Assumption: a quarter of a 40-man roster a year"},
-  {"orgs": "kr_military", "class": "kr_military", "per_org": 20.0, "basis": "Assumption: half the roster a year, for a service of about two seasons"},
   {"orgs": "jp_independent", "class": "jp_independent", "per_org": 15.0, "basis": "Assumption: a quarter of a 60-man roster a year"}
  ],
  "positions": {
@@ -229,6 +218,15 @@
   "forty_man": 40,
   "stay_as_depth": true,
   "basis": "Minor-league free agency in a major-league organisation (2023 minor-league agreement; MLB Trade Rumors 2023, docs/research/world/levels.md 4.2): off the 40-man roster, a player who signed his first contract at 19 or older becomes a free agent after parts of six seasons, a younger one after seven. Draftees count their draft year (they sign in July), international amateurs start the season after they sign (15 January). The 40-man roster is taken to be the major-league club and the organisation's next best by the value it keeps players by. With stay_as_depth a free agent re-signs with his organisation, but only for Triple-A or above, the depth veterans sign for (41 % of Triple-A pitchers' playing time goes to pitchers of 28 or older, MLB Stats API 2025-2026); one who does not make it leaves the world, as there is no market yet. Thirty offseasons on, with the same parameters (4 seeds, roster means): Triple-A pitchers 27.4 (Baseball-Reference 27.3; leaving at once gave 24.8, no rule 27.4), Double-A batters 25.6 (23.7; leaving 23.2, no rule 26.8). Remove the entry to turn the rule off (decisions 2026-11-16)"
+ },
+ "military_service": {
+  "deadline_age": 27.0,
+  "early_from_age": 20.0,
+  "early_chance": 0.15,
+  "sangmu_per_year": 26,
+  "two_season_share": 0.5,
+  "asian_games": {"first": 2030, "every": 4, "team": 24, "pitchers": 11, "wildcards": 3, "max_age": 25.0, "per_club": 3, "gold": 0.778},
+  "basis": "Korean military service (decisions 2026-11-17; docs/research/world/kbo_notes.md, military service). Every Korean player of a KBO club serves once: by the offseason of the year he turns 27, the age to which Sangmu takes applicants (27 or younger on 31 December, Hankook Ilbo 2018); younger players who are not first-team regulars go earlier, each offseason with early_chance (assumption, fitted to the KBO's ages). Sangmu, the armed forces' team in the Futures League, takes two intakes of 11-15 KBO players a year (15 in the first half of 2024 and of 2025, 11 in the second half of 2026): the best 26 who may still apply, the others serve on active duty and do not play (they age, but do not grow). The service lasts about 18 months: half the players are away one season, half two (the May intake misses half a season and the next, the December intake the next season and half the one after). Players in service do not count against the 68-player limit (KBO bylaw article 24). Exempt: the Asian Games team after a gold (sports service: four weeks of basic training; Olympic medals as well, not modelled), every four years from 2030: 24 players, 11 of them pitchers, 25 or younger bar three wildcards, at most three from one club (2026 Aichi-Nagoya rules); gold in 7 of Korea's 9 Asian Games, five in a row from 2010"
  },
  "age_discount": {
   "value": 0.1815,

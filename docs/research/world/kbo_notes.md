@@ -162,6 +162,31 @@ Sources for this section: REG Articles 30-46 (https://6ptotvmi5753.edge.naverncp
 
 ---
 
+## d2. Military service (added 2026-11-17)
+
+- **Sangmu (국군체육부대) intakes.** Two a year. KBO players accepted: 14 in the first intake of 2022, 15 in the first half of 2024 (joined in June), 15 in the first half of 2025 (entered the army training centre on 12 May 2025, to serve until November 2026), 11 in the second half of 2026 (to enter on 7 December 2026 and serve until June 2028). Selection: documents, then a fitness test. Sources: OSEN (2022 first intake, 14 players) https://osen.co.kr/article/G1111709813 ; Sports Kyunghyang, 28 March 2024 https://sports.khan.co.kr/article/202403281700033 ; Nate Sports, 10 April 2025 https://sports.news.nate.com/view/20250410n40015 ; Daum (2026 second half, 11 players) https://v.daum.net/v/6TtRikEoyu ; Xports News https://www.xportsnews.com/article/1985009
+- **Length.** About 18 months, from the dates above (May 2025 to November 2026; December 2026 to June 2028). Not checked against the Military Service Act's text.
+- **Who may apply to Sangmu.** Active-duty enlistees, 27 or younger on 31 December of the year, physical grade 3 or better (some grade 4). KBO players apply on the KBO's recommendation. The same article reports the decision to disband the police baseball team, the other team for serving players. Source: Hankook Ilbo, 17 October 2018 https://www.hankookilbo.com/news/article/201810171678773483 (the most recent official wording found; a later fan Q&A says 28, unconfirmed).
+- **Exemption (체육요원).** Olympic medal (top three) or Asian Games gold: four weeks of basic training and 544 hours of sports volunteer work over 34 months, playing on meanwhile. Sources: Newsis, 20 November 2019 https://www.newsis.com/view/NISX20191120_0000836175 ; Kyunghyang, 6 October 2026 (the defence ministry plans to cut or end supplementary service, not yet law) https://khan.co.kr/article/202610061519001
+- **Asian Games results.** Korea won the 2026 Aichi-Nagoya final against Japan 3-1 (27 September 2026), its fifth gold in a row from 2010 and seventh in all. Sources: Weekly Kyunghyang https://weekly.khan.co.kr/article/202609272258001 ; Money Today https://www.mt.co.kr/world/2026/09/27/2026092722065426708 . Baseball has been at nine Asian Games since 1994 (1998, 2002, 2010, 2014, 2018, 2022, 2026 gold; the 1994 and 2006 results not checked here).
+- **Asian Games team (2026).** 24 players, 11 pitchers and 13 position players; 25 or younger (or within the fourth professional season) bar three wildcards (Kwak Bin, Noh Si-hwan, Moon Bo-gyeong); at most three per club, as the Games fell in the season. Sources: Newsis, 11 June 2026 https://mobile.newsis.com/view/NISX20260611_0003665551 ; OSEN https://osen.co.kr/article/G1112120948
+- **Rosters.** Players in military service do not count against the 68-player limit or the 63-player reserve list (BYLAW Articles 24 and 57; section d).
+
+### Age spread of the KBO and the NPB (Baseball-Reference, 2025-2026)
+
+Added 2026-11-17 [Mine]. Every team page of the Baseball-Reference register leagues (KBO 4e296e3b, 163dcec5; Japan Central aa6efe96, 4f61709d; Japan Pacific ab01bc4f, 9f67f305; farm ae6eefd5, 96ad99c9, 896ff3ee), team-total rows left out, Baseball-Reference's age (whole years on 30 June), batters weighted by AB + G, pitchers by 3 GS + G + SV, foreign players included.
+
+| League | Side | Mean | SD | <22 | 22-23 | 24-25 | 26-27 | 28-29 | 30-31 | 32-33 | 34-35 | 36+ |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| KBO | batters | 28.81 | 5.45 | 8.4 | 10.3 | 13.3 | 11.8 | 12.7 | 9.8 | 9.3 | 11.4 | 13.0 |
+| KBO | pitchers | 27.30 | 5.10 | 15.1 | 10.5 | 12.3 | 13.7 | 15.2 | 14.1 | 9.2 | 3.4 | 6.5 |
+| NPB | batters | 27.66 | 3.95 | 2.4 | 12.2 | 18.0 | 20.6 | 17.7 | 11.2 | 9.3 | 4.3 | 4.3 |
+| NPB | pitchers | 27.75 | 3.79 | 3.3 | 8.3 | 16.1 | 22.4 | 22.0 | 11.4 | 9.0 | 4.6 | 3.0 |
+| NPB farm | batters | 24.87 | 4.44 | 20.9 | 21.4 | 24.2 | 11.8 | 7.2 | 3.8 | 5.0 | 3.4 | 2.4 |
+| NPB farm | pitchers | 26.19 | 4.36 | 13.3 | 15.0 | 18.6 | 19.7 | 12.8 | 8.0 | 6.5 | 4.0 | 2.1 |
+
+The means match Baseball-Reference's league averages (KBO 28.7 and 27.3, NPB 27.65 and 27.7). The KBO's spread is much wider than the NPB's: 43.5 % of its batters' playing time goes to players of 30 or older and 24.4 % to 34 or older (NPB 29.1 % and 8.6 %).
+
 ## e. Playing rules in force in 2026 that a simulation should model
 
 **Automated ball-strike system (ABS)** - all regular pitches, from the exhibition season; the plate umpire relays the call; no appeal.

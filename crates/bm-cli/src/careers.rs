@@ -492,7 +492,7 @@ pub fn run(
         }
         if every > 0 && ((y + 1) % every == 0 || y + 1 == years) {
             println!(
-                "\nAfter the {year} offseason ({} players, {} people so far): retired {}, released {}, minor-league free agents {}, drafted {}, signed {}, foreign {} in / {} out; first-team spread {:.2}",
+                "\nAfter the {year} offseason ({} players, {} people so far): retired {}, released {}, minor-league free agents {}, drafted {}, signed {}, foreign {} in / {} out, military service {} in ({} with Sangmu) / {} back, {} exempt; first-team spread {:.2}",
                 pop.players().count(),
                 pop.people.len(),
                 r.retired,
@@ -502,6 +502,10 @@ pub fn run(
                 r.signed,
                 r.foreign_signed,
                 r.foreign_replaced,
+                r.enlisted,
+                r.sangmu,
+                r.discharged,
+                r.exempt,
                 spread(&pop, &world)
             );
             print_table(&stats(&pop), &levels, &targets);

@@ -11,7 +11,7 @@
 
 use crate::ability;
 use crate::calendar::Date;
-use crate::develop::{develop, AgingTable, Closure, Potential, Style};
+use crate::develop::{develop, develop_idle, AgingTable, Closure, Potential, Style};
 use crate::generate::{pitcher, position_player, Squad, Talent};
 use crate::league::{Level, World};
 use crate::people::{AgeSpread, PeopleMaker};
@@ -105,6 +105,40 @@ pub struct MinorContract {
     pub stay_as_depth: bool,
 }
 
+/// Korean military service (`careers.json` military_service): every Korean player of a KBO
+/// club serves once, by the offseason of the year he turns `deadline_age`; younger players
+/// who are not first-team regulars go earlier with `early_chance` a year from
+/// `early_from_age`. Sangmu takes the best `sangmu_per_year` who may still apply (no older
+/// than `deadline_age` at the end of the year) and plays them in the Futures League; the
+/// others serve on active duty and do not play. A share `two_season_share` is away two
+/// seasons, the rest one (about 18 months on average).
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+pub struct MilitaryService {
+    pub deadline_age: f64,
+    pub early_from_age: f64,
+    pub early_chance: f64,
+    pub sangmu_per_year: usize,
+    pub two_season_share: f64,
+    #[serde(default)]
+    pub asian_games: Option<AsianGames>,
+}
+
+/// The Asian Games every `every` years from `first`: a national team of `team` players
+/// (`pitchers` of them pitchers) no older than `max_age` at the end of the year bar
+/// `wildcards`, at most `per_club` from one club, wins gold with chance `gold`, and its
+/// players who have not served are exempt.
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+pub struct AsianGames {
+    pub first: i32,
+    pub every: i32,
+    pub team: usize,
+    pub pitchers: usize,
+    pub wildcards: usize,
+    pub max_age: f64,
+    pub per_club: usize,
+    pub gold: f64,
+}
+
 #[derive(Deserialize)]
 struct CareerFile {
     classes: BTreeMap<String, Class>,
@@ -131,6 +165,8 @@ struct CareerFile {
     age_discount: Valued<f64>,
     #[serde(default)]
     minor_league_contract: Option<MinorContract>,
+    #[serde(default)]
+    military_service: Option<MilitaryService>,
 }
 
 /// The styles of the three kinds of league (see `Style`).
@@ -191,6 +227,8 @@ pub struct CareerTable {
     pub age_discount: f64,
     /// Minor-league free agency, if the rules have it.
     pub minor_contract: Option<MinorContract>,
+    /// Korean military service, if the rules have it.
+    pub military: Option<MilitaryService>,
 }
 
 fn position_code(code: &str) -> Result<Option<Position>, String> {
@@ -246,6 +284,7 @@ impl CareerTable {
             pitcher_shift: f.pitcher_shift.map_or(0.0, |v| v.value),
             age_discount: f.age_discount.value,
             minor_contract: f.minor_league_contract,
+            military: f.military_service,
         })
     }
 
@@ -395,11 +434,24 @@ pub struct Career {
     /// ability: a stand-in for having played in the majors.
     pub majors: Option<i32>,
     pub left: Option<(i32, Exit)>,
+    /// A Korean player's military service.
+    #[serde(default)]
+    pub service: Option<Service>,
+}
+
+/// Where a Korean player stands with his military service.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub enum Service {
+    /// Serving, with Sangmu (who play in the Futures League) or on active duty (who do not
+    /// play), while `org` holds his rights; back for the `back` season.
+    Serving { sangmu: bool, org: String, back: i32 },
+    /// Done by the offseason after the `year` season, or exempt (an Asian Games gold).
+    Done { year: i32, exempt: bool },
 }
 
 impl Career {
     pub fn new(origin: Origin) -> Career {
-        Career { origin, seasons: Vec::new(), majors: None, left: None }
+        Career { origin, seasons: Vec::new(), majors: None, left: None, service: None }
     }
 
     pub fn reached(&self, level: &str) -> bool {
@@ -836,9 +888,14 @@ impl Intake<'_> {
 
     /// A player of `class`.
     fn amateur(&mut self, class: &Class, rng: &mut Rng) -> Newcomer {
+        let is_pitcher = rng.chance(class.pitchers);
+        self.amateur_as(class, is_pitcher, rng)
+    }
+
+    /// A pitcher or a position player of `class`.
+    fn amateur_as(&mut self, class: &Class, is_pitcher: bool, rng: &mut Rng) -> Newcomer {
         let t = Talent { spread: self.table.intake_spread, tradeoff: self.table.intake_tradeoff, ..self.table.talent(class, self.levels) };
         let id = self.id();
-        let is_pitcher = rng.chance(class.pitchers);
         let mut player = if is_pitcher {
             let role = if rng.chance(self.table.starter_share) { Role::Starter } else { Role::Reliever };
             let league = self.table.league_pitcher_shift.get(&class.peak).copied().unwrap_or(0.0);
@@ -966,6 +1023,12 @@ pub struct Report {
     pub foreign_signed: usize,
     pub foreign_replaced: usize,
     pub minor_free_agents: usize,
+    /// Korean players who went into military service, of them with Sangmu, who came back,
+    /// and who were exempt after an Asian Games gold.
+    pub enlisted: usize,
+    pub sangmu: usize,
+    pub discharged: usize,
+    pub exempt: usize,
 }
 
 /// Order in which organisations of one kind pick in the draft: worst record first, or,
@@ -989,6 +1052,180 @@ fn count(per: f64, rng: &mut Rng) -> usize {
     per.floor() as usize + usize::from(rng.chance(per.fract()))
 }
 
+/// Korean military service in the offseason after the `year` season (decision 2026-11-17):
+/// players whose service ends go back to the organisation that holds their rights, an Asian
+/// Games gold exempts the national team, and the players due go in, the best who may still
+/// apply with Sangmu (the base's club, `pinned` to it) and the others on active duty, off
+/// every roster (`Population::away`). The first world's players of the base serve for a KBO
+/// club drawn at random; a player older than the deadline with no record is taken to have
+/// served before he turned professional.
+#[allow(clippy::too_many_arguments)]
+fn military(
+    ctx: &Offseason,
+    ms: &MilitaryService,
+    pop: &mut Population,
+    orgs: &[Org],
+    pools: &mut [Vec<Player>],
+    pinned: &mut [BTreeMap<u32, usize>],
+    regulars: &BTreeSet<u32>,
+    year: i32,
+    rng: &mut Rng,
+    report: &mut Report,
+) {
+    let kbo: Vec<usize> = orgs.iter().enumerate().filter(|(_, o)| o.kind == OrgKind::Korean).map(|(k, _)| k).collect();
+    let Some(base) = orgs.iter().position(|o| o.kind == OrgKind::Military) else { return };
+    if kbo.is_empty() {
+        return;
+    }
+    let index: BTreeMap<String, usize> = orgs.iter().enumerate().map(|(k, o)| (o.id.clone(), k)).collect();
+    let end_of_year = Date::new(year, 12, 31);
+    let ages: BTreeMap<u32, f64> = pop.people.iter().map(|(id, p)| (*id, end_of_year.days_since(p.born) as f64 / 365.2425)).collect();
+    let age = |id: u32| ages.get(&id).copied().unwrap_or(25.0);
+    let status = |pop: &Population, id: u32| pop.careers.get(&id).and_then(|c| c.service.clone());
+    let worth = |p: &Player| ability::value(p) / ability::per_sd(p);
+
+    // The first world's players of the base.
+    for p in &pools[base] {
+        if !matches!(status(pop, p.id), Some(Service::Serving { .. })) {
+            let org = orgs[kbo[rng.below(kbo.len())]].id.clone();
+            let back = year + 1 + i32::from(rng.chance(0.5));
+            pop.careers.entry(p.id).or_insert_with(|| Career::new(Origin::Initial)).service = Some(Service::Serving { sangmu: true, org, back });
+        }
+    }
+    // Back from service.
+    let home = |pop: &Population, id: u32| match status(pop, id) {
+        Some(Service::Serving { org, back, .. }) if back <= year + 1 => Some(org),
+        _ => None,
+    };
+    let mut back: Vec<(String, Player)> = Vec::new();
+    let (going, staying): (Vec<Player>, Vec<Player>) = std::mem::take(&mut pools[base]).into_iter().partition(|p| home(pop, p.id).is_some());
+    pools[base] = staying;
+    for p in going {
+        back.push((home(pop, p.id).unwrap_or_default(), p));
+    }
+    let due: Vec<u32> = pop.away.keys().copied().filter(|&id| home(pop, id).is_some()).collect();
+    for id in due {
+        if let Some(a) = pop.away.remove(&id) {
+            back.push((a.org, a.player));
+        }
+    }
+    for (org, p) in back {
+        if let Some(c) = pop.careers.get_mut(&p.id) {
+            c.service = Some(Service::Done { year, exempt: false });
+        }
+        pools[index.get(&org).copied().unwrap_or(kbo[0])].push(p);
+        report.discharged += 1;
+    }
+
+    // The Asian Games: the best Korean players of the KBO clubs and Sangmu, the pitchers and
+    // the position players apart, up to the age bar the wildcards, a few from each club.
+    if let Some(ag) = ms.asian_games {
+        if year >= ag.first && (year - ag.first) % ag.every.max(1) == 0 {
+            let mut cands: Vec<(f64, u32, usize, bool)> = kbo
+                .iter()
+                .chain([&base])
+                .flat_map(|&k| pools[k].iter().filter(|p| !pop.foreign.contains_key(&p.id)).map(move |p| (worth(p), p.id, k, p.is_pitcher())))
+                .collect();
+            cands.sort_by(|a, b| b.0.total_cmp(&a.0));
+            let mut per_club: BTreeMap<usize, usize> = BTreeMap::new();
+            let (mut pitchers, mut hitters, mut wild) = (0, 0, 0);
+            let mut team: Vec<(u32, usize)> = Vec::new();
+            for (_, id, k, pitcher) in cands {
+                if team.len() >= ag.team || per_club.get(&k).copied().unwrap_or(0) >= ag.per_club {
+                    continue;
+                }
+                let side = if pitcher { pitchers < ag.pitchers } else { hitters < ag.team - ag.pitchers };
+                let young = age(id) <= ag.max_age;
+                if !side || (!young && wild >= ag.wildcards) {
+                    continue;
+                }
+                if pitcher {
+                    pitchers += 1;
+                } else {
+                    hitters += 1;
+                }
+                wild += usize::from(!young);
+                *per_club.entry(k).or_default() += 1;
+                team.push((id, k));
+            }
+            if rng.chance(ag.gold) {
+                for (id, k) in team {
+                    match status(pop, id) {
+                        Some(Service::Done { .. }) => continue,
+                        Some(Service::Serving { org, .. }) if k == base => {
+                            // Discharged: back to his club.
+                            if let Some(i) = pools[base].iter().position(|p| p.id == id) {
+                                let p = pools[base].remove(i);
+                                pools[index.get(&org).copied().unwrap_or(kbo[0])].push(p);
+                            }
+                        }
+                        _ => {}
+                    }
+                    pop.careers.entry(id).or_insert_with(|| Career::new(Origin::Initial)).service = Some(Service::Done { year, exempt: true });
+                    report.exempt += 1;
+                }
+            }
+        }
+    }
+
+    // Who goes in.
+    let mut enlist: Vec<(usize, Player)> = Vec::new();
+    for &k in &kbo {
+        let mut stay = Vec::with_capacity(pools[k].len());
+        for p in std::mem::take(&mut pools[k]) {
+            if pop.foreign.contains_key(&p.id) || status(pop, p.id).is_some() {
+                stay.push(p);
+                continue;
+            }
+            let a = age(p.id);
+            if a >= ms.deadline_age + 1.0 {
+                pop.careers.entry(p.id).or_insert_with(|| Career::new(Origin::Initial)).service = Some(Service::Done { year, exempt: false });
+                stay.push(p);
+            } else if a >= ms.deadline_age || (a >= ms.early_from_age && !regulars.contains(&p.id) && rng.chance(ms.early_chance)) {
+                enlist.push((k, p));
+            } else {
+                stay.push(p);
+            }
+        }
+        pools[k] = stay;
+    }
+    // Sangmu takes the best of those who may still apply, as far as its roster has room for
+    // pitchers and for position players.
+    let (cap_p, cap_h) = roster_split(ctx.levels.get(&orgs[base].levels[0].1).roster.max(26));
+    let have_p = pools[base].iter().filter(|p| p.is_pitcher()).count();
+    let (mut room_p, mut room_h) = (cap_p.saturating_sub(have_p), cap_h.saturating_sub(pools[base].len() - have_p));
+    let mut ranked: Vec<(f64, usize)> = enlist.iter().enumerate().filter(|(_, (_, p))| age(p.id) <= ms.deadline_age).map(|(i, (_, p))| (worth(p), i)).collect();
+    ranked.sort_by(|a, b| b.0.total_cmp(&a.0));
+    let mut to_sangmu: BTreeSet<usize> = BTreeSet::new();
+    for (_, i) in ranked {
+        if to_sangmu.len() >= ms.sangmu_per_year {
+            break;
+        }
+        let room = if enlist[i].1.is_pitcher() { &mut room_p } else { &mut room_h };
+        if *room > 0 {
+            *room -= 1;
+            to_sangmu.insert(i);
+        }
+    }
+    for (i, (k, p)) in enlist.into_iter().enumerate() {
+        let back = year + if rng.chance(ms.two_season_share) { 3 } else { 2 };
+        let sangmu = to_sangmu.contains(&i);
+        let org = orgs[k].id.clone();
+        pop.careers.entry(p.id).or_insert_with(|| Career::new(Origin::Initial)).service = Some(Service::Serving { sangmu, org: org.clone(), back });
+        report.enlisted += 1;
+        if sangmu {
+            report.sangmu += 1;
+            pools[base].push(p);
+        } else {
+            pop.away.insert(p.id, crate::populate::Away { org, player: p });
+        }
+    }
+    // Sangmu keeps everyone who serves there.
+    for p in &pools[base] {
+        pinned[base].insert(p.id, 0);
+    }
+}
+
 /// The offseason after the `year` season, on 1 November: develop and age everyone,
 /// retire, weigh new foreign players in Korea and Japan, hold the drafts and signings,
 /// and let every organisation keep the players it has room for and place them at its
@@ -1008,6 +1245,14 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
     // played a position they knew only in part, and balls in play fell for hits).
     let mut by_club: BTreeMap<String, Vec<Player>> = BTreeMap::new();
     let order: Vec<String> = pop.rosters.iter().map(|r| r.club.clone()).collect();
+    // The KBO first teams' regulars of the season just played (lineup and staff): they do
+    // not go into military service before they must.
+    let regulars: BTreeSet<u32> = pop
+        .rosters
+        .iter()
+        .filter(|r| r.level == "kbo")
+        .flat_map(|r| r.squad.hitters.iter().map(|(p, _)| p.id).chain(r.squad.starters.iter().chain(&r.squad.relievers).map(|p| p.id)))
+        .collect();
     for r in std::mem::take(&mut pop.rosters) {
         let Roster { club, mut squad, reserves, .. } = r;
         for (p, pos) in squad.hitters.iter_mut() {
@@ -1043,6 +1288,12 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
             }
         }
         *players = stay;
+    }
+    // Players on active military duty age but do not grow.
+    for (id, a) in pop.away.iter_mut() {
+        let age = age_of(*id, date);
+        let pot = pop.potentials.entry(*id).or_insert_with(|| Potential { attrs: a.player.attrs });
+        develop_idle(&mut a.player, pot, age, ctx.aging, &mut rng);
     }
 
     // Minor-league free agency (decision 2026-11-16): a major-league organisation's minor-
@@ -1139,6 +1390,10 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
             leave(pop, p.id, Exit::Replaced);
             report.foreign_replaced += 1;
         }
+    }
+
+    if let Some(ms) = ctx.careers.military {
+        military(ctx, &ms, pop, &orgs, &mut pools, &mut pinned, &regulars, year, &mut rng, &mut report);
     }
 
     // Drafts, in reverse order of the standings.
@@ -1259,8 +1514,33 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
                 report.released += 1;
             }
         }
-        let lowest = |p: &Player| pinned[k].get(&p.id).copied().or_else(|| deepest(p)).unwrap_or(0);
+        // An organisation whose players cannot fill its rosters signs amateurs nobody drafted
+        // (undrafted college players in the majors' organisations, development players in
+        // Korea and Japan) for the pitchers' and position players' places left open. Sangmu
+        // holds only the players who serve there.
         let mut pool = kept;
+        let fill = match org.kind {
+            OrgKind::Major => Some("us_college"),
+            OrgKind::Korean => Some("kbo_college"),
+            OrgKind::Japanese => Some("npb_development"),
+            OrgKind::KoreanIndependent => Some("kr_independent"),
+            OrgKind::JapaneseIndependent => Some("jp_independent"),
+            OrgKind::Military => None,
+        };
+        if let Some(class) = fill.and_then(|c| ctx.careers.classes.get(c)) {
+            let (cap_p, cap_h) = caps.iter().fold((0, 0), |a, c| (a.0 + c.0, a.1 + c.1));
+            let have_p = pool.iter().filter(|p| p.is_pitcher()).count();
+            let open = [(true, cap_p.saturating_sub(have_p)), (false, cap_h.saturating_sub(pool.len() - have_p))];
+            for (is_pitcher, n) in open {
+                for _ in 0..n {
+                    let newcomer = intake.amateur_as(class, is_pitcher, &mut rng);
+                    let p = add(pop, newcomer, Origin::Signed { year, class: fill.unwrap_or_default().to_string() });
+                    pool.push(p);
+                    report.signed += 1;
+                }
+            }
+        }
+        let lowest = |p: &Player| pinned[k].get(&p.id).copied().or_else(|| deepest(p)).unwrap_or(0);
         let mut academy: Option<Vec<Player>> = None;
         let mut placed: Vec<Vec<Player>> = Vec::with_capacity(org.levels.len());
         for (i, (_, key)) in org.levels.iter().enumerate() {
@@ -1411,6 +1691,61 @@ mod tests {
     }
 
     #[test]
+    fn korean_players_serve_their_time_and_come_back() {
+        let (world, levels, aging, careers, people) = ctx_parts();
+        let ctx = Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people };
+        let ms = careers.military.expect("careers.json: military_service");
+        let base = world.clubs().find(|c| c.military).map(|c| c.id.clone()).unwrap();
+        let mut pop = populate(&world, &levels, Date::new(2027, 2, 1), 7);
+        let mut back = 0;
+        for year in 2027..2035 {
+            let r = offseason(&ctx, &mut pop, year, None, 7);
+            assert!(r.enlisted > 20 && r.sangmu <= ms.sangmu_per_year && r.sangmu <= r.enlisted, "{year}: {r:?}");
+            back += r.discharged;
+        }
+        assert!(back > 100, "{back} back from service");
+        // Those away serve on active duty for the KBO club that holds their rights, back
+        // within two seasons; Sangmu's players all serve there.
+        for (id, a) in &pop.away {
+            match &pop.careers[id].service {
+                Some(Service::Serving { sangmu: false, org, back }) => assert!(org == &a.org && (2036..=2037).contains(back), "{id}: {org} {back}"),
+                other => panic!("{id} away with {other:?}"),
+            }
+            assert!(world.club(&a.org).is_some_and(|c| c.country == "KR" && c.parent.is_none()));
+        }
+        for p in pop.roster(&base).unwrap().players() {
+            assert!(matches!(pop.careers[&p.id].service, Some(Service::Serving { sangmu: true, .. })), "{} at Sangmu", p.id);
+        }
+        // Nobody of the deadline's age is left at a KBO club without having served.
+        let end = Date::new(2034, 12, 31);
+        let kbo: BTreeSet<String> =
+            organisations(&world).into_iter().filter(|o| o.kind == OrgKind::Korean).flat_map(|o| o.levels.into_iter().map(|l| l.0)).collect();
+        for r in pop.rosters.iter().filter(|r| kbo.contains(&r.club)) {
+            for p in r.players().filter(|p| !pop.foreign.contains_key(&p.id)) {
+                let age = end.days_since(pop.people[&p.id].born) as f64 / 365.2425;
+                if age >= ms.deadline_age {
+                    assert!(matches!(pop.careers[&p.id].service, Some(Service::Done { .. })), "{} ({age:.1}) at {}", p.id, r.club);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn an_asian_games_gold_exempts_the_team() {
+        let (world, levels, aging, mut careers, people) = ctx_parts();
+        let ms = careers.military.as_mut().unwrap();
+        let ag = ms.asian_games.as_mut().unwrap();
+        (ag.first, ag.gold) = (2027, 1.0);
+        let team = ag.team;
+        let ctx = Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people };
+        let mut pop = populate(&world, &levels, Date::new(2027, 2, 1), 7);
+        let r = offseason(&ctx, &mut pop, 2027, None, 7);
+        assert!(r.exempt > 0 && r.exempt <= team, "{r:?}");
+        let exempt = pop.careers.values().filter(|c| matches!(c.service, Some(Service::Done { exempt: true, .. }))).count();
+        assert_eq!(exempt, r.exempt);
+    }
+
+    #[test]
     fn minor_league_contracts_run_six_or_seven_seasons() {
         let terms = CareerTable::bundled().minor_contract.expect("careers.json: minor_league_contract");
         assert_eq!((terms.seasons, terms.seasons_if_younger, terms.forty_man, terms.stay_as_depth), (6, 7, 40, true));
@@ -1512,11 +1847,19 @@ mod tests {
         let ids: Vec<u32> = pop.players().map(|p| p.id).collect();
         let unique: BTreeSet<u32> = ids.iter().copied().collect();
         assert_eq!(unique.len(), ids.len(), "a player on two rosters");
-        assert_eq!(ids.len(), start);
+        // The armed forces' club holds the players serving with it: at most its roster.
+        let base = world.clubs().find(|c| c.military).map(|c| c.id.clone()).unwrap();
+        let short = levels.get("kbo2").roster - pop.roster(&base).unwrap().players().count();
         for r in &pop.rosters {
-            assert_eq!(r.players().count(), levels.get(&r.level).roster.max(26), "{}", r.club);
+            let size = levels.get(&r.level).roster.max(26);
+            if r.club == base {
+                assert!((26..=size).contains(&r.players().count()), "{}: {}", r.club, r.players().count());
+            } else {
+                assert_eq!(r.players().count(), size, "{}", r.club);
+            }
             assert_eq!((r.squad.hitters.len(), r.squad.starters.len(), r.squad.relievers.len()), (9, 5, 8), "{}", r.club);
         }
+        assert_eq!(ids.len() + short, start);
         for id in &ids {
             assert!(pop.people.contains_key(id) && pop.potentials.contains_key(id), "{id}");
             assert_eq!(pop.careers[id].seasons.last().map(|s| s.year), Some(2030));

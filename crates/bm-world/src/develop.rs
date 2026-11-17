@@ -283,15 +283,27 @@ impl Closure {
 /// ages with the player and takes the same yearly noise, so the gap between them only
 /// closes through growth: a player at his ceiling simply follows the aging curves.
 pub fn develop(player: &mut Player, potential: &mut Potential, age: f64, table: &AgingTable, rng: &mut Rng) {
+    year(player, potential, age, table, rng, true);
+}
+
+/// A year away from the game (military service on active duty): the player ages like
+/// everyone else but does not grow towards his ceiling, which ages with him, so the growth
+/// he missed has to come later, at ages that close less of the gap.
+pub fn develop_idle(player: &mut Player, potential: &mut Potential, age: f64, table: &AgingTable, rng: &mut Rng) {
+    year(player, potential, age, table, rng, false);
+}
+
+fn year(player: &mut Player, potential: &mut Potential, age: f64, table: &AgingTable, rng: &mut Rng, grows: bool) {
+    let grow = if grows { 1.0 } else { 0.0 };
     let stuff_gap = (potential.attrs[Attr::Stuff] - player.attrs[Attr::Stuff]).max(0.0);
     for a in Attr::ALL {
         let gap = (potential.attrs[a] - player.attrs[a]).max(0.0);
         let shift = table.drift(a, age) + table.noise(a) * rng.gauss(0.0, 1.0) as f32;
         potential.attrs[a] = (potential.attrs[a] + shift).clamp(-6.0, 4.0);
-        player.attrs[a] = (player.attrs[a] + table.growth_of(a, age) * gap + shift).clamp(-6.0, 4.0);
+        player.attrs[a] = (player.attrs[a] + grow * table.growth_of(a, age) * gap + shift).clamp(-6.0, 4.0);
     }
     // Pitch grades age and grow with stuff.
-    let growth = at(&table.growth, table.from_age, age - table.stuff_delay as f64);
+    let growth = grow * at(&table.growth, table.from_age, age - table.stuff_delay as f64);
     if let Some(p) = player.pitching.as_mut() {
         for pitch in &mut p.pitches {
             let change = growth * stuff_gap + at(&table.stuff_drift, table.from_age, age) + table.stuff_noise * rng.gauss(0.0, 1.0) as f32;
@@ -356,6 +368,27 @@ mod tests {
         let late = mean_change(Attr::Power, 32, 36, spread::BAT_SPEED_MPH, false) / 4.0;
         assert!(early.abs() < 0.25, "bat speed before 28: {early:.2} mph");
         assert!((-0.4..-0.22).contains(&late), "bat speed after 31: {late:.2} mph a year");
+    }
+
+    #[test]
+    fn a_year_away_from_the_game_is_a_year_without_growth() {
+        let t = AgingTable::bundled();
+        let mut rng = Rng::new(4);
+        let (mut grown, mut idle, n) = (0.0, 0.0, 1000);
+        for i in 0..n {
+            let p = position_player(&mut rng, i, Some(Position::Short), &Talent { hitting: -2.0, ..Talent::MAJOR });
+            let ceiling = Potential::draw(&p, 21.0, 1.0, &t, &mut rng);
+            let (mut a, mut ca) = (p.clone(), ceiling.clone());
+            let (mut b, mut cb) = (p.clone(), ceiling);
+            develop(&mut a, &mut ca, 21.0, &t, &mut rng);
+            develop_idle(&mut b, &mut cb, 21.0, &t, &mut rng);
+            grown += (a.attrs[Attr::Contact] - p.attrs[Attr::Contact]) as f64;
+            idle += (b.attrs[Attr::Contact] - p.attrs[Attr::Contact]) as f64;
+            // The ceiling ages with the player either way.
+            assert!((cb.attrs[Attr::Contact] - b.attrs[Attr::Contact]) - (ca.attrs[Attr::Contact] - a.attrs[Attr::Contact]) > -1e-3);
+        }
+        let (grown, idle) = (grown / n as f64, idle / n as f64);
+        assert!(grown > 0.3 && idle.abs() < 0.05, "contact: {grown:.2} growing, {idle:.2} away");
     }
 
     #[test]
