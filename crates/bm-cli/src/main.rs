@@ -17,11 +17,12 @@
 //!           [--aging FILE] [--json FILE]                          without games); --json: each level's rates in the last season
 //! bm careers [--years N] [--every K] [--from N]                   offseasons back to back: each level's talent and ages (every
 //!            [--levels FILE] [--careers FILE] [--aging FILE]      K years and averaged from offseason N), and how the drafted
-//!            [--json FILE]                                        and signed prospects turn out; --json adds each level's
+//!            [--json FILE] [--out FILE]                           and signed prospects turn out; --json adds each level's
 //!                                                                 attribute means and spreads, pitch grades, the stamina and
 //!                                                                 quality of rotations and bullpens, how many regulars play
 //!                                                                 their own position, and attribute correlations (--years 0:
-//!                                                                 the new world)
+//!                                                                 the new world); --out: every player's outcome of each
+//!                                                                 offseason from N on (age, level, value, stayed or how he left)
 //! bm contacts --out FILE [--games N] [--invert FILE]              balls in play with the swing that hit them (simulated), or the
 //!             [--face-lead DEG] [--dir-shift DEG] [--swings]      impact parameter that reproduces each row's launch angle;
 //!                                                                 --swings: every full swing instead of balls in play
@@ -504,6 +505,7 @@ fn main() {
             args.careers_file.as_deref(),
             args.aging_file.as_deref(),
             args.json.as_deref(),
+            args.out.as_deref(),
         ),
         "players" => players::run(&env, &args.tuning.baseline, args.tuning.style, args.seed, args.threads, args.clubs.min(60), args.games.min(400)),
         "game" => {

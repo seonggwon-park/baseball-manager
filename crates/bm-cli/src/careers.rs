@@ -8,6 +8,7 @@ use bm_world::ability;
 use bm_world::career::{offseason, talent_of, Offseason, Origin};
 use bm_world::{populate_with, AgingTable, Attr, CareerTable, Date, LevelTable, PeopleMaker, Population, Squad, Talent, World, N_ATTR};
 use std::collections::BTreeMap;
+use std::io::Write;
 use std::path::Path;
 use std::time::Instant;
 
@@ -444,8 +445,34 @@ fn outcomes(pop: &Population, last_year: i32, follow: i32) -> serde_json::Value 
     serde_json::json!({"rounds": rounds, "international": intl.0 / intl.1.max(1.0), "debut_age": debut.0 / debut.1.max(1.0)})
 }
 
+/// Every rostered player before an offseason: level, pitcher or not, and value in standard
+/// deviations (`ability::per_sd`).
+fn snapshot(pop: &Population) -> Vec<(u32, String, bool, f64)> {
+    pop.rosters.iter().flat_map(|r| r.players().map(move |p| (p.id, r.level.clone(), p.is_pitcher(), ability::value(p) / ability::per_sd(p)))).collect()
+}
+
+/// What became of the players of `before` in the offseason after the `year` season, one CSV
+/// row each: age on 1 November, level and value before, and the outcome (stayed, with the
+/// new level; away on military duty; or how he left).
+fn write_outcomes(out: &mut impl std::io::Write, pop: &Population, before: &[(u32, String, bool, f64)], year: i32) {
+    let now: BTreeMap<u32, &str> = pop.rosters.iter().flat_map(|r| r.players().map(move |p| (p.id, r.level.as_str()))).collect();
+    let nov = Date::new(year, 11, 1);
+    for (id, level, pitcher, v) in before {
+        let age = pop.people.get(id).map_or(f64::NAN, |p| nov.days_since(p.born) as f64 / 365.2425);
+        let left = pop.careers.get(id).and_then(|c| c.left).filter(|(y, _)| *y == year);
+        let (outcome, new_level) = match (left, now.get(id)) {
+            (Some((_, exit)), _) => (format!("{exit:?}"), ""),
+            (None, Some(l)) => ("Stayed".to_string(), *l),
+            (None, None) if pop.away.contains_key(id) => ("Away".to_string(), ""),
+            _ => ("Unknown".to_string(), ""),
+        };
+        writeln!(out, "{year},{id},{age:.2},{level},{},{v:.3},{outcome},{new_level}", u8::from(*pitcher)).expect("write --out");
+    }
+}
+
 /// Run `years` offseasons, print the levels every `every` years and their average from
-/// offseason `from` on.
+/// offseason `from` on; with `out`, write every player's outcome of each offseason from
+/// `from` on as CSV.
 #[allow(clippy::too_many_arguments)]
 pub fn run(
     years: usize,
@@ -456,6 +483,7 @@ pub fn run(
     careers_file: Option<&Path>,
     aging_file: Option<&Path>,
     json: Option<&Path>,
+    out: Option<&Path>,
 ) {
     let read = |p: &Path| std::fs::read_to_string(p).unwrap_or_else(|e| panic!("{}: {e}", p.display()));
     let world = World::bundled();
@@ -478,10 +506,19 @@ pub fn run(
     if years == 0 {
         moments.push(AttrMoments::of(&pop));
     }
+    let mut out = out.map(|p| {
+        let mut f = std::io::BufWriter::new(std::fs::File::create(p).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
+        writeln!(f, "year,id,age,level,pitcher,value_sd,outcome,new_level").expect("write --out");
+        f
+    });
     for y in 0..years {
         let year = 2027 + y as i32;
+        let before = if out.is_some() && y >= from { snapshot(&pop) } else { Vec::new() };
         let r = offseason(&ctx, &mut pop, year, None, seed);
         last = year;
+        if let Some(f) = out.as_mut().filter(|_| y >= from) {
+            write_outcomes(f, &pop, &before, year);
+        }
         if y >= from {
             for (k, s) in stats(&pop) {
                 sum.entry(k).or_default().add(&s);
