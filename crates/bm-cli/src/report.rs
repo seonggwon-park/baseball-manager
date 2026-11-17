@@ -475,6 +475,12 @@ pub fn print(t: &Tally) {
         );
     }
     line("attack angle on balls in play, deg", g.attack.mean(), 8.78, 2);
+    // Statcast sample, full swings: swinging strikes 14.70, fouls 8.57, balls in play 8.77 deg.
+    for (i, (name, mlb)) in
+        [("attack angle, swings and misses", 14.70), ("attack angle, fouls", 8.57), ("attack angle, balls in play (all)", 8.77)].into_iter().enumerate()
+    {
+        line(name, g.attack_by[i].mean(), mlb, 2);
+    }
     line("attack angle SD", g.attack.sd(), 8.36, 2);
     line("pull-side spray off the bat, mean deg", g.spray.mean(), 5.6, 2);
     line("pull-side spray SD", g.spray.sd(), 31.6, 2);

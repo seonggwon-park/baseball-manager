@@ -165,6 +165,8 @@ pub struct SwingGeo {
     /// Direction of the barrel's travel, degrees toward the pull side.
     pub direction: [Mean; 3],
     pub attack: Mean,
+    /// Attack angle of swings and misses, fouls and balls in play, deg.
+    pub attack_by: [Mean; 3],
     /// Fits on balls in play: bat speed, attack angle and direction on depth; pull-side
     /// spray on direction; depth, direction and spray on the inside location (in).
     pub fits: [Fit; 7],
@@ -206,6 +208,9 @@ impl SwingGeo {
             self.direction[i].merge(&o.direction[i]);
         }
         self.attack.merge(&o.attack);
+        for i in 0..3 {
+            self.attack_by[i].merge(&o.attack_by[i]);
+        }
         self.spray.merge(&o.spray);
         for i in 0..3 {
             for k in 0..5 {
@@ -994,6 +999,9 @@ impl Observer for Tally {
                 g.speed[outcome].add(mph);
                 g.depth[outcome].add(depth);
                 g.direction[outcome].add(dir);
+                if shape.tilt > 0.0 {
+                    g.attack_by[outcome].add(shape.attack.to_degrees());
+                }
                 let kd = &mut g.kind_depth[e.thrown.kind.index()];
                 kd.depth.add(depth);
                 let h = (((depth + 40.0) / 2.5).floor().clamp(0.0, 31.0)) as usize;

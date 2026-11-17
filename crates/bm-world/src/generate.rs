@@ -91,7 +91,7 @@ fn hit_style(rng: &mut Rng) -> HitStyle {
     let avg = BatterProfile::league_average(Hand::Right);
     HitStyle {
         attack_angle: (9.5 + shape::ATTACK_ANGLE_DEG * lift).to_radians() as f32,
-        attack_sd: 5.5f64.to_radians() as f32,
+        attack_sd: 3.9f64.to_radians() as f32,
         barrel_aim: (avg.barrel_aim + shape::BARREL_AIM * aim) as f32,
         timing_bias: rng.gauss(avg.timing_bias, shape::TIMING_BIAS) as f32,
         bat_speed_sd: (2.8 * MPH) as f32,

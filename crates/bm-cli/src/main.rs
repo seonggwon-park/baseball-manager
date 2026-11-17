@@ -23,7 +23,8 @@
 //!                                                                 their own position, and attribute correlations (--years 0:
 //!                                                                 the new world)
 //! bm contacts --out FILE [--games N] [--invert FILE]              balls in play with the swing that hit them (simulated), or the
-//!             [--face-lead DEG]                                   impact parameter that reproduces each row's launch angle
+//!             [--face-lead DEG] [--dir-shift DEG] [--swings]      impact parameter that reproduces each row's launch angle;
+//!                                                                 --swings: every full swing instead of balls in play
 //! bm game [--seed S]                                              play one game and print the box score
 //! bm bench [--games N]                                            measure simulation speed
 //! bm serve [--port P] [--static DIR]                              session API over HTTP for the interface in a browser
@@ -90,6 +91,8 @@ struct Args {
     out: Option<std::path::PathBuf>,
     invert: Option<std::path::PathBuf>,
     face_lead: f64,
+    dir_shift: f64,
+    swings: bool,
     tuning: Tuning,
 }
 
@@ -126,6 +129,8 @@ fn parse_args() -> Args {
         out: None,
         invert: None,
         face_lead: 0.0,
+        dir_shift: 0.0,
+        swings: false,
         tuning: Tuning::new(),
     };
     let mut it = std::env::args().skip(1);
@@ -135,6 +140,10 @@ fn parse_args() -> Args {
     while let Some(k) = it.next() {
         if k == "--vs-mlb" {
             a.vs_mlb = true;
+            continue;
+        }
+        if k == "--swings" {
+            a.swings = true;
             continue;
         }
         if k == "--by-position" {
@@ -161,6 +170,7 @@ fn parse_args() -> Args {
             "--out" => a.out = Some(v.into()),
             "--invert" => a.invert = Some(v.into()),
             "--face-lead" => a.face_lead = v.parse().expect("--face-lead DEG"),
+            "--dir-shift" => a.dir_shift = v.parse().expect("--dir-shift DEG"),
             "--aging" => a.aging_file = Some(v.into()),
             "--seed" => a.seed = v.parse().expect("--seed S"),
             "--threads" => a.threads = v.parse::<usize>().expect("--threads T").max(1),
@@ -399,10 +409,10 @@ fn main() {
         "contacts" => {
             let out = args.out.as_deref().expect("bm contacts needs --out FILE");
             match args.invert.as_deref() {
-                Some(input) => contacts::invert(&envs[0], input, out, args.face_lead),
+                Some(input) => contacts::invert(&envs[0], input, out, args.face_lead, args.dir_shift),
                 None => {
                     let clubs = make_clubs(args.clubs, args.seed, level, world);
-                    contacts::dump(&envs, &clubs, args.tuning.style, args.games, args.seed, args.threads, out);
+                    contacts::dump(&envs, &clubs, args.tuning.style, args.games, args.seed, args.threads, out, args.swings);
                 }
             }
         }

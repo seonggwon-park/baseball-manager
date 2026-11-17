@@ -130,6 +130,37 @@ pub struct ModelParams {
     /// Vertical barrel bias per metre of pitch height above the middle of the zone
     /// (batters get under high pitches and on top of low ones).
     pub height_bias: f64,
+    /// Aim under (+) or over (-) the ball's centre by pitch type, m, on top of the
+    /// batter's own aim; indexed by `PitchKind::index`, four-seamers 0.
+    pub aim_kind: [f64; 8],
+    /// Weight of the straight-line timing geometry in the vertical error. At 1 the barrel
+    /// and the ball keep to their paths, so contact a distance `dy` from the planned point
+    /// misses by `(tan descent - tan attack) dy`; at 0 the barrel meets the ball's height
+    /// wherever it meets the ball.
+    pub plane_mismatch: f64,
+    /// Noise of the correction that takes the barrel to the ball's height on a mistimed
+    /// swing, per metre of correction needed (the straight-line miss above): the larger
+    /// the correction, the less precise it is (signal-dependent motor noise; Harris and
+    /// Wolpert, Nature 394, 780 (1998)).
+    pub mismatch_noise: f64,
+    /// Turn of the ball off the bat toward the pull side, rad, velocity and spin together.
+    /// An empirical correction: rigid-body collisions with the bat placed as bat tracking
+    /// measures it send the ball 9-15 deg less toward the pull side than it goes (2025
+    /// Statcast, both sides of the plate), and in the laboratory a square bat face sends
+    /// a centred ball 7.6 deg toward the pull side (Kidokoro & Yanai, Jpn. J. Phys. Educ.
+    /// Health Sport Sci. 62, 475 (2017)). No mechanism was found. 4 deg brings the side
+    /// spin against direction onto Nathan's Statcast fit; more pushes it past that fit.
+    pub spray_turn: f64,
+    /// Pitch of the swing plane toward the pitcher: shift from the batter's average
+    /// attack angle (rad), its change per metre of pitch height above the middle of the
+    /// zone, per metre of depth of contact (+ = out in front), per metre of inside
+    /// location (rad/m), and by pitch type (rad, indexed by `PitchKind::index`,
+    /// four-seamers 0).
+    pub attack_shift: f64,
+    pub attack_height: f64,
+    pub attack_depth: f64,
+    pub attack_inside: f64,
+    pub attack_kind: [f64; 8],
     /// Bat tilt (barrel below the hands) at the middle of the zone, rad, and its
     /// change per metre of pitch height.
     pub bat_tilt_mid: f64,
@@ -384,12 +415,12 @@ impl Default for ModelParams {
             fooled_recognition: 0.5,
             noise_residual: 0.05,
             recognition_scale: 0.58,
-            recognition_time_scale: 0.181,
-            timing_adjust: 0.7,
+            recognition_time_scale: 0.14501,
+            timing_adjust: 0.68402,
             location_adjust: 0.76,
             fastball_misread: 0.0,
-            kind_recognition: [0.0, 0.0, 0.0, -0.12, -0.016, 0.1, 0.0, -0.15],
-            ride_bias: 0.3,
+            kind_recognition: [0.0, 0.0, 0.039755, -0.15307, -0.016916, 0.14844, -0.016253, -0.15819],
+            ride_bias: 0.085453,
             ride_reference: 0.375,
             ride_confusion: 0.6,
             velocity_lag: 0.10,
@@ -400,12 +431,21 @@ impl Default for ModelParams {
             ref_plate_speed: 86.0 * MPH,
             timing_speed_exp: 4.1,
             barrel_speed_exp: 3.55,
-            tracking_residual: 0.16,
+            tracking_residual: 0.18663,
             barrel_outside_gain: 6.95,
             barrel_outside_gain2: 70.0,
             barrel_outside_offset: 0.03,
             reach_limit: 0.40,
-            height_bias: 0.074,
+            height_bias: 0.080969,
+            aim_kind: [0.0, -0.020825, -0.015385, -0.00096362, 0.0040549, -0.014046, -0.015621, -0.014987],
+            plane_mismatch: 0.0,
+            mismatch_noise: 1.5862,
+            spray_turn: 0.0698,
+            attack_shift: -0.034921,
+            attack_height: 0.1898,
+            attack_depth: 0.20017,
+            attack_inside: -0.2150,
+            attack_kind: [0.0, -0.0168, -0.0036, -0.02491, -0.02615, -0.03656, -0.01897, -0.01948],
             bat_tilt_mid: 32.0f64.to_radians(),
             bat_tilt_slope: 0.31,
             plan_angle_per_m: 0.2,
@@ -419,11 +459,11 @@ impl Default for ModelParams {
             partial_two_strike_gain: 1.62,
             partial_fooled_rate: 0.12,
             partial_speed_min: 0.55,
-            off_end_gain: 1.0,
+            off_end_gain: 0.95328,
             off_end_late: 0.1,
             pivot_radius: 2.25,
-            off_end_linear: 0.012,
-            off_end_max: 0.16,
+            off_end_linear: 0.015232,
+            off_end_max: 0.17063,
             face_gain: 1.3212,
             face_lead: 0.0,
             face_sd: 0.108,
@@ -432,15 +472,15 @@ impl Default for ModelParams {
             roll_span: 0.261,
             roll_flatten: 0.757,
             swing_arc_radius: 1.0,
-            arc_scale: 0.048,
-            arc_scale_early: 0.6,
-            arc_centre: 0.11,
-            arc_early_from: 0.283,
+            arc_scale: 0.032445,
+            arc_scale_early: 0.7785,
+            arc_centre: 0.057971,
+            arc_early_from: 0.31295,
             max_depth: 0.90,
             bat_speed_depth_cap: 0.15,
             partial_precision: 1.5,
-            piece_rate: 0.645,
-            piece_reach: 0.041,
+            piece_rate: 0.57129,
+            piece_reach: 0.044193,
             piece_band: 0.022,
             piece_depth: 0.37,
             piece_centre: 0.11,
@@ -449,7 +489,7 @@ impl Default for ModelParams {
             bat_tilt_sd: 0.098,
             chop_foul_dist: 3.0,
             chop_foul_prob: 0.509,
-            contact_along: 0.025,
+            contact_along: 0.03096,
             reach_per_m: 0.15,
             foul_tip_catch: 0.55,
             foul_tip_angle: 0.3,

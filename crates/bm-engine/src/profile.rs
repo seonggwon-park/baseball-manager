@@ -119,18 +119,22 @@ impl PitchKind {
     }
 
     /// Typical intended location: (x toward the outside edge in m, height as a
-    /// fraction of the strike zone from its bottom), from the mean plate locations
-    /// in the Statcast sample.
+    /// fraction of the strike zone from its bottom). The sideways values are the mean
+    /// plate locations in the Statcast sample. The heights put the pitches at the
+    /// sample's mean plate heights (FF 2.87, SI 2.38, FC 2.53, SL 1.93, ST 2.01, CU 1.85,
+    /// CH 1.83, FS 1.77 ft) once the count's intent and the pitcher's command have been
+    /// applied: sinkers, breaking balls and offspeed pitches are buried in pitchers'
+    /// counts, so they are aimed a little above those means on average.
     pub fn typical_target(self) -> (f64, f64) {
         match self {
             PitchKind::FourSeam => (0.14 * FT, 0.69),
-            PitchKind::Sinker => (-0.03 * FT, 0.42),
+            PitchKind::Sinker => (-0.03 * FT, 0.459),
             PitchKind::Cutter => (0.07 * FT, 0.51),
-            PitchKind::Slider => (0.27 * FT, 0.18),
-            PitchKind::Sweeper => (0.41 * FT, 0.22),
-            PitchKind::Curve => (0.13 * FT, 0.14),
-            PitchKind::Changeup => (0.35 * FT, 0.125),
-            PitchKind::Splitter => (0.24 * FT, 0.09),
+            PitchKind::Slider => (0.27 * FT, 0.217),
+            PitchKind::Sweeper => (0.41 * FT, 0.27),
+            PitchKind::Curve => (0.13 * FT, 0.203),
+            PitchKind::Changeup => (0.35 * FT, 0.174),
+            PitchKind::Splitter => (0.24 * FT, 0.14),
         }
     }
 }
@@ -378,7 +382,7 @@ impl PitcherProfile {
 
 /// Bat speed, m/s, and barrel error, m, of the average hitter of the generated MLB population.
 pub const AVERAGE_BAT_SPEED: f64 = 74.3 * MPH;
-pub const AVERAGE_BARREL_SD: f64 = 0.0291;
+pub const AVERAGE_BARREL_SD: f64 = 0.02706;
 
 impl BatterProfile {
     pub fn league_average(hand: Hand) -> Self {
@@ -389,11 +393,11 @@ impl BatterProfile {
             bat_speed: AVERAGE_BAT_SPEED,
             bat_speed_sd: 2.8 * MPH,
             attack_angle: 9.5f64.to_radians(),
-            attack_sd: 5.5f64.to_radians(),
-            timing_sd: 0.011,
+            attack_sd: 3.9f64.to_radians(),
+            timing_sd: 0.01078,
             barrel_sd: AVERAGE_BARREL_SD,
-            barrel_aim: 0.0139,
-            reach_sd: 0.0692,
+            barrel_aim: 0.033799,
+            reach_sd: 0.070353,
             eye: 0.613,
             perception_sd: 0.065,
             chase: -0.0126,

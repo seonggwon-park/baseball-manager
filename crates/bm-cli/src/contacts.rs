@@ -2,7 +2,7 @@
 //! the collision model run backwards on them.
 //!
 //! `bm contacts --out FILE` plays games as `bm validate` does and writes one row per ball
-//! put in play: the pitch (type, location, zone, velocity and spin at the plate), the swing
+//! the bat met, fair (`res` X) or foul (F): the pitch (type, location, zone, velocity and spin at the plate), the swing
 //! as bat tracking measures it (bat speed, attack angle, horizontal direction, tilt of the
 //! swing plane, depth of contact), the batted ball (exit speed, launch angle, spray) and the
 //! impact parameter the engine drew.
@@ -14,12 +14,12 @@
 //! by the engine's rule for the face of the bat (plus `--face-lead` degrees), and levelled
 //! as the wrists roll over.
 
-use bm_engine::{play_game_styled, Club, ManagerStyle, MatchEnv, Observer, PitchEvent, PitchResult, Rng};
+use bm_engine::{play_game_styled, BattedInfo, Club, ManagerStyle, MatchEnv, Miss, Observer, PitchEvent, PitchResult, Rng};
 use bm_physics::{collide, launch_angle, spin_components, spray_angle, BallSpec, BatSpec, Contact, Vec3};
 use std::io::{BufRead, BufWriter, Write};
 use std::path::Path;
 
-const HEADER: &str = "hand,kind,px,pz,zb,zt,vx,vy,vz,wx,wy,wz,bs,aa,dir,tilt,depth,la,ev,spray,offset,along,ax,ay,az,theta,move_z,move_x,time";
+const HEADER: &str = "hand,kind,px,pz,zb,zt,vx,vy,vz,wx,wy,wz,bs,aa,dir,tilt,depth,la,ev,spray,offset,along,ax,ay,az,theta,move_z,move_x,time,res";
 
 #[derive(Default)]
 struct Rows {
@@ -28,14 +28,31 @@ struct Rows {
 
 impl Observer for Rows {
     fn pitch(&mut self, e: &PitchEvent) {
-        if e.approach.is_bunt() || e.result != PitchResult::InPlay {
+        if e.approach.is_bunt() || !matches!(e.result, PitchResult::InPlay | PitchResult::Foul) {
             return;
         }
-        let (Some(info), Some(shape)) = (e.batted, e.swing) else { return };
+        let Some(shape) = e.swing else { return };
+        if shape.exit_speed <= 0.0 {
+            return;
+        }
+        // Fouls that never became batted balls (back into the screen, off the end of the
+        // bat) carry only the speed and elevation of the ball off the bat.
+        let info = e.batted.copied().unwrap_or(BattedInfo {
+            exit_speed: shape.exit_speed,
+            launch_angle: shape.elevation,
+            spray: f64::NAN,
+            backspin: f64::NAN,
+            sidespin: f64::NAN,
+            gyrospin: f64::NAN,
+            bat_speed: shape.bat_speed,
+            attack_angle: shape.attack,
+            bunt: false,
+            shape,
+        });
         let f = &e.thrown.flight;
         let pull = e.batter_hand.pull_sign();
         self.lines.push(format!(
-            "{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.2},{:.2},{:.2},{:.4},{:.5},{:.5},{:.5},{:.4},{:.5},{:.4},{:.5},{:.5},{:.4},{:.5},{:.5},{:.5},{:.5},{:.4},{:.4},{:.4}",
+            "{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.2},{:.2},{:.2},{:.4},{:.5},{:.5},{:.5},{:.4},{:.5},{:.4},{:.5},{:.5},{:.4},{:.5},{:.5},{:.5},{:.5},{:.4},{:.4},{:.4},{}",
             if e.batter_hand.outside_sign() > 0.0 { 'R' } else { 'L' },
             e.thrown.kind.code(),
             f.plate_pos.x,
@@ -65,12 +82,96 @@ impl Observer for Rows {
             f.move_z,
             f.move_x,
             f.time,
+            if e.result == PitchResult::InPlay { 'X' } else { 'F' },
         ));
     }
 }
 
-/// Play `games` games (as `bm validate` does) and write every ball put in play to `out`.
-pub fn dump(envs: &[MatchEnv], clubs: &[Club], style: ManagerStyle, games: usize, seed: u64, threads: usize, out: &Path) {
+/// Every full swing (bunts excluded): outcome (W swinging strike, T foul tip, F foul,
+/// X in play), bat speed, depth, attack angle, the pitch's descent at the plate, its type,
+/// location and zone, and the impact parameter.
+#[derive(Default)]
+struct Swings {
+    lines: Vec<String>,
+}
+
+const SWING_HEADER: &str = "result,hand,kind,px,pz,zb,zt,bs,depth,aa,descent,geo,offset,miss,along";
+
+impl Observer for Swings {
+    fn pitch(&mut self, e: &PitchEvent) {
+        if e.approach.is_bunt() {
+            return;
+        }
+        let Some(shape) = e.swing else { return };
+        let code = match e.result {
+            PitchResult::SwingingStrike => 'W',
+            PitchResult::FoulTip => 'T',
+            PitchResult::Foul => 'F',
+            PitchResult::InPlay => 'X',
+            _ => return,
+        };
+        let f = &e.thrown.flight;
+        let descent = (-f.plate_vel.z / f.plate_vel.y.abs()).atan();
+        self.lines.push(format!(
+            "{code},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.5},{:.5},{},{:.5},{},{:.4}",
+            if e.batter_hand.outside_sign() > 0.0 { 'R' } else { 'L' },
+            e.thrown.kind.code(),
+            f.plate_pos.x,
+            f.plate_pos.z,
+            e.zone.bottom,
+            e.zone.top,
+            shape.bat_speed,
+            shape.depth,
+            shape.attack,
+            descent,
+            u8::from(shape.tilt > 0.0),
+            shape.offset,
+            match e.miss {
+                Some(Miss::Early) => 'E',
+                Some(Miss::Late) => 'L',
+                Some(Miss::OffTheEnd) => 'O',
+                Some(Miss::Jammed) => 'J',
+                Some(Miss::Over) => 'V',
+                Some(Miss::Under) => 'U',
+                None => '-',
+            },
+            shape.along,
+        ));
+    }
+}
+
+trait Lines: Observer + Default + Send {
+    fn take(self) -> Vec<String>;
+}
+impl Lines for Rows {
+    fn take(self) -> Vec<String> {
+        self.lines
+    }
+}
+impl Lines for Swings {
+    fn take(self) -> Vec<String> {
+        self.lines
+    }
+}
+
+/// Play `games` games (as `bm validate` does) and write every ball the bat met to `out`,
+/// or every full swing when `swings` is set.
+#[allow(clippy::too_many_arguments)]
+pub fn dump(envs: &[MatchEnv], clubs: &[Club], style: ManagerStyle, games: usize, seed: u64, threads: usize, out: &Path, swings: bool) {
+    let (header, all) = if swings {
+        (SWING_HEADER, collect::<Swings>(envs, clubs, style, games, seed, threads))
+    } else {
+        (HEADER, collect::<Rows>(envs, clubs, style, games, seed, threads))
+    };
+    let mut w = BufWriter::new(std::fs::File::create(out).expect("cannot create the output file"));
+    writeln!(w, "{header}").unwrap();
+    for l in &all {
+        writeln!(w, "{l}").unwrap();
+    }
+    eprintln!("{} rows written to {}", all.len(), out.display());
+}
+
+fn collect<O: Lines>(envs: &[MatchEnv], clubs: &[Club], style: ManagerStyle, games: usize, seed: u64, threads: usize) -> Vec<String> {
     let per = games.div_ceil(threads);
     let mut master = Rng::new(seed);
     let seeds: Vec<Rng> = (0..threads).map(|_| master.fork()).collect();
@@ -82,7 +183,7 @@ pub fn dump(envs: &[MatchEnv], clubs: &[Club], style: ManagerStyle, games: usize
             .map(|(i, mut rng)| {
                 let n = per.min(games.saturating_sub(i * per));
                 scope.spawn(move || {
-                    let mut rows = Rows::default();
+                    let mut rows = O::default();
                     for _ in 0..n {
                         let (a, h) = crate::pick_pair(&mut rng, clubs.len());
                         let env = &envs[h % envs.len()];
@@ -91,7 +192,7 @@ pub fn dump(envs: &[MatchEnv], clubs: &[Club], style: ManagerStyle, games: usize
                         let home = clubs[h].team_for_game(rng.below(5), dh);
                         play_game_styled(env, &away, &home, [style; 2], &mut rng, &mut rows);
                     }
-                    rows.lines
+                    rows.take()
                 })
             })
             .collect();
@@ -99,12 +200,7 @@ pub fn dump(envs: &[MatchEnv], clubs: &[Club], style: ManagerStyle, games: usize
             all.extend(h.join().expect("simulation thread panicked"));
         }
     });
-    let mut w = BufWriter::new(std::fs::File::create(out).expect("cannot create the output file"));
-    writeln!(w, "{HEADER}").unwrap();
-    for l in &all {
-        writeln!(w, "{l}").unwrap();
-    }
-    eprintln!("{} balls in play written to {}", all.len(), out.display());
+    all
 }
 
 /// One ball the bat met: the inputs of the inversion.
@@ -207,8 +303,9 @@ fn invert_one(r: &Row, env: &MatchEnv, bat: &BatSpec, ball: &BallSpec, face_lead
 /// Read rows with the columns of [`HEADER`] (extra columns are kept, missing simulated
 /// ones may be absent) and write them back with the fitted impact parameter and what the
 /// collision model then predicts. `face_lead_deg` turns the face of the bat further toward
-/// the pull side than the engine's rule does, to test how much the fit depends on that rule.
-pub fn invert(env: &MatchEnv, input: &Path, out: &Path, face_lead_deg: f64) {
+/// the pull side than the engine's rule does, to test how much the fit depends on that rule;
+/// `dir_shift_deg` turns the whole swing (travel and bat together) toward the pull side.
+pub fn invert(env: &MatchEnv, input: &Path, out: &Path, face_lead_deg: f64, dir_shift_deg: f64) {
     let f = std::fs::File::open(input).expect("cannot open the input file");
     let mut lines = std::io::BufReader::new(f).lines();
     let header = lines.next().expect("empty input").expect("unreadable input");
@@ -229,7 +326,7 @@ pub fn invert(env: &MatchEnv, input: &Path, out: &Path, face_lead_deg: f64) {
             spin: Vec3::new(num(4), num(5), num(6)),
             bat_speed: num(7),
             attack: num(8),
-            dir: num(9),
+            dir: num(9) + dir_shift_deg.to_radians(),
             tilt: num(10),
             la: num(11),
         };

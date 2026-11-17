@@ -50,16 +50,21 @@ pub struct SwingShape {
     /// Where the ball met the bat, m from the end of the barrel; zero when the bat missed.
     pub along: f64,
     /// Impact parameter of the collision, m: how far the ball's centre passed above (+)
-    /// or below (-) the bat's axis. Zero for swings that never reached the ball.
+    /// or below (-) the bat's axis, also for swings that missed.
     pub offset: f64,
     /// Sideways tilt of the swing plane above the horizontal, rad.
     pub tilt: f64,
-    /// Direction of the bat from knob to tip at impact; zero for swings that never reached the ball.
+    /// Direction of the bat from knob to tip at impact.
     pub axis: Vec3,
     /// Horizontal direction of the sweet spot's travel at impact, rad (+ = toward the pull
     /// side), as bat tracking measures it. `direction` is the same turn measured in the
     /// tilted swing plane.
     pub azimuth: f64,
+    /// Climb of the sweet spot's travel at impact (bat tracking's attack angle), rad.
+    /// `azimuth`, `attack`, `tilt` and `offset` are zero for swings timed too far off to
+    /// come near the ball (`tilt` is never zero otherwise); `axis` is also zero when the
+    /// ball passed beyond either end of the bat.
+    pub attack: f64,
 }
 
 /// What the batter has been told to do with the pitch.
@@ -358,12 +363,24 @@ pub fn swing(
 
     // ---- swing plane and vertical offset between ball and barrel ----
     // The barrel moves in a plane that is tilted sideways (barrel below the hands) and
-    // pitched upward toward the pitcher by the batter's attack angle. Two things turn a
-    // timing error into a vertical miss: the mismatch between the pitch's descent and
-    // the plane's pitch, and the arc of the swing itself, whose low point is where the
-    // batter meant to meet the ball, so that the barrel rides up over the ball when
-    // contact is early or late.
-    let plane_pitch = rng.gauss(batter.attack_angle, batter.attack_sd);
+    // pitched upward toward the pitcher: the batter's attack angle, steeper against high
+    // pitches and further out in front, flatter against breaking and offspeed pitches
+    // (2025 bat tracking). Had barrel and ball kept to their paths, contact `dy` away from
+    // the planned point would miss by (tan descent - tan plane) dy. The batter brings the
+    // barrel to the ball's height instead, but the correction is noisy in proportion to
+    // its size: on balls in play the impact parameter does not follow the sign of that
+    // miss at any depth, while swings and misses climb with its size. The arc of the swing
+    // still lifts the barrel over the ball when contact is far from the planned point.
+    let k = thrown.kind.index();
+    let plane_pitch = rng.gauss(
+        batter.attack_angle
+            + p.attack_shift
+            + p.attack_height * (f.plate_pos.z - zone.mid())
+            + p.attack_depth * dy
+            + p.attack_inside * inside
+            + p.attack_kind[k],
+        batter.attack_sd,
+    );
     let tilt = (p.bat_tilt_mid + p.bat_tilt_slope * (zone.mid() - f.plate_pos.z) + rng.gauss(0.0, p.bat_tilt_sd)).clamp(0.12, 0.95);
     let (behind, ahead) = ((p.arc_centre - dy).max(0.0), (dy - p.arc_early_from).max(0.0));
     let arc_rise = 0.5 * tilt.sin() / p.swing_arc_radius * (p.arc_scale * behind * behind + p.arc_scale_early * ahead * ahead);
@@ -376,13 +393,29 @@ pub fn swing(
     let typical_rise = env.typical_rise[thrown.kind.index()];
     let confusion = if matches!(thrown.kind, PitchKind::FourSeam | PitchKind::Sinker) { p.ride_confusion } else { 0.0 };
     let ride_expected = typical_rise + confusion * (p.ride_reference - typical_rise);
-    let offset = rng.gauss(batter.barrel_aim, batter.barrel_sd * speed_ratio.powf(p.barrel_speed_exp) * loc_gain * prec)
+    let offset = rng.gauss(batter.barrel_aim + p.aim_kind[k], batter.barrel_sd * speed_ratio.powf(p.barrel_speed_exp) * loc_gain * prec)
         - p.tracking_residual * per.bias_z
         - p.noise_residual * (per.perceived_z - f.plate_pos.z - per.bias_z)
         + p.height_bias * (f.plate_pos.z - zone.mid())
         + p.ride_bias * (f.move_z - ride_expected)
-        + (descent.tan() - plane_pitch.tan()) * dy
+        + p.plane_mismatch * (descent.tan() - plane_pitch.tan()) * dy
+        + rng.gauss(0.0, p.mismatch_noise * ((descent.tan() - plane_pitch.tan()) * dy).abs())
         - arc_rise;
+
+    // ---- path of the sweet spot ----
+    let e1 = Vec3::new(0.0, plane_pitch.cos(), plane_pitch.sin());
+    let across = |tilt: f64| {
+        let lateral = Vec3::new(out * tilt.cos(), 0.0, -tilt.sin());
+        (lateral - e1 * lateral.dot(e1)).normalized()
+    };
+    // The sweet spot travels in the tilted swing plane.
+    let (sth, cth) = theta.sin_cos();
+    let forward = e1 * cth - across(tilt) * sth;
+    let attack = forward.z.clamp(-1.0, 1.0).asin();
+    shape.offset = offset;
+    shape.tilt = (1.0 - e1.cross(across(tilt)).normalized().z.powi(2)).max(0.0).sqrt().asin();
+    shape.azimuth = (-out * forward.x).atan2(forward.y);
+    shape.attack = attack;
 
     // ---- where along the bat ----
     let inside_perceived = -out * per.perceived_x;
@@ -414,15 +447,7 @@ pub fn swing(
     }
     let along = along.max(0.005);
 
-    // ---- bat geometry ----
-    let e1 = Vec3::new(0.0, plane_pitch.cos(), plane_pitch.sin());
-    let across = |tilt: f64| {
-        let lateral = Vec3::new(out * tilt.cos(), 0.0, -tilt.sin());
-        (lateral - e1 * lateral.dot(e1)).normalized()
-    };
-    // The sweet spot travels in the tilted swing plane.
-    let (sth, cth) = theta.sin_cos();
-    let forward = e1 * cth - across(tilt) * sth;
+    // ---- the face of the bat ----
     // The barrel does not travel exactly square to the bat: the hands are still moving
     // forward, so the bat faces further round than its sweet spot is heading, and it
     // turns faster than the direction of its travel does. The wrists roll over before
@@ -435,14 +460,9 @@ pub fn swing(
     // in front both stay within 4-30 deg of the pull side).
     let rolled = ((theta - p.roll_from) / p.roll_span).clamp(0.0, 1.0);
     let axis = across(tilt * (1.0 - p.roll_flatten * rolled)) * cf + e1 * sf;
-    let attack = forward.z.clamp(-1.0, 1.0).asin();
     let point_speed = bat_speed * ((p.swing_radius + (bat.sweet_spot_from_tip - along)) / p.swing_radius).max(0.2);
     let bat_vel = forward * point_speed;
-
-    shape.offset = offset;
-    shape.tilt = (1.0 - e1.cross(across(tilt)).normalized().z.powi(2)).max(0.0).sqrt().asin();
     shape.axis = axis;
-    shape.azimuth = (-out * forward.x).atan2(forward.y);
     let mut contact = Contact { ball_vel: vel, ball_spin: f.spin, bat_axis: axis, bat_vel, offset, dist_from_tip: along };
     let mut result = collide(&env.ball, bat, &contact);
     if result.is_err() {
@@ -463,7 +483,13 @@ pub fn swing(
     }
     match result {
         Err(_) => Swing::Whiff { shape, miss: if offset < 0.0 { Miss::Over } else { Miss::Under } },
-        Ok(res) => {
+        Ok(mut res) => {
+            if p.spray_turn != 0.0 {
+                let (st, ct) = (p.spray_turn * out).sin_cos();
+                let turn = |v: Vec3| Vec3::new(v.x * ct - v.y * st, v.x * st + v.y * ct, v.z);
+                res.vel = turn(res.vel);
+                res.spin = turn(res.spin);
+            }
             shape.along = along;
             shape.offset = contact.offset;
             shape.exit_speed = res.vel.norm();
