@@ -49,6 +49,17 @@ pub struct SwingShape {
     pub elevation: f64,
     /// Where the ball met the bat, m from the end of the barrel; zero when the bat missed.
     pub along: f64,
+    /// Impact parameter of the collision, m: how far the ball's centre passed above (+)
+    /// or below (-) the bat's axis. Zero for swings that never reached the ball.
+    pub offset: f64,
+    /// Sideways tilt of the swing plane above the horizontal, rad.
+    pub tilt: f64,
+    /// Direction of the bat from knob to tip at impact; zero for swings that never reached the ball.
+    pub axis: Vec3,
+    /// Horizontal direction of the sweet spot's travel at impact, rad (+ = toward the pull
+    /// side), as bat tracking measures it. `direction` is the same turn measured in the
+    /// tilted swing plane.
+    pub azimuth: f64,
 }
 
 /// What the batter has been told to do with the pitch.
@@ -428,6 +439,10 @@ pub fn swing(
     let point_speed = bat_speed * ((p.swing_radius + (bat.sweet_spot_from_tip - along)) / p.swing_radius).max(0.2);
     let bat_vel = forward * point_speed;
 
+    shape.offset = offset;
+    shape.tilt = (1.0 - e1.cross(across(tilt)).normalized().z.powi(2)).max(0.0).sqrt().asin();
+    shape.axis = axis;
+    shape.azimuth = (-out * forward.x).atan2(forward.y);
     let mut contact = Contact { ball_vel: vel, ball_spin: f.spin, bat_axis: axis, bat_vel, offset, dist_from_tip: along };
     let mut result = collide(&env.ball, bat, &contact);
     if result.is_err() {
@@ -450,6 +465,7 @@ pub fn swing(
         Err(_) => Swing::Whiff { shape, miss: if offset < 0.0 { Miss::Over } else { Miss::Under } },
         Ok(res) => {
             shape.along = along;
+            shape.offset = contact.offset;
             shape.exit_speed = res.vel.norm();
             shape.elevation = (res.vel.z / shape.exit_speed.max(1e-9)).clamp(-1.0, 1.0).asin();
             if res.vel.y <= 0.5 {

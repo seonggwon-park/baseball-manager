@@ -22,12 +22,15 @@
 //!                                                                 quality of rotations and bullpens, how many regulars play
 //!                                                                 their own position, and attribute correlations (--years 0:
 //!                                                                 the new world)
+//! bm contacts --out FILE [--games N] [--invert FILE]              balls in play with the swing that hit them (simulated), or the
+//!             [--face-lead DEG]                                   impact parameter that reproduces each row's launch angle
 //! bm game [--seed S]                                              play one game and print the box score
 //! bm bench [--games N]                                            measure simulation speed
 //! bm serve [--port P] [--static DIR]                              session API over HTTP for the interface in a browser
 //! ```
 
 mod careers;
+mod contacts;
 mod level;
 mod players;
 mod report;
@@ -83,6 +86,10 @@ struct Args {
     careers_file: Option<std::path::PathBuf>,
     aging_file: Option<std::path::PathBuf>,
     json: Option<std::path::PathBuf>,
+    /// `bm contacts`: where to write the rows, and rows to run the collision model backwards on.
+    out: Option<std::path::PathBuf>,
+    invert: Option<std::path::PathBuf>,
+    face_lead: f64,
     tuning: Tuning,
 }
 
@@ -116,6 +123,9 @@ fn parse_args() -> Args {
         careers_file: None,
         aging_file: None,
         json: None,
+        out: None,
+        invert: None,
+        face_lead: 0.0,
         tuning: Tuning::new(),
     };
     let mut it = std::env::args().skip(1);
@@ -148,6 +158,9 @@ fn parse_args() -> Args {
             "--levels" => a.levels_file = Some(v.into()),
             "--careers" => a.careers_file = Some(v.into()),
             "--json" => a.json = Some(v.into()),
+            "--out" => a.out = Some(v.into()),
+            "--invert" => a.invert = Some(v.into()),
+            "--face-lead" => a.face_lead = v.parse().expect("--face-lead DEG"),
             "--aging" => a.aging_file = Some(v.into()),
             "--seed" => a.seed = v.parse().expect("--seed S"),
             "--threads" => a.threads = v.parse::<usize>().expect("--threads T").max(1),
@@ -382,6 +395,16 @@ fn main() {
                 1000.0 * secs * args.threads as f64 / t.games
             );
             report::print(&t);
+        }
+        "contacts" => {
+            let out = args.out.as_deref().expect("bm contacts needs --out FILE");
+            match args.invert.as_deref() {
+                Some(input) => contacts::invert(&envs[0], input, out, args.face_lead),
+                None => {
+                    let clubs = make_clubs(args.clubs, args.seed, level, world);
+                    contacts::dump(&envs, &clubs, args.tuning.style, args.games, args.seed, args.threads, out);
+                }
+            }
         }
         "bench" => {
             let clubs = make_clubs(args.clubs, args.seed, level, world);
