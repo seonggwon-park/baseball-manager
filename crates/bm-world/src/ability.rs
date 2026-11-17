@@ -15,57 +15,57 @@ use crate::player::{Player, Position, Role};
 
 /// Runs per game per standard deviation when all nine batters change.
 pub const BATTING: [(Attr, f64); 16] = [
-    (Attr::Contact, 0.295),
-    (Attr::Timing, 0.102),
-    (Attr::Power, 0.835),
-    (Attr::Discipline, 0.206),
-    (Attr::Recognition, 0.102),
-    (Attr::BatControl, 0.225),
+    (Attr::Contact, 0.228),
+    (Attr::Timing, 0.097),
+    (Attr::Power, 0.765),
+    (Attr::Discipline, 0.252),
+    (Attr::Recognition, 0.169),
+    (Attr::BatControl, 0.280),
     (Attr::Bunt, 0.0),
-    (Attr::Baserunning, 0.033),
-    (Attr::Stealing, 0.0),
-    (Attr::Speed, 0.410),
-    (Attr::Acceleration, 0.150),
-    (Attr::Aggression, 0.022),
-    (Attr::Anticipation, 0.086),
-    (Attr::Concentration, 0.023),
-    (Attr::Composure, 0.010),
-    (Attr::Strength, 0.322),
+    (Attr::Baserunning, 0.035),
+    (Attr::Stealing, 0.004),
+    (Attr::Speed, 0.418),
+    (Attr::Acceleration, 0.166),
+    (Attr::Aggression, 0.0),
+    (Attr::Anticipation, 0.074),
+    (Attr::Concentration, 0.0),
+    (Attr::Composure, 0.0),
+    (Attr::Strength, 0.299),
 ];
 
 /// Runs per game per standard deviation when all eight fielders change. Fielding is
 /// valued position by position ([`BY_POSITION`]); these split each position's glove
 /// between its five attributes.
 pub const FIELDING: [(Attr, f64); 7] = [
-    (Attr::Hands, 0.020),
-    (Attr::Range, 0.184),
-    (Attr::Reads, 0.140),
-    (Attr::ArmStrength, 0.257),
+    (Attr::Hands, 0.0),
+    (Attr::Range, 0.219),
+    (Attr::Reads, 0.154),
+    (Attr::ArmStrength, 0.195),
     (Attr::ArmAccuracy, 0.0),
-    (Attr::Footwork, 0.132),
-    (Attr::Agility, 0.138),
+    (Attr::Footwork, 0.192),
+    (Attr::Agility, 0.118),
 ];
 
 /// Runs per game per standard deviation of the catcher alone (the experiment changed
 /// every fielder, but only the catcher frames, blocks and throws out runners).
-pub const CATCHING: [(Attr, f64); 3] = [(Attr::Framing, 0.006), (Attr::Blocking, 0.010), (Attr::ThrowingOut, 0.015)];
+pub const CATCHING: [(Attr, f64); 3] = [(Attr::Framing, 0.043), (Attr::Blocking, 0.012), (Attr::ThrowingOut, 0.008)];
 
 /// Runs per game per standard deviation when the whole staff changes.
 pub const PITCHING: [(Attr, f64); 9] = [
-    (Attr::Velocity, 0.075),
-    (Attr::Stuff, 0.095),
-    (Attr::Control, 0.084),
+    (Attr::Velocity, 0.047),
+    (Attr::Stuff, 0.031),
+    (Attr::Control, 0.076),
     (Attr::Command, 0.088),
-    (Attr::Deception, 0.049),
-    (Attr::HoldRunners, 0.040),
-    (Attr::Stamina, 0.034),
-    (Attr::Concentration, 0.022),
-    (Attr::Composure, 0.060),
+    (Attr::Deception, 0.056),
+    (Attr::HoldRunners, 0.049),
+    (Attr::Stamina, 0.0),
+    (Attr::Concentration, 0.0),
+    (Attr::Composure, 0.0),
 ];
 
 /// Runs per game when the grade of every pitch other than the main fastball moves by
 /// one standard deviation.
-pub const PITCH_GRADES: f64 = 0.203;
+pub const PITCH_GRADES: f64 = 0.204;
 
 /// Share of a club's innings thrown by one starter and by one reliever: MLB starters
 /// threw 57 % of the innings in 2026 (Verducci, Sports Illustrated, 2026-08-10), spread
@@ -84,20 +84,20 @@ pub const STAFF_SHARE: f64 = 1.0 / 13.0;
 /// reads, footwork, agility and hands moved together), his arm strength and his top speed,
 /// in the field only (`bm attributes --by-position --games 8000`, steps of 2 SD; standard
 /// error about 0.012; estimates below zero counted as zero). Summed over the eight
-/// positions they give back the values measured for all fielders at once (glove 0.623
-/// against 0.614, arm 0.258 against 0.257), and speed is worth 0.185 runs per game in the
-/// field on top of its 0.410 at the plate. The engine values the glove at third base and in
-/// the outfield corners above shortstop and centre field, the reverse of what the
-/// positional adjustment says about real fielders (`docs/attributes.md` 6).
+/// positions they come close to the values measured for all fielders at once (glove 0.642
+/// against 0.679, arm 0.243 against 0.195), and speed is worth 0.201 runs per game in the
+/// field on top of its 0.418 at the plate. The engine values the glove at shortstop as at
+/// third base and in centre field below the corners, where real fielders' positional
+/// adjustment puts shortstop and centre field highest (`docs/attributes.md` 6).
 pub const BY_POSITION: [(Position, f64, f64, f64); 8] = [
-    (Position::Catcher, 0.008, 0.050, 0.0),
-    (Position::First, 0.055, 0.001, 0.0),
-    (Position::Second, 0.089, 0.020, 0.014),
-    (Position::Third, 0.140, 0.065, 0.025),
-    (Position::Short, 0.066, 0.031, 0.0),
-    (Position::Left, 0.097, 0.040, 0.061),
-    (Position::Center, 0.054, 0.009, 0.030),
-    (Position::Right, 0.114, 0.042, 0.060),
+    (Position::Catcher, 0.0, 0.059, 0.0),
+    (Position::First, 0.047, 0.012, 0.0),
+    (Position::Second, 0.095, 0.017, 0.011),
+    (Position::Third, 0.102, 0.034, 0.013),
+    (Position::Short, 0.102, 0.029, 0.002),
+    (Position::Left, 0.097, 0.012, 0.070),
+    (Position::Center, 0.085, 0.022, 0.046),
+    (Position::Right, 0.114, 0.058, 0.059),
 ];
 
 /// The glove attributes and their shares of the glove (from the all-fielder values).
@@ -266,9 +266,9 @@ mod tests {
         p.attrs = Default::default();
         assert!(batting(&p).abs() < 1e-9);
         assert!(fielding(&p, Some(Position::Short)).abs() < 1e-9);
-        // A standard deviation of power is worth 15 runs a season in one lineup spot.
+        // A standard deviation of power is worth 13.8 runs a season in one lineup spot.
         p.attrs[Attr::Power] = 1.0;
-        assert!((batting(&p) - 15.03).abs() < 0.01, "{}", batting(&p));
+        assert!((batting(&p) - 13.77).abs() < 0.01, "{}", batting(&p));
         // Out of position he loses a lot; a non-catcher cannot catch.
         assert!(fielding(&p, Some(Position::Center)) < fielding(&p, Some(Position::Short)) - 5.0);
         assert!(fielding(&p, Some(Position::Catcher)) < -20.0);
