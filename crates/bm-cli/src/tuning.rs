@@ -74,6 +74,7 @@ impl Tuning {
                 ref_plate_speed,
                 timing_speed_exp,
                 barrel_speed_exp,
+                commit_exp,
                 tracking_residual,
                 barrel_outside_gain,
                 barrel_outside_offset,
@@ -200,6 +201,7 @@ impl Tuning {
         match parts.as_slice() {
             ["swing_base", b, s] => p.swing_base[idx(b, 4)?][idx(s, 3)?] = v,
             ["kind_recognition", k] => p.kind_recognition[idx(k, 8)?] = v,
+            ["take_kind", k, s] => p.take_kind[idx(k, 8)?][idx(s, 3)?] = v,
             ["aim_kind", k] => p.aim_kind[idx(k, 8)?] = v,
             ["barrel_kind", k] => p.barrel_kind[idx(k, 8)?] = v,
             ["w", "command_kind", k] => self.baseline.command_kind[idx(k, 8)?] = v,

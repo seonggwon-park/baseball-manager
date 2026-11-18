@@ -432,6 +432,8 @@ fn main() {
                     "in_zone": zone,
                     "dist_edges": tally::KIND_DIST_EDGES,
                     "swing_by_dist": dist,
+                    "speed_whiff": PitchKind::ALL.iter().map(|k| (k.code().to_string(), serde_json::json!(t.kinds[k.index()].speed_whiff))).collect::<serde_json::Map<String, serde_json::Value>>(),
+                    "fb_whiff": PitchKind::ALL.iter().map(|k| (k.code().to_string(), serde_json::json!(t.kinds[k.index()].fb_whiff))).collect::<serde_json::Map<String, serde_json::Value>>(),
                 });
                 std::fs::write(path, serde_json::to_string_pretty(&doc).expect("json")).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
             }

@@ -96,6 +96,14 @@ pub struct ModelParams {
     /// the hand on an upward path that no fastball has; a slider or a splitter looks like
     /// a fastball for longer. Fitted to the whiff rates by pitch type. Fastballs are 0.
     pub kind_recognition: [f64; 8],
+    /// Share of pitches of each type that a batter who has picked the type up out of the
+    /// hand lets go whatever their location, by strikes (0, 1, 2), indexed by
+    /// `PitchKind::index`. Hitters sit on the fastball early in the count and take the
+    /// breaking ball they recognise; with two strikes they protect the plate. In the 2025
+    /// Statcast sample, at equal distance from the zone edge and no strikes, curves deep in
+    /// the zone are swung at 39.7 % of the time and four-seamers 62.5 %; with two strikes
+    /// 93.1 % and 95.3 %. Four-seamers are 0.
+    pub take_kind: [[f64; 3]; 8],
     /// Batters adapt only partly to a fastball's "ride": share of the difference between
     /// its induced vertical movement and the generic fastball that ends up as barrel error.
     pub ride_bias: f64,
@@ -125,6 +133,14 @@ pub struct ModelParams {
     pub timing_speed_exp: f64,
     /// Exponent of the speed dependence of the barrel error.
     pub barrel_speed_exp: f64,
+    /// Against a pitcher whose fastball gets there sooner than the league's typical one,
+    /// the batter commits to every swing earlier and sees less of each pitch: the timing
+    /// and barrel errors of every pitch type grow by (typical fastball flight time /
+    /// expected flight time) to this power. 2025 Statcast sample: whiffs per swing rise
+    /// 1.31 +- 0.24 points per mph of the pitcher's mean four-seamer across pitchers, by
+    /// 1.1-2.0 points on every pitch type, while within a type a harder slider, curve or
+    /// splitter is missed hardly more often (pitch level +0.0 to +0.5 points per mph).
+    pub commit_exp: f64,
     /// Share of a pitch-type misjudgement (wrong expected drop) that survives to contact (0..1).
     pub tracking_residual: f64,
     /// Growth of the barrel error for pitches outside the zone, per metre outside.
@@ -465,6 +481,7 @@ impl Default for ModelParams {
             location_adjust: 0.85689,
             fastball_misread: 0.0,
             kind_recognition: [0.0, 0.0, 0.039755, -0.14075, 0.01281, 0.15936, 0.053355, -0.28168],
+            take_kind: [[0.0; 3]; 8],
             ride_bias: 0.085453,
             ride_reference: 0.375,
             ride_confusion: 0.6,
@@ -476,6 +493,7 @@ impl Default for ModelParams {
             ref_plate_speed: 86.0 * MPH,
             timing_speed_exp: 4.1,
             barrel_speed_exp: 3.55,
+            commit_exp: 0.0,
             tracking_residual: 0.18663,
             barrel_outside_gain: 6.95,
             barrel_outside_gain2: 70.0,

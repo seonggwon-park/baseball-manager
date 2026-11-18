@@ -355,6 +355,11 @@ pub struct KindStat {
     /// [pitches, swings] by strikes (0, 1, 2) and signed distance from the zone edge
     /// (`KIND_DIST_EDGES`, in), for swing rates by type at equal location (`bm validate --json`).
     pub dist: [[[f64; 2]; KIND_DIST_EDGES.len() - 1]; 3],
+    /// Sums over swings for the slope of whiffs on release speed (mph):
+    /// [n, sum v, sum v^2, sum whiff, sum v * whiff], all swings and swings in the zone.
+    pub speed_whiff: [[f64; 5]; 2],
+    /// The same against the release speed of the pitcher's four-seamer (between pitchers).
+    pub fb_whiff: [f64; 5],
 }
 
 /// Bins of signed distance from the zone edge (in; negative inside) for `KindStat::dist`.
@@ -810,6 +815,10 @@ impl Tally {
             for (x, y) in a.side_zone.iter_mut().zip(&b.side_zone) {
                 add_arr(x, y);
             }
+            add_arr(&mut a.fb_whiff, &b.fb_whiff);
+            for (x, y) in a.speed_whiff.iter_mut().zip(&b.speed_whiff) {
+                add_arr(x, y);
+            }
             for (x, y) in a.dist.iter_mut().zip(&b.dist) {
                 for (u, v) in x.iter_mut().zip(y) {
                     add_arr(u, v);
@@ -1218,6 +1227,17 @@ impl Observer for Tally {
             }
             if let Some(m) = e.miss {
                 k.miss[m as usize] += 1.0;
+            }
+            let v = e.thrown.spec.speed / MPH;
+            let w = if whiff { 1.0 } else { 0.0 };
+            if let Some(fb) = e.four_seam_speed {
+                let x = fb / MPH;
+                add_arr(&mut k.fb_whiff, &[1.0, x, x * x, w, x * w]);
+            }
+            for (i, row) in k.speed_whiff.iter_mut().enumerate() {
+                if i == 0 || inz {
+                    add_arr(row, &[1.0, v, v * v, w, v * w]);
+                }
             }
             let opposite = usize::from(e.batter_hand != e.pitcher_hand);
             k.side[opposite][0] += 1.0;

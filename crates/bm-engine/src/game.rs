@@ -9,7 +9,7 @@ use crate::fielding::{alignment, move_time, Alignment, InfieldDepth, OutfieldDep
 use crate::params::ModelParams;
 use crate::pitching::{choose_pitch, expectation, selection_weights, throw_pitch, MatchEnv, PitcherState, Thrown, MAX_PITCHES};
 use crate::play::{resolve, PlayInput, PlayKind, PlayResult, Runner};
-use crate::profile::{BatterProfile, CatcherProfile, FielderProfile, Hand, PitcherProfile, Player};
+use crate::profile::{BatterProfile, CatcherProfile, FielderProfile, Hand, PitchKind, PitcherProfile, Player};
 use crate::rng::{sigmoid, Rng};
 use crate::rules::StrikeZone;
 use bm_physics::units::FT;
@@ -142,6 +142,8 @@ pub struct PitchEvent<'a> {
     pub play: Option<&'a PlayResult>,
     /// Where the fielders stood.
     pub positions: &'a [Vec3; 9],
+    /// Release speed of the pitcher's four-seamer, m/s, if he throws one.
+    pub four_seam_speed: Option<f64>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1336,6 +1338,7 @@ impl GameSim {
             path: None,
             play: None,
             positions: &pa.positions,
+            four_seam_speed: pprof.pitches.iter().find(|d| d.kind == PitchKind::FourSeam).map(|d| d.shape.speed),
         };
         let line = &mut self.sides[fld].box_score.pitching[pitcher_idx];
         line.pitches += 1;

@@ -147,11 +147,14 @@ pub fn perceive(
     let f = &thrown.flight;
     // Recognition is close to all-or-nothing: the batter either picks the pitch up out
     // of the hand or commits to the wrong one.
-    let rho = if rng.chance((batter.eye - thrown.disguise + params.kind_recognition[thrown.kind.index()]).clamp(0.02, 0.99)) {
+    let recognized = rng.chance((batter.eye - thrown.disguise + params.kind_recognition[thrown.kind.index()]).clamp(0.02, 0.99));
+    let rho = if recognized {
         1.0 - rng.gauss(0.0, params.recognition_sd).abs().min(0.5)
     } else {
         rng.range(0.0, (params.fooled_recognition * batter.adjust).min(0.95))
     };
+    // A pitch picked up for what it is may be let go on purpose (`take_kind`).
+    let take = if recognized { params.take_kind[thrown.kind.index()][strikes.min(2)].clamp(0.0, 1.0) } else { 0.0 };
     let drop_act = f.move_z - 0.5 * G * f.time * f.time;
     // A pitch that differs a lot from the fastball is easier to identify, so the
     // misjudgement grows less than proportionally with the difference in movement.
@@ -176,7 +179,8 @@ pub fn perceive(
             _ => params.swing_d0_two_strikes,
         };
     let base = (params.swing_base[balls.min(3)][strikes.min(2)] * batter.aggression).min(0.992);
-    Perception { recognition: rho, perceived_x: px, perceived_z: pz, bias_z: miss * dmz, swing_prob: base * sigmoid(-(d_hat - d0) / params.swing_width) }
+    let swing_prob = base * sigmoid(-(d_hat - d0) / params.swing_width) * (1.0 - take);
+    Perception { recognition: rho, perceived_x: px, perceived_z: pz, bias_z: miss * dmz, swing_prob }
 }
 
 /// Full response of the batter to a pitch.
@@ -315,6 +319,8 @@ pub fn swing(
     // Speed against what the batter is used to from this kind of pitch: a slider is not
     // easier to time than a fastball for being slower, but a hard slider is harder than a soft one.
     let speed_ratio = v_plate / env.typical_plate_speed[thrown.kind.index()];
+    // Committing earlier against a harder thrower (`commit_exp`).
+    let commit = (env.typical_fastball_time / expected.time).powf(p.commit_exp);
 
     // ---- timing ----
     let dt_raw = expected.time - f.time;
@@ -334,7 +340,7 @@ pub fn swing(
     bat_speed = bat_speed.max(8.0);
     // Late against a pitcher who throws harder than the fastballs the batter sees every day.
     let lag = p.velocity_lag * (env.typical_fastball_time - expected.time);
-    let dt = batter.timing_bias + dt_bias + lag + rng.gauss(0.0, batter.timing_sd * speed_ratio.powf(p.timing_speed_exp) * prec);
+    let dt = batter.timing_bias + dt_bias + lag + rng.gauss(0.0, batter.timing_sd * speed_ratio.powf(p.timing_speed_exp) * commit * prec);
 
     // ---- depth of contact and direction of the barrel ----
     // A swing that is early meets the ball further out in front: ball and barrel
@@ -393,7 +399,7 @@ pub fn swing(
     let typical_rise = env.typical_rise[thrown.kind.index()];
     let confusion = if matches!(thrown.kind, PitchKind::FourSeam | PitchKind::Sinker) { p.ride_confusion } else { 0.0 };
     let ride_expected = typical_rise + confusion * (p.ride_reference - typical_rise);
-    let offset = rng.gauss(batter.barrel_aim + p.aim_kind[k], batter.barrel_sd * p.barrel_kind[k] * speed_ratio.powf(p.barrel_speed_exp) * loc_gain * prec)
+    let offset = rng.gauss(batter.barrel_aim + p.aim_kind[k], batter.barrel_sd * p.barrel_kind[k] * speed_ratio.powf(p.barrel_speed_exp) * commit * loc_gain * prec)
         - p.tracking_residual * per.bias_z
         - p.noise_residual * (per.perceived_z - f.plate_pos.z - per.bias_z)
         + p.height_bias * (f.plate_pos.z - zone.mid())
