@@ -1,0 +1,62 @@
+{
+ "_comment": "Contracts, salaries and the yardstick for them (docs/contracts.md). Amounts are in each economy's currency: mlb US dollars (major and minor leagues), kbo won, npb yen. A schedule gives announced values by season and is raised by its economy's rate a year after the last one (decision 2026-11-18: each league's average-salary growth). Sources are named per item; docs/research/world/contracts_*.md hold the detail.",
+ "war": {
+  "replacement_win_pct": 0.294,
+  "hitters_share": 0.57,
+  "basis": "FanGraphs and Baseball-Reference's unified replacement level: a .294 team, 1,000 WAR per 2,430 major-league games (Cameron, FanGraphs 2013-03-28, https://blogs.fangraphs.com/unifying-replacement-level/); 57 % to position players and 43 % to pitchers (FanGraphs Library, https://library.fangraphs.com/misc/war/replacement-level/). The same winning percentage is used for every league."
+ },
+ "economies": {
+  "mlb": {
+   "currency": "USD",
+   "raise": {"rate": 0.047, "basis": "Growth of the qualifying offer (the mean salary of the 125 highest-paid players), $18.4M for 2022 to $23.15M for 2027 (MLB Trade Rumors; MLB glossary; contracts_mlb.md 4.2)"},
+   "runs_per_win": {"value": 10.0, "basis": "Measured in the engine: wins above .500 against run differential, 120 major-league team seasons of the 30-offseason world (seeds 21-24); Pythagenpat at the same 9.13 runs a game gives 9.7"},
+   "replacement": {"hitter": -6.85, "pitcher": -11.69, "basis": "Runs per 162 games (ability::value: a position player every day, a pitcher over an average pitcher's share) at which the majors of the 30-offseason world (seeds 5-8, offseasons 16-30) hold 570 position-player and 430 pitcher WAR a season; bench players counted at a tenth of a regular's time, starters' and relievers' shares of the innings as in ability.rs"},
+   "minimum": {"by_year": {"2022": 700000, "2023": 720000, "2024": 740000, "2025": 760000, "2026": 780000}, "basis": "2022-2026 Basic Agreement Art. VI(A)(1); carried on after 2026 (decision 2026-11-18: the agreement continues)"},
+   "minor_rate_on_major_contract": {"by_year": {"2022": 57200, "2023": 58800, "2024": 60300, "2025": 62000, "2026": 63600}, "basis": "Minimum minor-league rate of a first major-league contract, BA Art. VI(A)(2)"},
+   "minor_weekly": {
+    "aaa": {"2023": 1200, "2024": 1200, "2025": 1225, "2026": 1250, "2027": 1275},
+    "aa": {"2023": 1000, "2024": 1000, "2025": 1020, "2026": 1040, "2027": 1060},
+    "high_a": {"2023": 900, "2024": 900, "2025": 920, "2026": 935, "2027": 955},
+    "single_a": {"2023": 850, "2024": 850, "2025": 870, "2026": 885, "2027": 905},
+    "rookie": {"2023": 675, "2024": 675, "2025": 700, "2026": 710, "2027": 720},
+    "weeks": {"aaa": 24, "aa": 23, "high_a": 22, "single_a": 22, "rookie": 16},
+    "basis": "Weekly championship-season pay of a first minor-league contract and the minimum season lengths, 2023-2027 Minor League Basic Agreement Art. VII(A) and Art. VI(A)(1); the rookie scale for the two development squads"
+   },
+   "price_per_war": {"by_year": {"2026": 9400000}, "exponent": 1.26, "basis": "Free-agent pay above the minimum = price x WAR^exponent. FanGraphs (Clemens, 2026): $7.4M per projected WAR for 0-1 WAR players, $8.6M for 1-2, $11.8M for 2+, $10.6M on average for 2020-2026 and $11.2M in the 2025-26 offseason (contracts_markets.md 2A). The exponent fits the lowest and highest bins at 0.5 and 3 WAR; the scale is the 2020-2026 fit raised by 11.2/10.6 for 2026. A starting point: the market calibration fits both"},
+   "arbitration_share": {"batter": [0.21, 0.33, 0.55], "starter": [0.21, 0.36, 0.51], "reliever": [0.28, 0.61, 0.86], "basis": "Salary above the minimum in arbitration years 1-3 as a share of free-agent pay above the minimum, 2013-2021 (Clemens, FanGraphs 2022; contracts_markets.md 2D)"},
+   "max_cut": {"previous": 0.20, "two_before": 0.30, "basis": "BA Art. VI(B)(1)(a)"},
+   "service": {"arbitration": 3, "free_agency": 6, "basis": "BA Art. VI(E)(1)(a), XX(B)(1); Super Two needs service in days and is left out until clubs move players during the season"},
+   "tax": {
+    "thresholds": {"2022": 230000000, "2023": 233000000, "2024": 237000000, "2025": 241000000, "2026": 244000000},
+    "brackets": [20000000, 40000000, 60000000],
+    "rates": {"first": [0.20, 0.32, 0.625, 0.80], "second": [0.30, 0.42, 0.75, 0.90], "third": [0.50, 0.62, 0.95, 1.10]},
+    "basis": "Competitive Balance Tax, BA Art. XXIII(B)(2)-(4): marginal rates by the payroll above the base threshold (up to $20M, $20-40M, $40-60M, over $60M) and the club's consecutive years over it; carried on after 2026"
+   },
+   "qualifying_offer": {"by_year": {"2022": 18400000, "2023": 19650000, "2024": 20325000, "2025": 21050000, "2026": 22025000, "2027": 23150000}, "basis": "MLB Trade Rumors 2025-10-14; MLB glossary (2027)"}
+  },
+  "kbo": {
+   "currency": "KRW",
+   "raise": {"rate": 0.035, "basis": "Average salary (rookies and foreigners excluded) 1억 5,259만 in 2022 to 1억 7,536만 in 2026, KBO releases 8273 and 11861 (contracts_kbo.md 9.3)"},
+   "runs_per_win": {"value": 10.18, "basis": "Pythagenpat (exponent = runs per game^0.287) at the KBO's 2025-2026 official 4.90 runs per team game"},
+   "replacement": {"hitter": -31.78, "pitcher": -13.89, "basis": "As for mlb, on the KBO first teams of the same worlds: a .294 team over 144 games, 296.6 WAR a season"},
+   "minimum": {"by_year": {"2026": 30000000, "2027": 33000000}, "basis": "KBO bylaws Art. 71; release 11814 (2027)"},
+   "cap": {"by_year": {"2023": 11426380000, "2024": 11426380000, "2025": 13711650000, "2026": 14397230000, "2027": 15117090000, "2028": 15872940000}, "basis": "경쟁균형세 cap on the top 40 salaries per club, foreign players and rookies excluded; releases 8558, 10160, 11687"},
+   "floor": {"by_year": {"2027": 6065380000}, "rate": 0.05, "basis": "Payroll floor from 2027, raised 5 % a year; release 11687"},
+   "seasons_for_fa": {"high_school": 8, "college": 7, "again": 4, "days": 145, "basis": "Bylaws Arts. 162-164 (from the end of the 2022 season)"},
+   "pay": {"by_year": {"2026": 187900000}, "exponent": 1.26, "shift": -0.391, "basis": "Club-set pay of reserved players: minimum + scale x (WAR - shift)^exponent, the exponent of the major-league price. Scale and shift fit the 2026 average salary (rookies and foreigners excluded) of 1억 7,536만 and the average of each club's top 29 of 2억 8,750만 (KBO release 11861; contracts_kbo.md 9.3) on the domestic registered players of the 30-offseason world (seeds 5-8, two seasons each)"},
+   "posting_after": {"value": 7, "basis": "Bylaws Art. 104"},
+   "foreign_cap_usd": {"new": 1000000, "team": 4000000, "asia_quota": 200000, "basis": "Foreign-player rules Art. 8(1) (contracts_kbo.md 7)"}
+  },
+  "npb": {
+   "currency": "JPY",
+   "raise": {"rate": 0.037, "basis": "Players' association survey: average salary ¥41.89M in 2020 to ¥52.16M in 2026 (contracts_npb.md 6E)"},
+   "runs_per_win": {"value": 7.91, "basis": "Pythagenpat at NPB's 2025-2026 official 3.44 runs per team game"},
+   "replacement": {"hitter": -32.19, "pitcher": -11.70, "basis": "As for mlb, on the NPB first teams of the same worlds: a .294 team over 143 games, 353.5 WAR a season"},
+   "minimum": {"by_year": {"2025": 4200000, "2026": 4200000}, "basis": "支配下 minimum, 野球協約 2025 Art. 89 (the newest edition; no change found for 2026)"},
+   "development_minimum": {"by_year": {"2025": 2300000, "2026": 2300000}, "basis": "育成 minimum, 育成規約 2014 Art. 7(2) (the newest edition)"},
+   "pay": {"by_year": {"2026": 32070000}, "exponent": 1.26, "shift": -1.809, "basis": "As for kbo: the 2026 survey's average of ¥52.16M and median of ¥20M (Japanese registered players; contracts_npb.md 6E). NPB pays its farm players well above the minimum, hence the shift below replacement"},
+   "cut_limit": {"above": 100000000, "high": 0.40, "low": 0.25, "basis": "野球協約 2025 Art. 92: more than 40 % above ¥100M, 25 % at or below it, only with the player's consent"},
+   "seasons_for_fa": {"domestic": 8, "domestic_college": 7, "international": 9, "again": 4, "days": 145, "basis": "FA規約 2009 and NPB's FA page (contracts_npb.md 1B); 7 for players drafted from 2007 on out of university or company teams"}
+  }
+ }
+}

@@ -222,7 +222,8 @@ pub fn run(tuning: &Tuning, seed: u64, threads: usize, o: &Options) {
         .careers_file
         .map_or_else(bm_world::CareerTable::bundled, |p| bm_world::CareerTable::from_json(&read(p)).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
     let people = bm_world::PeopleMaker::new();
-    let ctx = bm_world::Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people };
+    let contracts = bm_world::ContractRules::bundled();
+    let ctx = bm_world::Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people, contracts: &contracts };
     let t0 = Instant::now();
     let mut pop = bm_world::populate_with(&world, &levels, &aging, &careers, Date::new(2027, 2, 1), seed);
     let t_pop = t0.elapsed().as_secs_f64();

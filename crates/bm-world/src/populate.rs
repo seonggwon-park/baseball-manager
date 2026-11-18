@@ -179,6 +179,10 @@ pub struct Population {
     /// holds their rights (`career.rs`, military service).
     #[serde(default)]
     pub away: BTreeMap<u32, Away>,
+    /// Every rostered player's contract, and those of players on military duty
+    /// (`contract.rs`).
+    #[serde(default)]
+    pub contracts: BTreeMap<u32, crate::contract::Contract>,
 }
 
 /// A player away from the game for a while, and the organisation he comes back to.
@@ -348,8 +352,10 @@ pub fn populate_with(world: &World, levels: &LevelTable, aging: &AgingTable, car
             potentials.insert(p.id, pot);
         }
     }
-    let mut pop = Population { date, people: maker.out, rosters, potentials, foreign, careers: BTreeMap::new(), away: BTreeMap::new() };
+    let mut pop =
+        Population { date, people: maker.out, rosters, potentials, foreign, careers: BTreeMap::new(), away: BTreeMap::new(), contracts: BTreeMap::new() };
     record_season(world, &mut pop, date.year());
+    crate::contract::initial(world, &mut pop, &crate::contract::ContractRules::bundled(), seed);
     pop
 }
 

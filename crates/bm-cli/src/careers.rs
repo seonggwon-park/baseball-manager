@@ -6,7 +6,9 @@
 use bm_engine::Rng;
 use bm_world::ability;
 use bm_world::career::{offseason, talent_of, Offseason, Origin};
-use bm_world::{populate_with, AgingTable, Attr, CareerTable, Date, LevelTable, PeopleMaker, Population, Squad, Talent, World, N_ATTR};
+use bm_world::{
+    populate_with, AgingTable, Attr, Budgets, CareerTable, ContractRules, Date, Economy, LevelTable, PeopleMaker, Population, Squad, Talent, World, N_ATTR,
+};
 use std::collections::BTreeMap;
 use std::io::Write;
 use std::path::Path;
@@ -445,6 +447,80 @@ fn outcomes(pop: &Population, last_year: i32, follow: i32) -> serde_json::Value 
     serde_json::json!({"rounds": rounds, "international": intl.0 / intl.1.max(1.0), "debut_age": debut.0 / debut.1.max(1.0)})
 }
 
+/// Payrolls against budgets and the spread of salaries in each economy for `year`, printed
+/// and returned for `--json`.
+fn payroll_summary(world: &World, pop: &Population, rules: &ContractRules, year: i32) -> serde_json::Value {
+    use bm_world::contract::{payrolls, Kind, Terms};
+    let budgets = Budgets::bundled();
+    let rows = payrolls(world, pop, rules, &budgets, year);
+    let pct = |v: &[f64], q: f64| -> f64 {
+        if v.is_empty() {
+            return 0.0;
+        }
+        v[((v.len() - 1) as f64 * q).round() as usize]
+    };
+    let mut out = serde_json::Map::new();
+    println!("\nPayrolls and salaries for {year} (major-league contracts in the majors' system, registered domestic players in the KBO and NPB):");
+    for e in Economy::ALL {
+        let mine: Vec<_> = rows.iter().filter(|r| r.economy == e).collect();
+        let mut totals: Vec<f64> = mine.iter().map(|r| r.total).collect();
+        totals.sort_by(f64::total_cmp);
+        let budget: f64 = mine.iter().filter_map(|r| r.budget).sum();
+        let sum: f64 = totals.iter().sum();
+        let ratio: Vec<f64> = mine.iter().filter_map(|r| r.budget.map(|b| r.total / b)).collect();
+        let mut pay: Vec<f64> = pop
+            .contracts
+            .values()
+            .filter(|c| matches!(c.kind, Kind::Major | Kind::Registered) && c.terms != Terms::Foreign && rows.iter().any(|r| r.org == c.org && r.economy == e))
+            .filter_map(|c| c.pay(year))
+            .collect();
+        pay.sort_by(f64::total_cmp);
+        let min = rules.of(e).minimum(year);
+        let at_min = pay.iter().filter(|x| **x <= min * 1.0001).count() as f64 / pay.len().max(1) as f64;
+        let mean = pay.iter().sum::<f64>() / pay.len().max(1) as f64;
+        let by_terms = |terms: Terms| -> f64 {
+            pop.contracts
+                .values()
+                .filter(|c| c.terms == terms && matches!(c.kind, Kind::Major | Kind::Registered) && rows.iter().any(|r| r.org == c.org && r.economy == e))
+                .filter_map(|c| c.pay(year))
+                .sum::<f64>()
+                / sum.max(1.0)
+        };
+        let shares = [Terms::Initial, Terms::Amateur, Terms::Renewal, Terms::Arbitration, Terms::FreeAgent].map(by_terms);
+        println!(
+            "  {:3}: {} clubs, payroll {:.4e} against budgets {:.4e} ({:.2}); club payroll min {:.4e} median {:.4e} max {:.4e}; {} salaries, mean {:.4e}, median {:.4e}, p90 {:.4e}, {:.0} % at the minimum {:.4e}; share of pay initial/amateur/renewal/arbitration/free agent {:.2}/{:.2}/{:.2}/{:.2}/{:.2}",
+            e.key(),
+            mine.len(),
+            sum,
+            budget,
+            sum / budget.max(1.0),
+            pct(&totals, 0.0),
+            pct(&totals, 0.5),
+            pct(&totals, 1.0),
+            pay.len(),
+            mean,
+            pct(&pay, 0.5),
+            pct(&pay, 0.9),
+            100.0 * at_min,
+            min,
+            shares[0],
+            shares[1],
+            shares[2],
+            shares[3],
+            shares[4]
+        );
+        out.insert(
+            e.key().to_string(),
+            serde_json::json!({
+                "payroll": sum, "budget": budget, "club_min": pct(&totals, 0.0), "club_median": pct(&totals, 0.5), "club_max": pct(&totals, 1.0),
+                "ratio_mean": ratio.iter().sum::<f64>() / ratio.len().max(1) as f64, "salaries": pay.len(), "mean": mean, "median": pct(&pay, 0.5),
+                "p10": pct(&pay, 0.1), "p90": pct(&pay, 0.9), "at_minimum": at_min, "shares": shares,
+            }),
+        );
+    }
+    serde_json::Value::Object(out)
+}
+
 /// One rostered player before an offseason.
 struct Before {
     id: u32,
@@ -456,10 +532,17 @@ struct Before {
     /// (`ability::per_sd`).
     value: f64,
     value_sd: f64,
+    /// A KBO or NPB club's foreign player.
+    foreign: bool,
+    /// Wins above replacement with his economy's first team (`contract::ContractRules::war`).
+    war: f64,
+    /// His contract for the season just played: kind, terms and salary.
+    contract: String,
 }
 
 /// Every rostered player before an offseason.
-fn snapshot(pop: &Population) -> Vec<Before> {
+fn snapshot(pop: &Population, rules: &ContractRules) -> Vec<Before> {
+    let year = pop.date.year();
     let mut out = Vec::new();
     for r in &pop.rosters {
         let s = &r.squad;
@@ -473,7 +556,24 @@ fn snapshot(pop: &Population) -> Vec<Before> {
         for (slot, players) in groups {
             for p in players {
                 let value = ability::value(p);
-                out.push(Before { id: p.id, level: r.level.clone(), slot, pitcher: p.is_pitcher(), value, value_sd: value / ability::per_sd(p) });
+                let economy = match bm_world::populate::peak_level(&r.level) {
+                    "kbo" => Economy::Kbo,
+                    "npb" => Economy::Npb,
+                    _ => Economy::Mlb,
+                };
+                let contract =
+                    pop.contracts.get(&p.id).map_or_else(|| ",,".to_string(), |c| format!("{:?},{:?},{:.0}", c.kind, c.terms, c.pay(year).unwrap_or(f64::NAN)));
+                out.push(Before {
+                    id: p.id,
+                    level: r.level.clone(),
+                    slot,
+                    pitcher: p.is_pitcher(),
+                    value,
+                    value_sd: value / ability::per_sd(p),
+                    foreign: pop.foreign.contains_key(&p.id),
+                    war: rules.war(p, economy),
+                    contract,
+                });
             }
         }
     }
@@ -496,8 +596,19 @@ fn write_outcomes(out: &mut impl std::io::Write, pop: &Population, before: &[Bef
             (None, None) if pop.away.contains_key(id) => ("Away".to_string(), ""),
             _ => ("Unknown".to_string(), ""),
         };
-        writeln!(out, "{year},{id},{age:.2},{},{},{},{:.2},{:.3},{outcome},{new_level}", b.level, b.slot, u8::from(b.pitcher), b.value, b.value_sd)
-            .expect("write --out");
+        writeln!(
+            out,
+            "{year},{id},{age:.2},{},{},{},{:.2},{:.3},{},{:.3},{},{outcome},{new_level}",
+            b.level,
+            b.slot,
+            u8::from(b.pitcher),
+            b.value,
+            b.value_sd,
+            u8::from(b.foreign),
+            b.war,
+            b.contract
+        )
+        .expect("write --out");
     }
 }
 
@@ -522,7 +633,8 @@ pub fn run(
     let aging = aging_file.map_or_else(AgingTable::bundled, |p| AgingTable::from_json(&read(p)).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
     let careers = careers_file.map_or_else(CareerTable::bundled, |p| CareerTable::from_json(&read(p)).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
     let people = PeopleMaker::new();
-    let ctx = Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people };
+    let contracts = bm_world::ContractRules::bundled();
+    let ctx = Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people, contracts: &contracts };
     let t0 = Instant::now();
     let targets = value_targets(&levels);
     let mut pop = populate_with(&world, &levels, &aging, &careers, Date::new(2027, 2, 1), seed);
@@ -539,12 +651,12 @@ pub fn run(
     }
     let mut out = out.map(|p| {
         let mut f = std::io::BufWriter::new(std::fs::File::create(p).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
-        writeln!(f, "year,id,age,level,slot,pitcher,value,value_sd,outcome,new_level").expect("write --out");
+        writeln!(f, "year,id,age,level,slot,pitcher,value,value_sd,foreign,war,kind,terms,salary,outcome,new_level").expect("write --out");
         f
     });
     for y in 0..years {
         let year = 2027 + y as i32;
-        let before = if out.is_some() && y >= from { snapshot(&pop) } else { Vec::new() };
+        let before = if out.is_some() && y >= from { snapshot(&pop, &contracts) } else { Vec::new() };
         let r = offseason(&ctx, &mut pop, year, None, seed);
         last = year;
         if let Some(f) = out.as_mut().filter(|_| y >= from) {
@@ -583,6 +695,7 @@ pub fn run(
     println!("\nAverage after offseasons {} to {years} (first-team spread {:.2}):", from + 1, spreads / counted);
     print_table(&mean, &levels, &targets);
     let summary = outcomes(&pop, last, 7);
+    let money = payroll_summary(&world, &pop, &contracts, pop.date.year());
     println!("\n{years} offseasons in {:.1} s", t0.elapsed().as_secs_f64());
     if let Some(path) = json {
         let levels_json: serde_json::Map<String, serde_json::Value> = mean
@@ -606,7 +719,7 @@ pub fn run(
         for m in &moments {
             attrs.add(m, 1.0 / moments.len() as f64);
         }
-        let out = serde_json::json!({ "levels": levels_json, "spread": spreads / counted, "outcomes": summary, "attrs": attrs.json() });
+        let out = serde_json::json!({ "levels": levels_json, "spread": spreads / counted, "outcomes": summary, "attrs": attrs.json(), "money": money });
         std::fs::write(path, serde_json::to_string_pretty(&out).unwrap()).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     }
 }

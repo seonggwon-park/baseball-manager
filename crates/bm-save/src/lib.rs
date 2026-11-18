@@ -16,6 +16,8 @@
 //!   included.
 //! * `away (id, org)`: Korean players on active military duty, off every roster, and the
 //!   organisation that holds their rights; their attributes are in `players`.
+//! * `contracts (id, data)`: each player's contract (`bm_world::Contract`) as JSON: the
+//!   organisation holding it, its kind, the guaranteed salary of each season, options.
 //!
 //! A save is written in one transaction into a fresh file, so an interrupted save never
 //! leaves a half-written game behind.
@@ -27,7 +29,7 @@ use std::fmt;
 use std::path::Path;
 
 /// Version of the table layout. Older files are refused rather than misread.
-pub const FORMAT: i64 = 4;
+pub const FORMAT: i64 = 5;
 
 #[derive(Debug)]
 pub enum SaveError {
@@ -88,6 +90,7 @@ CREATE TABLE potentials (id INTEGER PRIMARY KEY, data TEXT NOT NULL);
 CREATE TABLE foreign_players (id INTEGER PRIMARY KEY, signed_from TEXT NOT NULL);
 CREATE TABLE careers (id INTEGER PRIMARY KEY, data TEXT NOT NULL);
 CREATE TABLE away (id INTEGER PRIMARY KEY, org TEXT NOT NULL);
+CREATE TABLE contracts (id INTEGER PRIMARY KEY, data TEXT NOT NULL);
 ";
 
 fn position_code(p: Option<Position>) -> Option<String> {
@@ -161,6 +164,10 @@ pub fn save(path: &Path, game: &SaveGame) -> Result<(), SaveError> {
             for (id, a) in &game.population.away {
                 players.execute(params![id, serde_json::to_string(&a.player)?])?;
                 away.execute(params![id, a.org])?;
+            }
+            let mut contracts = tx.prepare("INSERT INTO contracts (id, data) VALUES (?1, ?2)")?;
+            for (id, c) in &game.population.contracts {
+                contracts.execute(params![id, serde_json::to_string(c)?])?;
             }
         }
         tx.commit()?;
@@ -257,7 +264,13 @@ pub fn load(path: &Path) -> Result<SaveGame, SaveError> {
         let player = players.get(&id).cloned().ok_or_else(|| SaveError::Format(format!("player {id} away from {org} is unknown")))?;
         away.insert(id, Away { org, player });
     }
-    Ok(SaveGame { seed, population: Population { date, people, rosters, potentials, foreign, careers, away } })
+    let mut contracts = BTreeMap::new();
+    let mut q = db.prepare("SELECT id, data FROM contracts")?;
+    for row in q.query_map([], |r| Ok((r.get::<_, u32>(0)?, r.get::<_, String>(1)?)))? {
+        let (id, data) = row?;
+        contracts.insert(id, serde_json::from_str(&data)?);
+    }
+    Ok(SaveGame { seed, population: Population { date, people, rosters, potentials, foreign, careers, away, contracts } })
 }
 
 #[cfg(test)]
@@ -272,7 +285,8 @@ mod tests {
         let mut pop = populate(&world, &levels, Date::new(2027, 2, 1), 11);
         // An offseason sends Korean players into military service, some off every roster.
         let (aging, careers, people) = (bm_world::AgingTable::bundled(), bm_world::CareerTable::bundled(), bm_world::PeopleMaker::new());
-        let ctx = bm_world::Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people };
+        let contracts = bm_world::ContractRules::bundled();
+        let ctx = bm_world::Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people, contracts: &contracts };
         bm_world::offseason(&ctx, &mut pop, 2027, None, 11);
         assert!(!pop.away.is_empty());
         let date = pop.date;
@@ -292,7 +306,9 @@ mod tests {
         assert_eq!(back.population.foreign, game.population.foreign);
         assert_eq!(back.population.careers, game.population.careers);
         assert_eq!(back.population.away, game.population.away);
+        assert_eq!(back.population.contracts, game.population.contracts);
         assert!(!back.population.foreign.is_empty() && back.population.careers.len() == back.population.people.len());
+        assert!(back.population.contracts.len() >= back.population.players().count());
         // Saving again over the file works and leaves no temporary file.
         save(&path, &back).unwrap();
         assert!(!path.with_extension("tmp").exists());

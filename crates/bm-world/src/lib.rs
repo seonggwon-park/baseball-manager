@@ -6,6 +6,7 @@ pub mod attr;
 pub mod birthplace;
 pub mod calendar;
 pub mod career;
+pub mod contract;
 pub mod convert;
 pub mod develop;
 pub mod generate;
@@ -21,6 +22,7 @@ pub use attr::{display, Attr, Attributes, Group, Hidden, Scale, ScaleAnchor, N_A
 pub use birthplace::Birthplaces;
 pub use calendar::{Date, Weekday};
 pub use career::{offseason, organisations, Career, CareerTable, Offseason, Org, OrgKind, Origin};
+pub use contract::{Budgets, Contract, ContractRules, Economy};
 pub use convert::Baseline;
 pub use develop::{develop, develop_idle, AgingTable, Closure, Potential};
 pub use generate::{Squad, Talent};

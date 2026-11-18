@@ -90,8 +90,8 @@ struct Retirement {
 
 /// How long a major-league organisation holds a player on his first minor-league contract
 /// (`careers.json` minor_league_contract): parts of `seasons` seasons, or of
-/// `seasons_if_younger` for a player who signed before `younger_than` years of age, unless he
-/// is on the `forty_man` roster. Without it in the file, players never leave this way.
+/// `seasons_if_younger` for a player who was younger than `younger_than` on the 5 June before
+/// he signed, unless he is on the `forty_man` roster. Without it in the file, players never leave this way.
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
 pub struct MinorContract {
     pub seasons: i32,
@@ -462,6 +462,9 @@ pub struct Career {
     /// A Korean player's military service.
     #[serde(default)]
     pub service: Option<Service>,
+    /// First-team seasons before the world began (the first world's players; `contract.rs`).
+    #[serde(default)]
+    pub prior: u32,
 }
 
 /// Where a Korean player stands with his military service.
@@ -476,7 +479,7 @@ pub enum Service {
 
 impl Career {
     pub fn new(origin: Origin) -> Career {
-        Career { origin, seasons: Vec::new(), majors: None, left: None, service: None }
+        Career { origin, seasons: Vec::new(), majors: None, left: None, service: None, prior: 0 }
     }
 
     pub fn reached(&self, level: &str) -> bool {
@@ -1019,21 +1022,25 @@ pub struct Offseason<'a> {
     pub aging: &'a AgingTable,
     pub careers: &'a CareerTable,
     pub people: &'a PeopleMaker,
+    /// Contract rules: every player gets a contract for the next season (`contract.rs`).
+    pub contracts: &'a crate::contract::ContractRules,
 }
 
 /// Whether a player who came into a major-league organisation by `origin` has played out his
-/// minor-league contract after the `year` season (since the 2023 minor-league agreement: parts
-/// of six seasons for a player who signed at 19 or older, seven for a younger one; MLB Trade
-/// Rumors 2023, docs/research/world/levels.md 4.2). Draftees sign in July and play part of
-/// their draft year; international amateurs sign on 15 January and start that season. The
-/// first world's players have no signing date and are left alone.
+/// minor-league contract after the `year` season (2023-2027 Minor League Basic Agreement Art.
+/// III(A)(1): parts of seven seasons, or six for a player who was 19 or older on the 5 June
+/// before he signed; docs/research/world/contracts_mlb.md 5.8). Draftees sign in July and play
+/// part of their draft year; international amateurs sign on 15 January and start that
+/// season. The first world's players have no signing date and are left alone.
 fn contract_ran_out(origin: &Origin, born: Date, year: i32, terms: &MinorContract) -> bool {
     let (first_season, signed) = match origin {
         Origin::Draft { year: y, .. } => (*y, Date::new(*y, 7, 15)),
         Origin::Signed { year: y, .. } => (*y + 1, Date::new(*y + 1, 1, 15)),
         Origin::Initial | Origin::Foreign { .. } => return false,
     };
-    let age = signed.days_since(born) as f64 / 365.2425;
+    let june = Date::new(signed.year(), 6, 5);
+    let june = if signed.days_since(june) >= 0 { june } else { Date::new(signed.year() - 1, 6, 5) };
+    let age = june.days_since(born) as f64 / 365.2425;
     let seasons = if age >= terms.younger_than { terms.seasons } else { terms.seasons_if_younger };
     year - first_season + 1 >= seasons
 }
@@ -1659,6 +1666,7 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
     pop.rosters.extend(built.into_values());
     pop.date = next_season;
     record_season(ctx.world, pop, year + 1);
+    crate::contract::settle(ctx.world, pop, ctx.contracts, year + 1, seed);
     report
 }
 
@@ -1719,7 +1727,14 @@ mod tests {
     #[test]
     fn korean_players_serve_their_time_and_come_back() {
         let (world, levels, aging, careers, people) = ctx_parts();
-        let ctx = Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people };
+        let ctx = Offseason {
+            world: &world,
+            levels: &levels,
+            aging: &aging,
+            careers: &careers,
+            people: &people,
+            contracts: &crate::contract::ContractRules::bundled(),
+        };
         let ms = careers.military.expect("careers.json: military_service");
         let base = world.clubs().find(|c| c.military).map(|c| c.id.clone()).unwrap();
         let mut pop = populate(&world, &levels, Date::new(2027, 2, 1), 7);
@@ -1763,7 +1778,14 @@ mod tests {
         let ag = ms.asian_games.as_mut().unwrap();
         (ag.first, ag.gold) = (2027, 1.0);
         let team = ag.team;
-        let ctx = Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people };
+        let ctx = Offseason {
+            world: &world,
+            levels: &levels,
+            aging: &aging,
+            careers: &careers,
+            people: &people,
+            contracts: &crate::contract::ContractRules::bundled(),
+        };
         let mut pop = populate(&world, &levels, Date::new(2027, 2, 1), 7);
         let r = offseason(&ctx, &mut pop, 2027, None, 7);
         assert!(r.exempt > 0 && r.exempt <= team, "{r:?}");
@@ -1858,7 +1880,14 @@ mod tests {
     #[test]
     fn offseasons_keep_the_world_whole() {
         let (world, levels, aging, careers, people) = ctx_parts();
-        let ctx = Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people };
+        let ctx = Offseason {
+            world: &world,
+            levels: &levels,
+            aging: &aging,
+            careers: &careers,
+            people: &people,
+            contracts: &crate::contract::ContractRules::bundled(),
+        };
         let mut pop = populate(&world, &levels, Date::new(2027, 2, 1), 5);
         let start = pop.players().count();
         let mut again = pop.clone();
@@ -1927,7 +1956,14 @@ mod tests {
     #[test]
     fn twenty_offseasons_keep_the_staffs_and_the_scale() {
         let (world, levels, aging, careers, people) = ctx_parts();
-        let ctx = Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people };
+        let ctx = Offseason {
+            world: &world,
+            levels: &levels,
+            aging: &aging,
+            careers: &careers,
+            people: &people,
+            contracts: &crate::contract::ContractRules::bundled(),
+        };
         use crate::attr::Attr::*;
         // Character counts for nobody's value, so neither growth nor selection may move it;
         // composure counts for a pitcher's (selection lifts the majors' by about 0.4) and

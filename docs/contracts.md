@@ -1,6 +1,6 @@
 # 계약과 FA 시장 설계
 
-선수 경력 모델(`crates/bm-world/src/career.rs`)에 계약·연봉·FA 시장을 넣는 설계다. 조사 자료는 [`research/world/contracts_mlb.md`](research/world/contracts_mlb.md), [`contracts_kbo.md`](research/world/contracts_kbo.md), [`contracts_npb.md`](research/world/contracts_npb.md), [`contracts_markets.md`](research/world/contracts_markets.md)에 있다. 아직 구현 전이며, 단계마다 이 문서를 고친다.
+선수 경력 모델(`crates/bm-world/src/career.rs`)에 계약·연봉·FA 시장을 넣는 설계다. 조사 자료는 [`research/world/contracts_mlb.md`](research/world/contracts_mlb.md), [`contracts_kbo.md`](research/world/contracts_kbo.md), [`contracts_npb.md`](research/world/contracts_npb.md), [`contracts_markets.md`](research/world/contracts_markets.md)에 있다. 1단계(돈과 계약의 자료 구조)까지 구현했고, 단계마다 이 문서를 고친다. 규정 파일과 예산 파일의 필드는 [`data-files.md`](data-files.md)에 있다.
 
 ## 왜 필요한가
 
@@ -130,10 +130,12 @@ KBO·NPB에서 1군 등록 일수를 채우는 선수는 1군 명단보다 적�
 
 ## 단계
 
-1. **돈과 계약의 자료 구조**:
-   - 통화, 리그별 규정 값과 발표 일정, 인상률, 구단 예산(`data/`).
-   - 계약 타입, 처음 세계의 계약과 연봉, 세이브 형식, 테스트.
-   - 이 단계까지는 선수 이동이 바뀌지 않는다.
+1. **돈과 계약의 자료 구조** (끝, 2026-11-18):
+   - 통화, 리그별 규정 값과 발표 일정, 인상률, 구단 예산(`data/people/contracts.json`, `data/leagues/budgets.json`).
+   - 계약 타입, 처음 세계의 계약과 연봉, 해마다의 계약 정리, 세이브 형식 5, 페이롤 집계(`bm careers`).
+   - 선수 이동은 바뀌지 않았다.
+   - 엔진에서 잰 1승의 득점은 10.0이고, 대체 수준은 FanGraphs 기준(MLB 한 시즌 1,000 WAR)에 맞췄다.
+   - 30년 뒤 세계의 페이롤은 예산의 1.07–1.13배다.
 2. **MLB**: 서비스와 연봉조정, 텐더, 퀄리파잉 오퍼, FA 시장과 마이너리그 계약, 옵션, 시장으로 정하는 은퇴.
 3. **KBO·NPB**: 자격과 선언, 등급·랭크와 보상, 보류·방출, 연봉.
 4. **리그 간**: 포스팅, 세계 안의 외국인 선수(지금의 외국인 생성 대체).
@@ -144,3 +146,4 @@ KBO·NPB에서 1군 등록 일수를 채우는 선수는 1군 명단보다 적�
 - 시즌 중 로스터 이동이 없어 서비스를 시즌 단위로 센다. 슈퍼 투와 시즌 중 콜업의 서비스는 빠진다.
 - 트레이드가 없어 사인 앤드 트레이드, 연봉 덤프, 보상선수 지명 뒤 이동은 없다.
 - 구단의 전략(우승 도전·재건)은 하나다. 모든 구단이 같은 방식으로 예산 안에서 승리를 산다.
+- **엔진의 투수 차이가 작다.** 대체 수준을 MLB 1,000 WAR에 맞추면 평균 선발이 1.5 WAR(실측 약 2)인데, 선발 사이 퍼짐(표준편차)이 0.3 WAR이다(실측 1.5–2). 타자는 평균 주전 2.1 WAR, 퍼짐 1.7 WAR로 실측과 비슷하다. 그래서 시장에서 에이스 투수의 몸값이 평균 투수와 거의 같다. 원인은 엔진에서 투수 능력이 실점에 주는 효과가 실측의 5분의 1 안팎인 것이다(PR의 알려진 문제).
