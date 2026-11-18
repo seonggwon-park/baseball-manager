@@ -14,10 +14,10 @@
 //!                                                                  hitters (and pitchers) against major-leaguers; `pool` = only that
 //! bm season [--seed S] [--until YYYY-MM-DD] [--seasons N]         generate the world and play a season of every league
 //!           [--warmup K] [--levels FILE] [--careers FILE]         (N seasons with offseasons between them, after K offseasons
-//!           [--aging FILE] [--json FILE]                          without games); --json: each level's rates in the last season
+//!           [--aging FILE] [--contracts FILE] [--json FILE]       without games); --json: each level's rates in the last season
 //! bm careers [--years N] [--every K] [--from N]                   offseasons back to back: each level's talent and ages (every
 //!            [--levels FILE] [--careers FILE] [--aging FILE]      K years and averaged from offseason N), and how the drafted
-//!            [--json FILE] [--out FILE]                           and signed prospects turn out; --json adds each level's
+//!            [--contracts FILE] [--json FILE] [--out FILE]        and signed prospects turn out; --json adds each level's
 //!                                                                 attribute means and spreads, pitch grades, the stamina and
 //!                                                                 quality of rotations and bullpens, how many regulars play
 //!                                                                 their own position, and attribute correlations (--years 0:
@@ -86,6 +86,7 @@ struct Args {
     from: Option<usize>,
     levels_file: Option<std::path::PathBuf>,
     careers_file: Option<std::path::PathBuf>,
+    contracts_file: Option<std::path::PathBuf>,
     aging_file: Option<std::path::PathBuf>,
     json: Option<std::path::PathBuf>,
     /// `bm contacts`: where to write the rows, and rows to run the collision model backwards on.
@@ -125,6 +126,7 @@ fn parse_args() -> Args {
         from: None,
         levels_file: None,
         careers_file: None,
+        contracts_file: None,
         aging_file: None,
         json: None,
         out: None,
@@ -167,6 +169,7 @@ fn parse_args() -> Args {
             "--from" => a.from = Some(v.parse().expect("--from N")),
             "--levels" => a.levels_file = Some(v.into()),
             "--careers" => a.careers_file = Some(v.into()),
+            "--contracts" => a.contracts_file = Some(v.into()),
             "--json" => a.json = Some(v.into()),
             "--out" => a.out = Some(v.into()),
             "--invert" => a.invert = Some(v.into()),
@@ -492,6 +495,7 @@ fn main() {
                 warmup: args.warmup,
                 levels_file: args.levels_file.as_deref(),
                 careers_file: args.careers_file.as_deref(),
+                contracts_file: args.contracts_file.as_deref(),
                 aging_file: args.aging_file.as_deref(),
                 json: args.json.as_deref(),
             },
@@ -504,6 +508,7 @@ fn main() {
             args.levels_file.as_deref(),
             args.careers_file.as_deref(),
             args.aging_file.as_deref(),
+            args.contracts_file.as_deref(),
             args.json.as_deref(),
             args.out.as_deref(),
         ),

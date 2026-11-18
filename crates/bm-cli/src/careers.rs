@@ -561,8 +561,11 @@ fn snapshot(pop: &Population, rules: &ContractRules) -> Vec<Before> {
                     "npb" => Economy::Npb,
                     _ => Economy::Mlb,
                 };
-                let contract =
-                    pop.contracts.get(&p.id).map_or_else(|| ",,".to_string(), |c| format!("{:?},{:?},{:.0}", c.kind, c.terms, c.pay(year).unwrap_or(f64::NAN)));
+                let service = pop.careers.get(&p.id).map_or(0, |c| bm_world::contract::first_team_seasons(c, economy.top_level(), year + 1));
+                let contract = pop.contracts.get(&p.id).map_or_else(
+                    || format!(",,,,,{service}"),
+                    |c| format!("{},{:?},{:?},{},{:.0},{service}", c.org, c.kind, c.terms, c.last() - year, c.pay(year).unwrap_or(f64::NAN)),
+                );
                 out.push(Before {
                     id: p.id,
                     level: r.level.clone(),
@@ -586,6 +589,12 @@ fn snapshot(pop: &Population, rules: &ContractRules) -> Vec<Before> {
 fn write_outcomes(out: &mut impl std::io::Write, pop: &Population, before: &[Before], year: i32) {
     let now: BTreeMap<u32, &str> = pop.rosters.iter().flat_map(|r| r.players().map(move |p| (p.id, r.level.as_str()))).collect();
     let nov = Date::new(year, 11, 1);
+    let after = |id: u32| -> String {
+        pop.contracts.get(&id).map_or_else(
+            || ",,,,".to_string(),
+            |c| format!("{},{:?},{:?},{},{:.0}", c.org, c.kind, c.terms, c.last() - year, c.pay(year + 1).unwrap_or(f64::NAN)),
+        )
+    };
     for b in before {
         let id = &b.id;
         let age = pop.people.get(id).map_or(f64::NAN, |p| nov.days_since(p.born) as f64 / 365.2425);
@@ -598,7 +607,7 @@ fn write_outcomes(out: &mut impl std::io::Write, pop: &Population, before: &[Bef
         };
         writeln!(
             out,
-            "{year},{id},{age:.2},{},{},{},{:.2},{:.3},{},{:.3},{},{outcome},{new_level}",
+            "{year},{id},{age:.2},{},{},{},{:.2},{:.3},{},{:.3},{},{outcome},{new_level},{}",
             b.level,
             b.slot,
             u8::from(b.pitcher),
@@ -606,7 +615,8 @@ fn write_outcomes(out: &mut impl std::io::Write, pop: &Population, before: &[Bef
             b.value_sd,
             u8::from(b.foreign),
             b.war,
-            b.contract
+            b.contract,
+            after(*id)
         )
         .expect("write --out");
     }
@@ -624,6 +634,7 @@ pub fn run(
     levels_file: Option<&Path>,
     careers_file: Option<&Path>,
     aging_file: Option<&Path>,
+    contracts_file: Option<&Path>,
     json: Option<&Path>,
     out: Option<&Path>,
 ) {
@@ -633,11 +644,15 @@ pub fn run(
     let aging = aging_file.map_or_else(AgingTable::bundled, |p| AgingTable::from_json(&read(p)).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
     let careers = careers_file.map_or_else(CareerTable::bundled, |p| CareerTable::from_json(&read(p)).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
     let people = PeopleMaker::new();
-    let contracts = bm_world::ContractRules::bundled();
+    let contracts =
+        contracts_file.map_or_else(ContractRules::bundled, |p| ContractRules::from_json(&read(p)).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
     let ctx = Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people, contracts: &contracts };
     let t0 = Instant::now();
     let targets = value_targets(&levels);
     let mut pop = populate_with(&world, &levels, &aging, &careers, Date::new(2027, 2, 1), seed);
+    if contracts_file.is_some() {
+        bm_world::contract::initial(&world, &mut pop, &contracts, seed);
+    }
     println!("World of {} players on {} (first-team spread {:.2} runs per player)", pop.players().count(), pop.date, spread(&pop, &world));
     print_table(&stats(&pop), &levels, &targets);
     let from = from.unwrap_or(years / 2).min(years.saturating_sub(1));
@@ -651,7 +666,7 @@ pub fn run(
     }
     let mut out = out.map(|p| {
         let mut f = std::io::BufWriter::new(std::fs::File::create(p).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
-        writeln!(f, "year,id,age,level,slot,pitcher,value,value_sd,foreign,war,kind,terms,salary,outcome,new_level").expect("write --out");
+        writeln!(f, "year,id,age,level,slot,pitcher,value,value_sd,foreign,war,org,kind,terms,years_left,salary,service,outcome,new_level,new_org,new_kind,new_terms,new_years,new_salary").expect("write --out");
         f
     });
     for y in 0..years {
@@ -672,7 +687,7 @@ pub fn run(
         }
         if every > 0 && ((y + 1) % every == 0 || y + 1 == years) {
             println!(
-                "\nAfter the {year} offseason ({} players, {} people so far): retired {}, released {}, minor-league free agents {}, drafted {}, signed {}, foreign {} in / {} out, military service {} in ({} with Sangmu) / {} back, {} exempt; first-team spread {:.2}",
+                "\nAfter the {year} offseason ({} players, {} people so far): retired {}, released {}, minor-league free agents {}, drafted {}, signed {}, foreign {} in / {} out, military service {} in ({} with Sangmu) / {} back, {} exempt; market {} free agents: {} major-league and {} minor-league contracts, {} unsigned; first-team spread {:.2}",
                 pop.players().count(),
                 pop.people.len(),
                 r.retired,
@@ -686,6 +701,10 @@ pub fn run(
                 r.sangmu,
                 r.discharged,
                 r.exempt,
+                r.free_agents,
+                r.signed_major,
+                r.signed_minor,
+                r.unsigned,
                 spread(&pop, &world)
             );
             print_table(&stats(&pop), &levels, &targets);

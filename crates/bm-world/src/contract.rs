@@ -274,6 +274,9 @@ impl EconomyRules {
 #[derive(Clone, Debug, Deserialize)]
 pub struct ContractRules {
     economies: BTreeMap<Economy, EconomyRules>,
+    /// The major-league free-agent market; without it no club signs another's players.
+    #[serde(default)]
+    pub market: Option<crate::market::MarketRules>,
 }
 
 impl ContractRules {
@@ -541,7 +544,14 @@ struct Placed<'a> {
     player: &'a Player,
     /// On the 40-man roster of a major-league organisation, or registered (支配下) in NPB.
     upper: bool,
+    /// His time with the first team as a share of a regular's: 1 in its lineup, rotation or
+    /// bullpen, `BENCH_SHARE` on its bench, 0 below it.
+    share: f64,
 }
+
+/// A bench player's time as a share of a regular's (as for the replacement levels in
+/// `contracts.json`).
+pub const BENCH_SHARE: f64 = 0.1;
 
 /// Every rostered player with his organisation, level and whether he holds an upper-tier
 /// contract: in a major-league organisation the first team and the next best to 40 (by
@@ -551,9 +561,16 @@ fn placements<'a>(orgs: &'a [Org], pop: &'a Population) -> Vec<Placed<'a>> {
     let mut out = Vec::new();
     for org in orgs {
         let mut here: Vec<(usize, &str, &Player)> = Vec::new();
+        let mut share: BTreeMap<u32, f64> = BTreeMap::new();
         for (i, (club, key)) in org.levels.iter().enumerate() {
             if let Some(r) = index.get(club.as_str()) {
                 here.extend(r.players().map(|p| (i, key.as_str(), p)));
+                if i == 0 {
+                    let s = &r.squad;
+                    share.extend(s.hitters.iter().map(|(p, _)| (p.id, 1.0)));
+                    share.extend(s.starters.iter().chain(&s.relievers).map(|p| (p.id, 1.0)));
+                    share.extend(s.bench.iter().map(|(p, _)| (p.id, BENCH_SHARE)));
+                }
             }
         }
         let upper: BTreeSet<u32> = match org.kind {
@@ -570,7 +587,7 @@ fn placements<'a>(orgs: &'a [Org], pop: &'a Population) -> Vec<Placed<'a>> {
             _ => here.iter().map(|(_, _, p)| p.id).collect(),
         };
         for (_, level, p) in here {
-            out.push(Placed { org, level, player: p, upper: upper.contains(&p.id) });
+            out.push(Placed { org, level, player: p, upper: upper.contains(&p.id), share: share.get(&p.id).copied().unwrap_or(0.0) });
         }
     }
     out
@@ -609,7 +626,9 @@ fn new_contract(
             if service < svc.arbitration {
                 Contract::one_season(org, Kind::Major, Terms::Renewal, year, r.minimum(year))
             } else if service < svc.free_agency {
-                let mut pay = rules.arbitration_pay(p, war, year, service - svc.arbitration + 1);
+                // Arbitration pays for the wins a player gives in the time he gets (Clemens's
+                // shares are of pay per WAR produced).
+                let mut pay = rules.arbitration_pay(p, war * pl.share, year, service - svc.arbitration + 1);
                 if let Some(prev) = previous.and_then(|c| c.pay(year - 1)) {
                     pay = pay.max(rules.lowest_renewal(e, prev));
                 }

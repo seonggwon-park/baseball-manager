@@ -94,6 +94,7 @@ pub struct Options<'a> {
     pub warmup: usize,
     pub levels_file: Option<&'a std::path::Path>,
     pub careers_file: Option<&'a std::path::Path>,
+    pub contracts_file: Option<&'a std::path::Path>,
     pub aging_file: Option<&'a std::path::Path>,
     /// Write each level's rates in the last season played here.
     pub json: Option<&'a std::path::Path>,
@@ -222,10 +223,15 @@ pub fn run(tuning: &Tuning, seed: u64, threads: usize, o: &Options) {
         .careers_file
         .map_or_else(bm_world::CareerTable::bundled, |p| bm_world::CareerTable::from_json(&read(p)).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
     let people = bm_world::PeopleMaker::new();
-    let contracts = bm_world::ContractRules::bundled();
+    let contracts = o
+        .contracts_file
+        .map_or_else(bm_world::ContractRules::bundled, |p| bm_world::ContractRules::from_json(&read(p)).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
     let ctx = bm_world::Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people, contracts: &contracts };
     let t0 = Instant::now();
     let mut pop = bm_world::populate_with(&world, &levels, &aging, &careers, Date::new(2027, 2, 1), seed);
+    if o.contracts_file.is_some() {
+        bm_world::contract::initial(&world, &mut pop, &contracts, seed);
+    }
     let t_pop = t0.elapsed().as_secs_f64();
     // Offseasons without games before the first season played: the world settles into the
     // steady state of the career model.

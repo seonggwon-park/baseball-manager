@@ -11,6 +11,7 @@ pub mod convert;
 pub mod develop;
 pub mod generate;
 pub mod league;
+pub mod market;
 pub mod names;
 pub mod people;
 pub mod player;

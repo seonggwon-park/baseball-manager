@@ -11,9 +11,11 @@
 
 use crate::ability;
 use crate::calendar::Date;
+use crate::contract::{first_team_seasons, Contract, Economy, Kind, Terms};
 use crate::develop::{develop, develop_idle, AgingTable, Closure, Potential, Style};
 use crate::generate::{pitcher, position_player, Squad, Talent};
 use crate::league::{Level, World};
+use crate::market::{Bidder, Depth, FreeAgent, Why};
 use crate::people::{AgeSpread, PeopleMaker};
 use crate::player::{Player, Position, Role};
 use crate::populate::{level_key, LevelTable, Population, Roster};
@@ -1061,6 +1063,12 @@ pub struct Report {
     pub sangmu: usize,
     pub discharged: usize,
     pub exempt: usize,
+    /// The major-league market: players on it, signed to major-league and minor-league
+    /// contracts, and those nobody signed.
+    pub free_agents: usize,
+    pub signed_major: usize,
+    pub signed_minor: usize,
+    pub unsigned: usize,
 }
 
 /// Order in which organisations of one kind pick in the draft: worst record first, or,
@@ -1229,9 +1237,20 @@ fn military(
     let mut ranked: Vec<(f64, usize)> = enlist.iter().enumerate().filter(|(_, (_, p))| age(p.id) <= ms.deadline_age).map(|(i, (_, p))| (worth(p), i)).collect();
     ranked.sort_by(|a, b| b.0.total_cmp(&a.0));
     let mut to_sangmu: BTreeSet<usize> = BTreeSet::new();
+    // A staff first: the best pitchers until it has the thirteen a team needs, then the best
+    // of everyone (without it, a year short of pitchers among the applicants left Sangmu
+    // without a bullpen).
+    let short = 13usize.saturating_sub(have_p);
+    for &(_, i) in ranked.iter().filter(|(_, i)| enlist[*i].1.is_pitcher()).take(short.min(room_p).min(ms.sangmu_per_year)) {
+        room_p -= 1;
+        to_sangmu.insert(i);
+    }
     for (_, i) in ranked {
         if to_sangmu.len() >= ms.sangmu_per_year {
             break;
+        }
+        if to_sangmu.contains(&i) {
+            continue;
         }
         let room = if enlist[i].1.is_pitcher() { &mut room_p } else { &mut room_h };
         if *room > 0 {
@@ -1255,6 +1274,41 @@ fn military(
     // Sangmu keeps everyone who serves there.
     for p in &pools[base] {
         pinned[base].insert(p.id, 0);
+    }
+}
+
+/// An organisation's levels: the roster size of each, its pitchers and position players, its
+/// age limits (the oldest age of its spread in `levels.json`, falling from the top level
+/// down), and where the Dominican academy is.
+struct Shape {
+    sizes: Vec<usize>,
+    caps: Vec<(usize, usize)>,
+    limits: Vec<(f64, f64)>,
+    academy_at: Option<usize>,
+}
+
+impl Shape {
+    fn of(org: &Org, levels: &LevelTable) -> Shape {
+        let sizes: Vec<usize> = org.levels.iter().map(|(_, key)| levels.get(key).roster.max(26)).collect();
+        let caps = sizes.iter().map(|&s| roster_split(s)).collect();
+        let limits = org.levels.iter().map(|(_, key)| (levels.get(key).batters.max, levels.get(key).pitchers.max)).collect();
+        // The Dominican academy is for international amateurs only (MLB's Dominican Summer
+        // League rosters are 99.5 % born outside the United States; birthplaces.json).
+        let academy_at = org.levels.iter().position(|(_, key)| key == "academy");
+        Shape { sizes, caps, limits, academy_at }
+    }
+
+    /// The lowest level a player of `age` may still play at, `None` if none: the age limits,
+    /// Triple-A at most for a minor-league free agent kept as depth, and the academy for
+    /// international amateurs only.
+    fn deepest(&self, is_pitcher: bool, age: f64, depth_only: bool, international: bool) -> Option<usize> {
+        let d = self.limits.iter().take_while(|(b, pt)| age <= if is_pitcher { *pt } else { *b }).count().checked_sub(1)?;
+        // Past his minor-league contract: Triple-A depth or nothing.
+        let d = if depth_only { d.min(1) } else { d };
+        match self.academy_at {
+            Some(a) if d >= a && !international => a.checked_sub(1),
+            _ => Some(d),
+        }
     }
 }
 
@@ -1306,13 +1360,18 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
         pop.potentials.remove(&id);
         pop.foreign.remove(&id);
     };
-    for players in by_club.values_mut() {
+    // With the market, players of the major-league organisations retire on their own less:
+    // most careers end when nobody signs them (decision 2026-11-18).
+    let majors: BTreeSet<&str> = orgs.iter().filter(|o| o.kind == OrgKind::Major).flat_map(|o| o.levels.iter().map(|(c, _)| c.as_str())).collect();
+    let factor = ctx.contracts.market.as_ref().map_or(1.0, |m| m.retirement);
+    for (club, players) in by_club.iter_mut() {
+        let own = if majors.contains(club.as_str()) { factor } else { 1.0 };
         let mut stay = Vec::with_capacity(players.len());
         for mut p in players.drain(..) {
             let age = age_of(p.id, date);
             let pot = pop.potentials.entry(p.id).or_insert_with(|| Potential { attrs: p.attrs });
             develop(&mut p, pot, age, ctx.aging, &mut rng);
-            if rng.chance(ctx.careers.retire_chance(age)) {
+            if rng.chance(own * ctx.careers.retire_chance(age)) {
                 leave(pop, p.id, Exit::Retired);
                 report.retired += 1;
             } else {
@@ -1495,63 +1554,177 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
     let age_of = |id: u32, on: Date| born.get(&id).map_or(25.0, |b| on.days_since(*b) as f64 / 365.2425);
     let intl: BTreeSet<u32> =
         pop.careers.iter().filter(|(_, c)| matches!(&c.origin, Origin::Signed { class, .. } if class == "international")).map(|(id, _)| *id).collect();
+    let international = |id: u32| intl.contains(&id);
+    let shapes: Vec<Shape> = orgs.iter().map(|o| Shape::of(o, ctx.levels)).collect();
+    let market = ctx.contracts.market.as_ref();
+    // The major-league organisations' bidders, by organisation.
+    let bidder_of: BTreeMap<usize, usize> = orgs.iter().enumerate().filter(|(_, o)| o.kind == OrgKind::Major).enumerate().map(|(b, (k, _))| (k, b)).collect();
+    // Free agency (decision 2026-11-18: the market): a major-league player whose contract ran
+    // out with six years of service goes to market; players under a guaranteed contract are
+    // kept first (`protected`).
+    let mut agents: Vec<FreeAgent> = Vec::new();
+    let mut guaranteed: BTreeSet<u32> = BTreeSet::new();
+    if market.is_some() {
+        let svc = ctx.contracts.of(Economy::Mlb).service.map_or(6, |s| s.free_agency);
+        for (k, org) in orgs.iter().enumerate() {
+            if org.kind != OrgKind::Major {
+                continue;
+            }
+            let due = |p: &Player| {
+                let ran_out = pop.contracts.get(&p.id).is_some_and(|c| c.kind == Kind::Major && !c.covers(year + 1));
+                let service = pop.careers.get(&p.id).map_or(0, |c| first_team_seasons(c, "mlb", year + 1));
+                ran_out && service >= svc && !pinned[k].contains_key(&p.id)
+            };
+            let (go, stay): (Vec<Player>, Vec<Player>) = std::mem::take(&mut pools[k]).into_iter().partition(due);
+            guaranteed.extend(stay.iter().filter(|p| pop.contracts.get(&p.id).is_some_and(|c| c.kind == Kind::Major && c.covers(year + 1))).map(|p| p.id));
+            pools[k] = stay;
+            agents.extend(go.into_iter().map(|p| FreeAgent { age: age_of(p.id, next_season), from: bidder_of.get(&k).copied(), why: Why::Service, player: p }));
+        }
+        report.free_agents += agents.len();
+    }
+
+    // First every organisation decides whom it keeps.
+    let mut kept_pools: Vec<Vec<Player>> = Vec::with_capacity(orgs.len());
+    let mut let_go: Vec<Player> = Vec::new();
+    {
+        let deepest_of = |k: usize, p: &Player| shapes[k].deepest(p.is_pitcher(), age_of(p.id, next_season), depth_only.contains(&p.id), international(p.id));
+        for (k, org) in orgs.iter().enumerate() {
+            let caps = &shapes[k].caps;
+            let deepest = |p: &Player| deepest_of(k, p);
+            let pots = &pop.potentials;
+            let value = |p: &Player| {
+                keep_value(p, pots.get(&p.id), ctx.careers.keep_potential)
+                    - age_cost(age_of(p.id, next_season), ctx.careers.age_discount_of(org.kind)) * ability::per_sd(p)
+            };
+            // The players who would make the first team on their ability now (less the same
+            // discount for age) stay whatever the prospects behind them promise: no club
+            // releases its regulars for draftees (ranked with the growth ahead of them, the
+            // KBO's high-school picks pushed the first teams three years below their age). A
+            // major-league organisation keeps its Triple-A depth the same way (the 40-man
+            // roster and the veterans it calls up); without it Triple-A was two years too young.
+            let protected: BTreeSet<u32> = {
+                let now = |p: &Player| ability::value(p) - age_cost(age_of(p.id, next_season), ctx.careers.age_discount_of(org.kind)) * ability::per_sd(p);
+                let top = if org.kind == OrgKind::Major { 2 } else { 1 };
+                let (n_p, n_h) = caps[..top.min(caps.len())].iter().fold((0, 0), |a, c| (a.0 + c.0, a.1 + c.1));
+                let (mut ps, mut hs): (Vec<&Player>, Vec<&Player>) = pools[k].iter().partition(|p| p.is_pitcher());
+                ps.sort_by(|a, b| now(b).total_cmp(&now(a)));
+                hs.sort_by(|a, b| now(b).total_cmp(&now(a)));
+                ps.iter()
+                    .take(n_p)
+                    .chain(hs.iter().take(n_h))
+                    .map(|p| p.id)
+                    .chain(pools[k].iter().filter(|p| guaranteed.contains(&p.id)).map(|p| p.id))
+                    .collect()
+            };
+            // Two catchers and six starters (a rotation and a spare) for every level.
+            let (kept, gone) =
+                keep(std::mem::take(&mut pools[k]), &value, caps, (2 * org.levels.len(), 6 * org.levels.len()), &deepest, &pinned[k], &protected);
+            kept_pools.push(kept);
+            for p in gone {
+                // A major-league organisation's players let go go to market.
+                if market.is_some() && org.kind == OrgKind::Major {
+                    let why = if depth_only.contains(&p.id) { Why::MinorContract } else { Why::LetGo };
+                    agents.push(FreeAgent { age: age_of(p.id, next_season), from: bidder_of.get(&k).copied(), why, player: p });
+                    report.free_agents += 1;
+                } else {
+                    let_go.push(p);
+                }
+            }
+        }
+    }
+    // The players let go by the KBO and NPB clubs leave the world (their market is the next
+    // stage), and without a market everyone's do.
+    for p in let_go {
+        if depth_only.contains(&p.id) {
+            leave(pop, p.id, Exit::FreeAgent);
+            report.minor_free_agents += 1;
+        } else {
+            leave(pop, p.id, Exit::Released);
+            report.released += 1;
+        }
+    }
+    // The market: every major-league organisation bids for the free agents with what its
+    // budget leaves after the salaries it already owes for the next season.
+    let mut signed_by: BTreeSet<u32> = BTreeSet::new();
+    if let Some(m) = market {
+        let budgets = crate::contract::Budgets::bundled();
+        let r = ctx.contracts.of(Economy::Mlb);
+        let svc = r.service.map_or((3, 6), |s| (s.arbitration, s.free_agency));
+        let mut bidders: Vec<Bidder> = Vec::new();
+        for &k in bidder_of.keys() {
+            let mut depth = Depth::default();
+            let mut committed = 0.0;
+            for p in &kept_pools[k] {
+                depth.add(ctx.contracts, p);
+                let Some(c) = pop.contracts.get(&p.id).filter(|c| c.kind == Kind::Major) else { continue };
+                committed += match c.pay(year + 1) {
+                    Some(pay) => pay,
+                    None => {
+                        let service = pop.careers.get(&p.id).map_or(0, |c| first_team_seasons(c, "mlb", year + 1));
+                        if service < svc.0 {
+                            r.minimum(year + 1)
+                        } else {
+                            ctx.contracts.arbitration_pay(p, ctx.contracts.war(p, Economy::Mlb), year + 1, service - svc.0 + 1)
+                        }
+                    }
+                };
+            }
+            let budget = budgets.of(&orgs[k].id, Economy::Mlb, year + 1, ctx.contracts).unwrap_or(0.0);
+            bidders.push(Bidder { depth, committed, budget, depth_signed: 0 });
+        }
+        let org_of: Vec<usize> = bidder_of.keys().copied().collect();
+        let outcome = crate::market::run(ctx.contracts, m, std::mem::take(&mut agents), &mut bidders, year + 1, &mut rng);
+        for s in outcome.signed {
+            let k = org_of[s.org];
+            let id = s.player.id;
+            let contract = if s.major {
+                report.signed_major += 1;
+                Contract::new(&orgs[k].id, Kind::Major, Terms::FreeAgent, year + 1, &vec![s.pay; s.years])
+            } else {
+                report.signed_minor += 1;
+                depth_only.insert(id);
+                Contract::one_season(&orgs[k].id, Kind::Minor, Terms::FreeAgent, year + 1, s.pay)
+            };
+            pop.contracts.insert(id, contract);
+            signed_by.insert(id);
+            kept_pools[k].push(s.player);
+        }
+        for fa in outcome.unsigned {
+            report.unsigned += 1;
+            let exit = if fa.why == Why::LetGo { Exit::Released } else { Exit::FreeAgent };
+            leave(pop, fa.player.id, exit);
+        }
+    }
+    let deepest_of = |k: usize, p: &Player| shapes[k].deepest(p.is_pitcher(), age_of(p.id, next_season), depth_only.contains(&p.id), international(p.id));
+
+    // Then every organisation fills its rosters and places its players level by level.
     let mut built: BTreeMap<String, Roster> = BTreeMap::new();
     for (k, org) in orgs.iter().enumerate() {
-        let sizes: Vec<usize> = org.levels.iter().map(|(_, key)| ctx.levels.get(key).roster.max(26)).collect();
-        let caps: Vec<(usize, usize)> = sizes.iter().map(|&s| roster_split(s)).collect();
-        // Each level takes players up to the oldest age of its age spread (levels.json);
-        // the limits fall from the top level down.
-        let limits: Vec<(f64, f64)> = org.levels.iter().map(|(_, key)| (ctx.levels.get(key).batters.max, ctx.levels.get(key).pitchers.max)).collect();
-        // The Dominican academy is for international amateurs only (MLB's Dominican Summer
-        // League rosters are 99.5 % born outside the United States; birthplaces.json).
-        let academy_at = org.levels.iter().position(|(_, key)| key == "academy");
-        let international = |id: u32| intl.contains(&id);
-        let deepest = |p: &Player| -> Option<usize> {
-            let age = age_of(p.id, next_season);
-            let d = limits.iter().take_while(|(b, pt)| age <= if p.is_pitcher() { *pt } else { *b }).count().checked_sub(1)?;
-            // Past his minor-league contract: Triple-A depth or nothing.
-            let d = if depth_only.contains(&p.id) { d.min(1) } else { d };
-            match academy_at {
-                Some(a) if d >= a && !international(p.id) => a.checked_sub(1),
-                _ => Some(d),
-            }
-        };
-        let pots = &pop.potentials;
-        let value = |p: &Player| {
-            keep_value(p, pots.get(&p.id), ctx.careers.keep_potential)
-                - age_cost(age_of(p.id, next_season), ctx.careers.age_discount_of(org.kind)) * ability::per_sd(p)
-        };
-        // The players who would make the first team on their ability now (less the same
-        // discount for age) stay whatever the prospects behind them promise: no club
-        // releases its regulars for draftees (ranked with the growth ahead of them, the
-        // KBO's high-school picks pushed the first teams three years below their age). A
-        // major-league organisation keeps its Triple-A depth the same way (the 40-man
-        // roster and the veterans it calls up); without it Triple-A was two years too young.
-        let protected: BTreeSet<u32> = {
-            let now = |p: &Player| ability::value(p) - age_cost(age_of(p.id, next_season), ctx.careers.age_discount_of(org.kind)) * ability::per_sd(p);
-            let top = if org.kind == OrgKind::Major { 2 } else { 1 };
-            let (n_p, n_h) = caps[..top.min(caps.len())].iter().fold((0, 0), |a, c| (a.0 + c.0, a.1 + c.1));
-            let (mut ps, mut hs): (Vec<&Player>, Vec<&Player>) = pools[k].iter().partition(|p| p.is_pitcher());
-            ps.sort_by(|a, b| now(b).total_cmp(&now(a)));
-            hs.sort_by(|a, b| now(b).total_cmp(&now(a)));
-            ps.iter().take(n_p).chain(hs.iter().take(n_h)).map(|p| p.id).collect()
-        };
-        // Two catchers and six starters (a rotation and a spare) for every level.
-        let (kept, gone) = keep(std::mem::take(&mut pools[k]), &value, &caps, (2 * org.levels.len(), 6 * org.levels.len()), &deepest, &pinned[k], &protected);
-        for p in gone {
-            if depth_only.contains(&p.id) {
-                leave(pop, p.id, Exit::FreeAgent);
-                report.minor_free_agents += 1;
-            } else {
+        let Shape { sizes, caps, academy_at, .. } = &shapes[k];
+        let (caps, academy_at) = (caps.as_slice(), *academy_at);
+        let deepest = |p: &Player| deepest_of(k, p);
+        let mut pool = std::mem::take(&mut kept_pools[k]);
+        // An organisation that signed players on the market keeps its players again within
+        // its levels' places (the new signings and the guaranteed contracts first): the
+        // veterans it signed may only play at the top levels.
+        if pool.iter().any(|p| signed_by.contains(&p.id)) {
+            let pots = &pop.potentials;
+            let value = |p: &Player| {
+                keep_value(p, pots.get(&p.id), ctx.careers.keep_potential)
+                    - age_cost(age_of(p.id, next_season), ctx.careers.age_discount_of(org.kind)) * ability::per_sd(p)
+            };
+            let first: BTreeSet<u32> = pool.iter().filter(|p| signed_by.contains(&p.id) || guaranteed.contains(&p.id)).map(|p| p.id).collect();
+            let (kept, gone) = keep(pool, &value, caps, (2 * org.levels.len(), 6 * org.levels.len()), &deepest, &pinned[k], &first);
+            for p in gone {
                 leave(pop, p.id, Exit::Released);
                 report.released += 1;
             }
+            pool = kept;
         }
         // An organisation whose players cannot fill its rosters signs amateurs nobody drafted
         // (undrafted college players in the majors' organisations, development players in
         // Korea and Japan) for the pitchers' and position players' places left open. Sangmu
         // holds only the players who serve there.
-        let mut pool = kept;
         let fill = match org.kind {
             OrgKind::Major => Some("us_college"),
             OrgKind::Korean => Some("kbo_college"),
@@ -1597,7 +1770,7 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
                 // Foreign players at their level, and whoever can go no lower.
                 let mut here: BTreeSet<u32> = pinned[k].iter().filter(|(_, l)| **l == i).map(|(id, _)| *id).collect();
                 for pitchers in [true, false] {
-                    here.extend(forced(&pool, i, pitchers, &caps, &lowest));
+                    here.extend(forced(&pool, i, pitchers, caps, &lowest));
                 }
                 take_level(&mut pool, sizes[i], &here)
             };
@@ -1894,7 +2067,9 @@ mod tests {
         for year in 2027..2030 {
             let report = offseason(&ctx, &mut pop, year, None, 5);
             assert!(report.drafted > 600 && report.signed > 1000, "{report:?}");
-            assert!(report.retired + report.released > 1000, "{report:?}");
+            // Players leave by retiring, by being let go by a KBO or NPB club, or (in the
+            // majors' organisations) by finding no contract on the market.
+            assert!(report.retired + report.released + report.unsigned > 1000, "{report:?}");
         }
         assert_eq!(pop.date, Date::new(2030, 2, 1));
         // Every roster as big as its level says, everyone once, with a person, a ceiling
