@@ -154,7 +154,8 @@ pub fn perceive(
         rng.range(0.0, (params.fooled_recognition * batter.adjust).min(0.95))
     };
     // A pitch picked up for what it is may be let go on purpose (`take_kind`).
-    let take = if recognized { params.take_kind[thrown.kind.index()][strikes.min(2)].clamp(0.0, 1.0) } else { 0.0 };
+    // Below zero the batter swings more often than at a fastball in the same spot.
+    let take = if recognized { params.take_kind[thrown.kind.index()][strikes.min(2)].clamp(-1.0, 1.0) } else { 0.0 };
     let drop_act = f.move_z - 0.5 * G * f.time * f.time;
     // A pitch that differs a lot from the fastball is easier to identify, so the
     // misjudgement grows less than proportionally with the difference in movement.
@@ -184,7 +185,7 @@ pub fn perceive(
             _ => params.swing_d0_two_strikes,
         };
     let base = (params.swing_base[balls.min(3)][strikes.min(2)] * batter.aggression).min(0.992);
-    let swing_prob = base * sigmoid(-(d_hat - d0) / params.swing_width) * (1.0 - take);
+    let swing_prob = (base * sigmoid(-(d_hat - d0) / params.swing_width) * (1.0 - take)).min(0.995);
     Perception { recognition: rho, perceived_x: px, perceived_z: pz, bias_z: miss * dmz, swing_prob }
 }
 
