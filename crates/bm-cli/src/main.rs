@@ -14,10 +14,12 @@
 //!                                                                  hitters (and pitchers) against major-leaguers; `pool` = only that
 //! bm season [--seed S] [--until YYYY-MM-DD] [--seasons N]         generate the world and play a season of every league
 //!           [--warmup K] [--levels FILE] [--careers FILE]         (N seasons with offseasons between them, after K offseasons
-//!           [--aging FILE] [--contracts FILE] [--json FILE]       without games); --json: each level's rates in the last season
+//!           [--aging FILE] [--contracts FILE] [--json FILE]       without games); --json: each level's rates in the last season;
+//!           [--history H]                                         --history: offseasons of the new world's past (careers.json)
 //! bm careers [--years N] [--every K] [--from N]                   offseasons back to back: each level's talent and ages (every
 //!            [--levels FILE] [--careers FILE] [--aging FILE]      K years and averaged from offseason N), and how the drafted
-//!            [--contracts FILE] [--json FILE] [--out FILE]        and signed prospects turn out; --json adds each level's
+//!            [--contracts FILE] [--json FILE] [--out FILE]        and signed prospects turn out, from a new world with H
+//!            [--history H]                                        offseasons of past (careers.json; 0: the first world itself); --json adds each level's
 //!                                                                 attribute means and spreads, pitch grades, the stamina and
 //!                                                                 quality of rotations and bullpens, how many regulars play
 //!                                                                 their own position, and attribute correlations (--years 0:
@@ -82,6 +84,8 @@ struct Args {
     /// `bm season`: seasons to play in a row, after this many offseasons without games.
     seasons: usize,
     warmup: usize,
+    /// `bm season`, `bm careers`: offseasons of the new world's past (default: careers.json).
+    history: Option<u32>,
     every: usize,
     from: Option<usize>,
     levels_file: Option<std::path::PathBuf>,
@@ -122,6 +126,7 @@ fn parse_args() -> Args {
         years: 20,
         seasons: 1,
         warmup: 0,
+        history: None,
         every: 5,
         from: None,
         levels_file: None,
@@ -165,6 +170,7 @@ fn parse_args() -> Args {
             "--ball-drag" => a.ball_drag = v.parse().expect("--ball-drag F"),
             "--seasons" => a.seasons = v.parse().expect("--seasons N"),
             "--warmup" => a.warmup = v.parse().expect("--warmup N"),
+            "--history" => a.history = Some(v.parse().expect("--history H")),
             "--every" => a.every = v.parse().expect("--every K"),
             "--from" => a.from = Some(v.parse().expect("--from N")),
             "--levels" => a.levels_file = Some(v.into()),
@@ -493,6 +499,7 @@ fn main() {
                 until: args.until,
                 seasons: args.seasons,
                 warmup: args.warmup,
+                history: args.history,
                 levels_file: args.levels_file.as_deref(),
                 careers_file: args.careers_file.as_deref(),
                 contracts_file: args.contracts_file.as_deref(),
@@ -502,6 +509,7 @@ fn main() {
         ),
         "careers" => careers::run(
             args.years,
+            args.history,
             args.seed,
             args.every,
             args.from,

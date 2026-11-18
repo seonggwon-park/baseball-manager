@@ -6,9 +6,7 @@
 use bm_engine::Rng;
 use bm_world::ability;
 use bm_world::career::{offseason, talent_of, Offseason, Origin};
-use bm_world::{
-    populate_with, AgingTable, Attr, Budgets, CareerTable, ContractRules, Date, Economy, LevelTable, PeopleMaker, Population, Squad, Talent, World, N_ATTR,
-};
+use bm_world::{AgingTable, Attr, Budgets, CareerTable, ContractRules, Date, Economy, LevelTable, PeopleMaker, Population, Squad, Talent, World, N_ATTR};
 use std::collections::BTreeMap;
 use std::io::Write;
 use std::path::Path;
@@ -633,6 +631,7 @@ fn write_outcomes(out: &mut impl std::io::Write, pop: &Population, before: &[Bef
 #[allow(clippy::too_many_arguments)]
 pub fn run(
     years: usize,
+    history: Option<u32>,
     seed: u64,
     every: usize,
     from: Option<usize>,
@@ -654,11 +653,14 @@ pub fn run(
     let ctx = Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people, contracts: &contracts };
     let t0 = Instant::now();
     let targets = value_targets(&levels);
-    let mut pop = populate_with(&world, &levels, &aging, &careers, Date::new(2027, 2, 1), seed);
-    if contracts_file.is_some() {
-        bm_world::contract::initial(&world, &mut pop, &contracts, seed);
-    }
-    println!("World of {} players on {} (first-team spread {:.2} runs per player)", pop.players().count(), pop.date, spread(&pop, &world));
+    let history = history.unwrap_or(careers.history);
+    let mut pop = bm_world::new_world(&ctx, Date::new(2027, 2, 1), history, seed);
+    println!(
+        "World of {} players on {} after {history} offseasons of past (first-team spread {:.2} runs per player)",
+        pop.players().count(),
+        pop.date,
+        spread(&pop, &world)
+    );
     print_table(&stats(&pop), &levels, &targets);
     let from = from.unwrap_or(years / 2).min(years.saturating_sub(1));
     let mut sum: BTreeMap<&'static str, LevelStats> = BTreeMap::new();

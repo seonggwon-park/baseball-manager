@@ -125,7 +125,8 @@ pub struct MilitaryService {
     pub asian_games: Option<AsianGames>,
 }
 
-/// The Asian Games every `every` years from `first`: a national team of `team` players
+/// The Asian Games every `every` years, in step with `first` (before it as well: the world's
+/// history has them too): a national team of `team` players
 /// (`pitchers` of them pitchers) no older than `max_age` at the end of the year bar
 /// `wildcards`, at most `per_club` from one club, wins gold with chance `gold`, and its
 /// players who have not served are exempt.
@@ -171,6 +172,8 @@ struct CareerFile {
     minor_league_contract: Option<MinorContract>,
     #[serde(default)]
     military_service: Option<MilitaryService>,
+    #[serde(default)]
+    history: Option<Valued<u32>>,
 }
 
 /// The styles of the three kinds of league (see `Style`).
@@ -247,6 +250,9 @@ pub struct CareerTable {
     pub minor_contract: Option<MinorContract>,
     /// Korean military service, if the rules have it.
     pub military: Option<MilitaryService>,
+    /// Offseasons without games a new world goes through before its first season
+    /// ([`new_world`]).
+    pub history: u32,
 }
 
 fn position_code(code: &str) -> Result<Option<Position>, String> {
@@ -312,6 +318,7 @@ impl CareerTable {
             age_discount: f.age_discount.value,
             minor_contract: f.minor_league_contract,
             military: f.military_service,
+            history: f.history.map_or(0, |v| v.value),
         })
     }
 
@@ -1200,7 +1207,7 @@ fn military(
     // The Asian Games: the best Korean players of the KBO clubs and Sangmu, the pitchers and
     // the position players apart, up to the age bar the wildcards, a few from each club.
     if let Some(ag) = ms.asian_games {
-        if year >= ag.first && (year - ag.first) % ag.every.max(1) == 0 {
+        if (year - ag.first).rem_euclid(ag.every.max(1)) == 0 {
             let mut cands: Vec<(f64, u32, usize, bool)> = kbo
                 .iter()
                 .chain([&base])
@@ -2256,6 +2263,22 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
     report
 }
 
+/// A new world for a game that starts on `start`: the first world is made `history` years
+/// earlier and goes through that many offseasons without games (decision 2026-11-18), so the
+/// game starts from the steady state the career model is fitted to rather than from the
+/// first world, which takes about twenty offseasons to settle (`careers.json` history). Its
+/// players have the careers of those years (clubs, drafts, free agency) but no game records.
+pub fn new_world(ctx: &Offseason, start: Date, history: u32, seed: u64) -> Population {
+    let first = start.year() - history as i32;
+    let (_, month, day) = start.ymd();
+    let mut pop = crate::populate::populate_with(ctx.world, ctx.levels, ctx.aging, ctx.careers, Date::new(first, month, day), seed);
+    crate::contract::initial(ctx.world, &mut pop, ctx.contracts, seed);
+    for year in first..start.year() {
+        offseason(ctx, &mut pop, year, None, seed);
+    }
+    pop
+}
+
 /// The talent offsets (in the order of `levels.json`: hitting, pitching, fielding,
 /// physical, power on top of hitting, command on top of pitching, velocity on top of
 /// pitching, plate discipline on top of hitting) that a group of players shows on average.
@@ -2461,6 +2484,24 @@ mod tests {
 
     fn ctx_parts() -> (World, LevelTable, AgingTable, CareerTable, PeopleMaker) {
         (World::bundled(), LevelTable::bundled(), AgingTable::bundled(), CareerTable::bundled(), PeopleMaker::new())
+    }
+
+    #[test]
+    fn a_new_world_starts_after_its_history() {
+        let (world, levels, aging, careers, people) = ctx_parts();
+        let rules = crate::contract::ContractRules::bundled();
+        let ctx = Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people, contracts: &rules };
+        assert_eq!(careers.history, 20);
+        let pop = new_world(&ctx, Date::new(2027, 2, 1), 3, 9);
+        assert_eq!(pop.date, Date::new(2027, 2, 1));
+        // Everyone has a contract for the first season and the careers of the seasons before.
+        for p in pop.players() {
+            assert!(pop.contracts.get(&p.id).is_some_and(|c| c.covers(2027)), "{}", p.id);
+            assert_eq!(pop.careers[&p.id].seasons.last().map(|s| s.year), Some(2027));
+        }
+        let from_the_past = pop.players().filter(|p| pop.careers[&p.id].seasons.first().is_some_and(|s| s.year == 2024)).count();
+        assert!(from_the_past > 3000, "{from_the_past}");
+        assert!(pop.players().any(|p| matches!(pop.careers[&p.id].origin, Origin::Draft { year: 2024, .. })));
     }
 
     #[test]

@@ -92,6 +92,8 @@ pub struct Options<'a> {
     pub until: Option<Date>,
     pub seasons: usize,
     pub warmup: usize,
+    /// Offseasons of the new world's past (`careers.json` history if `None`).
+    pub history: Option<u32>,
     pub levels_file: Option<&'a std::path::Path>,
     pub careers_file: Option<&'a std::path::Path>,
     pub contracts_file: Option<&'a std::path::Path>,
@@ -228,10 +230,8 @@ pub fn run(tuning: &Tuning, seed: u64, threads: usize, o: &Options) {
         .map_or_else(bm_world::ContractRules::bundled, |p| bm_world::ContractRules::from_json(&read(p)).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
     let ctx = bm_world::Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people, contracts: &contracts };
     let t0 = Instant::now();
-    let mut pop = bm_world::populate_with(&world, &levels, &aging, &careers, Date::new(2027, 2, 1), seed);
-    if o.contracts_file.is_some() {
-        bm_world::contract::initial(&world, &mut pop, &contracts, seed);
-    }
+    let history = o.history.unwrap_or(careers.history);
+    let mut pop = bm_world::new_world(&ctx, Date::new(2027, 2, 1), history, seed);
     let t_pop = t0.elapsed().as_secs_f64();
     // Offseasons without games before the first season played: the world settles into the
     // steady state of the career model.
@@ -257,7 +257,7 @@ pub fn run(tuning: &Tuning, seed: u64, threads: usize, o: &Options) {
         println!(
             "\n{year}: {} players{}; {} of {} games played in {:.1} s on {threads} threads ({:.0} games/s)",
             pop.players().count(),
-            if k == 0 { format!(" generated in {t_pop:.2} s") } else { String::new() },
+            if k == 0 { format!(" generated in {t_pop:.2} s ({history} offseasons of past)") } else { String::new() },
             season.played,
             season.fixtures.len(),
             secs,

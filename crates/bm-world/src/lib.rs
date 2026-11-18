@@ -22,7 +22,7 @@ pub mod season;
 pub use attr::{display, Attr, Attributes, Group, Hidden, Scale, ScaleAnchor, N_ATTR};
 pub use birthplace::Birthplaces;
 pub use calendar::{Date, Weekday};
-pub use career::{offseason, organisations, Career, CareerTable, Offseason, Org, OrgKind, Origin};
+pub use career::{new_world, offseason, organisations, Career, CareerTable, Offseason, Org, OrgKind, Origin};
 pub use contract::{Budgets, Contract, ContractRules, Economy};
 pub use convert::Baseline;
 pub use develop::{develop, develop_idle, AgingTable, Closure, Potential};
