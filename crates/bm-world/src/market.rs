@@ -11,7 +11,7 @@
 //! major-league contract may sign a minor-league one as Triple-A depth; the rest leave.
 
 use crate::ability;
-use crate::contract::{expected_years, ContractRules, Economy};
+use crate::contract::{expected_years, ClubOption, ContractRules, Economy, OptionRules};
 use crate::player::Player;
 use bm_engine::Rng;
 use serde::Deserialize;
@@ -43,6 +43,14 @@ pub struct MarketRules {
     /// organisations' players: the market decides most exits, players retire on their own
     /// less (decision 2026-11-18).
     pub retirement: f64,
+    /// An organisation makes the qualifying offer to a free agent whose price is at least
+    /// this share of it.
+    pub qualifying_offer: f64,
+    /// Organisations taken to receive revenue sharing: the ones with the smallest budgets.
+    pub revenue_sharing_payees: usize,
+    /// Total guarantee (2026, raised with the economy) from which a payee losing a qualified
+    /// free agent picks after the first round.
+    pub compensation_guarantee: f64,
 }
 
 /// Why a player is on the market.
@@ -62,6 +70,8 @@ pub struct FreeAgent {
     /// The organisation (index) he played for.
     pub from: Option<usize>,
     pub why: Why,
+    /// He turned down his organisation's qualifying offer.
+    pub qualified: bool,
 }
 
 /// A bidder's roster for valuing a free agent: the WAR of its position players (playing
@@ -162,6 +172,12 @@ pub struct Signing {
     pub pay: f64,
     pub years: usize,
     pub why: Why,
+    pub from: Option<usize>,
+    pub qualified: bool,
+    /// A club option on the year after, and the year after which he may opt out (counted
+    /// from the first season: 1 = after the first).
+    pub option: Option<ClubOption>,
+    pub opt_out_after: Option<u32>,
 }
 
 /// The market's result: signings, and the players nobody signed.
@@ -218,7 +234,19 @@ pub fn run(rules: &ContractRules, m: &MarketRules, mut agents: Vec<FreeAgent>, b
             b.depth.add(rules, &fa.player);
             // A bench player signs for a year.
             let years = if pay < ask { 1 } else { years };
-            signed.push(Signing { player: fa.player, org: k, major: true, pay, years, why: fa.why });
+            let (option, opt_out_after) = clauses(rules.options.as_ref(), pay, years, rng);
+            signed.push(Signing {
+                player: fa.player,
+                org: k,
+                major: true,
+                pay,
+                years,
+                why: fa.why,
+                from: fa.from,
+                qualified: fa.qualified,
+                option,
+                opt_out_after,
+            });
             continue;
         }
         left.push(fa);
@@ -239,12 +267,38 @@ pub fn run(rules: &ContractRules, m: &MarketRules, mut agents: Vec<FreeAgent>, b
                 b.depth_signed += 1;
                 b.depth.add(rules, &fa.player);
                 let pay = r.minor_pay("aaa", year);
-                signed.push(Signing { player: fa.player, org: k, major: false, pay, years: 1, why: fa.why });
+                signed.push(Signing {
+                    player: fa.player,
+                    org: k,
+                    major: false,
+                    pay,
+                    years: 1,
+                    why: fa.why,
+                    from: fa.from,
+                    qualified: fa.qualified,
+                    option: None,
+                    opt_out_after: None,
+                });
             }
             None => unsigned.push(fa),
         }
     }
     Outcome { signed, unsigned }
+}
+
+/// The clauses of a new major-league contract: an opt-out (multi-year deals) and a club
+/// option on the year after (`contracts.json` options).
+fn clauses(o: Option<&OptionRules>, pay: f64, years: usize, rng: &mut Rng) -> (Option<ClubOption>, Option<u32>) {
+    let Some(o) = o else { return (None, None) };
+    let mut opt_out = None;
+    if years >= 2 && rng.chance(o.opt_out_multi) {
+        let weights: Vec<f64> = o.opt_out_after.iter().map(|(_, w)| *w).collect();
+        let after = o.opt_out_after[rng.pick_weighted(&weights)].0;
+        opt_out = Some(after.min(years as u32 - 1).max(1));
+    }
+    let share = if years >= 2 { o.club_option_multi } else { o.club_option_one };
+    let option = rng.chance(share).then(|| ClubOption { salary: pay.round(), buyout: if rng.chance(o.no_buyout) { 0.0 } else { (o.buyout * pay).round() } });
+    (option, opt_out)
 }
 
 /// How much a player improves an organisation's depth beyond its 26: whether he would rank
@@ -294,7 +348,7 @@ mod tests {
     fn a_free_agent_signs_where_there_is_room_and_nobody_signs_without_it() {
         let rules = ContractRules::bundled();
         let m = rules.market.clone().expect("market rules");
-        let star = || FreeAgent { player: hitter(500, 1.0), age: 29.0, from: Some(0), why: Why::Service };
+        let star = || FreeAgent { player: hitter(500, 1.0), age: 29.0, from: Some(0), why: Why::Service, qualified: false };
         let roster = || {
             let mut d = Depth::default();
             for i in 0..13 {

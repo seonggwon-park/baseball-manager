@@ -11,7 +11,7 @@
 
 use crate::ability;
 use crate::calendar::Date;
-use crate::contract::{first_team_seasons, Contract, Economy, Kind, Terms};
+use crate::contract::{first_team_seasons, Contract, DraftChange, Economy, Kind, Schedule, Terms};
 use crate::develop::{develop, develop_idle, AgingTable, Closure, Potential, Style};
 use crate::generate::{pitcher, position_player, Squad, Talent};
 use crate::league::{Level, World};
@@ -467,6 +467,9 @@ pub struct Career {
     /// First-team seasons before the world began (the first world's players; `contract.rs`).
     #[serde(default)]
     pub prior: u32,
+    /// The offseason he was made the qualifying offer (once in a career).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub qualifying_offer: Option<i32>,
 }
 
 /// Where a Korean player stands with his military service.
@@ -481,7 +484,7 @@ pub enum Service {
 
 impl Career {
     pub fn new(origin: Origin) -> Career {
-        Career { origin, seasons: Vec::new(), majors: None, left: None, service: None, prior: 0 }
+        Career { origin, seasons: Vec::new(), majors: None, left: None, service: None, prior: 0, qualifying_offer: None }
     }
 
     pub fn reached(&self, level: &str) -> bool {
@@ -1069,6 +1072,16 @@ pub struct Report {
     pub signed_major: usize,
     pub signed_minor: usize,
     pub unsigned: usize,
+    /// Before the market: opt-outs used, club options exercised and declined, players not
+    /// tendered a contract, qualifying offers made and accepted, compensation picks awarded.
+    pub opt_outs_due: usize,
+    pub opted_out: usize,
+    pub options_exercised: usize,
+    pub options_declined: usize,
+    pub non_tendered: usize,
+    pub qualifying_offers: usize,
+    pub qualifying_accepted: usize,
+    pub compensation_picks: usize,
 }
 
 /// Order in which organisations of one kind pick in the draft: worst record first, or,
@@ -1497,7 +1510,28 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
             members.iter().map(|o| (o.levels[0].0.clone(), pools[orgs.iter().position(|x| x.id == o.id).unwrap()].clone())).collect();
         let picking = draft_order(&members, &first_teams, standings);
         let n_orgs = members.len();
-        let total = draft.rounds as usize * n_orgs;
+        // The picks in order: each round in the draft order, less the picks organisations gave
+        // up for signing qualified free agents, with the compensation picks after their round
+        // (several after one round go in the draft order).
+        let changes: Vec<DraftChange> = if draft.orgs == "mlb" { pop.draft_changes.iter().filter(|c| c.year == year).cloned().collect() } else { Vec::new() };
+        let mut slots: Vec<(u32, String)> = Vec::with_capacity(draft.rounds as usize * n_orgs);
+        for round in 1..=draft.rounds {
+            for org in &picking {
+                let lost = changes.iter().filter(|c| !c.extra && c.round == round && &c.org == org).count();
+                if lost == 0 {
+                    slots.push((round, org.clone()));
+                }
+            }
+            for org in &picking {
+                for _ in changes.iter().filter(|c| c.extra && c.round == round && &c.org == org) {
+                    slots.push((round, org.clone()));
+                }
+            }
+        }
+        if draft.orgs == "mlb" {
+            pop.draft_changes.retain(|c| c.year > year);
+        }
+        let total = slots.len();
         let share_sum: f64 = draft.classes.iter().map(|c| c.1).sum();
         let mut class_pool: Vec<(f64, Newcomer, String)> = (0..total)
             .map(|_| {
@@ -1519,12 +1553,12 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
             .collect();
         class_pool.sort_by(|a, b| b.0.total_cmp(&a.0));
         for (pick, (_, newcomer, class)) in class_pool.into_iter().enumerate() {
-            let round = (pick / n_orgs) as u32 + 1;
+            let (round, org) = &slots[pick];
+            let round = *round;
             let chance = draft.signed.iter().find(|(last, _)| round <= *last).map_or(1.0, |x| x.1);
             if !rng.chance(chance) {
                 continue;
             }
-            let org = &picking[pick % n_orgs];
             let k = orgs.iter().position(|o| &o.id == org).unwrap();
             let p = add(pop, newcomer, Origin::Draft { year, round, pick: pick as u32 + 1, class });
             pools[k].push(p);
@@ -1564,21 +1598,106 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
     // kept first (`protected`).
     let mut agents: Vec<FreeAgent> = Vec::new();
     let mut guaranteed: BTreeSet<u32> = BTreeSet::new();
-    if market.is_some() {
-        let svc = ctx.contracts.of(Economy::Mlb).service.map_or(6, |s| s.free_agency);
+    if let Some(m) = market {
+        let rules = ctx.contracts;
+        let r = rules.of(Economy::Mlb);
+        let (svc_arb, svc_fa) = r.service.map_or((3, 6), |s| (s.arbitration, s.free_agency));
+        let price = |war: f64| rules.free_agent_pay(war, year + 1);
+        let qualifying = r.qualifying_offer.as_ref().map(|s| s.at(year + 1, r.raise.rate));
         for (k, org) in orgs.iter().enumerate() {
             if org.kind != OrgKind::Major {
                 continue;
             }
-            let due = |p: &Player| {
-                let ran_out = pop.contracts.get(&p.id).is_some_and(|c| c.kind == Kind::Major && !c.covers(year + 1));
+            // Where each of the organisation's players would play next season.
+            let mut depth = Depth::default();
+            for p in &pools[k] {
+                depth.add(rules, p);
+            }
+            let place = |p: &Player| depth.place(rules, p, m.bench_share);
+            let mut go: Vec<(Player, Why, bool)> = Vec::new();
+            let mut stay: Vec<Player> = Vec::new();
+            for p in std::mem::take(&mut pools[k]) {
+                let war = rules.war(&p, Economy::Mlb);
                 let service = pop.careers.get(&p.id).map_or(0, |c| first_team_seasons(c, "mlb", year + 1));
-                ran_out && service >= svc && !pinned[k].contains_key(&p.id)
-            };
-            let (go, stay): (Vec<Player>, Vec<Player>) = std::mem::take(&mut pools[k]).into_iter().partition(due);
-            guaranteed.extend(stay.iter().filter(|p| pop.contracts.get(&p.id).is_some_and(|c| c.kind == Kind::Major && c.covers(year + 1))).map(|p| p.id));
+                let pinned_here = pinned[k].contains_key(&p.id);
+                let (club_lean, player_lean) = rules.options.as_ref().map_or((0.0, 0.0), |o| (o.club_lean, o.player_lean));
+                if let Some(c) = pop.contracts.get_mut(&p.id).filter(|c| c.kind == Kind::Major && !pinned_here) {
+                    // An opt-out after this season: he leaves when the price he expects is above
+                    // his pay.
+                    if c.opt_out == Some(year) && c.covers(year + 1) {
+                        c.opt_out = None;
+                        report.opt_outs_due += 1;
+                        if price(war) * (1.0 + player_lean) > c.pay(year + 1).unwrap_or(0.0) {
+                            c.salary.truncate((year - c.from + 1).max(0) as usize);
+                            c.option = None;
+                            report.opted_out += 1;
+                        }
+                    }
+                    // A club option on next season: exercised when he is worth its salary less
+                    // the buyout to the organisation.
+                    if c.last() == year {
+                        if let Some(o) = c.option.take() {
+                            if price(war * place(&p)) * (1.0 + club_lean) >= o.salary - o.buyout {
+                                c.salary.push(o.salary);
+                                report.options_exercised += 1;
+                            } else {
+                                report.options_declined += 1;
+                            }
+                        }
+                    }
+                }
+                let Some(c) = pop.contracts.get(&p.id).filter(|c| c.kind == Kind::Major && !c.covers(year + 1) && !pinned_here) else {
+                    if pop.contracts.get(&p.id).is_some_and(|c| c.kind == Kind::Major && c.covers(year + 1)) {
+                        guaranteed.insert(p.id);
+                    }
+                    stay.push(p);
+                    continue;
+                };
+                let previous = c.pay(year).unwrap_or(0.0);
+                if service >= svc_fa {
+                    // Free agency. The organisation makes the qualifying offer (once in his
+                    // career) when his price is near it; he takes it when his price is below.
+                    let first = pop.careers.get(&p.id).is_none_or(|c| c.qualifying_offer.is_none());
+                    let ask = price(war);
+                    match qualifying.filter(|q| first && ask >= m.qualifying_offer * q) {
+                        Some(q) => {
+                            report.qualifying_offers += 1;
+                            if let Some(c) = pop.careers.get_mut(&p.id) {
+                                c.qualifying_offer = Some(year);
+                            }
+                            if ask < q {
+                                report.qualifying_accepted += 1;
+                                pop.contracts.insert(p.id, Contract::new(&org.id, Kind::Major, Terms::FreeAgent, year + 1, &[q]));
+                                guaranteed.insert(p.id);
+                                stay.push(p);
+                            } else {
+                                go.push((p, Why::Service, true));
+                            }
+                        }
+                        None => go.push((p, Why::Service, false)),
+                    }
+                } else if service >= svc_arb {
+                    // Arbitration: not tendered when his salary would be more than he is worth
+                    // to the organisation (the salary may not fall by more than the limit).
+                    let pay = rules.arbitration_pay(&p, war * place(&p), year + 1, service - svc_arb + 1).max(rules.lowest_renewal(Economy::Mlb, previous));
+                    if pay > price(war * place(&p)) {
+                        report.non_tendered += 1;
+                        go.push((p, Why::LetGo, false));
+                    } else {
+                        stay.push(p);
+                    }
+                } else {
+                    stay.push(p);
+                }
+            }
             pools[k] = stay;
-            agents.extend(go.into_iter().map(|p| FreeAgent { age: age_of(p.id, next_season), from: bidder_of.get(&k).copied(), why: Why::Service, player: p }));
+            agents.extend(go.into_iter().map(|(p, why, qualified)| FreeAgent {
+                age: age_of(p.id, next_season),
+                from: bidder_of.get(&k).copied(),
+                why,
+                qualified,
+                player: p,
+            }));
         }
         report.free_agents += agents.len();
     }
@@ -1624,7 +1743,7 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
                 // A major-league organisation's players let go go to market.
                 if market.is_some() && org.kind == OrgKind::Major {
                     let why = if depth_only.contains(&p.id) { Why::MinorContract } else { Why::LetGo };
-                    agents.push(FreeAgent { age: age_of(p.id, next_season), from: bidder_of.get(&k).copied(), why, player: p });
+                    agents.push(FreeAgent { age: age_of(p.id, next_season), from: bidder_of.get(&k).copied(), why, qualified: false, player: p });
                     report.free_agents += 1;
                 } else {
                     let_go.push(p);
@@ -1673,13 +1792,51 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
             bidders.push(Bidder { depth, committed, budget, depth_signed: 0 });
         }
         let org_of: Vec<usize> = bidder_of.keys().copied().collect();
+        // Status for the compensation of qualified free agents: the organisations that paid
+        // the luxury tax on the season just played, and those taken to receive revenue sharing
+        // (the smallest budgets).
+        let payroll_of =
+            |k: usize| -> f64 { pop.contracts.values().filter(|c| c.org == orgs[k].id && c.kind == Kind::Major).filter_map(|c| c.pay(year)).sum() };
+        let threshold = r.tax.as_ref().map_or(f64::INFINITY, |t| Schedule::lookup_at(&t.thresholds, year, r.raise.rate));
+        let tax_payer: BTreeSet<usize> = org_of.iter().copied().filter(|&k| payroll_of(k) > threshold).collect();
+        let mut by_budget: Vec<(f64, usize)> =
+            org_of.iter().map(|&k| (budgets.of(&orgs[k].id, Economy::Mlb, year + 1, ctx.contracts).unwrap_or(0.0), k)).collect();
+        by_budget.sort_by(|a, b| a.0.total_cmp(&b.0));
+        let payee: BTreeSet<usize> = by_budget.iter().take(m.revenue_sharing_payees).map(|x| x.1).collect();
+        let guarantee_line = m.compensation_guarantee * (1.0 + r.raise.rate).powi((year + 1 - 2026).max(0));
         let outcome = crate::market::run(ctx.contracts, m, std::mem::take(&mut agents), &mut bidders, year + 1, &mut rng);
         for s in outcome.signed {
             let k = org_of[s.org];
             let id = s.player.id;
             let contract = if s.major {
                 report.signed_major += 1;
-                Contract::new(&orgs[k].id, Kind::Major, Terms::FreeAgent, year + 1, &vec![s.pay; s.years])
+                let mut c = Contract::new(&orgs[k].id, Kind::Major, Terms::FreeAgent, year + 1, &vec![s.pay; s.years]);
+                c.option = s.option.clone();
+                c.opt_out = s.opt_out_after.map(|a| year + a as i32);
+                // A qualified free agent who signs with another organisation: a pick for the
+                // one he left, picks given up by the one he joined (BA Art. XX(B)(4)).
+                if let Some(old) = s.from.map(|b| org_of[b]).filter(|&o| s.qualified && o != k) {
+                    let after = if tax_payer.contains(&old) {
+                        4
+                    } else if payee.contains(&old) && s.pay * s.years as f64 >= guarantee_line {
+                        1
+                    } else {
+                        2
+                    };
+                    pop.draft_changes.push(DraftChange { year: year + 1, org: orgs[old].id.clone(), round: after, extra: true });
+                    report.compensation_picks += 1;
+                    let lost: &[u32] = if payee.contains(&k) {
+                        &[3]
+                    } else if tax_payer.contains(&k) {
+                        &[2, 5]
+                    } else {
+                        &[2]
+                    };
+                    for &round in lost {
+                        pop.draft_changes.push(DraftChange { year: year + 1, org: orgs[k].id.clone(), round, extra: false });
+                    }
+                }
+                c
             } else {
                 report.signed_minor += 1;
                 depth_only.insert(id);

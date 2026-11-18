@@ -15,7 +15,21 @@
   "displaced": 0.30,
   "depth_signings": 8,
   "retirement": 0.5,
-  "basis": "The major-league free-agent market (market.rs, docs/contracts.md stage 2). Starting values, all assumptions to be fitted to the measured outcomes of free agents: premium per competing organisation beyond the first and the most that count (competition raises the price, Terry, McGee and Kass 2018); the extra weight on the old organisation's offer and the spread of a player's taste; how far past its budget an organisation may go; a bench player's time; the share of the wins of displaced players counted as lost; minor-league depth signings per organisation; the factor on the retirement chances of careers.json"
+  "qualifying_offer": 0.9,
+  "revenue_sharing_payees": 15,
+  "compensation_guarantee": 50000000,
+  "basis": "The major-league free-agent market (market.rs, docs/contracts.md stage 2). Starting values, all assumptions to be fitted to the measured outcomes of free agents: premium per competing organisation beyond the first and the most that count (competition raises the price, Terry, McGee and Kass 2018); the extra weight on the old organisation's offer and the spread of a player's taste; how far past its budget an organisation may go; a bench player's time; the share of the wins of displaced players counted as lost; minor-league depth signings per organisation; the factor on the retirement chances of careers.json. qualifying_offer: an organisation makes the qualifying offer to a free agent (six years of service, his first) whose price is at least this share of it, and he accepts if his price is below it (measured 2012-2025: 157 offers, 18 accepted; contracts_mlb.md 4.3; fitted later). The compensation for a qualified free agent who signs a major-league contract elsewhere follows BA Art. XX(B)(4): the former organisation gets a pick after the 4th round if it paid the luxury tax, after the 1st round if it receives revenue sharing and he signs for compensation_guarantee or more (raised with the economy), otherwise after Competitive Balance Round B (taken as after the 2nd round); the signing organisation gives up its 3rd-round pick if it receives revenue sharing, its 2nd- and 5th-round picks if it paid the tax, otherwise its 2nd-round pick. The revenue-sharing payees are taken to be the revenue_sharing_payees organisations with the smallest budgets (an assumption: revenue sharing goes to the clubs with the least local revenue)"
+ },
+ "options": {
+  "opt_out_multi": 0.31,
+  "opt_out_after": [[1, 0.65], [2, 0.18], [3, 0.17]],
+  "club_option_multi": 0.17,
+  "club_option_one": 0.11,
+  "no_buyout": 0.29,
+  "buyout": 0.12,
+  "club_lean": 0.20,
+  "player_lean": 0.35,
+  "basis": "Clauses in new major-league free-agent contracts, 2021-22 to 2025-26 (748 signings counted from MLB Trade Rumors' offseason reviews; docs/research/world/contracts_options.md 2.2-2.5): an opt-out in at least 31 % of multi-year deals, after year 1 in 65 % of them and year 2 in 18 %; a club option in 17 % of multi-year and 11 % of one-year deals, at the deal's yearly pay; no buyout in 29 % of club options, otherwise a median 12 % of the option's salary. Player and mutual options (4 % and 7 % of multi-year deals; mutual options exercised by both sides 0 of 84 times) are left out. Decisions: a club exercises an option when the player's price in the place he would take, raised by club_lean (the market premium it would pay to replace him), is at least its salary less the buyout; a player opts out when his price raised by player_lean (the premium he expects) is above his contract's pay (measured: club options exercised 39 %, opt-outs used 41 %). Interim fit on one 30-offseason world: 0.15 and 0.25 gave 28 % and 49 % of club options exercised, a player lean of 0.4 47 % of opt-outs used; the final calibration fits both again"
  },
  "economies": {
   "mlb": {

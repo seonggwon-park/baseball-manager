@@ -221,7 +221,8 @@
 | `max_cut`, `cut_limit` | 감액 한도. MLB는 전 시즌보다 20%, 두 시즌 전보다 30%(협약 VI(B)(1)(a)), NPB는 1억 엔 초과 40%·이하 25%(협약 92조). KBO는 없다(2008년 폐지) |
 | `service`, `seasons_for_fa` | 연봉조정·FA에 드는 서비스. MLB 3년·6년, KBO 고졸 8·대졸 7시즌(재자격 4), NPB 국내 8(대학·사회인 출신 7)·해외 9시즌 |
 | `tax`, `qualifying_offer`, `cap`, `floor` | MLB 사치세(기준·구간·세율)와 퀄리파잉 오퍼, KBO 경쟁균형세 상한(상위 40명, 외국인·신인 제외)과 하한(2027년부터, 해마다 5%) |
-| `market` | MLB FA 시장(`market.rs`; 2단계). 모두 가정이며 실측 FA 결과에 맞출 값이다. `premium`: 주전으로 원하는 구단이 하나 늘 때마다 오르는 몫(최대 `max_bidders`). `home`: 원 소속 구단 제안의 가산. `taste`: 선수 취향의 퍼짐(로그). `slack`: 예산을 넘어도 되는 몫. `bench_share`: 후보의 출전 몫. `displaced`: 밀려나는 선수의 승리를 잃는 것으로 셀 몫. `depth_signings`: 구단당 마이너리그 깊이 계약 수. `retirement`: MLB 조직 선수의 자발 은퇴 확률에 곱하는 값(시장이 대부분의 퇴장을 정한다) |
+| `market` | MLB FA 시장(`market.rs`; 2단계). 모두 가정이며 실측 FA 결과에 맞출 값이다. `premium`: 주전으로 원하는 구단이 하나 늘 때마다 오르는 몫(최대 `max_bidders`). `home`: 원 소속 구단 제안의 가산. `taste`: 선수 취향의 퍼짐(로그). `slack`: 예산을 넘어도 되는 몫. `bench_share`: 후보의 출전 몫. `displaced`: 밀려나는 선수의 승리를 잃는 것으로 셀 몫. `depth_signings`: 구단당 마이너리그 깊이 계약 수. `retirement`: MLB 조직 선수의 자발 은퇴 확률에 곱하는 값(시장이 대부분의 퇴장을 정한다). `qualifying_offer`: 가격이 퀄리파잉 오퍼의 이 배수 이상인 FA에게 구단이 오퍼를 낸다. `revenue_sharing_payees`, `compensation_guarantee`: 보상 지명권의 등급을 정할 때 수익 분배를 받는 구단으로 볼 수(예산이 작은 순)와 1라운드 뒤 보상의 보장액 기준($50M, 협약 XX(B)(4)) |
+| `options` | 새 FA 계약의 옵션 비율과 조건(`research/world/contracts_options.md`), 구단·선수의 판단에 쓰는 시장 프리미엄(`club_lean`, `player_lean`; 임시 보정) |
 
 ## 구단 예산: `data/leagues/budgets.json`
 
@@ -264,5 +265,6 @@
 | `careers` | `id`, `data`: 입단 경로(처음부터 있던 선수, 드래프트 연도·라운드·순번, 계약, 외국인), 시즌별 소속·수준, 떠난 연도와 이유, 처음 세계 이전의 1군 시즌 수(JSON). 은퇴한 선수도 남는다 |
 | `away` | `id`, `org`: 현역 복무 중인 한국 선수와 권리를 가진 조직(능력치는 `players`) |
 | `contracts` | `id`, `data`: 선수의 계약(JSON): 권리를 가진 조직, 종류(MLB·마이너리그·등록·육성·기타), 경위, 첫 시즌, 시즌별 보장 연봉, 구단 옵션, 옵트아웃. 형식 5부터 |
+| `draft_changes` | `ord`, `data`: 다음 드래프트의 보상 지명권과 내준 지명권(퀄리파잉 오퍼 보상; JSON). 형식 5부터 |
 
 형식 버전이 다른 파일은 잘못 읽지 않도록 거부한다.

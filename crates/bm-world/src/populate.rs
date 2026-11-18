@@ -183,6 +183,9 @@ pub struct Population {
     /// (`contract.rs`).
     #[serde(default)]
     pub contracts: BTreeMap<u32, crate::contract::Contract>,
+    /// Compensation picks and forfeited picks of coming drafts (`contract::DraftChange`).
+    #[serde(default)]
+    pub draft_changes: Vec<crate::contract::DraftChange>,
 }
 
 /// A player away from the game for a while, and the organisation he comes back to.
@@ -352,8 +355,17 @@ pub fn populate_with(world: &World, levels: &LevelTable, aging: &AgingTable, car
             potentials.insert(p.id, pot);
         }
     }
-    let mut pop =
-        Population { date, people: maker.out, rosters, potentials, foreign, careers: BTreeMap::new(), away: BTreeMap::new(), contracts: BTreeMap::new() };
+    let mut pop = Population {
+        date,
+        people: maker.out,
+        rosters,
+        potentials,
+        foreign,
+        careers: BTreeMap::new(),
+        away: BTreeMap::new(),
+        contracts: BTreeMap::new(),
+        draft_changes: Vec::new(),
+    };
     record_season(world, &mut pop, date.year());
     crate::contract::initial(world, &mut pop, &crate::contract::ContractRules::bundled(), seed);
     pop

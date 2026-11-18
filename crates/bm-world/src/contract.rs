@@ -76,6 +76,11 @@ impl Schedule {
         Self::lookup(&self.by_year, year, rate)
     }
 
+    /// The schedule's rule on a bare table of announced values.
+    pub fn lookup_at(by_year: &BTreeMap<i32, f64>, year: i32, rate: f64) -> f64 {
+        Self::lookup(by_year, year, rate)
+    }
+
     fn lookup(by_year: &BTreeMap<i32, f64>, year: i32, rate: f64) -> f64 {
         if let Some(v) = by_year.get(&year) {
             return *v;
@@ -270,6 +275,23 @@ impl EconomyRules {
     }
 }
 
+/// How often new free-agent contracts carry options and opt-outs, and their terms.
+#[derive(Clone, Debug, Deserialize)]
+pub struct OptionRules {
+    pub opt_out_multi: f64,
+    /// (after which year, share) of the opt-outs.
+    pub opt_out_after: Vec<(u32, f64)>,
+    pub club_option_multi: f64,
+    pub club_option_one: f64,
+    /// Share of club options without a buyout, and the buyout's share of the option salary.
+    pub no_buyout: f64,
+    pub buyout: f64,
+    /// The market premium a club counts on to replace a player when it weighs his option, and
+    /// the one a player expects when he weighs an opt-out.
+    pub club_lean: f64,
+    pub player_lean: f64,
+}
+
 /// The rules of every economy and the WAR yardstick (`data/people/contracts.json`).
 #[derive(Clone, Debug, Deserialize)]
 pub struct ContractRules {
@@ -277,6 +299,20 @@ pub struct ContractRules {
     /// The major-league free-agent market; without it no club signs another's players.
     #[serde(default)]
     pub market: Option<crate::market::MarketRules>,
+    #[serde(default)]
+    pub options: Option<OptionRules>,
+}
+
+/// A change to a coming draft from free agency: a compensation pick after a round, or a pick
+/// of a round given up (BA Art. XX(B)(4)).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct DraftChange {
+    /// The offseason whose draft it changes.
+    pub year: i32,
+    pub org: String,
+    pub round: u32,
+    /// A pick added after `round`; otherwise the pick of `round` is given up.
+    pub extra: bool,
 }
 
 impl ContractRules {

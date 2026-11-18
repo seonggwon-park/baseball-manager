@@ -18,6 +18,8 @@
 //!   organisation that holds their rights; their attributes are in `players`.
 //! * `contracts (id, data)`: each player's contract (`bm_world::Contract`) as JSON: the
 //!   organisation holding it, its kind, the guaranteed salary of each season, options.
+//! * `draft_changes (ord, data)`: compensation picks and forfeited picks of coming drafts
+//!   (`bm_world::contract::DraftChange`) as JSON, in order.
 //!
 //! A save is written in one transaction into a fresh file, so an interrupted save never
 //! leaves a half-written game behind.
@@ -91,6 +93,7 @@ CREATE TABLE foreign_players (id INTEGER PRIMARY KEY, signed_from TEXT NOT NULL)
 CREATE TABLE careers (id INTEGER PRIMARY KEY, data TEXT NOT NULL);
 CREATE TABLE away (id INTEGER PRIMARY KEY, org TEXT NOT NULL);
 CREATE TABLE contracts (id INTEGER PRIMARY KEY, data TEXT NOT NULL);
+CREATE TABLE draft_changes (ord INTEGER PRIMARY KEY, data TEXT NOT NULL);
 ";
 
 fn position_code(p: Option<Position>) -> Option<String> {
@@ -168,6 +171,10 @@ pub fn save(path: &Path, game: &SaveGame) -> Result<(), SaveError> {
             let mut contracts = tx.prepare("INSERT INTO contracts (id, data) VALUES (?1, ?2)")?;
             for (id, c) in &game.population.contracts {
                 contracts.execute(params![id, serde_json::to_string(c)?])?;
+            }
+            let mut changes = tx.prepare("INSERT INTO draft_changes (ord, data) VALUES (?1, ?2)")?;
+            for (i, c) in game.population.draft_changes.iter().enumerate() {
+                changes.execute(params![i as i64, serde_json::to_string(c)?])?;
             }
         }
         tx.commit()?;
@@ -270,7 +277,12 @@ pub fn load(path: &Path) -> Result<SaveGame, SaveError> {
         let (id, data) = row?;
         contracts.insert(id, serde_json::from_str(&data)?);
     }
-    Ok(SaveGame { seed, population: Population { date, people, rosters, potentials, foreign, careers, away, contracts } })
+    let mut draft_changes = Vec::new();
+    let mut q = db.prepare("SELECT data FROM draft_changes ORDER BY ord")?;
+    for row in q.query_map([], |r| r.get::<_, String>(0))? {
+        draft_changes.push(serde_json::from_str(&row?)?);
+    }
+    Ok(SaveGame { seed, population: Population { date, people, rosters, potentials, foreign, careers, away, contracts, draft_changes } })
 }
 
 #[cfg(test)]
@@ -307,6 +319,7 @@ mod tests {
         assert_eq!(back.population.careers, game.population.careers);
         assert_eq!(back.population.away, game.population.away);
         assert_eq!(back.population.contracts, game.population.contracts);
+        assert_eq!(back.population.draft_changes, game.population.draft_changes);
         assert!(!back.population.foreign.is_empty() && back.population.careers.len() == back.population.people.len());
         assert!(back.population.contracts.len() >= back.population.players().count());
         // Saving again over the file works and leaves no temporary file.
