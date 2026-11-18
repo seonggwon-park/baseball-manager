@@ -406,7 +406,7 @@ impl BatterProfile {
             reach_sd: 0.072176,
             eye: 0.613,
             perception_sd: 0.026608,
-            chase: -0.016139,
+            chase: -0.011,
             aggression: 1.0,
             timing_bias: 0.0026,
             sprint: 27.0 * FT,
