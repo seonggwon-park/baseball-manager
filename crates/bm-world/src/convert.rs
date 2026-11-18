@@ -145,7 +145,7 @@ impl Default for Baseline {
             perception_sd: avg.perception_sd,
             chase: avg.chase,
             timing_bias: 0.0,
-            aim: 0.0,
+            aim: -0.0024455,
             steal: 0.375,
             command: mean::COMMAND_IN * INCH,
             command_kind: COMMAND_KIND,
