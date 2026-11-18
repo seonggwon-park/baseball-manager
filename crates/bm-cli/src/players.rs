@@ -253,7 +253,20 @@ fn world_player(s: &Squad, slot: usize) -> &Player {
     }
 }
 
-pub fn run(env: &MatchEnv, baseline: &Baseline, style: ManagerStyle, seed: u64, threads: usize, n_clubs: usize, games_each: usize) {
+/// `players`: with `--json FILE`, also every player as the world stores him (attributes,
+/// arsenal), one JSON object per line with his club and slot, to study what the engine's
+/// results depend on.
+#[allow(clippy::too_many_arguments)]
+pub fn run(
+    env: &MatchEnv,
+    baseline: &Baseline,
+    style: ManagerStyle,
+    seed: u64,
+    threads: usize,
+    n_clubs: usize,
+    games_each: usize,
+    players_json: Option<&std::path::Path>,
+) {
     let n_clubs = n_clubs.max(2) & !1;
     let mut rng = Rng::new(seed ^ 0x9E37);
     let squads: Vec<Squad> = (0..n_clubs).map(|i| Squad::random(&mut rng, 1000 * (i as u32 + 1), &Talent::MAJOR)).collect();
@@ -351,8 +364,21 @@ pub fn run(env: &MatchEnv, baseline: &Baseline, style: ManagerStyle, seed: u64, 
             bat[c][s][F::BatSpeed] = competitive_mean(&swings[c][s]) * bat[c][s][F::BatN];
         }
     }
+    if let Some(path) = players_json {
+        use std::io::Write;
+        let mut out = std::io::BufWriter::new(std::fs::File::create(path).unwrap_or_else(|e| panic!("{}: {e}", path.display())));
+        for (c, squad) in squads.iter().enumerate() {
+            for s in (0..SLOTS).filter(|&s| s != 9) {
+                let p = world_player(squad, s);
+                let line = serde_json::json!({ "club": c, "slot": s, "player": p });
+                writeln!(out, "{line}").expect("write players");
+            }
+        }
+    }
     let z = |p: &Player, a: Attr| p.attrs[a];
-    println!("kind,club,slot,{},bats,sprint,attack_angle,arm_angle,a1,a2,a3,a4,a5,a6,a7,a8", NAMES.join(","));
+    // `value`: what the world's value model (`bm_world::ability`) expects of the player, in
+    // runs per game: a lineup of nine like him at the plate, or a staff of him on the mound.
+    println!("kind,club,slot,{},bats,sprint,attack_angle,arm_angle,a1,a2,a3,a4,a5,a6,a7,a8,value", NAMES.join(","));
     let row = |kind: &str, c: usize, s: usize, l: &Line, tail: String| {
         let nums: Vec<String> = l.0.iter().map(|x| format!("{:.3}", x)).collect();
         println!("{kind},{c},{s},{},{tail}", nums.join(","));
@@ -369,7 +395,7 @@ pub fn run(env: &MatchEnv, baseline: &Baseline, style: ManagerStyle, seed: u64, 
                     Hand::Left => "L",
                 };
                 let tail = format!(
-                    "{side},{:.2},{:.2},0,{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3}",
+                    "{side},{:.2},{:.2},0,{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.4}",
                     prof.sprint / FT,
                     prof.attack_angle.to_degrees(),
                     z(p, Attr::Power),
@@ -379,14 +405,15 @@ pub fn run(env: &MatchEnv, baseline: &Baseline, style: ManagerStyle, seed: u64, 
                     z(p, Attr::Recognition),
                     z(p, Attr::BatControl),
                     z(p, Attr::Aggression),
-                    z(p, Attr::Speed)
+                    z(p, Attr::Speed),
+                    bm_world::ability::batting(p) * 9.0 / 162.0
                 );
                 row("B", c, s, &bat[c][s], tail);
             }
             if pit[c][s][F::Pa] > 0.0 {
                 if let Some(pit_style) = p.pitching.as_ref() {
                     let tail = format!(
-                        "-,0,0,{:.1},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3}",
+                        "-,0,0,{:.1},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.4}",
                         pit_style.arm_angle.to_degrees(),
                         z(p, Attr::Velocity),
                         z(p, Attr::Stuff),
@@ -395,7 +422,8 @@ pub fn run(env: &MatchEnv, baseline: &Baseline, style: ManagerStyle, seed: u64, 
                         z(p, Attr::Deception),
                         z(p, Attr::Stamina),
                         z(p, Attr::Concentration),
-                        pit_style.pitches.len() as f32
+                        pit_style.pitches.len() as f32,
+                        bm_world::ability::pitching_rate(p)
                     );
                     row("P", c, s, &pit[c][s], tail);
                 }

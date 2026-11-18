@@ -7,7 +7,8 @@
 //!             [--parks world|neutral]                             the 30 major-league parks of the world data (default) or one average park
 //! bm attributes [--games N] [--only NAME]                         value of one standard deviation of each attribute
 //!               [--by-position]                                   fielding value of the regular at each position (2 SD steps)
-//! bm players [--clubs K] [--games G]                              season lines of individual players as CSV (G games per club)
+//! bm players [--clubs K] [--games G] [--json FILE]                season lines of individual players as CSV (G games per club);
+//!                                                                 --json: the players themselves, one JSON object per line
 //! bm level --level L [--talent h,p,f,x[,pw,cm[,v[,d]]]] [--vs-mlb] one level (aaa, aa, high_a, single_a, kbo, kbo2, npb, npb2,
 //!          [--foreign h,p,f,x] [--cross-games N]                   mlb) in its own parks against its official rates; talent of
 //!          [--vs-mlb-pitchers] [--ball-drag F]                     the foreign players of KBO and NPB clubs; wRC+ of the level's
@@ -520,7 +521,9 @@ fn main() {
             args.json.as_deref(),
             args.out.as_deref(),
         ),
-        "players" => players::run(&env, &args.tuning.baseline, args.tuning.style, args.seed, args.threads, args.clubs.min(60), args.games.min(400)),
+        "players" => {
+            players::run(&env, &args.tuning.baseline, args.tuning.style, args.seed, args.threads, args.clubs.min(60), args.games.min(400), args.json.as_deref())
+        }
         "game" => {
             let clubs = make_clubs(2, args.seed, level, world);
             let mut rng = Rng::new(args.seed);
