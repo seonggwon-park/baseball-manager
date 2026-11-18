@@ -21,40 +21,40 @@ const PITCH_VALUE: &str = include_str!("../../../data/people/pitch_value.json");
 
 /// Runs per game per standard deviation when all nine batters change.
 pub const BATTING: [(Attr, f64); 16] = [
-    (Attr::Contact, 0.228),
-    (Attr::Timing, 0.097),
-    (Attr::Power, 0.765),
-    (Attr::Discipline, 0.252),
-    (Attr::Recognition, 0.169),
-    (Attr::BatControl, 0.280),
+    (Attr::Contact, 0.264),
+    (Attr::Timing, 0.102),
+    (Attr::Power, 0.757),
+    (Attr::Discipline, 0.146),
+    (Attr::Recognition, 0.138),
+    (Attr::BatControl, 0.249),
     (Attr::Bunt, 0.0),
-    (Attr::Baserunning, 0.035),
-    (Attr::Stealing, 0.004),
-    (Attr::Speed, 0.418),
-    (Attr::Acceleration, 0.166),
+    (Attr::Baserunning, 0.053),
+    (Attr::Stealing, 0.005),
+    (Attr::Speed, 0.415),
+    (Attr::Acceleration, 0.239),
     (Attr::Aggression, 0.0),
-    (Attr::Anticipation, 0.074),
-    (Attr::Concentration, 0.0),
-    (Attr::Composure, 0.0),
-    (Attr::Strength, 0.299),
+    (Attr::Anticipation, 0.0),
+    (Attr::Concentration, 0.019),
+    (Attr::Composure, 0.043),
+    (Attr::Strength, 0.289),
 ];
 
 /// Runs per game per standard deviation when all eight fielders change. Fielding is
 /// valued position by position ([`BY_POSITION`]); these split each position's glove
 /// between its five attributes.
 pub const FIELDING: [(Attr, f64); 7] = [
-    (Attr::Hands, 0.0),
-    (Attr::Range, 0.219),
-    (Attr::Reads, 0.154),
-    (Attr::ArmStrength, 0.195),
-    (Attr::ArmAccuracy, 0.0),
-    (Attr::Footwork, 0.192),
-    (Attr::Agility, 0.118),
+    (Attr::Hands, 0.018),
+    (Attr::Range, 0.169),
+    (Attr::Reads, 0.142),
+    (Attr::ArmStrength, 0.226),
+    (Attr::ArmAccuracy, 0.078),
+    (Attr::Footwork, 0.164),
+    (Attr::Agility, 0.113),
 ];
 
 /// Runs per game per standard deviation of the catcher alone (the experiment changed
 /// every fielder, but only the catcher frames, blocks and throws out runners).
-pub const CATCHING: [(Attr, f64); 3] = [(Attr::Framing, 0.043), (Attr::Blocking, 0.012), (Attr::ThrowingOut, 0.008)];
+pub const CATCHING: [(Attr, f64); 3] = [(Attr::Framing, 0.067), (Attr::Blocking, 0.0), (Attr::ThrowingOut, 0.015)];
 
 /// Share of a club's innings thrown by one starter and by one reliever: MLB starters
 /// threw 57 % of the innings in 2026 (Verducci, Sports Illustrated, 2026-08-10), spread
@@ -308,9 +308,9 @@ mod tests {
         p.attrs = Default::default();
         assert!(batting(&p).abs() < 1e-9);
         assert!(fielding(&p, Some(Position::Short)).abs() < 1e-9);
-        // A standard deviation of power is worth 13.8 runs a season in one lineup spot.
+        // A standard deviation of power is worth 13.6 runs a season in one lineup spot.
         p.attrs[Attr::Power] = 1.0;
-        assert!((batting(&p) - 13.77).abs() < 0.01, "{}", batting(&p));
+        assert!((batting(&p) - 13.626).abs() < 0.01, "{}", batting(&p));
         // Out of position he loses a lot; a non-catcher cannot catch.
         assert!(fielding(&p, Some(Position::Center)) < fielding(&p, Some(Position::Short)) - 5.0);
         assert!(fielding(&p, Some(Position::Catcher)) < -20.0);

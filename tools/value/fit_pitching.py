@@ -23,7 +23,11 @@ import numpy as np
 
 KINDS = ['FF', 'SI', 'FC', 'SL', 'ST', 'CU', 'CH', 'FS']
 OLD_UNIT, OLD_SD = 0.551, 0.197
-ATTRS = ['velocity', 'stuff', 'control', 'command', 'deception', 'hold_runners', 'concentration', 'composure', 'stamina']
+# Stamina is left out: among starters a deeper pitcher faces the order more often and allows
+# more runs per nine for it, which says nothing about how good his pitches are. With it in, the
+# model rated relievers (stamina near -2) above starters of the same stuff, and the clubs, ranking
+# pitchers by this rate, let their starters go (an NPB organisation ended with four).
+ATTRS = ['velocity', 'stuff', 'control', 'command', 'deception', 'hold_runners', 'concentration', 'composure']
 DELIVERY = ['arm_angle', 'extension', 'speed_sd', 'spin_sd', 'tilt_sd']
 FIELDS = ['grade', 'speed', 'spin', 'active', 'tilt', 'height']
 
