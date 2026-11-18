@@ -694,7 +694,7 @@ pub fn run(
         }
         if every > 0 && ((y + 1) % every == 0 || y + 1 == years) {
             println!(
-                "\nAfter the {year} offseason ({} players, {} people so far): retired {}, released {}, minor-league free agents {}, drafted {}, signed {}, foreign {} in / {} out, military service {} in ({} with Sangmu) / {} back, {} exempt; markets (MLB/KBO/NPB) {} free agents: {} first-team and {} depth contracts, {} unsigned (MLB before it: {} of {} opt-outs used, club options {} exercised / {} declined, {} not tendered, {} qualifying offers, {} accepted, {} compensation picks; KBO/NPB free agency: {} eligible, {} declared, {} stayed, {} moved, {} compensation players, {} NPB compensation picks); first-team spread {:.2}",
+                "\nAfter the {year} offseason ({} players, {} people so far): retired {}, released {}, minor-league free agents {}, drafted {}, signed {}, foreign {} in / {} out, military service {} in ({} with Sangmu) / {} back, {} exempt; markets (MLB/KBO/NPB) {} free agents: {} first-team and {} depth contracts, {} unsigned (MLB before it: {} of {} opt-outs used, club options {} exercised / {} declined, {} not tendered, {} qualifying offers, {} accepted, {} compensation picks; KBO/NPB free agency: {} eligible, {} declared, {} stayed, {} moved, {} compensation players, {} NPB compensation picks; to and from the majors: {} posted, {} of them signed, {} free agents signed there, {} came back; foreign players from the world {}, transfer fees ${:.1}M); first-team spread {:.2}",
                 pop.players().count(),
                 pop.people.len(),
                 r.retired,
@@ -726,6 +726,12 @@ pub fn run(
                 slashed(&r.fa_moved),
                 r.compensation_players,
                 r.npb_compensation_picks,
+                slashed(&r.posted),
+                slashed(&r.posted_signed),
+                slashed(&r.abroad),
+                slashed(&r.returned),
+                r.foreign_world,
+                r.foreign_fees / 1e6,
                 spread(&pop, &world)
             );
             print_table(&stats(&pop), &levels, &targets);

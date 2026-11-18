@@ -1,6 +1,6 @@
-//! The free-agent markets (`docs/contracts.md`, stages 2 and 3): one for the major-league
-//! organisations, one for the KBO and its independent club, one for NPB and its farm-only
-//! clubs.
+//! The free-agent markets (`docs/contracts.md`, stages 2-4): one for the major-league
+//! organisations (with the KBO's and NPB's posted players and free agents who try the
+//! majors), one for the KBO and its independent club, one for NPB and its farm-only clubs.
 //!
 //! Every offseason the free agents (players whose contract ran out with the service for
 //! free agency, players their organisation did not keep, minor-leaguers whose contract ran
@@ -13,7 +13,7 @@
 //! major-league contract may sign a minor-league one as Triple-A depth; the rest leave.
 
 use crate::ability;
-use crate::contract::{expected_years, ClubOption, ContractRules, Economy, OptionRules};
+use crate::contract::{expected_years, ClubOption, ContractRules, Economy, OptionRules, Posting};
 use crate::player::Player;
 use bm_engine::Rng;
 use serde::Deserialize;
@@ -69,6 +69,11 @@ pub struct MarketRules {
     /// (Scully 1974).
     #[serde(default)]
     pub markup: f64,
+    /// A KBO or NPB player who may go to the majors (posted, or a free agent with the right)
+    /// wants to when the log of the pay he expects there over the pay he expects at home, plus
+    /// his taste, is above this.
+    #[serde(default)]
+    pub abroad: f64,
 }
 
 /// Why a player is on the market.
@@ -80,6 +85,11 @@ pub enum Why {
     LetGo,
     /// His first minor-league contract ran out (six or seven seasons).
     MinorContract,
+    /// His KBO or NPB club posted him: he signs a major-league contract, whose posting fee
+    /// the signing organisation pays, or goes back to his club.
+    Posted,
+    /// A KBO or NPB player back from the majors, on his league's market.
+    Returning,
 }
 
 pub struct FreeAgent {
@@ -97,20 +107,37 @@ pub struct FreeAgent {
     pub compensation: Option<f64>,
     /// A signing by another club counts toward its limit of other clubs' free agents.
     pub counts: bool,
+    /// A KBO or NPB player in the majors' market who would rather go home than take a
+    /// minor-league contract (`career.rs` sends him to his league's market if nobody offers a
+    /// major-league one).
+    pub homeward: bool,
+    /// Only his old club may sign him (a KBO player back from a posting: his club holds his
+    /// rights).
+    pub exclusive: bool,
 }
 
 impl FreeAgent {
     /// A player on the market with nothing owed for him.
     pub fn new(player: Player, age: f64, from: Option<usize>, why: Why) -> FreeAgent {
-        FreeAgent { player, age, from, why, qualified: false, compensation: None, counts: false }
+        FreeAgent { player, age, from, why, qualified: false, compensation: None, counts: false, homeward: false, exclusive: false }
     }
 
-    fn owed_by(&self, k: usize) -> f64 {
+    /// What organisation `k` pays on top of his salary if it signs him for `pay` a year over
+    /// `years`: the posting fee, or his old club's compensation in cash.
+    fn owed(&self, k: usize, pay: f64, years: usize, posting: Option<&Posting>) -> f64 {
+        if self.why == Why::Posted {
+            return posting.map_or(0.0, |p| p.fee(pay * years as f64));
+        }
         if self.from == Some(k) {
             0.0
         } else {
             self.compensation.unwrap_or(0.0)
         }
+    }
+
+    /// Whether organisation `k` may sign him.
+    fn may_sign(&self, k: usize) -> bool {
+        !self.exclusive || self.from == Some(k)
     }
 }
 
@@ -267,6 +294,7 @@ fn longest(e: Economy) -> f64 {
 pub fn run(rules: &ContractRules, m: &MarketRules, e: Economy, mut agents: Vec<FreeAgent>, bidders: &mut [Bidder], year: i32, rng: &mut Rng) -> Outcome {
     let r = rules.of(e);
     let price = |war: f64| price(rules, m, e, war, year);
+    let posting = rules.of(Economy::Mlb).posting.as_ref();
     // Best first.
     agents.sort_by(|a, b| rules.war(&b.player, e).total_cmp(&rules.war(&a.player, e)));
     let mut signed = Vec::new();
@@ -284,7 +312,7 @@ pub fn run(rules: &ContractRules, m: &MarketRules, e: Economy, mut agents: Vec<F
         let wants: Vec<(usize, f64)> = bidders
             .iter()
             .enumerate()
-            .filter(|(k, b)| !b.depth_only && !(outside(*k) && b.outside_left == Some(0)))
+            .filter(|(k, b)| !b.depth_only && fa.may_sign(*k) && !(outside(*k) && b.outside_left == Some(0)))
             .filter_map(|(k, b)| {
                 let place = b.depth.place(rules, &fa.player, m.bench_share);
                 (place > 0.0).then_some((k, place))
@@ -292,13 +320,16 @@ pub fn run(rules: &ContractRules, m: &MarketRules, e: Economy, mut agents: Vec<F
             .collect();
         let regulars = wants.iter().filter(|(_, place)| *place >= 1.0).count().min(m.max_bidders);
         let premium = 1.0 + m.premium * regulars.saturating_sub(1) as f64;
+        // A bench player signs for a year.
+        let years_at = |pay: f64| if pay < ask { 1 } else { years };
         let offers: Vec<(usize, f64)> = wants
             .iter()
             .filter_map(|&(k, place)| {
                 let pay = if place >= 1.0 { ask * premium } else { (place * ask).max(min) };
                 let b = &bidders[k];
-                // A club signing another's free agent also pays his compensation.
-                (b.committed + pay + fa.owed_by(k) <= b.budget * (1.0 + m.slack)).then_some((k, pay))
+                // A club signing another's free agent also pays his compensation, or the
+                // posting fee of a posted player.
+                (b.committed + pay + fa.owed(k, pay, years_at(pay), posting) <= b.budget * (1.0 + m.slack)).then_some((k, pay))
             })
             .collect();
         let choice = offers
@@ -309,7 +340,8 @@ pub fn run(rules: &ContractRules, m: &MarketRules, e: Economy, mut agents: Vec<F
             })
             .max_by(|a, b| a.2.total_cmp(&b.2));
         if let Some((k, pay, _)) = choice {
-            let owed = fa.owed_by(k);
+            let years = years_at(pay);
+            let owed = fa.owed(k, pay, years, posting);
             let b = &mut bidders[k];
             b.committed += pay + owed;
             b.depth.add(rules, &fa.player);
@@ -318,9 +350,8 @@ pub fn run(rules: &ContractRules, m: &MarketRules, e: Economy, mut agents: Vec<F
                     *n = n.saturating_sub(1);
                 }
             }
-            // A bench player signs for a year. Options and opt-outs follow the majors'
-            // contracts (`contracts_options.md`); the KBO's and NPB's are not measured.
-            let years = if pay < ask { 1 } else { years };
+            // Options and opt-outs follow the majors' contracts (`contracts_options.md`); the
+            // KBO's and NPB's are not measured.
             let (option, opt_out_after) = if e == Economy::Mlb { clauses(rules.options.as_ref(), pay, years, rng) } else { (None, None) };
             signed.push(Signing {
                 player: fa.player,
@@ -341,14 +372,18 @@ pub fn run(rules: &ContractRules, m: &MarketRules, e: Economy, mut agents: Vec<F
     // Depth deals (minor-league contracts in the majors' system; in the KBO and NPB a second
     // team's place, an NPB development contract, or an independent club) for the
     // organisations he would improve most. A free agent his old club is owed compensation for
-    // takes one only from it.
+    // takes one only from it; a posted player and one who would rather go home take none.
     let mut unsigned = Vec::new();
     for fa in left {
+        if fa.why == Why::Posted || fa.homeward {
+            unsigned.push(fa);
+            continue;
+        }
         let best = bidders
             .iter()
             .enumerate()
             .filter(|(_, b)| b.depth_signed < m.depth_signings)
-            .filter(|(k, _)| fa.from == Some(*k) || fa.compensation.is_none())
+            .filter(|(k, _)| fa.may_sign(*k) && (fa.from == Some(*k) || fa.compensation.is_none()))
             .map(|(k, b)| (k, depth_gain(rules, &b.depth, &fa.player)))
             .filter(|(_, g)| *g > 0.0)
             .max_by(|a, b| a.1.total_cmp(&b.1));

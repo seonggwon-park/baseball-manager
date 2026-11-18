@@ -33,6 +33,7 @@
    "retirement": 0.5,
    "declare": -0.1,
    "markup": 0.0,
+   "abroad": 0.0,
    "basis": "The KBO market (stage 3), the same rules as the majors' (premium, home, taste, slack, bench share, depth signings, retirement factor; starting values) and declare: a player with the seasons for free agency declares it when the log of the pay he expects on the market (his price raised by the premium of the clubs that would want him as a regular; a bench player's share of it, not below the minimum; the minimum if no club wants him) over the pay his club would set for him, plus his taste, is above it. markup: a free agent's price over the club pay of his WAR, above the minimum (reserved players are paid below what the market pays, Scully 1974; FA contracts pay several times the players' last salaries, contracts_kbo.md 9.2; 0 until it is fitted). Measured, 2021-22 to 2025-26: 14-21 of 19-40 eligible players applied, 8-16 re-signed and 3-11 moved (contracts_kbo.md 9.1). Fitted later"
   },
   "npb": {
@@ -47,6 +48,7 @@
    "retirement": 0.5,
    "declare": 0.3,
    "markup": 0.0,
+   "abroad": 0.0,
    "basis": "The NPB market (stage 3), as the KBO's; the pay a player would get by staying is floored by the reduction limit. Measured, 2020-2025: 3-10 of about 105 qualified players declared a year; of the 42 who declared, 18 stayed, 20 moved within NPB and 4 went to the majors (contracts_npb.md 6A). Fitted later"
   }
  },
@@ -68,6 +70,13 @@
  "economies": {
   "mlb": {
    "currency": "USD",
+   "posting": {
+    "bands": [[25000000, 0.2], [50000000, 0.175]],
+    "above": 0.15,
+    "amateur_age": 25,
+    "amateur_seasons": 6,
+    "basis": "The release fee a major-league organisation pays the KBO or NPB club of a posted player who signs a major-league contract: 20 % of the guaranteed value up to $25M, 17.5 % of the part from $25M to $50M, 15 % above (KBO-MLB agreement of 2018, paragraph 9; NPB-MLB agreement of 2017; contracts_kbo.md 8.1, contracts_npb.md 5A). A player under 25, or with fewer than six seasons in a recognised foreign professional league, signs only a minor-league contract from the international bonus pools (MLB glossary; Roki Sasaki FAQ)"
+   },
    "raise": {
     "rate": 0.047,
     "basis": "Growth of the qualifying offer (the mean salary of the 125 highest-paid players), $18.4M for 2022 to $23.15M for 2027 (MLB Trade Rumors; MLB glossary; contracts_mlb.md 4.2)"
@@ -132,6 +141,7 @@
   },
   "kbo": {
    "currency": "KRW",
+   "usd": {"value": 1421.3963, "basis": "Won per US dollar, 2025 annual average (Federal Reserve statistical release G.5A, Foreign Exchange Rates (Annual), 5 January 2026, https://www.federalreserve.gov/releases/g5a/current/default.htm); fixed (decision 2026-11-18)"},
    "raise": {
     "rate": 0.035,
     "basis": "Average salary (rookies and foreigners excluded) 1억 5,259만 in 2022 to 1억 7,536만 in 2026, KBO releases 8273 and 11861 (contracts_kbo.md 9.3)"
@@ -159,7 +169,15 @@
     "basis": "Club-set pay of reserved players: minimum + scale x (WAR - shift)^exponent, the exponent of the major-league price. Scale and shift fit the 2026 average salary (rookies and foreigners excluded) of 1억 7,536만 and the average of each club's top 29 of 2억 8,750만 (KBO release 11861; contracts_kbo.md 9.3) on the domestic registered players of the 30-offseason world (seeds 5-8, two seasons each)"
    },
    "posting_after": {"value": 7, "basis": "Bylaws Art. 104"},
-   "foreign_cap_usd": {"new": 1000000, "team": 4000000, "asia_quota": 200000, "basis": "Foreign-player rules Art. 8(1) (contracts_kbo.md 7)"},
+   "posting_per_club": {"value": 1, "basis": "Bylaws Art. 104: at most one player per club a year"},
+   "foreign_cap_usd": {
+    "new": 1000000,
+    "team": 4000000,
+    "asia_quota": 200000,
+    "asia_raise": 100000,
+    "asia_countries": ["AU", "CN", "JP", "TW"],
+    "basis": "Foreign-player rules Art. 8 (contracts_kbo.md 7; nationality.md 3c): a new foreign player at most $1M (salary, signing bonus, options actually paid and transfer fee), a club's three foreign players together at most $4M; an Asia-quota player at most $200K new, +$100K a year on re-signing. The Asia quota is open to nationals of the Baseball Federation of Asia's members and Australia who played in an Asian league the year before (the KBO's announcements of 22 January 2025 and 26 March 2026); asia_countries holds the world's birthplaces among them (birthplaces.json), as the model knows birthplace, not nationality"
+   },
    "fa_compensation": {
     "club_ranks": [3, 10],
     "league_ranks": [30, 60],
@@ -178,6 +196,7 @@
   },
   "npb": {
    "currency": "JPY",
+   "usd": {"value": 149.5686, "basis": "Yen per US dollar, 2025 annual average (Federal Reserve statistical release G.5A, Foreign Exchange Rates (Annual), 5 January 2026, https://www.federalreserve.gov/releases/g5a/current/default.htm); fixed (decision 2026-11-18)"},
    "raise": {"rate": 0.037, "basis": "Players' association survey: average salary ¥41.89M in 2020 to ¥52.16M in 2026 (contracts_npb.md 6E)"},
    "runs_per_win": {"value": 7.91, "basis": "Pythagenpat at NPB's 2025-2026 official 3.44 runs per team game"},
    "replacement": {"hitter": -32.19, "pitcher": -11.7, "basis": "As for mlb, on the NPB first teams of the same worlds: a .294 team over 143 games, 353.5 WAR a season"},

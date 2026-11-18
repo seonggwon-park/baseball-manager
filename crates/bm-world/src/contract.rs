@@ -242,6 +242,64 @@ pub struct EconomyRules {
     pub seasons_for_fa: Option<FaSeasons>,
     #[serde(default)]
     pub fa_compensation: Option<FaCompensation>,
+    /// Units of the currency per US dollar (fixed: decision 2026-11-18).
+    #[serde(default)]
+    usd: Option<Valued<f64>>,
+    /// The majors' rules for players posted by KBO and NPB clubs.
+    #[serde(default)]
+    pub posting: Option<Posting>,
+    /// First-team seasons a KBO player needs before his club may post him, and the players a
+    /// club may post in one offseason.
+    #[serde(default)]
+    posting_after: Option<Valued<u32>>,
+    #[serde(default)]
+    posting_per_club: Option<Valued<usize>>,
+    /// What a KBO club may pay its foreign players, in US dollars.
+    #[serde(default)]
+    pub foreign_cap_usd: Option<ForeignCap>,
+}
+
+/// The posting fee a major-league organisation pays a KBO or NPB club: shares of the
+/// contract's guaranteed value by band (the KBO-MLB agreement of 2018 and the NPB-MLB one of
+/// 2017 have the same bands), and who signs as an international amateur instead.
+#[derive(Clone, Debug, Deserialize)]
+pub struct Posting {
+    /// (guaranteed value up to, share of the part in the band), and the share above them.
+    pub bands: Vec<(f64, f64)>,
+    pub above: f64,
+    /// A player younger than this, or with fewer professional seasons, signs only a
+    /// minor-league contract from the international bonus pools.
+    pub amateur_age: f64,
+    pub amateur_seasons: u32,
+}
+
+impl Posting {
+    pub fn fee(&self, guaranteed: f64) -> f64 {
+        let mut fee = 0.0;
+        let mut below = 0.0;
+        for &(up_to, share) in &self.bands {
+            fee += share * (guaranteed.min(up_to) - below).max(0.0);
+            below = up_to;
+        }
+        fee + self.above * (guaranteed - below).max(0.0)
+    }
+}
+
+/// The KBO's limits on what its clubs pay foreign players (foreign-player rules Art. 8).
+#[derive(Clone, Debug, Deserialize)]
+pub struct ForeignCap {
+    /// A new foreign player: salary, bonus, options and transfer fee.
+    pub new: f64,
+    /// A club's foreign players together (the Asia-quota player apart).
+    pub team: f64,
+    /// A new Asia-quota player, and the most his pay may rise on re-signing.
+    pub asia_quota: f64,
+    #[serde(default)]
+    pub asia_raise: f64,
+    /// Birthplaces that make a player eligible for the Asia quota (the Baseball Federation of
+    /// Asia's members and Australia).
+    #[serde(default)]
+    pub asia_countries: Vec<String>,
 }
 
 /// A KBO grade's compensation: a multiple of the last salary with a player from outside the
@@ -360,6 +418,19 @@ pub enum FaCompensation {
 impl EconomyRules {
     pub fn runs_per_win(&self) -> f64 {
         self.runs_per_win.value
+    }
+
+    /// Units of the currency per US dollar.
+    pub fn per_usd(&self) -> f64 {
+        self.usd.as_ref().map_or(1.0, |v| v.value)
+    }
+
+    pub fn posting_after(&self) -> u32 {
+        self.posting_after.as_ref().map_or(0, |v| v.value)
+    }
+
+    pub fn posting_per_club(&self) -> usize {
+        self.posting_per_club.as_ref().map_or(usize::MAX, |v| v.value)
     }
 
     pub fn minimum(&self, year: i32) -> f64 {
@@ -1018,6 +1089,24 @@ mod tests {
         let (pay, budget): (f64, f64) =
             rows.iter().filter(|r| r.economy == Economy::Mlb).fold((0.0, 0.0), |a, r| (a.0 + r.total, a.1 + r.budget.unwrap_or(0.0)));
         assert!(pay > 0.5 * budget && pay < 2.0 * budget, "{pay:.3e} against {budget:.3e}");
+    }
+
+    #[test]
+    fn posting_fees_follow_the_bands_and_rates_are_fixed() {
+        let r = ContractRules::bundled();
+        let p = r.of(Economy::Mlb).posting.as_ref().expect("posting rules");
+        // The agreement's own example: a $100M guarantee brings $16,875,000.
+        assert!((p.fee(100_000_000.0) - 16_875_000.0).abs() < 1.0);
+        assert!((p.fee(10_000_000.0) - 2_000_000.0).abs() < 1.0);
+        assert!((p.fee(40_000_000.0) - (5_000_000.0 + 0.175 * 15_000_000.0)).abs() < 1.0);
+        assert_eq!(r.of(Economy::Mlb).per_usd(), 1.0);
+        assert!((r.of(Economy::Kbo).per_usd() - 1421.3963).abs() < 1e-9);
+        assert!((r.of(Economy::Npb).per_usd() - 149.5686).abs() < 1e-9);
+        assert_eq!((r.of(Economy::Kbo).posting_after(), r.of(Economy::Kbo).posting_per_club()), (7, 1));
+        assert_eq!(r.of(Economy::Npb).posting_per_club(), usize::MAX);
+        let cap = r.of(Economy::Kbo).foreign_cap_usd.as_ref().expect("foreign caps");
+        assert_eq!((cap.new, cap.team, cap.asia_quota), (1_000_000.0, 4_000_000.0, 200_000.0));
+        assert!(cap.asia_countries.iter().any(|c| c == "JP") && !cap.asia_countries.iter().any(|c| c == "KR"));
     }
 
     #[test]

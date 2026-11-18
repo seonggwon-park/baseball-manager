@@ -210,7 +210,7 @@
   "value": 0.6991,
   "basis": "Scouting error of the draft board, in standard deviations of ability (one board for pitchers and position players). Assumption, fitted to the same reach rates"
  },
- "foreign_candidates": {"value": 1, "basis": "Assumption: each offseason a KBO or NPB club weighs one new foreign player against each of its own and keeps the better"},
+ "foreign_candidates": {"value": 1, "basis": "Not used since KBO and NPB clubs sign their foreign players from the world (decision 2026-11-18; contracts.md stage 4): a new player is made only for a slot no player of the world fills"},
  "minor_league_contract": {
   "seasons": 6,
   "seasons_if_younger": 7,
