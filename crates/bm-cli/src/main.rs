@@ -421,7 +421,18 @@ fn main() {
                 // Pitches by type, count and result, for a run value by pitch type.
                 let kinds: serde_json::Map<String, serde_json::Value> =
                     PitchKind::ALL.iter().map(|k| (k.code().to_string(), serde_json::json!(t.pitch_classes[k.index()]))).collect();
-                let doc = serde_json::json!({ "classes": tally::PITCH_CLASSES, "counts": "balls * 3 + strikes", "pitches": kinds });
+                let zone: serde_json::Map<String, serde_json::Value> =
+                    PitchKind::ALL.iter().map(|k| (k.code().to_string(), serde_json::json!(t.pitch_classes_zone[k.index()]))).collect();
+                let dist: serde_json::Map<String, serde_json::Value> =
+                    PitchKind::ALL.iter().map(|k| (k.code().to_string(), serde_json::json!(t.kinds[k.index()].dist))).collect();
+                let doc = serde_json::json!({
+                    "classes": tally::PITCH_CLASSES,
+                    "counts": "balls * 3 + strikes",
+                    "pitches": kinds,
+                    "in_zone": zone,
+                    "dist_edges": tally::KIND_DIST_EDGES,
+                    "swing_by_dist": dist,
+                });
                 std::fs::write(path, serde_json::to_string_pretty(&doc).expect("json")).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
             }
         }

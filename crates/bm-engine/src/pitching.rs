@@ -136,11 +136,14 @@ pub fn selection_weights(
 ) -> usize {
     let same = profile.hand == batter_hand;
     let fb = params.fastball_bias[balls.min(3)][strikes.min(2)];
+    // The count's mix of pitch types first (`count_kind`), then any bias of the fastballs as a
+    // group.
     let n = profile.pitches.len().min(MAX_PITCHES);
     let mut fast_total = 0.0;
     let mut other_total = 0.0;
+    let (b, s) = (balls.min(3), strikes.min(2));
     for (i, d) in profile.pitches.iter().take(n).enumerate() {
-        let u = if same { d.usage_same } else { d.usage_opp };
+        let u = (if same { d.usage_same } else { d.usage_opp }) * params.count_kind[d.kind.index()][b][s];
         out[i] = u;
         if d.kind.group() == PitchGroup::Fastball {
             fast_total += u;

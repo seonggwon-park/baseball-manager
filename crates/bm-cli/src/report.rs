@@ -252,6 +252,15 @@ pub fn print(t: &Tally) {
             tg[7]
         );
     }
+    // MLB: swing % at pitches in the zone and called strikes, % of pitches (2025 Statcast sample:
+    // the rulebook zone widened by the ball's radius).
+    #[rustfmt::skip]
+    let kc: [[f64; 2]; 8] = [[68.8, 17.0], [60.2, 22.4], [68.1, 16.2], [69.0, 14.3], [64.7, 16.1], [57.7, 18.7], [76.7, 9.1], [80.4, 7.0]];
+    println!("  zone swing % sim/MLB, called strikes % of pitches sim/MLB:");
+    for ((kind, _), tg) in kt.iter().zip(kc) {
+        let k = &t.kinds[kind.index()];
+        println!("    {}  zsw {:5.1}/{:5.1}  called {:5.1}/{:5.1}", kind.code(), pct(k.zone_swings, k.zone), tg[0], pct(k.called, k.n), tg[1]);
+    }
     // MLB: whiff per swing at pitches in the zone, against same-side and opposite-side batters.
     #[rustfmt::skip]
     let kz: [[f64; 3]; 8] = [[18.2, 23.4, 20.6], [10.8, 13.5, 14.7], [16.1, 23.8, 20.6], [19.3, 34.7, 30.7], [19.5, 35.5, 27.3], [15.3, 30.2, 29.9], [20.5, 34.2, 30.1], [22.6, 38.1, 35.4]];

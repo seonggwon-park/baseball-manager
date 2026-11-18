@@ -336,9 +336,10 @@ pub struct KindStat {
     pub la: Mean,
     pub gb: f64,
     pub bip: f64,
-    /// Swings at pitches in the zone, and the misses among them.
+    /// Swings at pitches in the zone, and the misses among them; called strikes.
     pub zone_swings: f64,
     pub zone_whiffs: f64,
+    pub called: f64,
     /// Swings and misses by cause: early, late, off the end, jammed, over, under.
     pub miss: [f64; 6],
     /// Swings by batter side: same side as the pitcher [swings, misses], opposite side.
@@ -351,7 +352,13 @@ pub struct KindStat {
     /// against same-side and opposite-side batters.
     pub side_x: [Mean; 2],
     pub side_zone: [[f64; 2]; 2],
+    /// [pitches, swings] by strikes (0, 1, 2) and signed distance from the zone edge
+    /// (`KIND_DIST_EDGES`, in), for swing rates by type at equal location (`bm validate --json`).
+    pub dist: [[[f64; 2]; KIND_DIST_EDGES.len() - 1]; 3],
 }
+
+/// Bins of signed distance from the zone edge (in; negative inside) for `KindStat::dist`.
+pub const KIND_DIST_EDGES: [f64; 9] = [-24.0, -6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 8.0, 40.0];
 
 #[derive(Clone)]
 pub struct Tally {
@@ -401,6 +408,8 @@ pub struct Tally {
     /// (`PITCH_CLASSES`), to value each pitch type with a count-by-result table of run values
     /// (`bm validate --json`).
     pub pitch_classes: Vec<[[f64; PITCH_CLASSES.len()]; 12]>,
+    /// The same for the pitches in the strike zone only.
+    pub pitch_classes_zone: Vec<[[f64; PITCH_CLASSES.len()]; 12]>,
     pub bat_speed_all: Mean,
     pub bat_speed_bip: Mean,
     pub eff_all: Efficiency,
@@ -527,6 +536,7 @@ impl Default for Tally {
             call_s: [0.0; NC],
             kinds: [KindStat::default(); 8],
             pitch_classes: vec![[[0.0; PITCH_CLASSES.len()]; 12]; 8],
+            pitch_classes_zone: vec![[[0.0; PITCH_CLASSES.len()]; 12]; 8],
             bat_speed_all: Mean::default(),
             bat_speed_bip: Mean::default(),
             eff_all: Efficiency::default(),
@@ -654,7 +664,7 @@ pub fn bb_type(la_deg: f64) -> usize {
 
 impl Tally {
     pub fn merge(&mut self, o: &Tally) {
-        for (a, b) in self.pitch_classes.iter_mut().zip(&o.pitch_classes) {
+        for (a, b) in self.pitch_classes.iter_mut().zip(&o.pitch_classes).chain(self.pitch_classes_zone.iter_mut().zip(&o.pitch_classes_zone)) {
             for (x, y) in a.iter_mut().zip(b) {
                 add_arr(x, y);
             }
@@ -800,8 +810,14 @@ impl Tally {
             for (x, y) in a.side_zone.iter_mut().zip(&b.side_zone) {
                 add_arr(x, y);
             }
+            for (x, y) in a.dist.iter_mut().zip(&b.dist) {
+                for (u, v) in x.iter_mut().zip(y) {
+                    add_arr(u, v);
+                }
+            }
             a.zone_swings += b.zone_swings;
             a.zone_whiffs += b.zone_whiffs;
+            a.called += b.called;
             add_arr(&mut a.miss, &b.miss);
             for (x, y) in a.side.iter_mut().zip(&b.side) {
                 add_arr(x, y);
@@ -995,6 +1011,9 @@ impl Observer for Tally {
         self.pitches += 1.0;
         let count = (e.balls.min(3) as usize) * 3 + e.strikes.min(2) as usize;
         self.pitch_classes[e.thrown.kind.index()][count][pitch_class(e)] += 1.0;
+        if e.zone_distance <= 0.0 {
+            self.pitch_classes_zone[e.thrown.kind.index()][count][pitch_class(e)] += 1.0;
+        }
         if e.approach.is_bunt() {
             let t = &mut self.tactics;
             let i = match e.result {
@@ -1179,6 +1198,15 @@ impl Observer for Tally {
                 if contact {
                     self.contact_dist_c[i] += 1.0;
                 }
+            }
+        }
+        if e.result == PitchResult::CalledStrike {
+            k.called += 1.0;
+        }
+        if let Some(i) = bin(&KIND_DIST_EDGES, d_in) {
+            k.dist[s][i][0] += 1.0;
+            if e.swung {
+                k.dist[s][i][1] += 1.0;
             }
         }
         if e.swung {

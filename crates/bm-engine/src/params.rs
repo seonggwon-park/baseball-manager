@@ -34,6 +34,14 @@ pub struct ModelParams {
     pub zone_intent: [[f64; 3]; 4],
     /// Multiplier on fastball usage by count, indexed `[balls][strikes]`.
     pub fastball_bias: [[f64; 3]; 4],
+    /// How much more (or less) often each pitch type is thrown in each count than overall,
+    /// [type][balls][strikes]: its share of the count's pitches over its share of all pitches
+    /// (2025 Statcast sample, 123,000 pitches of the eight types). A pitcher's usage of a type
+    /// is scaled by this in each count, so an average arsenal throws each type as often by
+    /// count as the majors do (splitters 0.50 at 0-0 and 1.63 at 0-2, sinkers 0.42 at 0-2,
+    /// curves 1.16 at 0-0 and 0.03 at 3-0). It replaces the count bias of the fastballs as a
+    /// group (`fastball_bias`, now 1).
+    pub count_kind: [[[f64; 3]; 4]; 8],
     /// Velocity lost per pitch thrown beyond the pitcher's stamina (fraction of speed).
     pub fatigue_speed: f64,
     /// Command lost per pitch beyond stamina (fraction of the location SD).
@@ -434,7 +442,9 @@ impl Default for ModelParams {
             release_sd_side: 2.1 * INCH,
             release_sd_height: 1.3 * INCH,
             zone_intent: [[0.20, -0.30, -0.95], [0.25, -0.05, -0.70], [0.50, 0.40, -0.15], [0.82, 0.90, 0.58]],
-            fastball_bias: [[1.08, 0.95, 0.75], [1.15, 1.00, 0.75], [1.45, 1.15, 0.85], [2.40, 1.60, 1.15]],
+            fastball_bias: [[1.0; 3]; 4],
+            #[rustfmt::skip]
+            count_kind: [[[1.026, 0.901, 1.02], [0.969, 0.879, 0.976], [1.148, 0.948, 0.98], [1.988, 1.271, 1.119]], [[1.213, 0.942, 0.423], [1.218, 0.941, 0.541], [1.408, 1.125, 0.749], [1.478, 1.544, 1.097]], [[1.144, 0.926, 0.53], [1.25, 1.028, 0.575], [1.55, 1.252, 0.737], [0.76, 1.446, 1.03]], [[0.967, 1.014, 1.138], [0.982, 1.012, 1.097], [0.875, 1.013, 1.058], [0.221, 0.737, 1.015]], [[0.961, 1.121, 1.472], [0.799, 0.968, 1.307], [0.516, 0.813, 1.137], [0.102, 0.408, 0.835]], [[1.158, 0.931, 1.328], [0.762, 0.994, 1.294], [0.41, 0.795, 1.127], [0.034, 0.262, 0.731]], [[0.629, 1.278, 1.173], [1.0, 1.362, 1.292], [0.687, 1.107, 1.193], [0.135, 0.523, 0.816]], [[0.496, 1.319, 1.628], [0.763, 1.268, 1.657], [0.339, 0.823, 1.508], [0.049, 0.43, 0.792]]],
             fatigue_speed: 0.0004,
             fatigue_command: 0.004,
 
