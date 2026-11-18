@@ -405,7 +405,7 @@ impl BatterProfile {
             barrel_aim: 0.035013,
             reach_sd: 0.072176,
             eye: 0.613,
-            perception_sd: 0.065,
+            perception_sd: 0.026608,
             chase: -0.016139,
             aggression: 1.0,
             timing_bias: 0.0026,

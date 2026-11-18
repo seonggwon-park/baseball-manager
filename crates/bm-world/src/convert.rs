@@ -327,7 +327,7 @@ pub fn main_fastball(pitches: &[crate::player::PitchSkill]) -> Option<usize> {
 /// Location error of each pitch type against a four-seamer's (`PitchKind::index`): breaking
 /// balls 12 % and offspeed pitches 10 % wider to start with; `Baseline::command_kind` holds
 /// the fitted values.
-pub const COMMAND_KIND: [f64; 8] = [1.0, 1.0, 1.0, 1.12, 1.12, 1.12, 1.10, 1.10];
+pub const COMMAND_KIND: [f64; 8] = [1.0, 0.97096, 1.0503, 1.0703, 1.1431, 1.0839, 1.0611, 0.94864];
 
 pub fn pitcher(p: &Player, relief: bool) -> Option<PitcherProfile> {
     pitcher_with(p, relief, &Baseline::default())
