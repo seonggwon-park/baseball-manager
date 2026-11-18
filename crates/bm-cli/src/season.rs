@@ -100,6 +100,65 @@ pub struct Options<'a> {
     pub aging_file: Option<&'a std::path::Path>,
     /// Write each level's rates in the last season played here.
     pub json: Option<&'a std::path::Path>,
+    /// Write every player's line of the last season played here (CSV): his level and role,
+    /// his value (`ability::value`) and his batting and pitching.
+    pub out: Option<&'a std::path::Path>,
+}
+
+/// Every rostered player's line of `season` as CSV rows (`bm season --out`).
+fn write_players(path: &std::path::Path, pop: &bm_world::Population, season: &Season) {
+    use std::io::Write;
+    let mut f = std::io::BufWriter::new(std::fs::File::create(path).unwrap_or_else(|e| panic!("{}: {e}", path.display())));
+    writeln!(f, "id,level,slot,pitcher,age,value,g,pa,ab,h,doubles,triples,hr,bb,hbp,so,sf,r,gp,gs,outs,bf,ph,pr,er,pbb,pso,phr").expect("write --out");
+    let jun30 = Date::new(season.year, 6, 30);
+    for r in &pop.rosters {
+        let s = &r.squad;
+        let groups: [(&str, Vec<&bm_world::Player>); 5] = [
+            ("lineup", s.hitters.iter().map(|(p, _)| p).collect()),
+            ("bench", s.bench.iter().map(|(p, _)| p).collect()),
+            ("reserve", r.reserves.iter().map(|(p, _)| p).collect()),
+            ("starter", s.starters.iter().collect()),
+            ("reliever", s.relievers.iter().collect()),
+        ];
+        for (slot, players) in groups {
+            for p in players {
+                let age = pop.people.get(&p.id).map_or(f64::NAN, |x| jun30.days_since(x.born) as f64 / 365.2425);
+                let b = season.batting.get(&p.id).cloned().unwrap_or_default();
+                let q = season.pitching.get(&p.id).cloned().unwrap_or_default();
+                writeln!(
+                    f,
+                    "{},{},{slot},{},{age:.2},{:.2},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
+                    p.id,
+                    r.level,
+                    u8::from(p.is_pitcher()),
+                    bm_world::ability::value(p),
+                    b.g,
+                    b.pa,
+                    b.ab,
+                    b.h,
+                    b.doubles,
+                    b.triples,
+                    b.hr,
+                    b.bb,
+                    b.hbp,
+                    b.so,
+                    b.sf,
+                    b.r,
+                    q.g,
+                    q.gs,
+                    q.outs,
+                    q.bf,
+                    q.h,
+                    q.r,
+                    q.er,
+                    q.bb,
+                    q.so,
+                    q.hr
+                )
+                .expect("write --out");
+            }
+        }
+    }
 }
 
 /// A level's ages as Baseball-Reference reports them (docs/research/world/levels.md 4):
@@ -294,6 +353,9 @@ pub fn run(tuning: &Tuning, seed: u64, threads: usize, o: &Options) {
                     .collect();
                 std::fs::write(path, serde_json::to_string_pretty(&serde_json::json!({"year": year, "levels": levels_json})).unwrap())
                     .unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+            }
+            if let Some(path) = o.out {
+                write_players(path, &pop, &season);
             }
             standings(&world, &season);
         } else {

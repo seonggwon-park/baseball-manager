@@ -625,6 +625,35 @@ fn write_outcomes(out: &mut impl std::io::Write, pop: &Population, before: &[Bef
     }
 }
 
+/// Add `v` to `acc` number by number (objects by key, arrays by position); `acc` starts as null.
+fn add_json(acc: &mut serde_json::Value, v: &serde_json::Value) {
+    use serde_json::Value;
+    match (acc, v) {
+        (a @ Value::Null, v) => *a = v.clone(),
+        (Value::Number(a), Value::Number(b)) => {
+            *a = serde_json::Number::from_f64(a.as_f64().unwrap_or(0.0) + b.as_f64().unwrap_or(0.0)).unwrap_or_else(|| 0.into())
+        }
+        (Value::Array(a), Value::Array(b)) => a.iter_mut().zip(b).for_each(|(x, y)| add_json(x, y)),
+        (Value::Object(a), Value::Object(b)) => {
+            for (k, y) in b {
+                add_json(a.entry(k.clone()).or_insert(Value::Null), y);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Multiply every number in `v` by `k`.
+fn scale_json(v: &mut serde_json::Value, k: f64) {
+    use serde_json::Value;
+    match v {
+        Value::Number(a) => *a = serde_json::Number::from_f64(a.as_f64().unwrap_or(0.0) * k).unwrap_or_else(|| 0.into()),
+        Value::Array(a) => a.iter_mut().for_each(|x| scale_json(x, k)),
+        Value::Object(a) => a.values_mut().for_each(|x| scale_json(x, k)),
+        _ => {}
+    }
+}
+
 /// Run `years` offseasons, print the levels every `every` years and their average from
 /// offseason `from` on; with `out`, write every player's outcome of each offseason from
 /// `from` on as CSV.
@@ -668,6 +697,8 @@ pub fn run(
     let mut counted = 0.0;
     let mut last = 2027;
     let mut moments: Vec<AttrMoments> = Vec::new();
+    // The offseasons' reports from `from` on, summed field by field (`market` in the JSON).
+    let mut market = serde_json::Value::Null;
     if years == 0 {
         moments.push(AttrMoments::of(&pop));
     }
@@ -685,6 +716,7 @@ pub fn run(
             write_outcomes(f, &pop, &before, year);
         }
         if y >= from {
+            add_json(&mut market, &serde_json::to_value(&r).expect("report to JSON"));
             for (k, s) in stats(&pop) {
                 sum.entry(k).or_default().add(&s);
             }
@@ -765,7 +797,10 @@ pub fn run(
         for m in &moments {
             attrs.add(m, 1.0 / moments.len() as f64);
         }
-        let out = serde_json::json!({ "levels": levels_json, "spread": spreads / counted, "outcomes": summary, "attrs": attrs.json(), "money": money });
+        scale_json(&mut market, 1.0 / counted);
+        let out = serde_json::json!({
+            "levels": levels_json, "spread": spreads / counted, "outcomes": summary, "attrs": attrs.json(), "money": money, "market": market,
+        });
         std::fs::write(path, serde_json::to_string_pretty(&out).unwrap()).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     }
 }

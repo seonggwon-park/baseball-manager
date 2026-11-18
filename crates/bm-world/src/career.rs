@@ -1096,7 +1096,7 @@ fn contract_ran_out(origin: &Origin, born: Date, year: i32, terms: &MinorContrac
 }
 
 /// What one offseason did.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize)]
 pub struct Report {
     pub retired: usize,
     pub released: usize,
@@ -2380,10 +2380,13 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
         let (caps, academy_at) = (caps.as_slice(), *academy_at);
         let deepest = |p: &Player| deepest_of(k, p);
         let mut pool = std::mem::take(&mut kept_pools[k]);
-        // An organisation that signed players on the market keeps its players again within
-        // its levels' places (the new signings and the guaranteed contracts first): the
-        // veterans it signed may only play at the top levels.
-        if pool.iter().any(|p| signed_by.contains(&p.id)) {
+        // Every organisation keeps its players again within its levels' places (the new
+        // signings and the guaranteed contracts first): the veterans it signed on the market
+        // may only play at the top levels, and a foreign player signed for a first team is
+        // pinned there. A pool that fits loses nobody here; one that does not (a club whose
+        // new foreign pitcher replaced a hitter, with a full staff of pitchers too old for its
+        // second team) lets its weakest go.
+        {
             let pots = &pop.potentials;
             let value = |p: &Player| {
                 keep_value(p, pots.get(&p.id), ctx.careers.keep_potential)

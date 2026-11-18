@@ -528,6 +528,7 @@ fn main() {
                 contracts_file: args.contracts_file.as_deref(),
                 aging_file: args.aging_file.as_deref(),
                 json: args.json.as_deref(),
+                out: args.out.as_deref(),
             },
         ),
         "careers" => careers::run(
