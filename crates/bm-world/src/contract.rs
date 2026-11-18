@@ -240,6 +240,121 @@ pub struct EconomyRules {
     pub floor: Option<Floor>,
     #[serde(default)]
     pub seasons_for_fa: Option<FaSeasons>,
+    #[serde(default)]
+    pub fa_compensation: Option<FaCompensation>,
+}
+
+/// A KBO grade's compensation: a multiple of the last salary with a player from outside the
+/// signing club's `protected`, or a multiple alone.
+#[derive(Clone, Copy, Debug, Deserialize)]
+pub struct GradeTerms {
+    #[serde(default)]
+    pub with_player: f64,
+    #[serde(default)]
+    pub protected: usize,
+    pub cash_only: f64,
+}
+
+/// An NPB rank's compensation: an extra pick in a round, or a multiple of the salary.
+#[derive(Clone, Copy, Debug, Deserialize)]
+pub struct RankTerms {
+    pub pick_round: u32,
+    pub cash: f64,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct KboCompensation {
+    /// Salary ranks in the club and in the league that bound grades A and B.
+    pub club_ranks: Vec<usize>,
+    pub league_ranks: Vec<usize>,
+    pub veteran_age: i32,
+    pub a: GradeTerms,
+    pub b: GradeTerms,
+    pub c: GradeTerms,
+    /// (applicants up to, signings of other clubs' free agents a club may make).
+    pub outside_limit: Vec<(usize, usize)>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct NpbCompensation {
+    /// Salary ranks in the club that bound A, B with a pick, and B in cash.
+    pub ranks: Vec<usize>,
+    pub veteran_age: i32,
+    pub a: RankTerms,
+    pub b: RankTerms,
+    pub b_last_cash: f64,
+    /// (declared players up to, other clubs' free agents of ranks A and B a club may sign).
+    pub outside_limit: Vec<(usize, usize)>,
+}
+
+impl KboCompensation {
+    /// A KBO free agent's grade, 0-2 for A-C (Bylaws Art. 172(1)), by his salary rank in his
+    /// club and in the league: the grade both ranks give, one below the better when they
+    /// differ. A new free agent of `veteran_age` or more by birth year and a third or later one
+    /// are compensated as C; a second one as B at most (the model keeps no first grade: his
+    /// grade now stands in for it). `used`: the free agencies he used before this one.
+    pub fn grade(&self, club_rank: usize, league_rank: usize, used: u32, veteran: bool) -> usize {
+        let of = |rank: usize, bounds: &[usize]| bounds.iter().position(|b| rank <= *b).unwrap_or(bounds.len()).min(2);
+        let (in_club, in_league) = (of(club_rank, &self.club_ranks), of(league_rank, &self.league_ranks));
+        let g = if in_club == in_league { in_club } else { (in_club.min(in_league) + 1).min(2) };
+        if (used == 0 && veteran) || used >= 2 {
+            2
+        } else if used == 1 {
+            g.max(1)
+        } else {
+            g
+        }
+    }
+
+    pub fn terms(&self, grade: usize) -> GradeTerms {
+        [self.a, self.b, self.c][grade.min(2)]
+    }
+}
+
+/// What NPB's rules give the old club of a free agent who moves.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum NpbOwed {
+    /// An extra pick in this round of the next draft (taken over the cash).
+    Pick(u32),
+    /// A share of his salary in cash alone.
+    Cash(f64),
+    Nothing,
+}
+
+impl NpbCompensation {
+    /// By his salary rank among the club's Japanese players (the 2027 rules): ranks A and B
+    /// an extra pick, the last of B cash alone, C and movers of `veteran_age` or more nothing.
+    pub fn owed(&self, rank: usize, veteran: bool) -> NpbOwed {
+        let bound = |i: usize| self.ranks.get(i).copied().unwrap_or(0);
+        if veteran || rank > bound(2) {
+            NpbOwed::Nothing
+        } else if rank <= bound(0) {
+            NpbOwed::Pick(self.a.pick_round)
+        } else if rank <= bound(1) {
+            NpbOwed::Pick(self.b.pick_round)
+        } else {
+            NpbOwed::Cash(self.b_last_cash)
+        }
+    }
+}
+
+impl FaCompensation {
+    /// How many free agents of other clubs a club may sign when `declared` players declared.
+    pub fn outside_limit(&self, declared: usize) -> usize {
+        let table = match self {
+            FaCompensation::Kbo(k) => &k.outside_limit,
+            FaCompensation::Npb(n) => &n.outside_limit,
+        };
+        table.iter().find(|(up_to, _)| declared <= *up_to).or(table.last()).map_or(usize::MAX, |x| x.1)
+    }
+}
+
+/// What the old club gets when another signs its free agent (`contracts.json`).
+#[derive(Clone, Debug, Deserialize)]
+#[serde(untagged)]
+pub enum FaCompensation {
+    Kbo(KboCompensation),
+    Npb(NpbCompensation),
 }
 
 impl EconomyRules {
@@ -296,9 +411,10 @@ pub struct OptionRules {
 #[derive(Clone, Debug, Deserialize)]
 pub struct ContractRules {
     economies: BTreeMap<Economy, EconomyRules>,
-    /// The major-league free-agent market; without it no club signs another's players.
+    /// Each economy's free-agent market; without one an organisation's players it lets go
+    /// leave the world.
     #[serde(default)]
-    pub market: Option<crate::market::MarketRules>,
+    pub market: BTreeMap<Economy, crate::market::MarketRules>,
     #[serde(default)]
     pub options: Option<OptionRules>,
 }
@@ -338,12 +454,17 @@ impl ContractRules {
     /// player playing every day, a pitcher over a starter's share of the innings if he has
     /// a starter's stamina and a reliever's if not (`ability.rs`).
     pub fn war(&self, p: &Player, e: Economy) -> f64 {
+        self.war_at(p, e, ability::value(p))
+    }
+
+    /// The same for `p` valued at `value` runs per 162 games instead of his ability now.
+    pub fn war_at(&self, p: &Player, e: Economy, value: f64) -> f64 {
         let r = self.of(e);
         if p.is_pitcher() {
             let share = if ability::can_start(p) { ability::STARTER_SHARE } else { ability::RELIEVER_SHARE } / ability::STAFF_SHARE;
-            (ability::value(p) - r.replacement.pitcher) * share / r.runs_per_win()
+            (value - r.replacement.pitcher) * share / r.runs_per_win()
         } else {
-            (ability::value(p) - r.replacement.hitter) / r.runs_per_win()
+            (value - r.replacement.hitter) / r.runs_per_win()
         }
     }
 
@@ -526,9 +647,9 @@ pub fn first_team_seasons(c: &Career, level: &str, year: i32) -> u32 {
 }
 
 /// Seasons a KBO or NPB player needs for free agency, by where he came from.
-fn seasons_for_fa(rules: &EconomyRules, c: &Career) -> u32 {
+pub fn seasons_for_fa(rules: &EconomyRules, c: &Career) -> u32 {
     let s = rules.seasons_for_fa.unwrap_or_default();
-    let college = matches!(&c.origin, Origin::Draft { class, .. } | Origin::Signed { class, .. } if class.contains("college") || class.contains("corporate"));
+    let college = matches!(&c.origin, Origin::Draft { class, .. } | Origin::Signed { class, .. } if class.contains("college") || class.contains("university") || class.contains("corporate"));
     if s.domestic > 0 {
         if college && s.domestic_college > 0 {
             s.domestic_college
@@ -640,6 +761,7 @@ fn new_contract(
     age: f64,
     year: i32,
     foreign: bool,
+    first: bool,
     rng: &mut Rng,
 ) -> Contract {
     let e = Economy::of(pl.org.kind);
@@ -688,7 +810,10 @@ fn new_contract(
             if let Some(prev) = previous.filter(|c| c.org == org).and_then(|c| c.pay(year - 1)) {
                 pay = pay.max(rules.lowest_renewal(e, prev));
             }
-            if due && !amateur {
+            // The first world's players with the seasons for free agency are on free-agent
+            // contracts; later a player's free agency goes through the market (`career.rs`),
+            // and one who did not declare it is reserved for another season.
+            if due && !amateur && first {
                 let n = draw_years(age, war, rng).min(4);
                 Contract::new(org, kind, Terms::FreeAgent, year, &vec![pay; n])
             } else {
@@ -704,6 +829,10 @@ fn new_contract(
 /// major-league contract at the minimum); everyone else gets a new one. Contracts of
 /// players who left the world go; those of players on military duty stay.
 pub fn settle(world: &World, pop: &mut Population, rules: &ContractRules, year: i32, seed: u64) {
+    settle_with(world, pop, rules, year, seed, false);
+}
+
+fn settle_with(world: &World, pop: &mut Population, rules: &ContractRules, year: i32, seed: u64, first: bool) {
     let orgs = organisations(world);
     let mut rng = Rng::new(seed ^ 0xC0_47AC7 ^ (year as u64).wrapping_mul(0x9E37_79B9));
     let on_date = Date::new(year, 4, 1);
@@ -723,7 +852,7 @@ pub fn settle(world: &World, pop: &mut Population, rules: &ContractRules, year: 
             Some(c) => c.clone(),
             None => {
                 let age = pop.people.get(&id).map_or(25.0, |p| on_date.days_since(p.born) as f64 / 365.2425);
-                new_contract(rules, &pl, pop.careers.get(&id), old, age, year, pop.foreign.contains_key(&id), &mut rng)
+                new_contract(rules, &pl, pop.careers.get(&id), old, age, year, pop.foreign.contains_key(&id), first, &mut rng)
             }
         };
         next.insert(id, c);
@@ -762,12 +891,19 @@ pub fn initial(world: &World, pop: &mut Population, rules: &ContractRules, seed:
         }
     }
     pop.contracts.clear();
-    settle(world, pop, rules, year, seed);
-    // A free agent's contract of the first world began some seasons ago.
-    for c in pop.contracts.values_mut() {
+    settle_with(world, pop, rules, year, seed, true);
+    // A free agent's contract of the first world began some seasons ago; a KBO or NPB player
+    // on one used his free agency when it began.
+    for (id, c) in pop.contracts.iter_mut() {
         if c.terms == Terms::FreeAgent && c.salary.len() > 1 {
             let played = rng.below(c.salary.len()) as i32;
             c.from -= played;
+        }
+        if c.terms == Terms::FreeAgent && c.kind == Kind::Registered {
+            if let Some(career) = pop.careers.get_mut(id) {
+                career.free_agencies = 1;
+                career.fa_at = career.prior.saturating_sub((year - c.from) as u32);
+            }
         }
         if c.terms != Terms::Foreign {
             c.terms = if c.terms == Terms::FreeAgent { Terms::FreeAgent } else { Terms::Initial };
@@ -882,6 +1018,34 @@ mod tests {
         let (pay, budget): (f64, f64) =
             rows.iter().filter(|r| r.economy == Economy::Mlb).fold((0.0, 0.0), |a, r| (a.0 + r.total, a.1 + r.budget.unwrap_or(0.0)));
         assert!(pay > 0.5 * budget && pay < 2.0 * budget, "{pay:.3e} against {budget:.3e}");
+    }
+
+    #[test]
+    fn kbo_grades_and_npb_ranks_follow_the_rules() {
+        let r = ContractRules::bundled();
+        let (Some(FaCompensation::Kbo(k)), Some(FaCompensation::Npb(n))) = (&r.of(Economy::Kbo).fa_compensation, &r.of(Economy::Npb).fa_compensation) else {
+            panic!("compensation rules")
+        };
+        // Both ranks in A: A; one rank in C: one below the better.
+        assert_eq!(k.grade(2, 25, 0, false), 0);
+        assert_eq!(k.grade(2, 70, 0, false), 1);
+        assert_eq!(k.grade(12, 20, 0, false), 1);
+        assert_eq!(k.grade(5, 65, 0, false), 2);
+        // 35 or older on a first free agency, or a third one: C; a second one: B at most.
+        assert_eq!(k.grade(1, 1, 0, true), 2);
+        assert_eq!(k.grade(1, 1, 2, false), 2);
+        assert_eq!(k.grade(1, 1, 1, true), 1);
+        assert_eq!(k.terms(0).with_player, 2.0);
+        assert_eq!(k.terms(2).with_player, 0.0);
+        // 1-4 other clubs' free agents by the number who applied; NPB 2-5.
+        let (kl, nl) = (r.of(Economy::Kbo).fa_compensation.as_ref().unwrap(), r.of(Economy::Npb).fa_compensation.as_ref().unwrap());
+        assert_eq!((kl.outside_limit(10), kl.outside_limit(14), kl.outside_limit(21), kl.outside_limit(45)), (1, 2, 3, 4));
+        assert_eq!((nl.outside_limit(8), nl.outside_limit(25), nl.outside_limit(41)), (2, 3, 5));
+        assert_eq!(n.owed(3, false), NpbOwed::Pick(2));
+        assert_eq!(n.owed(7, false), NpbOwed::Pick(3));
+        assert_eq!(n.owed(8, false), NpbOwed::Cash(0.6));
+        assert_eq!(n.owed(9, false), NpbOwed::Nothing);
+        assert_eq!(n.owed(1, true), NpbOwed::Nothing);
     }
 
     #[test]

@@ -1,8 +1,10 @@
-//! The free-agent market of the major-league organisations (`docs/contracts.md`, stage 2).
+//! The free-agent markets (`docs/contracts.md`, stages 2 and 3): one for the major-league
+//! organisations, one for the KBO and its independent club, one for NPB and its farm-only
+//! clubs.
 //!
-//! Every offseason the free agents (players whose contract ran out after six years of
-//! service, players their organisation did not keep, minor-leaguers whose contract ran out)
-//! go to market, best first. Each organisation values a player by the wins he adds to its
+//! Every offseason the free agents (players whose contract ran out with the service for
+//! free agency, players their organisation did not keep, minor-leaguers whose contract ran
+//! out) go to market, best first. Each organisation values a player by the wins he adds to its
 //! roster (his WAR against the player he would push out of its 26, `contract.rs`), within
 //! its budget; a player asks the free-agent price of his own WAR, more when several
 //! organisations want him (decision 2026-11-18: base price plus a premium for competing
@@ -16,8 +18,10 @@ use crate::player::Player;
 use bm_engine::Rng;
 use serde::Deserialize;
 
-/// What the market's behaviour rests on (`contracts.json` market): each value is fitted to
-/// the measured outcomes of free agents (`docs/contracts.md`, calibration targets).
+/// What a market's behaviour rests on (`contracts.json` market, one per economy): each value
+/// is fitted to the measured outcomes of free agents (`docs/contracts.md`, calibration
+/// targets). The qualifying offer and its compensation are the majors' only; the declaration
+/// threshold the KBO's and NPB's.
 #[derive(Clone, Debug, Deserialize)]
 pub struct MarketRules {
     /// Rise of the offer per competing organisation beyond the first, as a share of the
@@ -45,12 +49,26 @@ pub struct MarketRules {
     pub retirement: f64,
     /// An organisation makes the qualifying offer to a free agent whose price is at least
     /// this share of it.
+    #[serde(default)]
     pub qualifying_offer: f64,
     /// Organisations taken to receive revenue sharing: the ones with the smallest budgets.
+    #[serde(default)]
     pub revenue_sharing_payees: usize,
     /// Total guarantee (2026, raised with the economy) from which a payee losing a qualified
     /// free agent picks after the first round.
+    #[serde(default)]
     pub compensation_guarantee: f64,
+    /// A KBO or NPB player with the seasons for free agency declares it when the gain he
+    /// expects from the market (log of the price he expects over his club's pay) is above
+    /// this (decision 2026-11-18: each league's preference for the old club, fitted to the
+    /// declaration rates).
+    #[serde(default)]
+    pub declare: f64,
+    /// A KBO or NPB free agent's price over the pay his club sets for a reserved player of his
+    /// WAR, above the minimum (`price`): clubs pay reserved players less than the market would
+    /// (Scully 1974).
+    #[serde(default)]
+    pub markup: f64,
 }
 
 /// Why a player is on the market.
@@ -72,32 +90,61 @@ pub struct FreeAgent {
     pub why: Why,
     /// He turned down his organisation's qualifying offer.
     pub qualified: bool,
+    /// What another club signing him owes his old one in cash, when it owes compensation at
+    /// all (a KBO or NPB free agent of a compensated grade or rank; nothing in cash when the
+    /// old club takes a draft pick). Such a player signs with another club only on a
+    /// first-team contract.
+    pub compensation: Option<f64>,
+    /// A signing by another club counts toward its limit of other clubs' free agents.
+    pub counts: bool,
 }
 
-/// A bidder's roster for valuing a free agent: the WAR of its position players (playing
-/// every day) and of its pitchers as starters (if they can start) and as relievers.
-#[derive(Clone, Debug, Default)]
+impl FreeAgent {
+    /// A player on the market with nothing owed for him.
+    pub fn new(player: Player, age: f64, from: Option<usize>, why: Why) -> FreeAgent {
+        FreeAgent { player, age, from, why, qualified: false, compensation: None, counts: false }
+    }
+
+    fn owed_by(&self, k: usize) -> f64 {
+        if self.from == Some(k) {
+            0.0
+        } else {
+            self.compensation.unwrap_or(0.0)
+        }
+    }
+}
+
+/// A bidder's roster for valuing a free agent: the WAR (in its economy) of its position
+/// players (playing every day) and of its pitchers as starters (if they can start) and as
+/// relievers.
+#[derive(Clone, Debug)]
 pub struct Depth {
+    pub economy: Economy,
     pub hitters: Vec<f64>,
     pub starters: Vec<f64>,
     pub relievers: Vec<f64>,
 }
 
-fn war_as(rules: &ContractRules, p: &Player, starter: bool) -> f64 {
-    let r = rules.of(Economy::Mlb);
+fn war_as(rules: &ContractRules, e: Economy, p: &Player, starter: bool) -> f64 {
+    let r = rules.of(e);
     let share = if starter { ability::STARTER_SHARE } else { ability::RELIEVER_SHARE } / ability::STAFF_SHARE;
     (ability::value(p) - r.replacement.pitcher) * share / r.runs_per_win()
 }
 
 impl Depth {
+    pub fn new(economy: Economy) -> Depth {
+        Depth { economy, hitters: Vec::new(), starters: Vec::new(), relievers: Vec::new() }
+    }
+
     pub fn add(&mut self, rules: &ContractRules, p: &Player) {
+        let e = self.economy;
         if p.is_pitcher() {
             if ability::can_start(p) {
-                self.starters.push(war_as(rules, p, true));
+                self.starters.push(war_as(rules, e, p, true));
             }
-            self.relievers.push(war_as(rules, p, false));
+            self.relievers.push(war_as(rules, e, p, false));
         } else {
-            self.hitters.push(rules.war(p, Economy::Mlb));
+            self.hitters.push(rules.war(p, e));
         }
     }
 
@@ -128,7 +175,7 @@ impl Depth {
         let mut with = self.clone();
         with.add(rules, p);
         let change = with.value(bench_share) - self.value(bench_share);
-        let own = self.place(rules, p, bench_share) * rules.war(p, Economy::Mlb);
+        let own = self.place(rules, p, bench_share) * rules.war(p, self.economy);
         displaced * change + (1.0 - displaced) * own
     }
 
@@ -136,16 +183,17 @@ impl Depth {
     /// rotation and bullpen, `bench_share` on the bench, 0 outside the 26.
     pub fn place(&self, rules: &ContractRules, p: &Player, bench_share: f64) -> f64 {
         let better = |v: &[f64], x: f64| v.iter().filter(|w| **w > x).count();
+        let e = self.economy;
         if p.is_pitcher() {
-            if ability::can_start(p) && better(&self.starters, war_as(rules, p, true)) < 5 {
+            if ability::can_start(p) && better(&self.starters, war_as(rules, e, p, true)) < 5 {
                 return 1.0;
             }
-            if better(&self.relievers, war_as(rules, p, false)) < 13 {
+            if better(&self.relievers, war_as(rules, e, p, false)) < 13 {
                 return 1.0;
             }
             0.0
         } else {
-            match better(&self.hitters, rules.war(p, Economy::Mlb)) {
+            match better(&self.hitters, rules.war(p, e)) {
                 0..=8 => 1.0,
                 9..=12 => bench_share,
                 _ => 0.0,
@@ -154,13 +202,19 @@ impl Depth {
     }
 }
 
-/// A major-league organisation in the market.
+/// An organisation in the market.
 pub struct Bidder {
     pub depth: Depth,
-    /// Salaries already owed for the next season (major-league contracts).
+    /// Salaries already owed for the next season (major-league contracts; registered domestic
+    /// players in the KBO and NPB).
     pub committed: f64,
     pub budget: f64,
     pub depth_signed: usize,
+    /// Free agents from other organisations it may still sign (the KBO's limit; `None` for
+    /// no limit).
+    pub outside_left: Option<usize>,
+    /// It takes depth signings only (independent clubs: no budget in the model).
+    pub depth_only: bool,
 }
 
 /// One signing.
@@ -186,26 +240,51 @@ pub struct Outcome {
     pub unsigned: Vec<FreeAgent>,
 }
 
-/// Run the market for `year` (the season the contracts begin).
-pub fn run(rules: &ContractRules, m: &MarketRules, mut agents: Vec<FreeAgent>, bidders: &mut [Bidder], year: i32, rng: &mut Rng) -> Outcome {
-    let r = rules.of(Economy::Mlb);
-    let price = |war: f64| rules.free_agent_pay(war, year);
+/// The price of a free agent of `war` in economy `e` for `year`: the majors' free-agent
+/// price; in the KBO and NPB the club pay of his WAR, raised above the minimum by the market's
+/// markup.
+pub fn price(rules: &ContractRules, m: &MarketRules, e: Economy, war: f64, year: i32) -> f64 {
+    match e {
+        Economy::Mlb => rules.free_agent_pay(war, year),
+        _ => {
+            let min = rules.of(e).minimum(year);
+            min + (1.0 + m.markup) * (rules.club_pay(e, war, year) - min)
+        }
+    }
+}
+
+/// Longest free-agent contract of an economy: eight years in the majors; four in the KBO and
+/// NPB (the KBO's longest deals are four years with options, `contracts_kbo.md` 9.2).
+fn longest(e: Economy) -> f64 {
+    if e == Economy::Mlb {
+        8.0
+    } else {
+        4.0
+    }
+}
+
+/// Run the market of economy `e` for `year` (the season the contracts begin).
+pub fn run(rules: &ContractRules, m: &MarketRules, e: Economy, mut agents: Vec<FreeAgent>, bidders: &mut [Bidder], year: i32, rng: &mut Rng) -> Outcome {
+    let r = rules.of(e);
+    let price = |war: f64| price(rules, m, e, war, year);
     // Best first.
-    agents.sort_by(|a, b| rules.war(&b.player, Economy::Mlb).total_cmp(&rules.war(&a.player, Economy::Mlb)));
+    agents.sort_by(|a, b| rules.war(&b.player, e).total_cmp(&rules.war(&a.player, e)));
     let mut signed = Vec::new();
     let mut left = Vec::new();
     for fa in agents {
-        let war = rules.war(&fa.player, Economy::Mlb);
+        let war = rules.war(&fa.player, e);
         let ask = price(war);
-        let years = (expected_years(fa.age, war) + rng.gauss(0.0, 0.5)).round().clamp(1.0, 8.0) as usize;
+        let years = (expected_years(fa.age, war) + rng.gauss(0.0, 0.5)).round().clamp(1.0, longest(e)) as usize;
         // Who wants him: every organisation he would make the 26 of. A regular (in the
         // lineup, the rotation or the bullpen) is offered his price, a bench player that share
         // of it (not less than the minimum); the price of a regular rises with the number of
         // organisations that want him as one. An organisation offers what its budget leaves.
         let min = r.minimum(year);
+        let outside = |k: usize| fa.from != Some(k) && fa.counts;
         let wants: Vec<(usize, f64)> = bidders
             .iter()
             .enumerate()
+            .filter(|(k, b)| !b.depth_only && !(outside(*k) && b.outside_left == Some(0)))
             .filter_map(|(k, b)| {
                 let place = b.depth.place(rules, &fa.player, m.bench_share);
                 (place > 0.0).then_some((k, place))
@@ -218,7 +297,8 @@ pub fn run(rules: &ContractRules, m: &MarketRules, mut agents: Vec<FreeAgent>, b
             .filter_map(|&(k, place)| {
                 let pay = if place >= 1.0 { ask * premium } else { (place * ask).max(min) };
                 let b = &bidders[k];
-                (b.committed + pay <= b.budget * (1.0 + m.slack)).then_some((k, pay))
+                // A club signing another's free agent also pays his compensation.
+                (b.committed + pay + fa.owed_by(k) <= b.budget * (1.0 + m.slack)).then_some((k, pay))
             })
             .collect();
         let choice = offers
@@ -229,12 +309,19 @@ pub fn run(rules: &ContractRules, m: &MarketRules, mut agents: Vec<FreeAgent>, b
             })
             .max_by(|a, b| a.2.total_cmp(&b.2));
         if let Some((k, pay, _)) = choice {
+            let owed = fa.owed_by(k);
             let b = &mut bidders[k];
-            b.committed += pay;
+            b.committed += pay + owed;
             b.depth.add(rules, &fa.player);
-            // A bench player signs for a year.
+            if outside(k) {
+                if let Some(n) = b.outside_left.as_mut() {
+                    *n = n.saturating_sub(1);
+                }
+            }
+            // A bench player signs for a year. Options and opt-outs follow the majors'
+            // contracts (`contracts_options.md`); the KBO's and NPB's are not measured.
             let years = if pay < ask { 1 } else { years };
-            let (option, opt_out_after) = clauses(rules.options.as_ref(), pay, years, rng);
+            let (option, opt_out_after) = if e == Economy::Mlb { clauses(rules.options.as_ref(), pay, years, rng) } else { (None, None) };
             signed.push(Signing {
                 player: fa.player,
                 org: k,
@@ -251,13 +338,17 @@ pub fn run(rules: &ContractRules, m: &MarketRules, mut agents: Vec<FreeAgent>, b
         }
         left.push(fa);
     }
-    // Minor-league deals: Triple-A depth for the organisations he would improve most.
+    // Depth deals (minor-league contracts in the majors' system; in the KBO and NPB a second
+    // team's place, an NPB development contract, or an independent club) for the
+    // organisations he would improve most. A free agent his old club is owed compensation for
+    // takes one only from it.
     let mut unsigned = Vec::new();
     for fa in left {
         let best = bidders
             .iter()
             .enumerate()
             .filter(|(_, b)| b.depth_signed < m.depth_signings)
+            .filter(|(k, _)| fa.from == Some(*k) || fa.compensation.is_none())
             .map(|(k, b)| (k, depth_gain(rules, &b.depth, &fa.player)))
             .filter(|(_, g)| *g > 0.0)
             .max_by(|a, b| a.1.total_cmp(&b.1));
@@ -266,7 +357,12 @@ pub fn run(rules: &ContractRules, m: &MarketRules, mut agents: Vec<FreeAgent>, b
                 let b = &mut bidders[k];
                 b.depth_signed += 1;
                 b.depth.add(rules, &fa.player);
-                let pay = r.minor_pay("aaa", year);
+                let pay = match e {
+                    _ if b.depth_only => 0.0,
+                    Economy::Mlb => r.minor_pay("aaa", year),
+                    Economy::Npb => r.development_minimum(year),
+                    Economy::Kbo => r.minimum(year),
+                };
                 signed.push(Signing {
                     player: fa.player,
                     org: k,
@@ -302,9 +398,10 @@ fn clauses(o: Option<&OptionRules>, pay: f64, years: usize, rng: &mut Rng) -> (O
 }
 
 /// How much a player improves an organisation's depth beyond its 26: whether he would rank
-/// among its best 54 of his kind (the majors and Triple-A), by how much over the last of them.
+/// among its best 54 of his kind (the majors and Triple-A, or a first and second team), by
+/// how much over the last of them.
 fn depth_gain(rules: &ContractRules, d: &Depth, p: &Player) -> f64 {
-    let (pool, mine, n) = if p.is_pitcher() { (&d.relievers, war_as(rules, p, false), 27) } else { (&d.hitters, rules.war(p, Economy::Mlb), 27) };
+    let (pool, mine, n) = if p.is_pitcher() { (&d.relievers, war_as(rules, d.economy, p, false), 27) } else { (&d.hitters, rules.war(p, d.economy), 27) };
     let mut v = pool.clone();
     v.sort_by(|a, b| b.total_cmp(a));
     match v.get(n - 1) {
@@ -332,7 +429,7 @@ mod tests {
     #[test]
     fn a_strong_hitter_is_a_regular_and_a_weak_one_is_left_out() {
         let rules = ContractRules::bundled();
-        let mut d = Depth::default();
+        let mut d = Depth::new(Economy::Mlb);
         for i in 0..13 {
             d.add(&rules, &hitter(i, 0.0));
         }
@@ -347,10 +444,10 @@ mod tests {
     #[test]
     fn a_free_agent_signs_where_there_is_room_and_nobody_signs_without_it() {
         let rules = ContractRules::bundled();
-        let m = rules.market.clone().expect("market rules");
-        let star = || FreeAgent { player: hitter(500, 1.0), age: 29.0, from: Some(0), why: Why::Service, qualified: false };
+        let m = rules.market[&Economy::Mlb].clone();
+        let star = || FreeAgent::new(hitter(500, 1.0), 29.0, Some(0), Why::Service);
         let roster = || {
-            let mut d = Depth::default();
+            let mut d = Depth::new(Economy::Mlb);
             for i in 0..13 {
                 d.add(&rules, &hitter(i, 0.0));
             }
@@ -358,16 +455,71 @@ mod tests {
         };
         // The first organisation has spent its budget; the second has room.
         let mut bidders = vec![
-            Bidder { depth: roster(), committed: 2.0e8, budget: 1.0e8, depth_signed: 0 },
-            Bidder { depth: roster(), committed: 0.0, budget: 2.0e8, depth_signed: 0 },
+            Bidder { depth: roster(), committed: 2.0e8, budget: 1.0e8, depth_signed: 0, outside_left: None, depth_only: false },
+            Bidder { depth: roster(), committed: 0.0, budget: 2.0e8, depth_signed: 0, outside_left: None, depth_only: false },
         ];
-        let out = run(&rules, &m, vec![star()], &mut bidders, 2027, &mut Rng::new(2));
+        let out = run(&rules, &m, Economy::Mlb, vec![star()], &mut bidders, 2027, &mut Rng::new(2));
         assert_eq!(out.signed.len(), 1);
         assert_eq!(out.signed[0].org, 1);
         assert!(out.signed[0].major && out.signed[0].pay >= rules.free_agent_pay(rules.war(&hitter(500, 1.0), Economy::Mlb), 2027) - 1.0);
         // With no room anywhere he gets at best a minor-league deal.
-        let mut broke = vec![Bidder { depth: roster(), committed: 3.0e8, budget: 1.0e8, depth_signed: 0 }];
-        let out = run(&rules, &m, vec![star()], &mut broke, 2027, &mut Rng::new(3));
+        let mut broke = vec![Bidder { depth: roster(), committed: 3.0e8, budget: 1.0e8, depth_signed: 0, outside_left: None, depth_only: false }];
+        let out = run(&rules, &m, Economy::Mlb, vec![star()], &mut broke, 2027, &mut Rng::new(3));
         assert!(out.signed.iter().all(|s| !s.major));
+    }
+
+    #[test]
+    fn compensation_and_the_limit_on_outside_free_agents_bind() {
+        let rules = ContractRules::bundled();
+        let m = rules.market[&Economy::Kbo].clone();
+        let roster = || {
+            let mut d = Depth::new(Economy::Kbo);
+            for i in 0..13 {
+                d.add(&rules, &hitter(i, -0.5));
+            }
+            d
+        };
+        let bidder = |committed: f64, outside_left: Option<usize>| Bidder {
+            depth: roster(),
+            committed,
+            budget: 1.0e10,
+            depth_signed: 0,
+            outside_left,
+            depth_only: false,
+        };
+        let agent = |id: u32, from: Option<usize>, owed: Option<f64>| FreeAgent {
+            compensation: owed,
+            counts: true,
+            ..FreeAgent::new(hitter(id, 1.0), 29.0, from, Why::Service)
+        };
+        // Club 1 may sign no more of other clubs' free agents: the player stays with club 0.
+        let mut bidders = vec![bidder(0.0, Some(1)), bidder(0.0, Some(0))];
+        let out = run(&rules, &m, Economy::Kbo, vec![agent(600, Some(0), Some(1.0e8))], &mut bidders, 2027, &mut Rng::new(4));
+        assert_eq!(out.signed.len(), 1);
+        assert_eq!(out.signed[0].org, 0);
+        // A club that signs another's free agent pays his compensation from its budget: club 1
+        // has room for his pay but not for the compensation as well (his own club has none).
+        let ask = price(&rules, &m, Economy::Kbo, rules.war(&hitter(601, 1.0), Economy::Kbo), 2027);
+        let full = 1.0e10 * (1.0 + m.slack);
+        let signs_with_1 = |owed: Option<f64>| {
+            let mut bidders = vec![bidder(full, Some(1)), bidder(full - 1.5 * ask, Some(1))];
+            let out = run(&rules, &m, Economy::Kbo, vec![agent(601, Some(0), owed)], &mut bidders, 2027, &mut Rng::new(5));
+            out.signed.iter().any(|s| s.major && s.org == 1)
+        };
+        assert!(signs_with_1(Some(0.0)));
+        assert!(!signs_with_1(Some(2.0 * ask)));
+        // Nobody can afford him: only his own club may give him a depth place, while a player
+        // with nothing owed for him may take one anywhere.
+        let mut bidders = vec![bidder(2.0e10, Some(1)), bidder(2.0e10, Some(1))];
+        bidders[0].depth_signed = m.depth_signings;
+        let weak = |id: u32, owed: Option<f64>| FreeAgent {
+            compensation: owed,
+            counts: owed.is_some(),
+            ..FreeAgent::new(hitter(id, -0.4), 29.0, Some(0), Why::Service)
+        };
+        let out = run(&rules, &m, Economy::Kbo, vec![weak(602, Some(0.0)), weak(603, None)], &mut bidders, 2027, &mut Rng::new(6));
+        assert!(out.signed.iter().all(|s| !s.major));
+        assert!(out.signed.iter().all(|s| s.player.id == 603 && s.org == 1), "{:?}", out.signed.iter().map(|s| (s.player.id, s.org)).collect::<Vec<_>>());
+        assert_eq!(out.unsigned.len(), 1);
     }
 }

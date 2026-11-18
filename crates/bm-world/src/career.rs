@@ -6,12 +6,12 @@
 //! Who comes in and how clubs choose is in the editable file `data/people/careers.json`
 //! (`docs/data-files.md`); what a player is worth is `ability.rs`, how he develops
 //! `develop.rs`. Clubs here see every player's true ability and ceiling: scouting comes
-//! later. Players who leave an organisation leave the world: there is no market between
-//! clubs yet.
+//! later. Free agents and the players an organisation lets go go to its economy's market
+//! (`market.rs`, `docs/contracts.md`); those nobody signs leave the world.
 
 use crate::ability;
 use crate::calendar::Date;
-use crate::contract::{first_team_seasons, Contract, DraftChange, Economy, Kind, Schedule, Terms};
+use crate::contract::{first_team_seasons, seasons_for_fa, Contract, DraftChange, Economy, FaCompensation, Kind, NpbOwed, Schedule, Terms};
 use crate::develop::{develop, develop_idle, AgingTable, Closure, Potential, Style};
 use crate::generate::{pitcher, position_player, Squad, Talent};
 use crate::league::{Level, World};
@@ -470,6 +470,12 @@ pub struct Career {
     /// The offseason he was made the qualifying offer (once in a career).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub qualifying_offer: Option<i32>,
+    /// Times a KBO or NPB player declared free agency, and his first-team seasons when he
+    /// last did (the seasons for the next one count from there).
+    #[serde(default)]
+    pub free_agencies: u32,
+    #[serde(default)]
+    pub fa_at: u32,
 }
 
 /// Where a Korean player stands with his military service.
@@ -484,7 +490,7 @@ pub enum Service {
 
 impl Career {
     pub fn new(origin: Origin) -> Career {
-        Career { origin, seasons: Vec::new(), majors: None, left: None, service: None, prior: 0, qualifying_offer: None }
+        Career { origin, seasons: Vec::new(), majors: None, left: None, service: None, prior: 0, qualifying_offer: None, free_agencies: 0, fa_at: 0 }
     }
 
     pub fn reached(&self, level: &str) -> bool {
@@ -1066,12 +1072,14 @@ pub struct Report {
     pub sangmu: usize,
     pub discharged: usize,
     pub exempt: usize,
-    /// The major-league market: players on it, signed to major-league and minor-league
-    /// contracts, and those nobody signed.
-    pub free_agents: usize,
-    pub signed_major: usize,
-    pub signed_minor: usize,
-    pub unsigned: usize,
+    /// Each market ([MLB, KBO, NPB]): players on it, signed to a first-team contract (a
+    /// major-league one; a KBO or NPB registered one) and to a depth one (a minor-league one; a
+    /// second team's place, an NPB development contract or an independent club), and those
+    /// nobody signed.
+    pub free_agents: [usize; 3],
+    pub signed_major: [usize; 3],
+    pub signed_minor: [usize; 3],
+    pub unsigned: [usize; 3],
     /// Before the market: opt-outs used, club options exercised and declined, players not
     /// tendered a contract, qualifying offers made and accepted, compensation picks awarded.
     pub opt_outs_due: usize,
@@ -1082,6 +1090,25 @@ pub struct Report {
     pub qualifying_offers: usize,
     pub qualifying_accepted: usize,
     pub compensation_picks: usize,
+    /// Free agency in the KBO and NPB ([KBO, NPB]): players with the seasons for it, those
+    /// who declared it, re-signed with their club and moved to another; the KBO's compensation
+    /// players and NPB's compensation picks.
+    pub fa_eligible: [usize; 2],
+    pub fa_declared: [usize; 2],
+    pub fa_stayed: [usize; 2],
+    pub fa_moved: [usize; 2],
+    pub compensation_players: usize,
+    pub npb_compensation_picks: usize,
+}
+
+/// What a club that signs another club's KBO or NPB free agent owes the old club beyond the
+/// cash the market charged it.
+enum Owed {
+    /// KBO grades A and B: a player from outside the signing club's best `protected`, with
+    /// the smaller cash, or the larger cash alone (the old club's choice).
+    Player { protected: usize },
+    /// NPB ranks A and B: an extra pick in this round of the next draft.
+    Pick(u32),
 }
 
 /// Order in which organisations of one kind pick in the draft: worst record first, or,
@@ -1375,10 +1402,14 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
     };
     // With the market, players of the major-league organisations retire on their own less:
     // most careers end when nobody signs them (decision 2026-11-18).
-    let majors: BTreeSet<&str> = orgs.iter().filter(|o| o.kind == OrgKind::Major).flat_map(|o| o.levels.iter().map(|(c, _)| c.as_str())).collect();
-    let factor = ctx.contracts.market.as_ref().map_or(1.0, |m| m.retirement);
+    let factor_of: BTreeMap<&str, f64> = orgs
+        .iter()
+        .filter(|o| o.kind != OrgKind::Military)
+        .filter_map(|o| ctx.contracts.market.get(&Economy::of(o.kind)).map(|m| (o, m.retirement)))
+        .flat_map(|(o, f)| o.levels.iter().map(move |(c, _)| (c.as_str(), f)))
+        .collect();
     for (club, players) in by_club.iter_mut() {
-        let own = if majors.contains(club.as_str()) { factor } else { 1.0 };
+        let own = factor_of.get(club.as_str()).copied().unwrap_or(1.0);
         let mut stay = Vec::with_capacity(players.len());
         for mut p in players.drain(..) {
             let age = age_of(p.id, date);
@@ -1511,9 +1542,10 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
         let picking = draft_order(&members, &first_teams, standings);
         let n_orgs = members.len();
         // The picks in order: each round in the draft order, less the picks organisations gave
-        // up for signing qualified free agents, with the compensation picks after their round
-        // (several after one round go in the draft order).
-        let changes: Vec<DraftChange> = if draft.orgs == "mlb" { pop.draft_changes.iter().filter(|c| c.year == year).cloned().collect() } else { Vec::new() };
+        // up for signing qualified free agents, with the compensation picks (the majors' for
+        // qualified free agents, NPB's for its free agents) after their round (several after
+        // one round go in the draft order).
+        let changes: Vec<DraftChange> = pop.draft_changes.iter().filter(|c| c.year == year && members.iter().any(|o| o.id == c.org)).cloned().collect();
         let mut slots: Vec<(u32, String)> = Vec::with_capacity(draft.rounds as usize * n_orgs);
         for round in 1..=draft.rounds {
             for org in &picking {
@@ -1527,9 +1559,6 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
                     slots.push((round, org.clone()));
                 }
             }
-        }
-        if draft.orgs == "mlb" {
-            pop.draft_changes.retain(|c| c.year > year);
         }
         let total = slots.len();
         let share_sum: f64 = draft.classes.iter().map(|c| c.1).sum();
@@ -1566,6 +1595,8 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
         }
     }
 
+    pop.draft_changes.retain(|c| c.year > year);
+
     // Signings outside the draft.
     for s in &ctx.careers.signings {
         let class = &ctx.careers.classes[&s.class];
@@ -1590,16 +1621,26 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
         pop.careers.iter().filter(|(_, c)| matches!(&c.origin, Origin::Signed { class, .. } if class == "international")).map(|(id, _)| *id).collect();
     let international = |id: u32| intl.contains(&id);
     let shapes: Vec<Shape> = orgs.iter().map(|o| Shape::of(o, ctx.levels)).collect();
-    let market = ctx.contracts.market.as_ref();
-    // The major-league organisations' bidders, by organisation.
-    let bidder_of: BTreeMap<usize, usize> = orgs.iter().enumerate().filter(|(_, o)| o.kind == OrgKind::Major).enumerate().map(|(b, (k, _))| (k, b)).collect();
-    // Free agency (decision 2026-11-18: the market): a major-league player whose contract ran
-    // out with six years of service goes to market; players under a guaranteed contract are
-    // kept first (`protected`).
-    let mut agents: Vec<FreeAgent> = Vec::new();
+    let rules = ctx.contracts;
+    let markets = &rules.market;
+    // Each economy's market (`market.rs`): its first teams bid, and in the KBO and NPB the
+    // independent clubs sign depth. The military club takes no part.
+    let economy_of = |o: &Org| Some(Economy::of(o.kind)).filter(|e| o.kind != OrgKind::Military && markets.contains_key(e));
+    let mut members: BTreeMap<Economy, Vec<usize>> = BTreeMap::new();
+    for (k, o) in orgs.iter().enumerate() {
+        if let Some(e) = economy_of(o) {
+            members.entry(e).or_default().push(k);
+        }
+    }
+    // Each organisation's bidder in its economy's market.
+    let bidder_of: BTreeMap<usize, usize> = members.values().flat_map(|ks| ks.iter().enumerate().map(|(b, &k)| (k, b))).collect();
+    let independent = |k: usize| matches!(orgs[k].kind, OrgKind::KoreanIndependent | OrgKind::JapaneseIndependent);
+    let mut agents: BTreeMap<Economy, Vec<FreeAgent>> = BTreeMap::new();
     let mut guaranteed: BTreeSet<u32> = BTreeSet::new();
-    if let Some(m) = market {
-        let rules = ctx.contracts;
+    // Free agency in the majors (decision 2026-11-18: the market): a major-league player whose
+    // contract ran out with six years of service goes to market; players under a guaranteed
+    // contract are kept first (`protected`).
+    if let Some(m) = markets.get(&Economy::Mlb) {
         let r = rules.of(Economy::Mlb);
         let (svc_arb, svc_fa) = r.service.map_or((3, 6), |s| (s.arbitration, s.free_agency));
         let price = |war: f64| rules.free_agent_pay(war, year + 1);
@@ -1609,7 +1650,7 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
                 continue;
             }
             // Where each of the organisation's players would play next season.
-            let mut depth = Depth::default();
+            let mut depth = Depth::new(Economy::Mlb);
             for p in &pools[k] {
                 depth.add(rules, p);
             }
@@ -1691,15 +1732,143 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
                 }
             }
             pools[k] = stay;
-            agents.extend(go.into_iter().map(|(p, why, qualified)| FreeAgent {
-                age: age_of(p.id, next_season),
-                from: bidder_of.get(&k).copied(),
-                why,
-                qualified,
-                player: p,
-            }));
+            let from = bidder_of.get(&k).copied();
+            let list = agents.entry(Economy::Mlb).or_default();
+            for (p, why, qualified) in go {
+                let age = age_of(p.id, next_season);
+                list.push(FreeAgent { qualified, ..FreeAgent::new(p, age, from, why) });
+            }
         }
-        report.free_agents += agents.len();
+    }
+
+    // Free agency in the KBO and NPB (decision 2026-11-18: each league's rules, and its
+    // preference for the old club fitted to its declarations). A player whose contract runs
+    // out with the seasons for free agency (`contract::seasons_for_fa`; again `again` seasons
+    // after he used it; NPB's domestic right) declares it when the pay he expects on the market
+    // is enough above what his club would pay him; one who does not stays reserved and keeps
+    // the right. A multi-year contract defers it to its end (the KBO's deferred eligibility),
+    // and such players are kept first. Each declared player carries what another club signing
+    // him owes his old one: by his grade in the KBO (salary ranks in the club and the league),
+    // by his rank in NPB (salary rank in the club; the 2027 rules).
+    let mut owed: BTreeMap<u32, Owed> = BTreeMap::new();
+    let mut outside_limit: BTreeMap<Economy, usize> = BTreeMap::new();
+    for e in [Economy::Kbo, Economy::Npb] {
+        let (Some(m), Some(ks)) = (markets.get(&e), members.get(&e)) else { continue };
+        let r = rules.of(e);
+        let ix = usize::from(e == Economy::Npb);
+        let depths: Vec<Depth> = ks
+            .iter()
+            .map(|&k| {
+                let mut d = Depth::new(e);
+                for p in &pools[k] {
+                    d.add(rules, p);
+                }
+                d
+            })
+            .collect();
+        // Last season's salaries of the domestic registered players, for grades and ranks: the
+        // KBO ranks those not on a running free-agent contract, in the club and in the
+        // league; NPB all of the club's Japanese players.
+        let ranked = |id: u32| -> Option<f64> {
+            if pop.foreign.contains_key(&id) {
+                return None;
+            }
+            let c = pop.contracts.get(&id).filter(|c| c.kind == Kind::Registered && c.terms != Terms::Foreign)?;
+            if e == Economy::Kbo && c.terms == Terms::FreeAgent && c.covers(year + 1) {
+                return None;
+            }
+            c.pay(year)
+        };
+        let club_pays: BTreeMap<usize, Vec<f64>> = ks.iter().map(|&k| (k, pools[k].iter().filter_map(|p| ranked(p.id)).collect())).collect();
+        let league_pays: Vec<f64> = club_pays.values().flatten().copied().collect();
+        let rank = |v: &[f64], pay: f64| v.iter().filter(|x| **x > pay).count() + 1;
+        let terms = r.fa_compensation.as_ref();
+        let again = r.seasons_for_fa.unwrap_or_default().again.max(1);
+        let mut declared: Vec<FreeAgent> = Vec::new();
+        for &k in ks {
+            if independent(k) {
+                continue;
+            }
+            let mut stay = Vec::with_capacity(pools[k].len());
+            for p in std::mem::take(&mut pools[k]) {
+                let id = p.id;
+                let contract = pop.contracts.get(&id);
+                let running = contract.is_some_and(|c| c.covers(year + 1));
+                if running && contract.is_some_and(|c| c.kind == Kind::Registered) {
+                    guaranteed.insert(id);
+                }
+                let registered = contract.is_some_and(|c| c.kind == Kind::Registered && c.terms != Terms::Foreign);
+                let open = registered && !running && !pop.foreign.contains_key(&id) && !pinned[k].contains_key(&id);
+                let Some(career) = pop.careers.get(&id).filter(|_| open) else {
+                    stay.push(p);
+                    continue;
+                };
+                let seasons = first_team_seasons(career, e.top_level(), year + 1);
+                let used = career.free_agencies;
+                let needed = if used == 0 { seasons_for_fa(r, career) } else { again };
+                if seasons.saturating_sub(career.fa_at) < needed {
+                    stay.push(p);
+                    continue;
+                }
+                report.fa_eligible[ix] += 1;
+                // The pay he expects on the market: his price, raised by the premium of the
+                // clubs that would want him as a regular; a bench player's share of it; the
+                // minimum if nobody wants him. Against it, what his club would pay him for
+                // another season (not below NPB's reduction limit).
+                let war = rules.war(&p, e);
+                let min = r.minimum(year + 1);
+                let ask = crate::market::price(rules, m, e, war, year + 1);
+                let places: Vec<f64> = depths.iter().map(|d| d.place(rules, &p, m.bench_share)).collect();
+                let regulars = places.iter().filter(|x| **x >= 1.0).count().min(m.max_bidders);
+                let expected = if regulars > 0 {
+                    ask * (1.0 + m.premium * (regulars - 1) as f64)
+                } else if places.iter().any(|x| *x > 0.0) {
+                    (m.bench_share * ask).max(min)
+                } else {
+                    min
+                };
+                let last = contract.and_then(|c| c.pay(year)).unwrap_or(min);
+                let club = rules.club_pay(e, war, year + 1).max(rules.lowest_renewal(e, last));
+                if (expected / club).ln() + rng.gauss(0.0, m.taste) <= m.declare {
+                    stay.push(p);
+                    continue;
+                }
+                report.fa_declared[ix] += 1;
+                let (cash, counts, what) = match terms {
+                    Some(FaCompensation::Kbo(t)) => {
+                        let born_year = born.get(&id).map_or(year - 30, |b| b.year());
+                        let grade = t.grade(rank(&club_pays[&k], last), rank(&league_pays, last), used, year - born_year >= t.veteran_age);
+                        let terms = t.terms(grade);
+                        (Some(terms.cash_only * last), true, (terms.with_player > 0.0).then_some(Owed::Player { protected: terms.protected }))
+                    }
+                    Some(FaCompensation::Npb(t)) => {
+                        // C ranks and veterans owe nothing and do not count toward the signing
+                        // club's limit.
+                        let veteran = age_of(id, Date::new(year + 1, 4, 1)) >= f64::from(t.veteran_age);
+                        match t.owed(rank(&club_pays[&k], last), veteran) {
+                            NpbOwed::Pick(round) => (Some(0.0), true, Some(Owed::Pick(round))),
+                            NpbOwed::Cash(share) => (Some(share * last), true, None),
+                            NpbOwed::Nothing => (None, false, None),
+                        }
+                    }
+                    None => (None, true, None),
+                };
+                if let Some(c) = pop.careers.get_mut(&id) {
+                    c.free_agencies += 1;
+                    c.fa_at = seasons;
+                }
+                if let Some(o) = what {
+                    owed.insert(id, o);
+                }
+                let age = age_of(id, next_season);
+                declared.push(FreeAgent { compensation: cash, counts, ..FreeAgent::new(p, age, bidder_of.get(&k).copied(), Why::Service) });
+            }
+            pools[k] = stay;
+        }
+        // The signings of other clubs' free agents a club may make follow the number who
+        // declared.
+        outside_limit.insert(e, terms.map_or(usize::MAX, |t| t.outside_limit(declared.len())));
+        agents.entry(e).or_default().extend(declared);
     }
 
     // First every organisation decides whom it keeps.
@@ -1739,20 +1908,21 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
             let (kept, gone) =
                 keep(std::mem::take(&mut pools[k]), &value, caps, (2 * org.levels.len(), 6 * org.levels.len()), &deepest, &pinned[k], &protected);
             kept_pools.push(kept);
+            // The players a first team's organisation lets go go to its economy's market; the
+            // independent and military clubs' leave.
+            let market = economy_of(org).filter(|_| !independent(k));
             for p in gone {
-                // A major-league organisation's players let go go to market.
-                if market.is_some() && org.kind == OrgKind::Major {
-                    let why = if depth_only.contains(&p.id) { Why::MinorContract } else { Why::LetGo };
-                    agents.push(FreeAgent { age: age_of(p.id, next_season), from: bidder_of.get(&k).copied(), why, qualified: false, player: p });
-                    report.free_agents += 1;
-                } else {
-                    let_go.push(p);
+                match market {
+                    Some(e) => {
+                        let why = if depth_only.contains(&p.id) { Why::MinorContract } else { Why::LetGo };
+                        let age = age_of(p.id, next_season);
+                        agents.entry(e).or_default().push(FreeAgent::new(p, age, bidder_of.get(&k).copied(), why));
+                    }
+                    None => let_go.push(p),
                 }
             }
         }
     }
-    // The players let go by the KBO and NPB clubs leave the world (their market is the next
-    // stage), and without a market everyone's do.
     for p in let_go {
         if depth_only.contains(&p.id) {
             leave(pop, p.id, Exit::FreeAgent);
@@ -1762,92 +1932,178 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
             report.released += 1;
         }
     }
-    // The market: every major-league organisation bids for the free agents with what its
-    // budget leaves after the salaries it already owes for the next season.
+
+    // The markets: every club bids for its economy's free agents with what its budget leaves
+    // after the salaries it already owes for the next season (major-league contracts; the
+    // KBO's and NPB's registered domestic players, the reserved ones at the pay their club
+    // would set).
     let mut signed_by: BTreeSet<u32> = BTreeSet::new();
-    if let Some(m) = market {
-        let budgets = crate::contract::Budgets::bundled();
-        let r = ctx.contracts.of(Economy::Mlb);
+    let budgets = crate::contract::Budgets::bundled();
+    for (&e, ks) in &members {
+        let m = &markets[&e];
+        let r = rules.of(e);
+        let ix = Economy::ALL.iter().position(|x| *x == e).unwrap_or(0);
+        let list = agents.remove(&e).unwrap_or_default();
+        report.free_agents[ix] += list.len();
         let svc = r.service.map_or((3, 6), |s| (s.arbitration, s.free_agency));
-        let mut bidders: Vec<Bidder> = Vec::new();
-        for &k in bidder_of.keys() {
-            let mut depth = Depth::default();
+        let mut bidders: Vec<Bidder> = Vec::with_capacity(ks.len());
+        for &k in ks {
+            let mut depth = Depth::new(e);
             let mut committed = 0.0;
             for p in &kept_pools[k] {
-                depth.add(ctx.contracts, p);
-                let Some(c) = pop.contracts.get(&p.id).filter(|c| c.kind == Kind::Major) else { continue };
+                depth.add(rules, p);
+                if pop.foreign.contains_key(&p.id) {
+                    continue;
+                }
+                let Some(c) = pop.contracts.get(&p.id).filter(|c| matches!(c.kind, Kind::Major | Kind::Registered) && c.terms != Terms::Foreign) else {
+                    continue;
+                };
                 committed += match c.pay(year + 1) {
                     Some(pay) => pay,
-                    None => {
+                    None if e == Economy::Mlb => {
                         let service = pop.careers.get(&p.id).map_or(0, |c| first_team_seasons(c, "mlb", year + 1));
                         if service < svc.0 {
                             r.minimum(year + 1)
                         } else {
-                            ctx.contracts.arbitration_pay(p, ctx.contracts.war(p, Economy::Mlb), year + 1, service - svc.0 + 1)
+                            rules.arbitration_pay(p, rules.war(p, Economy::Mlb), year + 1, service - svc.0 + 1)
                         }
                     }
+                    None => rules.club_pay(e, rules.war(p, e), year + 1).max(rules.lowest_renewal(e, c.pay(year).unwrap_or(0.0))),
                 };
             }
-            let budget = budgets.of(&orgs[k].id, Economy::Mlb, year + 1, ctx.contracts).unwrap_or(0.0);
-            bidders.push(Bidder { depth, committed, budget, depth_signed: 0 });
+            let depth_club = independent(k);
+            let budget = if depth_club { 0.0 } else { budgets.of(&orgs[k].id, e, year + 1, rules).unwrap_or(0.0) };
+            let outside_left = outside_limit.get(&e).copied().filter(|_| !depth_club);
+            bidders.push(Bidder { depth, committed, budget, depth_signed: 0, outside_left, depth_only: depth_club });
         }
-        let org_of: Vec<usize> = bidder_of.keys().copied().collect();
-        // Status for the compensation of qualified free agents: the organisations that paid
-        // the luxury tax on the season just played, and those taken to receive revenue sharing
-        // (the smallest budgets).
-        let payroll_of =
-            |k: usize| -> f64 { pop.contracts.values().filter(|c| c.org == orgs[k].id && c.kind == Kind::Major).filter_map(|c| c.pay(year)).sum() };
-        let threshold = r.tax.as_ref().map_or(f64::INFINITY, |t| Schedule::lookup_at(&t.thresholds, year, r.raise.rate));
-        let tax_payer: BTreeSet<usize> = org_of.iter().copied().filter(|&k| payroll_of(k) > threshold).collect();
-        let mut by_budget: Vec<(f64, usize)> =
-            org_of.iter().map(|&k| (budgets.of(&orgs[k].id, Economy::Mlb, year + 1, ctx.contracts).unwrap_or(0.0), k)).collect();
-        by_budget.sort_by(|a, b| a.0.total_cmp(&b.0));
-        let payee: BTreeSet<usize> = by_budget.iter().take(m.revenue_sharing_payees).map(|x| x.1).collect();
-        let guarantee_line = m.compensation_guarantee * (1.0 + r.raise.rate).powi((year + 1 - 2026).max(0));
-        let outcome = crate::market::run(ctx.contracts, m, std::mem::take(&mut agents), &mut bidders, year + 1, &mut rng);
+        let org_of: &[usize] = ks;
+        // Status for the compensation of the majors' qualified free agents: the organisations
+        // that paid the luxury tax on the season just played, and those taken to receive
+        // revenue sharing (the smallest budgets).
+        let (tax_payer, payee, guarantee_line) = if e == Economy::Mlb {
+            let payroll_of =
+                |k: usize| -> f64 { pop.contracts.values().filter(|c| c.org == orgs[k].id && c.kind == Kind::Major).filter_map(|c| c.pay(year)).sum() };
+            let threshold = r.tax.as_ref().map_or(f64::INFINITY, |t| Schedule::lookup_at(&t.thresholds, year, r.raise.rate));
+            let tax_payer: BTreeSet<usize> = org_of.iter().copied().filter(|&k| payroll_of(k) > threshold).collect();
+            let mut by_budget: Vec<(f64, usize)> = org_of.iter().map(|&k| (budgets.of(&orgs[k].id, e, year + 1, rules).unwrap_or(0.0), k)).collect();
+            by_budget.sort_by(|a, b| a.0.total_cmp(&b.0));
+            let payee: BTreeSet<usize> = by_budget.iter().take(m.revenue_sharing_payees).map(|x| x.1).collect();
+            (tax_payer, payee, m.compensation_guarantee * (1.0 + r.raise.rate).powi((year + 1 - 2026).max(0)))
+        } else {
+            (BTreeSet::new(), BTreeSet::new(), f64::INFINITY)
+        };
+        let outcome = crate::market::run(rules, m, e, list, &mut bidders, year + 1, &mut rng);
         for s in outcome.signed {
             let k = org_of[s.org];
             let id = s.player.id;
-            let contract = if s.major {
-                report.signed_major += 1;
-                let mut c = Contract::new(&orgs[k].id, Kind::Major, Terms::FreeAgent, year + 1, &vec![s.pay; s.years]);
-                c.option = s.option.clone();
-                c.opt_out = s.opt_out_after.map(|a| year + a as i32);
-                // A qualified free agent who signs with another organisation: a pick for the
-                // one he left, picks given up by the one he joined (BA Art. XX(B)(4)).
-                if let Some(old) = s.from.map(|b| org_of[b]).filter(|&o| s.qualified && o != k) {
-                    let after = if tax_payer.contains(&old) {
-                        4
-                    } else if payee.contains(&old) && s.pay * s.years as f64 >= guarantee_line {
-                        1
-                    } else {
-                        2
-                    };
-                    pop.draft_changes.push(DraftChange { year: year + 1, org: orgs[old].id.clone(), round: after, extra: true });
-                    report.compensation_picks += 1;
-                    let lost: &[u32] = if payee.contains(&k) {
-                        &[3]
-                    } else if tax_payer.contains(&k) {
-                        &[2, 5]
-                    } else {
-                        &[2]
-                    };
-                    for &round in lost {
-                        pop.draft_changes.push(DraftChange { year: year + 1, org: orgs[k].id.clone(), round, extra: false });
-                    }
-                }
-                c
+            let old = s.from.map(|b| org_of[b]);
+            if s.major {
+                report.signed_major[ix] += 1;
             } else {
-                report.signed_minor += 1;
-                depth_only.insert(id);
-                Contract::one_season(&orgs[k].id, Kind::Minor, Terms::FreeAgent, year + 1, s.pay)
+                report.signed_minor[ix] += 1;
+            }
+            if e != Economy::Mlb && s.why == Why::Service {
+                if old == Some(k) {
+                    report.fa_stayed[ix - 1] += 1;
+                } else {
+                    report.fa_moved[ix - 1] += 1;
+                }
+            }
+            let contract = match e {
+                Economy::Mlb if s.major => {
+                    let mut c = Contract::new(&orgs[k].id, Kind::Major, Terms::FreeAgent, year + 1, &vec![s.pay; s.years]);
+                    c.option = s.option.clone();
+                    c.opt_out = s.opt_out_after.map(|a| year + a as i32);
+                    // A qualified free agent who signs with another organisation: a pick for the
+                    // one he left, picks given up by the one he joined (BA Art. XX(B)(4)).
+                    if let Some(old) = old.filter(|&o| s.qualified && o != k) {
+                        let after = if tax_payer.contains(&old) {
+                            4
+                        } else if payee.contains(&old) && s.pay * s.years as f64 >= guarantee_line {
+                            1
+                        } else {
+                            2
+                        };
+                        pop.draft_changes.push(DraftChange { year: year + 1, org: orgs[old].id.clone(), round: after, extra: true });
+                        report.compensation_picks += 1;
+                        let lost: &[u32] = if payee.contains(&k) {
+                            &[3]
+                        } else if tax_payer.contains(&k) {
+                            &[2, 5]
+                        } else {
+                            &[2]
+                        };
+                        for &round in lost {
+                            pop.draft_changes.push(DraftChange { year: year + 1, org: orgs[k].id.clone(), round, extra: false });
+                        }
+                    }
+                    c
+                }
+                Economy::Mlb => {
+                    depth_only.insert(id);
+                    Contract::one_season(&orgs[k].id, Kind::Minor, Terms::FreeAgent, year + 1, s.pay)
+                }
+                _ if s.major => Contract::new(&orgs[k].id, Kind::Registered, Terms::FreeAgent, year + 1, &vec![s.pay; s.years]),
+                _ => {
+                    // A second team's place: an NPB club signs a development contract; an
+                    // independent club's players are not paid by the model.
+                    let kind = if independent(k) {
+                        Kind::Other
+                    } else if e == Economy::Npb {
+                        Kind::Development
+                    } else {
+                        Kind::Registered
+                    };
+                    Contract::one_season(&orgs[k].id, kind, Terms::FreeAgent, year + 1, s.pay)
+                }
             };
             pop.contracts.insert(id, contract);
             signed_by.insert(id);
             kept_pools[k].push(s.player);
+            // Compensation to the old club of a KBO or NPB free agent.
+            let Some(old) = old.filter(|&o| o != k && s.why == Why::Service && e != Economy::Mlb) else { continue };
+            match owed.get(&id) {
+                Some(Owed::Player { protected }) => {
+                    // The signing club protects its best `protected` players (by the value it
+                    // keeps players by; foreign players, this offseason's signings and
+                    // compensation players are off the list); the old club takes the best of
+                    // the rest if he is above replacement, and the smaller cash with him,
+                    // otherwise the larger cash alone.
+                    let pots = &pop.potentials;
+                    let value = |p: &Player| {
+                        keep_value(p, pots.get(&p.id), ctx.careers.keep_potential)
+                            - age_cost(age_of(p.id, next_season), ctx.careers.age_discount_of(orgs[k].kind)) * ability::per_sd(p)
+                    };
+                    let mut list: Vec<(f64, usize)> = kept_pools[k]
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, p)| !pop.foreign.contains_key(&p.id) && !signed_by.contains(&p.id) && !pinned[k].contains_key(&p.id))
+                        .map(|(i, p)| (value(p), i))
+                        .collect();
+                    list.sort_by(|a, b| b.0.total_cmp(&a.0));
+                    let taken = list.get(*protected).map(|x| x.1).filter(|&i| {
+                        let p = &kept_pools[k][i];
+                        rules.war_at(p, e, keep_value(p, pots.get(&p.id), ctx.careers.keep_potential)) > 0.0
+                    });
+                    if let Some(i) = taken {
+                        let p = kept_pools[k].swap_remove(i);
+                        if let Some(c) = pop.contracts.get_mut(&p.id) {
+                            c.org = orgs[old].id.clone();
+                        }
+                        signed_by.insert(p.id);
+                        report.compensation_players += 1;
+                        kept_pools[old].push(p);
+                    }
+                }
+                Some(Owed::Pick(round)) => {
+                    pop.draft_changes.push(DraftChange { year: year + 1, org: orgs[old].id.clone(), round: *round, extra: true });
+                    report.npb_compensation_picks += 1;
+                }
+                _ => {}
+            }
         }
         for fa in outcome.unsigned {
-            report.unsigned += 1;
+            report.unsigned[ix] += 1;
             let exit = if fa.why == Why::LetGo { Exit::Released } else { Exit::FreeAgent };
             leave(pop, fa.player.id, exit);
         }
@@ -2208,6 +2464,36 @@ mod tests {
     }
 
     #[test]
+    fn kbo_and_npb_free_agents_declare_move_and_bring_compensation() {
+        let (world, levels, aging, careers, people) = ctx_parts();
+        let rules = crate::contract::ContractRules::bundled();
+        let ctx = Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people, contracts: &rules };
+        let mut pop = populate(&world, &levels, Date::new(2027, 2, 1), 7);
+        let japanese: BTreeSet<String> = organisations(&world).into_iter().filter(|o| o.kind == OrgKind::Japanese).map(|o| o.id).collect();
+        let mut total = Report::default();
+        for year in 2027..2033 {
+            let r = offseason(&ctx, &mut pop, year, None, 7);
+            for i in 0..2 {
+                assert!(r.fa_declared[i] <= r.fa_eligible[i] && r.fa_stayed[i] + r.fa_moved[i] <= r.fa_declared[i], "{r:?}");
+                total.fa_declared[i] += r.fa_declared[i];
+                total.fa_moved[i] += r.fa_moved[i];
+            }
+            total.compensation_players += r.compensation_players;
+            total.npb_compensation_picks += r.npb_compensation_picks;
+            // NPB's compensation picks wait for the next draft; the ones of this one are used.
+            let picks = pop.draft_changes.iter().filter(|c| japanese.contains(&c.org)).collect::<Vec<_>>();
+            assert_eq!(picks.len(), r.npb_compensation_picks, "{picks:?}");
+            assert!(picks.iter().all(|c| c.year == year + 1 && c.extra && (2..=3).contains(&c.round)));
+            // A player who declared counts the seasons for the next free agency from then.
+            for c in pop.careers.values().filter(|c| c.free_agencies > 0 && c.left.is_none()) {
+                assert!(c.fa_at <= crate::contract::first_team_seasons(c, "kbo", year + 1).max(crate::contract::first_team_seasons(c, "npb", year + 1)));
+            }
+        }
+        assert!(total.fa_declared.iter().all(|n| *n > 0) && total.fa_moved.iter().all(|n| *n > 0), "{total:?}");
+        assert!(total.compensation_players > 0 && total.npb_compensation_picks > 0, "{total:?}");
+    }
+
+    #[test]
     fn offseasons_keep_the_world_whole() {
         let (world, levels, aging, careers, people) = ctx_parts();
         let ctx = Offseason {
@@ -2226,7 +2512,7 @@ mod tests {
             assert!(report.drafted > 600 && report.signed > 1000, "{report:?}");
             // Players leave by retiring, by being let go by a KBO or NPB club, or (in the
             // majors' organisations) by finding no contract on the market.
-            assert!(report.retired + report.released + report.unsigned > 1000, "{report:?}");
+            assert!(report.retired + report.released + report.unsigned.iter().sum::<usize>() > 1000, "{report:?}");
         }
         assert_eq!(pop.date, Date::new(2030, 2, 1));
         // Every roster as big as its level says, everyone once, with a person, a ceiling

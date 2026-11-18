@@ -369,6 +369,11 @@ fn print_table(rows: &BTreeMap<&'static str, LevelStats>, levels: &LevelTable, t
 
 /// Spread of the first teams' strength: standard deviation over the major-league clubs of
 /// the mean value of their 26 players, runs per 162 games per player.
+/// Counts of several markets, "a/b/c".
+fn slashed(v: &[usize]) -> String {
+    v.iter().map(|x| x.to_string()).collect::<Vec<_>>().join("/")
+}
+
 fn spread(pop: &Population, world: &World) -> f64 {
     let means: Vec<f64> = world
         .first_teams()
@@ -687,7 +692,7 @@ pub fn run(
         }
         if every > 0 && ((y + 1) % every == 0 || y + 1 == years) {
             println!(
-                "\nAfter the {year} offseason ({} players, {} people so far): retired {}, released {}, minor-league free agents {}, drafted {}, signed {}, foreign {} in / {} out, military service {} in ({} with Sangmu) / {} back, {} exempt; market {} free agents: {} major-league and {} minor-league contracts, {} unsigned (before it: {} of {} opt-outs used, club options {} exercised / {} declined, {} not tendered, {} qualifying offers, {} accepted, {} compensation picks); first-team spread {:.2}",
+                "\nAfter the {year} offseason ({} players, {} people so far): retired {}, released {}, minor-league free agents {}, drafted {}, signed {}, foreign {} in / {} out, military service {} in ({} with Sangmu) / {} back, {} exempt; markets (MLB/KBO/NPB) {} free agents: {} first-team and {} depth contracts, {} unsigned (MLB before it: {} of {} opt-outs used, club options {} exercised / {} declined, {} not tendered, {} qualifying offers, {} accepted, {} compensation picks; KBO/NPB free agency: {} eligible, {} declared, {} stayed, {} moved, {} compensation players, {} NPB compensation picks); first-team spread {:.2}",
                 pop.players().count(),
                 pop.people.len(),
                 r.retired,
@@ -701,10 +706,10 @@ pub fn run(
                 r.sangmu,
                 r.discharged,
                 r.exempt,
-                r.free_agents,
-                r.signed_major,
-                r.signed_minor,
-                r.unsigned,
+                slashed(&r.free_agents),
+                slashed(&r.signed_major),
+                slashed(&r.signed_minor),
+                slashed(&r.unsigned),
                 r.opted_out,
                 r.opt_outs_due,
                 r.options_exercised,
@@ -713,6 +718,12 @@ pub fn run(
                 r.qualifying_offers,
                 r.qualifying_accepted,
                 r.compensation_picks,
+                slashed(&r.fa_eligible),
+                slashed(&r.fa_declared),
+                slashed(&r.fa_stayed),
+                slashed(&r.fa_moved),
+                r.compensation_players,
+                r.npb_compensation_picks,
                 spread(&pop, &world)
             );
             print_table(&stats(&pop), &levels, &targets);
