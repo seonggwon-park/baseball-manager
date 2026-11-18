@@ -135,6 +135,7 @@ docs/
   physics-model.md          모델, 상수와 출처, 검증 결과, 한계
   attributes.md             능력치와 물리량의 대응, 근거, 선수 간 분포 검증, 능력치의 가치, 한계
   data-files.md             편집 가능한 데이터 파일(구단·구장·이름·출생국·리그 수준)의 필드와 규칙
+  contracts.md              계약과 FA 시장 설계(정한 것, 구조, 보정 목표, 단계; 구현 중)
   research/world/           MLB·KBO·NPB 리그 구조 조사 원자료 (도시, 구장 치수, 일정·규칙, 출처)
   validation/mlb-2025.txt   bm validate --games 10000 --seed 2025 의 전체 출력
 ```
