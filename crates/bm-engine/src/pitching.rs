@@ -123,6 +123,11 @@ pub struct Expectation {
     pub drop_z: f64,
     /// The expected pitch is a fastball.
     pub fastball: bool,
+    /// Deviation from the straight line of the usage-weighted mean of the pitcher's pitches
+    /// in this count, horizontal and vertical (gravity included), m: the batter's prior for
+    /// where a pitch ends up before he has seen its late break (`ModelParams::prior_pull`).
+    pub prior_x: f64,
+    pub prior_z: f64,
 }
 
 /// Selection weights for each pitch of the arsenal in a given count.
@@ -168,7 +173,10 @@ pub fn selection_weights(
 /// adjust to everything else, leaning toward the count's pitch mix by `mix`
 /// (0 = pure fastball timing, 1 = the usage-weighted average pitch).
 pub fn expectation(profile: &PitcherProfile, state: &PitcherState, weights: &[f64], mix: f64) -> Expectation {
-    let of = |m: &PitchMean| Expectation { time: m.aim.time, move_x: m.aim.move_x, drop_z: m.aim.move_z - 0.5 * G * m.aim.time * m.aim.time, fastball: false };
+    let of = |m: &PitchMean| {
+        let drop_z = m.aim.move_z - 0.5 * G * m.aim.time * m.aim.time;
+        Expectation { time: m.aim.time, move_x: m.aim.move_x, drop_z, fastball: false, prior_x: m.aim.move_x, prior_z: drop_z }
+    };
     // Main fastball: the most used fastball in this situation, else the fastest pitch.
     let mut best: Option<usize> = None;
     for (i, d) in profile.pitches.iter().enumerate().take(weights.len()) {
@@ -187,7 +195,7 @@ pub fn expectation(profile: &PitcherProfile, state: &PitcherState, weights: &[f6
     });
     let base = Expectation { fastball: profile.pitches[fb].kind.group() == PitchGroup::Fastball, ..of(&state.means[fb]) };
     let total: f64 = weights.iter().sum();
-    if total <= 0.0 || mix <= 0.0 {
+    if total <= 0.0 {
         return base;
     }
     let mut avg = Expectation::default();
@@ -198,11 +206,14 @@ pub fn expectation(profile: &PitcherProfile, state: &PitcherState, weights: &[f6
         avg.move_x += f * e.move_x;
         avg.drop_z += f * e.drop_z;
     }
+    let mix = mix.max(0.0);
     Expectation {
         time: base.time + mix * (avg.time - base.time),
         move_x: base.move_x + mix * (avg.move_x - base.move_x),
         drop_z: base.drop_z + mix * (avg.drop_z - base.drop_z),
         fastball: base.fastball,
+        prior_x: avg.move_x,
+        prior_z: avg.drop_z,
     }
 }
 

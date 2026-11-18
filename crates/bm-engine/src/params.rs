@@ -104,6 +104,14 @@ pub struct ModelParams {
     /// the zone are swung at 39.7 % of the time and four-seamers 62.5 %; with two strikes
     /// 93.1 % and 95.3 %. Four-seamers are 0.
     pub take_kind: [[f64; 3]; 8],
+    /// Share of the difference between a pitch's movement and the batter's prior (the
+    /// usage-weighted mean of the pitcher's pitches in the count, `Expectation::prior_x` /
+    /// `prior_z`) that he has not seen when he decides to swing, horizontal and vertical,
+    /// with fewer than two strikes and with two. Only the decision uses it. In the 2025
+    /// Statcast sample with two strikes, a sinker on the outside edge to a batter on the
+    /// pitcher's side (one that comes back over the corner) is swung at 38 % of the time and
+    /// one on the inside edge 90 %; a four-seamer on the bottom edge 40 %, on the top 89 %.
+    pub prior_pull: [[f64; 2]; 2],
     /// Batters adapt only partly to a fastball's "ride": share of the difference between
     /// its induced vertical movement and the generic fastball that ends up as barrel error.
     pub ride_bias: f64,
@@ -482,6 +490,7 @@ impl Default for ModelParams {
             fastball_misread: 0.0,
             kind_recognition: [0.0, 0.0, 0.039755, -0.14075, 0.01281, 0.15936, 0.053355, -0.28168],
             take_kind: [[0.0; 3]; 8],
+            prior_pull: [[0.0; 2]; 2],
             ride_bias: 0.085453,
             ride_reference: 0.375,
             ride_confusion: 0.6,

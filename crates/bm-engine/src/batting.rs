@@ -170,7 +170,12 @@ pub fn perceive(
     let miss = 1.0 - params.location_adjust * rho;
     let px = f.plate_pos.x + miss * dmx + rng.gauss(0.0, sd);
     let pz = f.plate_pos.z + miss * dmz + rng.gauss(0.0, sd);
-    let d_hat = zone.signed_distance(px, pz, ball_radius);
+    // The decision comes before the late break: the location is judged partly as if the
+    // pitch moved like the pitcher's average pitch in this count (`prior_pull`).
+    let g = usize::from(strikes >= 2);
+    let dec_x = px + params.prior_pull[0][g] * (expected.prior_x - f.move_x);
+    let dec_z = pz + params.prior_pull[1][g] * (expected.prior_z - drop_act);
+    let d_hat = zone.signed_distance(dec_x, dec_z, ball_radius);
     let d0 = params.swing_d0
         + batter.chase
         + match strikes {

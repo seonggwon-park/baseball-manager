@@ -202,6 +202,7 @@ impl Tuning {
             ["swing_base", b, s] => p.swing_base[idx(b, 4)?][idx(s, 3)?] = v,
             ["kind_recognition", k] => p.kind_recognition[idx(k, 8)?] = v,
             ["take_kind", k, s] => p.take_kind[idx(k, 8)?][idx(s, 3)?] = v,
+            ["prior_pull", a, g] => p.prior_pull[idx(a, 2)?][idx(g, 2)?] = v,
             ["aim_kind", k] => p.aim_kind[idx(k, 8)?] = v,
             ["barrel_kind", k] => p.barrel_kind[idx(k, 8)?] = v,
             ["w", "command_kind", k] => self.baseline.command_kind[idx(k, 8)?] = v,

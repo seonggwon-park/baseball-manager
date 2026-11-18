@@ -360,6 +360,10 @@ pub struct KindStat {
     pub speed_whiff: [[f64; 5]; 2],
     /// The same against the release speed of the pitcher's four-seamer (between pitchers).
     pub fb_whiff: [f64; 5],
+    /// [pitches, swings] within 2 in of one edge of the zone, inside ([0]) or outside ([1])
+    /// it, by strikes, batter on the pitcher's side (0) or the other (1), and edge (inside,
+    /// outside, bottom, top), the other coordinate inside the zone (`bm validate --json`).
+    pub edge: [[[[[f64; 2]; 2]; 4]; 2]; 3],
 }
 
 /// Bins of signed distance from the zone edge (in; negative inside) for `KindStat::dist`.
@@ -816,6 +820,9 @@ impl Tally {
                 add_arr(x, y);
             }
             add_arr(&mut a.fb_whiff, &b.fb_whiff);
+            for (x, y) in a.edge.iter_mut().flatten().flatten().flatten().zip(b.edge.iter().flatten().flatten().flatten()) {
+                add_arr(x, y);
+            }
             for (x, y) in a.speed_whiff.iter_mut().zip(&b.speed_whiff) {
                 add_arr(x, y);
             }
@@ -1216,6 +1223,35 @@ impl Observer for Tally {
             k.dist[s][i][0] += 1.0;
             if e.swung {
                 k.dist[s][i][1] += 1.0;
+            }
+        }
+        {
+            // Distance past each edge of the zone (m; negative inside), as in the Statcast sample.
+            let pos = e.thrown.flight.plate_pos;
+            let r = bm_engine::ZONE_BALL_RADIUS;
+            let out_x = e.batter_hand.outside_sign() * pos.x;
+            let hw = e.zone.half_width + r;
+            let past = [-hw - out_x, out_x - hw, (e.zone.bottom - r) - pos.z, pos.z - (e.zone.top + r)];
+            let vert_in = past[2] <= 0.0 && past[3] <= 0.0;
+            let horiz_in = past[0] <= 0.0 && past[1] <= 0.0;
+            let side = usize::from(e.batter_hand != e.pitcher_hand);
+            for (j, d) in past.iter().enumerate() {
+                if !(if j < 2 { vert_in } else { horiz_in }) {
+                    continue;
+                }
+                let inch = d / INCH;
+                let band = if (-2.0..0.0).contains(&inch) {
+                    0
+                } else if (0.0..2.0).contains(&inch) {
+                    1
+                } else {
+                    continue;
+                };
+                let cell = &mut k.edge[s][side][j][band];
+                cell[0] += 1.0;
+                if e.swung {
+                    cell[1] += 1.0;
+                }
             }
         }
         if e.swung {
