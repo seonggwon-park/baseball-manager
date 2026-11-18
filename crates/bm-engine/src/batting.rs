@@ -404,7 +404,8 @@ pub fn swing(
     let typical_rise = env.typical_rise[thrown.kind.index()];
     let confusion = if matches!(thrown.kind, PitchKind::FourSeam | PitchKind::Sinker) { p.ride_confusion } else { 0.0 };
     let ride_expected = typical_rise + confusion * (p.ride_reference - typical_rise);
-    let offset = rng.gauss(batter.barrel_aim + p.aim_kind[k], batter.barrel_sd * p.barrel_kind[k] * speed_ratio.powf(p.barrel_speed_exp) * commit * loc_gain * prec)
+    let offset = rng
+        .gauss(batter.barrel_aim + p.aim_kind[k], batter.barrel_sd * p.barrel_kind[k] * speed_ratio.powf(p.barrel_speed_exp) * commit * loc_gain * prec)
         - p.tracking_residual * per.bias_z
         - p.noise_residual * (per.perceived_z - f.plate_pos.z - per.bias_z)
         + p.height_bias * (f.plate_pos.z - zone.mid())
