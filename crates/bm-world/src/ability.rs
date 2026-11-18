@@ -11,7 +11,13 @@
 
 use crate::attr::Attr;
 use crate::convert;
-use crate::player::{Player, Position, Role};
+use crate::player::{Player, Position, Role, Side};
+use bm_engine::PitchKind;
+use serde::Deserialize;
+use std::collections::BTreeMap;
+use std::sync::OnceLock;
+
+const PITCH_VALUE: &str = include_str!("../../../data/people/pitch_value.json");
 
 /// Runs per game per standard deviation when all nine batters change.
 pub const BATTING: [(Attr, f64); 16] = [
@@ -49,23 +55,6 @@ pub const FIELDING: [(Attr, f64); 7] = [
 /// Runs per game per standard deviation of the catcher alone (the experiment changed
 /// every fielder, but only the catcher frames, blocks and throws out runners).
 pub const CATCHING: [(Attr, f64); 3] = [(Attr::Framing, 0.043), (Attr::Blocking, 0.012), (Attr::ThrowingOut, 0.008)];
-
-/// Runs per game per standard deviation when the whole staff changes.
-pub const PITCHING: [(Attr, f64); 9] = [
-    (Attr::Velocity, 0.047),
-    (Attr::Stuff, 0.031),
-    (Attr::Control, 0.076),
-    (Attr::Command, 0.088),
-    (Attr::Deception, 0.056),
-    (Attr::HoldRunners, 0.049),
-    (Attr::Stamina, 0.0),
-    (Attr::Concentration, 0.0),
-    (Attr::Composure, 0.0),
-];
-
-/// Runs per game when the grade of every pitch other than the main fastball moves by
-/// one standard deviation.
-pub const PITCH_GRADES: f64 = 0.204;
 
 /// Share of a club's innings thrown by one starter and by one reliever: MLB starters
 /// threw 57 % of the innings in 2026 (Verducci, Sports Illustrated, 2026-08-10), spread
@@ -194,23 +183,74 @@ pub fn best_position(p: &Player) -> (Option<Position>, f64) {
     best
 }
 
-/// Runs per game a whole staff of pitchers like him would save, per inning share 1.
-pub fn pitching_rate(p: &Player) -> f64 {
-    let mut per_game: f64 = PITCHING.iter().map(|&(a, w)| w * p.attrs.z(a)).sum();
-    if let Some(pit) = &p.pitching {
-        let main = convert::main_fastball(&pit.pitches);
-        let (mut sum, mut weight) = (0.0, 0.0);
-        for (i, k) in pit.pitches.iter().enumerate() {
-            if Some(i) != main {
-                sum += (k.usage * k.grade) as f64;
-                weight += k.usage as f64;
+/// The pitching value model (decision 2026-11-18: a linear model of the arsenal): runs allowed
+/// per nine innings, linear in the pitcher's attributes, his delivery and, pitch type by pitch
+/// type, how often he throws it and how often times its grade and its own shape, fitted to
+/// the engine's results (`tools/value/fit_pitching.py`, `data/people/pitch_value.json`).
+/// Each feature has the mean it is measured from and its weight in runs per nine per unit.
+#[derive(Deserialize)]
+struct PitchValueFile {
+    features: BTreeMap<String, (f64, f64)>,
+    /// Runs a game for a staff: the pitchers' unit of `per_sd`.
+    per_sd: f64,
+}
+
+/// The same, laid out for the computation.
+struct PitchValue {
+    per_sd: f64,
+    attrs: Vec<(Attr, f64, f64)>,
+    left: (f64, f64),
+    delivery: [(f64, f64); 5],
+    n_pitches: (f64, f64),
+    /// By pitch type: usage share, then usage times grade, speed, spin, active spin, tilt and
+    /// height.
+    kinds: [[(f64, f64); 7]; 8],
+}
+
+/// The pitch fields of the model, after the usage share.
+pub const PITCH_FIELDS: [&str; 6] = ["grade", "speed", "spin", "active", "tilt", "height"];
+/// The delivery fields of the model.
+pub const DELIVERY: [&str; 5] = ["arm_angle", "extension", "speed_sd", "spin_sd", "tilt_sd"];
+
+fn pitch_value() -> &'static PitchValue {
+    static MODEL: OnceLock<PitchValue> = OnceLock::new();
+    MODEL.get_or_init(|| {
+        let f: PitchValueFile = serde_json::from_str(PITCH_VALUE).expect("bundled pitch_value.json");
+        let get = |k: &str| f.features.get(k).copied().unwrap_or((0.0, 0.0));
+        let attrs = Attr::ALL.iter().filter_map(|&a| f.features.get(a.key()).map(|&(m, w)| (a, m, w))).collect();
+        let mut kinds = [[(0.0, 0.0); 7]; 8];
+        for kind in PitchKind::ALL {
+            let code = kind.code();
+            kinds[kind.index()][0] = get(&format!("use_{code}"));
+            for (i, field) in PITCH_FIELDS.iter().enumerate() {
+                kinds[kind.index()][i + 1] = get(&format!("{code}_{field}"));
             }
         }
-        if weight > 0.0 {
-            per_game += PITCH_GRADES * sum / weight;
-        }
+        PitchValue { per_sd: f.per_sd, attrs, left: get("left"), delivery: DELIVERY.map(get), n_pitches: get("n_pitches"), kinds }
+    })
+}
+
+/// Runs per game a whole staff of pitchers like him would save, per inning share 1: the
+/// pitching value model's runs allowed per nine against its mean, with the sign turned.
+pub fn pitching_rate(p: &Player) -> f64 {
+    let Some(pit) = &p.pitching else { return 0.0 };
+    let m = pitch_value();
+    let term = |x: f64, (mean, w): (f64, f64)| w * (x - mean);
+    let mut ra9: f64 = m.attrs.iter().map(|&(a, mean, w)| w * (p.attrs.z(a) - mean)).sum();
+    ra9 += term(f64::from(u8::from(p.throws == Side::Left)), m.left);
+    let delivery = [pit.arm_angle, pit.extension, pit.speed_sd, pit.spin_sd, pit.tilt_sd];
+    ra9 += delivery.iter().zip(m.delivery).map(|(&x, c)| term(f64::from(x), c)).sum::<f64>();
+    ra9 += term(pit.pitches.len() as f64, m.n_pitches);
+    let total: f64 = pit.pitches.iter().map(|k| f64::from(k.usage)).sum();
+    for kind in PitchKind::ALL {
+        let of_kind = || pit.pitches.iter().filter(|k| k.kind == kind);
+        let usage = if total > 0.0 { of_kind().map(|k| f64::from(k.usage)).sum::<f64>() / total } else { 0.0 };
+        let c = &m.kinds[kind.index()];
+        ra9 += term(usage, c[0]);
+        let fields = of_kind().next().map_or([0.0; 6], |k| [k.grade, k.speed, k.spin, k.active, k.tilt, k.height].map(f64::from));
+        ra9 += fields.iter().zip(&c[1..]).map(|(&x, &cw)| term(usage * x, cw)).sum::<f64>();
     }
-    per_game
+    -ra9
 }
 
 /// Runs per 162 games as a starter or a reliever.
@@ -228,13 +268,15 @@ pub fn can_start(p: &Player) -> bool {
     p.attrs.z(Attr::Stamina) > 0.0
 }
 
-/// Runs per 162 games that one standard deviation on every attribute that counts is
-/// worth to a player (`value`): the unit that puts position players and pitchers on one
-/// scale (about 72 and 9.4; fielding averaged over the positions).
+/// The unit that puts position players and pitchers on one scale, runs per 162 games
+/// (`value`): for a position player what one standard deviation on every attribute that
+/// counts is worth (about 72; fielding averaged over the positions); for a pitcher the
+/// pitching value model's `per_sd` (`data/people/pitch_value.json`), the earlier model's
+/// unit (one standard deviation on every pitching attribute and pitch grade, 0.551 runs a
+/// game for a staff) widened as far as the new model spreads major-league starters wider.
 pub fn per_sd(p: &Player) -> f64 {
     if p.is_pitcher() {
-        let rate: f64 = PITCHING.iter().map(|w| w.1).sum::<f64>() + PITCH_GRADES;
-        rate * 162.0 * STAFF_SHARE
+        pitch_value().per_sd * 162.0 * STAFF_SHARE
     } else {
         let field: f64 = BY_POSITION.iter().map(|r| r.1 + r.2 + r.3).sum::<f64>() / 8.0;
         BATTING.iter().map(|w| w.1).sum::<f64>() * 162.0 / 9.0 + field * 162.0
@@ -273,6 +315,28 @@ mod tests {
         assert!(fielding(&p, Some(Position::Center)) < fielding(&p, Some(Position::Short)) - 5.0);
         assert!(fielding(&p, Some(Position::Catcher)) < -20.0);
         assert_eq!(best_position(&p).0, Some(Position::Short));
+    }
+
+    #[test]
+    fn the_pitching_value_model_centres_on_the_majors_and_rewards_skill() {
+        let mut rng = Rng::new(21);
+        let starters: Vec<Player> = (0..600).map(|i| pitcher(&mut rng, i, Role::Starter, &Talent::MAJOR)).collect();
+        let rates: Vec<f64> = starters.iter().map(pitching_rate).collect();
+        let mean = rates.iter().sum::<f64>() / rates.len() as f64;
+        let sd = (rates.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / rates.len() as f64).sqrt();
+        // Fitted on generated major-league starters: their mean is the model's zero, and they
+        // spread about as widely as the fit's predictions (0.43 runs a game).
+        assert!(mean.abs() < 0.08, "mean {mean:.3}");
+        assert!(sd > 0.25 && sd < 0.65, "sd {sd:.3}");
+        // More of any pitching skill saves runs.
+        for a in [Attr::Velocity, Attr::Stuff, Attr::Control, Attr::Command, Attr::Deception] {
+            let mut p = starters[0].clone();
+            let before = pitching_rate(&p);
+            p.attrs[a] += 1.0;
+            assert!(pitching_rate(&p) > before, "{a:?}");
+        }
+        // The pitchers' unit is wider than one runs a game for a staff and the spread fits in it.
+        assert!(pitch_value().per_sd > sd);
     }
 
     #[test]
