@@ -445,19 +445,49 @@ fn outcomes(pop: &Population, last_year: i32, follow: i32) -> serde_json::Value 
     serde_json::json!({"rounds": rounds, "international": intl.0 / intl.1.max(1.0), "debut_age": debut.0 / debut.1.max(1.0)})
 }
 
-/// Every rostered player before an offseason: level, pitcher or not, and value in standard
-/// deviations (`ability::per_sd`).
-fn snapshot(pop: &Population) -> Vec<(u32, String, bool, f64)> {
-    pop.rosters.iter().flat_map(|r| r.players().map(move |p| (p.id, r.level.clone(), p.is_pitcher(), ability::value(p) / ability::per_sd(p)))).collect()
+/// One rostered player before an offseason.
+struct Before {
+    id: u32,
+    level: String,
+    /// Where he stood on the roster: lineup, bench, starter, reliever or reserve.
+    slot: &'static str,
+    pitcher: bool,
+    /// Value in runs per 162 games (`ability::value`) and in standard deviations
+    /// (`ability::per_sd`).
+    value: f64,
+    value_sd: f64,
+}
+
+/// Every rostered player before an offseason.
+fn snapshot(pop: &Population) -> Vec<Before> {
+    let mut out = Vec::new();
+    for r in &pop.rosters {
+        let s = &r.squad;
+        let groups: [(&'static str, Vec<&bm_world::Player>); 5] = [
+            ("lineup", s.hitters.iter().map(|(p, _)| p).collect()),
+            ("bench", s.bench.iter().map(|(p, _)| p).collect()),
+            ("reserve", r.reserves.iter().map(|(p, _)| p).collect()),
+            ("starter", s.starters.iter().collect()),
+            ("reliever", s.relievers.iter().collect()),
+        ];
+        for (slot, players) in groups {
+            for p in players {
+                let value = ability::value(p);
+                out.push(Before { id: p.id, level: r.level.clone(), slot, pitcher: p.is_pitcher(), value, value_sd: value / ability::per_sd(p) });
+            }
+        }
+    }
+    out
 }
 
 /// What became of the players of `before` in the offseason after the `year` season, one CSV
 /// row each: age on 1 November, level and value before, and the outcome (stayed, with the
 /// new level; away on military duty; or how he left).
-fn write_outcomes(out: &mut impl std::io::Write, pop: &Population, before: &[(u32, String, bool, f64)], year: i32) {
+fn write_outcomes(out: &mut impl std::io::Write, pop: &Population, before: &[Before], year: i32) {
     let now: BTreeMap<u32, &str> = pop.rosters.iter().flat_map(|r| r.players().map(move |p| (p.id, r.level.as_str()))).collect();
     let nov = Date::new(year, 11, 1);
-    for (id, level, pitcher, v) in before {
+    for b in before {
+        let id = &b.id;
         let age = pop.people.get(id).map_or(f64::NAN, |p| nov.days_since(p.born) as f64 / 365.2425);
         let left = pop.careers.get(id).and_then(|c| c.left).filter(|(y, _)| *y == year);
         let (outcome, new_level) = match (left, now.get(id)) {
@@ -466,7 +496,8 @@ fn write_outcomes(out: &mut impl std::io::Write, pop: &Population, before: &[(u3
             (None, None) if pop.away.contains_key(id) => ("Away".to_string(), ""),
             _ => ("Unknown".to_string(), ""),
         };
-        writeln!(out, "{year},{id},{age:.2},{level},{},{v:.3},{outcome},{new_level}", u8::from(*pitcher)).expect("write --out");
+        writeln!(out, "{year},{id},{age:.2},{},{},{},{:.2},{:.3},{outcome},{new_level}", b.level, b.slot, u8::from(b.pitcher), b.value, b.value_sd)
+            .expect("write --out");
     }
 }
 
@@ -508,7 +539,7 @@ pub fn run(
     }
     let mut out = out.map(|p| {
         let mut f = std::io::BufWriter::new(std::fs::File::create(p).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
-        writeln!(f, "year,id,age,level,pitcher,value_sd,outcome,new_level").expect("write --out");
+        writeln!(f, "year,id,age,level,slot,pitcher,value,value_sd,outcome,new_level").expect("write --out");
         f
     });
     for y in 0..years {
