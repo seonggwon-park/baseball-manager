@@ -124,6 +124,9 @@ pub struct Baseline {
     pub steal: f64,
     /// Location error of a fastball, root mean square over the two axes, m.
     pub command: f64,
+    /// Factor on the location error by pitch type (`PitchKind::index`; four-seamers 1),
+    /// fitted to the share of each type in the zone.
+    pub command_kind: [f64; 8],
     /// Fastball velocity of a starter relative to the league-average pitch shapes, m/s.
     pub velocity: f64,
     /// The bat of an average-strength hitter.
@@ -145,6 +148,7 @@ impl Default for Baseline {
             aim: 0.0,
             steal: 0.375,
             command: mean::COMMAND_IN * INCH,
+            command_kind: COMMAND_KIND,
             velocity: mean::STARTER_VELOCITY_MPH * MPH,
             bat: BatSpec::mlb_wood(),
         }
@@ -320,6 +324,11 @@ pub fn main_fastball(pitches: &[crate::player::PitchSkill]) -> Option<usize> {
 
 /// The player as a pitcher, or `None` if he has no repertoire. `relief` = used in
 /// short stints, where the same arm throws harder.
+/// Location error of each pitch type against a four-seamer's (`PitchKind::index`): breaking
+/// balls 12 % and offspeed pitches 10 % wider to start with; `Baseline::command_kind` holds
+/// the fitted values.
+pub const COMMAND_KIND: [f64; 8] = [1.0, 1.0, 1.0, 1.12, 1.12, 1.12, 1.10, 1.10];
+
 pub fn pitcher(p: &Player, relief: bool) -> Option<PitcherProfile> {
     pitcher_with(p, relief, &Baseline::default())
 }
@@ -340,6 +349,7 @@ pub fn pitcher_with(p: &Player, relief: bool, base: &Baseline) -> Option<Pitcher
     let rms = ((along * along + across * across) / 2.0).sqrt();
 
     let main = main_fastball(&pit.pitches);
+    let command_kind = base.command_kind;
     let slot_tilt = mean::ARM_ANGLE.to_radians() - pit.arm_angle as f64;
     let pitches = pit
         .pitches
@@ -357,11 +367,7 @@ pub fn pitcher_with(p: &Player, relief: bool, base: &Baseline) -> Option<Pitcher
                 // lower one more run (Statcast 2025: arm angle and induced rise correlate at 0.64).
                 tilt: base.tilt + slot_tilt * slot_share(s.kind) + s.tilt as f64 + q * d_tilt.to_radians(),
             };
-            let group = match s.kind.group() {
-                PitchGroup::Fastball => 1.0,
-                PitchGroup::Breaking => 1.12,
-                PitchGroup::Offspeed => 1.10,
-            };
+            let group = command_kind[s.kind.index()];
             let feel = if Some(i) == main { 1.0 } else { (-PITCH_COMMAND * s.grade as f64).exp() };
             let (same, opp) = platoon_usage(s.kind);
             let disguise = if Some(i) == main { 0.0 } else { PITCH_DISGUISE * s.grade as f64 };

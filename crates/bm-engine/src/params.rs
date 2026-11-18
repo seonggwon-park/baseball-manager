@@ -133,6 +133,10 @@ pub struct ModelParams {
     /// Aim under (+) or over (-) the ball's centre by pitch type, m, on top of the
     /// batter's own aim; indexed by `PitchKind::index`, four-seamers 0.
     pub aim_kind: [f64; 8],
+    /// Factor on the batter's barrel error by pitch type (four-seamers 1): how hard each
+    /// type is to square up, fitted to its rate of hard contact, home runs and whiffs
+    /// (`docs/physics-model.md` 5.3).
+    pub barrel_kind: [f64; 8],
     /// Weight of the straight-line timing geometry in the vertical error. At 1 the barrel
     /// and the ball keep to their paths, so contact a distance `dy` from the planned point
     /// misses by `(tan descent - tan attack) dy`; at 0 the barrel meets the ball's height
@@ -469,6 +473,7 @@ impl Default for ModelParams {
             reach_limit: 0.40,
             height_bias: 0.076376,
             aim_kind: [0.0, -0.020825, -0.015385, -0.00096362, 0.0040549, -0.014046, -0.015621, -0.014987],
+            barrel_kind: [1.0; 8],
             plane_mismatch: 0.0,
             mismatch_noise: 1.7742,
             spray_turn: 0.0698,

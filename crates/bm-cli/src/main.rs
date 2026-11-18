@@ -1,7 +1,8 @@
 //! `bm` — command line tools for the Baseball Manager engine.
 //!
 //! ```text
-//! bm validate [--games N] [--seed S] [--threads T] [--clubs K]   compare simulated aggregates with MLB 2025
+//! bm validate [--games N] [--seed S] [--threads T] [--clubs K]   compare simulated aggregates with MLB 2025;
+//!             [--json FILE]                                       --json: pitches by type, count and result
 //!             [--style none|mlb] [--set name=value]               AI manager preset, model constants
 //!             [--population world|engine]                         players drawn from attributes (default) or as physical profiles
 //!             [--parks world|neutral]                             the 30 major-league parks of the world data (default) or one average park
@@ -45,7 +46,7 @@ mod serve;
 mod tally;
 mod tuning;
 
-use bm_engine::{play_game_styled, Club, GameResult, Level, ManagerStyle, MatchEnv, NoObserver, Rng, Rules};
+use bm_engine::{play_game_styled, Club, GameResult, Level, ManagerStyle, MatchEnv, NoObserver, PitchKind, Rng, Rules};
 use bm_physics::{Atmosphere, Park, Wind};
 use std::time::Instant;
 use tally::Tally;
@@ -416,6 +417,13 @@ fn main() {
                 1000.0 * secs * args.threads as f64 / t.games
             );
             report::print(&t);
+            if let Some(path) = args.json.as_deref() {
+                // Pitches by type, count and result, for a run value by pitch type.
+                let kinds: serde_json::Map<String, serde_json::Value> =
+                    PitchKind::ALL.iter().map(|k| (k.code().to_string(), serde_json::json!(t.pitch_classes[k.index()]))).collect();
+                let doc = serde_json::json!({ "classes": tally::PITCH_CLASSES, "counts": "balls * 3 + strikes", "pitches": kinds });
+                std::fs::write(path, serde_json::to_string_pretty(&doc).expect("json")).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+            }
         }
         "contacts" => {
             let out = args.out.as_deref().expect("bm contacts needs --out FILE");

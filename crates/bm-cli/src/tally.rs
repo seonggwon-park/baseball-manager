@@ -397,6 +397,10 @@ pub struct Tally {
     pub call_n: [f64; NC],
     pub call_s: [f64; NC],
     pub kinds: [KindStat; 8],
+    /// Pitches by type, count before the pitch (balls * 3 + strikes) and result
+    /// (`PITCH_CLASSES`), to value each pitch type with a count-by-result table of run values
+    /// (`bm validate --json`).
+    pub pitch_classes: Vec<[[f64; PITCH_CLASSES.len()]; 12]>,
     pub bat_speed_all: Mean,
     pub bat_speed_bip: Mean,
     pub eff_all: Efficiency,
@@ -522,6 +526,7 @@ impl Default for Tally {
             call_n: [0.0; NC],
             call_s: [0.0; NC],
             kinds: [KindStat::default(); 8],
+            pitch_classes: vec![[[0.0; PITCH_CLASSES.len()]; 12]; 8],
             bat_speed_all: Mean::default(),
             bat_speed_bip: Mean::default(),
             eff_all: Efficiency::default(),
@@ -602,6 +607,31 @@ fn add_grid<const N: usize, const M: usize>(a: &mut [[f64; N]; M], b: &[[f64; N]
 
 /// Statcast's barrel definition: at least 98 mph, with a launch-angle window that
 /// starts at 26-30 degrees and widens as the exit velocity rises (to 8-50 degrees at 116 mph).
+/// What a pitch came to, for its run value: the same classes as Statcast's descriptions
+/// and events give.
+pub const PITCH_CLASSES: [&str; 12] = ["ball", "called", "swinging", "foul_tip", "foul", "hbp", "out", "single", "double", "triple", "home_run", "error"];
+
+/// The class (`PITCH_CLASSES`) of a pitch.
+pub fn pitch_class(e: &PitchEvent) -> usize {
+    match e.result {
+        PitchResult::Ball => 0,
+        PitchResult::CalledStrike => 1,
+        PitchResult::SwingingStrike => 2,
+        PitchResult::FoulTip => 3,
+        PitchResult::Foul => 4,
+        PitchResult::HitByPitch => 5,
+        PitchResult::InPlay => match e.play.map(|p| p.kind) {
+            Some(PlayKind::Single) => 7,
+            Some(PlayKind::Double | PlayKind::GroundRuleDouble) => 8,
+            Some(PlayKind::Triple) => 9,
+            Some(PlayKind::HomeRun) => 10,
+            Some(PlayKind::Error) => 11,
+            Some(PlayKind::Foul) => 4,
+            _ => 6,
+        },
+    }
+}
+
 pub fn is_barrel(ev_mph: f64, la_deg: f64) -> bool {
     if ev_mph < 98.0 {
         return false;
@@ -624,6 +654,11 @@ pub fn bb_type(la_deg: f64) -> usize {
 
 impl Tally {
     pub fn merge(&mut self, o: &Tally) {
+        for (a, b) in self.pitch_classes.iter_mut().zip(&o.pitch_classes) {
+            for (x, y) in a.iter_mut().zip(b) {
+                add_arr(x, y);
+            }
+        }
         macro_rules! addf { ($($f:ident),*) => { $( self.$f += o.$f; )* } }
         addf!(
             games,
@@ -958,6 +993,8 @@ impl Tally {
 impl Observer for Tally {
     fn pitch(&mut self, e: &PitchEvent) {
         self.pitches += 1.0;
+        let count = (e.balls.min(3) as usize) * 3 + e.strikes.min(2) as usize;
+        self.pitch_classes[e.thrown.kind.index()][count][pitch_class(e)] += 1.0;
         if e.approach.is_bunt() {
             let t = &mut self.tactics;
             let i = match e.result {
