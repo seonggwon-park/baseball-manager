@@ -17,6 +17,7 @@
 //! bm park --level L --fence l,lc,c,rc,r [--wall l,c,r | --wall h] one ballpark experiment: the level's clubs (levels.json talent
 //!         [--elevation M] [--turf] [--talent ...] [--foreign ...]  unless given) play every game in one park (fence distances and
 //!         [--games N] [--seed S] [--json FILE]                    wall heights in m); the same seed gives the same clubs
+//!         [--balls FILE [--ev-shift MPH]]                         or measured batted balls flown through the park instead of games
 //! bm season [--seed S] [--until YYYY-MM-DD] [--seasons N]         generate the world and play a season of every league
 //!           [--warmup K] [--levels FILE] [--careers FILE]         (N seasons with offseasons between them, after K offseasons
 //!           [--aging FILE] [--contracts FILE] [--json FILE]       without games); --json: each level's rates in the last season;
@@ -90,6 +91,10 @@ struct Args {
     turf: bool,
     talent_given: bool,
     foreign_given: bool,
+    /// `bm park`: measured batted balls to fly through the park instead of games, and a
+    /// change of their exit speed (mph).
+    balls: Option<std::path::PathBuf>,
+    ev_shift: f64,
     /// `bm season`: play up to this date instead of the whole season.
     until: Option<bm_world::Date>,
     /// `bm careers`: offseasons to run, how often to print, other level and career files.
@@ -141,6 +146,8 @@ fn parse_args() -> Args {
         turf: false,
         talent_given: false,
         foreign_given: false,
+        balls: None,
+        ev_shift: 0.0,
         until: None,
         years: 20,
         seasons: 1,
@@ -207,6 +214,8 @@ fn parse_args() -> Args {
                 }
             }
             "--elevation" => a.elevation = v.parse().expect("--elevation M"),
+            "--balls" => a.balls = Some(v.into()),
+            "--ev-shift" => a.ev_shift = v.parse().expect("--ev-shift MPH"),
             "--seasons" => a.seasons = v.parse().expect("--seasons N"),
             "--warmup" => a.warmup = v.parse().expect("--warmup N"),
             "--history" => a.history = Some(v.parse().expect("--history H")),
@@ -569,7 +578,10 @@ fn main() {
                 wall_m: args.wall.unwrap_or([2.4; 3]),
                 estimated: Vec::new(),
             };
-            level::park(&args.level, talent, foreign, &ballpark, args.games, args.seed, args.threads, &args.tuning, drag, args.json.as_deref())
+            match &args.balls {
+                Some(balls) => level::park_balls(&args.level, &ballpark, balls, args.ev_shift, &args.tuning, drag, args.json.as_deref()),
+                None => level::park(&args.level, talent, foreign, &ballpark, args.games, args.seed, args.threads, &args.tuning, drag, args.json.as_deref()),
+            }
         }
         "season" => season::run(
             &args.tuning,

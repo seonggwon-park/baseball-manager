@@ -10,8 +10,8 @@
 
 use crate::tuning::Tuning;
 use bm_engine::{play_game_styled, BattedInfo, Club, MatchEnv, Observer, PitchEvent, PitchKind, PitchResult, Rng, Rules, TeamBox};
-use bm_physics::units::MPH;
-use bm_physics::{Atmosphere, Park, Wind};
+use bm_physics::units::{MPH, RPM};
+use bm_physics::{spin_from_components, velocity_from_angles, Atmosphere, BallState, BattedPath, BattedSim, Park, Vec3, Wind};
 use bm_world::{Squad, Talent, World};
 
 /// Official rates of a league-season: runs per team-game, AVG, OBP, SLG, and K, BB and HR
@@ -310,10 +310,7 @@ pub fn park(
     json: Option<&std::path::Path>,
 ) {
     let mut env = build(level, &talent, &foreign, tuning, seed, drag);
-    let rules = env.envs[0].rules.clone();
-    let mut m = MatchEnv::new(&Atmosphere::new(24.0, 760.0, 55.0, ballpark.elevation()), Wind::CALM, ballpark.field(), rules, tuning.params.clone());
-    m.ball = tuning.ball;
-    m.batted_flight.aero.cd0 *= drag;
+    let m = park_env(ballpark, env.envs[0].rules.clone(), tuning, drag);
     env.envs = vec![m; env.clubs.len()];
     let (line, speeds) = own_league(&env, games, seed, threads, tuning.style);
     let s = line.rates();
@@ -352,6 +349,117 @@ pub fn park(
             "team_games": line.team_games, "pa": line.pa,
             "runs": line.runs, "hits": line.h, "doubles": line.doubles, "triples": line.triples, "home_runs": line.hr,
             "r_per_game": s.r, "avg": s.avg, "obp": s.obp, "slg": s.slg, "k_pct": s.k, "bb_pct": s.bb, "hr_pct": s.hr,
+        });
+        std::fs::write(path, serde_json::to_string_pretty(&doc).expect("json")).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    }
+}
+
+/// The match environment of a `bm park` experiment: the ballpark in the game-average weather
+/// (24 C, 760 mmHg, 55%, no wind) at its elevation, with the level's ball.
+fn park_env(ballpark: &bm_world::league::Ballpark, rules: Rules, tuning: &Tuning, drag: f64) -> MatchEnv {
+    let mut m = MatchEnv::new(&Atmosphere::new(24.0, 760.0, 55.0, ballpark.elevation()), Wind::CALM, ballpark.field(), rules, tuning.params.clone());
+    m.ball = tuning.ball;
+    m.batted_flight.aero.cd0 *= drag;
+    m
+}
+
+/// `bm park --balls FILE`: measured batted balls flown through the park, in place of games.
+///
+/// Lines are `exit_speed_mph,launch_angle_deg,spray_deg,batter_sign,...` as the bm-physics
+/// `flight_check` example reads them (spray + toward right field, sign +1 for a right-handed
+/// batter; further columns are ignored, a line that does not parse is skipped). A line of
+/// exactly seven numbers carries its own weather in columns 5-7: temperature (C) and the
+/// wind's x and y (m/s, x toward right field, y toward centre field); other balls fly in the
+/// game-average weather. Each ball leaves the contact point (0, 0.6, 0.9) m with `ev_shift`
+/// mph added to its exit speed and the spin of Nathan's Statcast regressions, as in
+/// `flight_check`: backspin -763 + 120 LA + 21 spray sign, sidespin -849 sign - 94 spray rpm.
+/// It flies with the game's own batted-ball model, step and park geometry, so the count of
+/// home runs depends on the park, the weather and the measured balls only, not on the
+/// engine's batters.
+pub fn park_balls(
+    level: &str,
+    ballpark: &bm_world::league::Ballpark,
+    balls: &std::path::Path,
+    ev_shift: f64,
+    tuning: &Tuning,
+    drag: f64,
+    json: Option<&std::path::Path>,
+) {
+    let (_, rules) = leagues(level).unwrap_or_else(|| panic!("unknown level '{level}'"));
+    let m = park_env(ballpark, rules, tuning, drag);
+    let text = std::fs::read_to_string(balls).unwrap_or_else(|e| panic!("{}: {e}", balls.display()));
+    let (n, hr, wall) = fly_balls(&m, ballpark.elevation(), &text, ev_shift);
+    report_balls(ballpark, level, balls, ev_shift, (n, hr, wall), json);
+}
+
+/// Fly the balls of `text` (the lines [`park_balls`] reads) through the park of `m`, whose
+/// elevation is `elevation` m: balls flown, home runs, and balls off the wall on the fly.
+fn fly_balls(m: &MatchEnv, elevation: f64, text: &str, ev_shift: f64) -> (usize, usize, usize) {
+    let rho = Atmosphere::new(24.0, 760.0, 55.0, elevation).air_density();
+    let mut path = BattedPath::default();
+    let (mut n, mut hr, mut wall) = (0usize, 0usize, 0usize);
+    for line in text.lines() {
+        let f: Vec<f64> = line.split(',').map_while(|x| x.trim().parse().ok()).collect();
+        if f.len() < 4 {
+            continue;
+        }
+        let (ev, la, spray, sign) = (f[0], f[1], f[2], f[3]);
+        let mut flight = m.batted_flight;
+        if let &[_, _, _, _, temp, wx, wy] = f.as_slice() {
+            flight.k *= Atmosphere::new(temp, 760.0, 55.0, elevation).air_density() / rho;
+            flight.wind = Wind { velocity: Vec3::new(wx, wy, 0.0), min_height: 0.0 };
+        }
+        let mut sim = BattedSim::new(&flight, &m.ball, &m.park);
+        sim.dt = bm_engine::BATTED_DT;
+        sim.sample_dt = bm_engine::BATTED_SAMPLE_DT;
+        let (th, ph) = (la.to_radians(), spray.to_radians());
+        let wb = -763.0 + 120.0 * la + 21.0 * spray * sign;
+        let ws = -849.0 * sign - 94.0 * spray;
+        let start = BallState::new(
+            Vec3::new(0.0, 0.6, 0.9),
+            velocity_from_angles((ev + ev_shift) * MPH, th, ph),
+            spin_from_components(th, ph, wb * RPM, ws * RPM, 0.0),
+        );
+        sim.run(start, &mut path);
+        n += 1;
+        if path.is_home_run() {
+            hr += 1;
+        } else if path.wall.is_some_and(|w| path.landing.is_none_or(|l| l.t > w.t)) {
+            wall += 1;
+        }
+    }
+    (n, hr, wall)
+}
+
+/// Print the result of [`park_balls`] and write it as JSON.
+fn report_balls(
+    ballpark: &bm_world::league::Ballpark,
+    level: &str,
+    balls: &std::path::Path,
+    ev_shift: f64,
+    (n, hr, wall): (usize, usize, usize),
+    json: Option<&std::path::Path>,
+) {
+    let f = &ballpark.fence_m;
+    let w = &ballpark.wall_m;
+    println!(
+        "park: fence {:.1}/{:.1}/{:.1}/{:.1}/{:.1} m, wall {:.1}/{:.1}/{:.1} m, elevation {:.0} m; {n} measured balls from {}, exit speed {ev_shift:+.1} mph",
+        f[0],
+        f[1],
+        f[2],
+        f[3],
+        f[4],
+        w[0],
+        w[1],
+        w[2],
+        ballpark.elevation(),
+        balls.display()
+    );
+    println!("  home runs {hr} ({:.3} per 100 balls), off the wall on the fly {wall}", 100.0 * hr as f64 / n.max(1) as f64);
+    if let Some(path) = json {
+        let doc = serde_json::json!({
+            "level": level, "fence_m": f, "wall_m": w, "elevation_m": ballpark.elevation(),
+            "balls": n, "ev_shift_mph": ev_shift, "home_runs": hr, "wall_on_fly": wall,
         });
         std::fs::write(path, serde_json::to_string_pretty(&doc).expect("json")).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     }
@@ -491,5 +599,37 @@ pub fn run(level: &str, talent: Talent, foreign: Talent, games: usize, seed: u64
             env.clubs.clone()
         };
         against_mlb(&domestic, &v);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bm_engine::ModelParams;
+
+    fn env() -> MatchEnv {
+        MatchEnv::new(
+            &Atmosphere::new(24.0, 760.0, 55.0, 0.0),
+            Wind::CALM,
+            Park::symmetric(100.0, 115.0, 122.0, 2.5),
+            Rules::mlb_2025(),
+            ModelParams::default(),
+        )
+    }
+
+    #[test]
+    fn measured_balls_skip_headers_and_carry_their_own_weather() {
+        let m = env();
+        // A crushed fly ball to centre goes out, a ground ball does not, the header is skipped,
+        // and the same fly ball into a 15 m/s wind blowing in from centre stays in the park.
+        let text = "exit_speed,launch_angle,spray,sign\n110,28,0,1,431,home_run,BAL\n95,-5,10,-1\n110,28,0,1,24,0,-15\n";
+        assert_eq!(fly_balls(&m, 0.0, text, 0.0), (3, 1, 0));
+    }
+
+    #[test]
+    fn exit_speed_shift_applies_to_every_ball() {
+        let m = env();
+        assert_eq!(fly_balls(&m, 0.0, "95,28,0,1\n", 0.0).1, 0);
+        assert_eq!(fly_balls(&m, 0.0, "95,28,0,1\n", 15.0).1, 1);
     }
 }

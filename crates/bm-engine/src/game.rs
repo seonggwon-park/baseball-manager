@@ -17,8 +17,8 @@ use bm_physics::{BattedPath, BattedSim, Vec3, BASE_PATH};
 use std::sync::Arc;
 
 /// Integration step and sample spacing for batted balls, s.
-const BATTED_DT: f64 = 0.02;
-const BATTED_SAMPLE_DT: f64 = 0.06;
+pub const BATTED_DT: f64 = 0.02;
+pub const BATTED_SAMPLE_DT: f64 = 0.06;
 /// Spray angle (rad) beyond which a ball launched below `OBVIOUS_FOUL_LAUNCH` (rad)
 /// cannot come back fair or be caught.
 const OBVIOUS_FOUL_SPRAY: f64 = 1.0;

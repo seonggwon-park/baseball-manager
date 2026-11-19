@@ -15,7 +15,7 @@ pub use batting::{Approach, BattedInfo, Miss, Swing, SwingShape};
 pub use fielding::{Alignment, InfieldDepth, OutfieldDepth, Shift};
 pub use game::{
     play_game, play_game_styled, Auto, BatLine, DefenseOrders, GameEvent, GameResult, GameSim, ManagerStyle, NoObserver, Observer, OffenseOrders, OrderError,
-    PaEvent, PaOutcome, PitchEvent, PitchLine, PitchResult, Situation, StealOrder, Step, Substitution, Team, TeamBox,
+    PaEvent, PaOutcome, PitchEvent, PitchLine, PitchResult, Situation, StealOrder, Step, Substitution, Team, TeamBox, BATTED_DT, BATTED_SAMPLE_DT,
 };
 pub use params::ModelParams;
 pub use pitching::{MatchEnv, Thrown};
