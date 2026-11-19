@@ -1,5 +1,5 @@
 {
- "_comment": "Development and aging of players, in standard deviations of the major-league attribute distribution per year of age. drift[i] applies in the year after a birthday at age from_age + i. growth[i] is the share of the gap to the player's potential he closes in that year. remaining_growth[i] is the mean gap to the peak at that age when players are created (Lichtman 2009, survivor-corrected delta method: +32 runs per 500 PA from 21 to the peak, about 2.1 standard deviations). Each group lists the evidence behind its curve (docs/research/world/aging.md); 'assumption' marks curves without published data. growth_delay: years by which a group's growth towards the ceiling comes later than the others'. noise: the groups' yearly spreads (sources in each basis) scaled by 0.731, fitted (2026-11-16) so that the levels keep their spread over decades; the mind's drift is fitted the same way. Edit freely.",
+ "_comment": "Development and aging of players, in standard deviations of the major-league attribute distribution per year of age. drift[i] applies in the year after a birthday at age from_age + i. growth[i] is the share of the gap to the player's potential he closes in that year. remaining_growth[i] is the mean gap to the peak at that age when players are created (Lichtman 2009, survivor-corrected delta method: +32 runs per 500 PA from 21 to the peak, about 2.1 standard deviations). Each group lists the evidence behind its curve (docs/research/world/aging.md); 'assumption' marks curves without published data. growth_delay: years by which a group's growth towards the ceiling comes later than the others'. decline_spread: how much players differ in how fast they decline (hitters, pitchers): every decline of a player (the negative drifts of his attributes, his pitch grades and his ceiling) is multiplied by exp(s*g - s*s/2), g his hidden growth attribute (a standard score), so that the factor averages 1. decline_spread, the growth_delay of the velocity and stuff groups and the size of the stuff, command and stamina declines (0.83 of the earlier assumption) were fitted (2026-11-19) together with the careers and the market, also to the shares of playing time at 23 and younger and at 34 and older in the majors and in Triple-A (MLB Stats API 2025-2026, docs/research/world/levels.md 4.1). noise: the groups' yearly spreads (sources in each basis) scaled by 0.731, fitted (2026-11-16) so that the levels keep their spread over decades; the mind's drift is fitted the same way. Edit freely.",
  "from_age": 16,
  "growth": [
   0.25,
@@ -66,6 +66,10 @@
   0.0
  ],
  "group_spread": 0.092,
+ "decline_spread": {
+  "hitters": 0.5795,
+  "pitchers": 0.9168
+ },
  "groups": {
   "velocity": {
    "attrs": [
@@ -104,7 +108,8 @@
     -0.2
    ],
    "noise": 0.219,
-   "basis": "Petti & Zimmerman 2012 (delta method, BIS fastballs 2002-2011): within 0.5 mph of peak through 28, about -1 mph by 29, -3.75 mph by 38; 1 SD = 2.2 mph. Year-to-year noise: assumption"
+   "growth_delay": 1.5568,
+   "basis": "Petti & Zimmerman 2012 (delta method, BIS fastballs 2002-2011): within 0.5 mph of peak through 28, about -1 mph by 29, -3.75 mph by 38; 1 SD = 2.2 mph. Year-to-year noise: assumption. growth_delay fitted (2026-11-19, see _comment)"
   },
   "power": {
    "attrs": [
@@ -415,25 +420,26 @@
     0.0,
     0.0,
     0.0,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331
    ],
    "noise": 0.11,
-   "basis": "Spin declines mildly with age, four-seam movement roughly constant (aging.md 2B); size an assumption. Pitch grades follow this group"
+   "growth_delay": 1.5568,
+   "basis": "Spin declines mildly with age, four-seam movement roughly constant (aging.md 2B); size an assumption, scaled by 0.83 and growth_delay fitted (2026-11-19, see _comment). Pitch grades follow this group"
   },
   "command": {
    "attrs": [
@@ -455,26 +461,26 @@
     0.0,
     0.0,
     0.0,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04,
-    -0.04
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331,
+    -0.0331
    ],
    "noise": 0.146,
    "growth_delay": 3.3,
-   "basis": "Starters' walk rates are best near 26-30 and stay within 1 BB/9 of the best later (Petti 2012; aging.md 2C); size an assumption"
+   "basis": "Starters' walk rates are best near 26-30 and stay within 1 BB/9 of the best later (Petti 2012; aging.md 2C); size an assumption, scaled by 0.83 in the fit of 2026-11-19"
   },
   "hold": {
    "attrs": [
@@ -537,23 +543,23 @@
     0.0,
     0.0,
     0.0,
-    -0.08,
-    -0.08,
-    -0.08,
-    -0.08,
-    -0.08,
-    -0.08,
-    -0.08,
-    -0.08,
-    -0.08,
-    -0.08,
-    -0.08,
-    -0.08,
-    -0.08,
-    -0.08
+    -0.0662,
+    -0.0662,
+    -0.0662,
+    -0.0662,
+    -0.0662,
+    -0.0662,
+    -0.0662,
+    -0.0662,
+    -0.0662,
+    -0.0662,
+    -0.0662,
+    -0.0662,
+    -0.0662,
+    -0.0662
    ],
    "noise": 0.11,
-   "basis": "Assumption"
+   "basis": "Assumption; the size scaled by 0.83 in the fit of 2026-11-19"
   },
   "mind": {
    "attrs": [

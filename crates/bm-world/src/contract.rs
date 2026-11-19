@@ -1083,7 +1083,14 @@ mod tests {
         let ctx = Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people, contracts: &rules };
         offseason(&ctx, &mut pop, 2027, None, 3);
         check(&pop, 2028);
-        // The majors' payroll is of the order of the budgets: within a factor of two.
+        // The majors' payroll is of the order of the budgets, within a factor of two, in the
+        // world a game starts from: the first world after its history (careers.json, decision
+        // 2026-11-18). The first world's own contracts pay well under the budgets (0.4-0.6 of
+        // them in its first two seasons) until that history has settled it.
+        let mut pop = crate::career::new_world(&ctx, Date::new(2027, 2, 1), careers.history, 3);
+        check(&pop, 2027);
+        offseason(&ctx, &mut pop, 2027, None, 3);
+        check(&pop, 2028);
         let budgets = Budgets::bundled();
         let rows = payrolls(&world, &pop, &rules, &budgets, 2028);
         let (pay, budget): (f64, f64) =

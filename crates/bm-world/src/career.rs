@@ -662,6 +662,11 @@ const LINEUP: [Option<Position>; 9] = [
 /// Pick the regulars (and a second catcher) among `hitters`: the indices of the players
 /// for each slot of `slots`.
 fn regulars(hitters: &[Player], slots: &[Option<Position>]) -> Vec<usize> {
+    let refs: Vec<&Player> = hitters.iter().collect();
+    lineup_of(&refs, slots)
+}
+
+fn lineup_of(hitters: &[&Player], slots: &[Option<Position>]) -> Vec<usize> {
     if hitters.len() < slots.len() {
         // Not enough players for every slot: the best ones, in order.
         return (0..hitters.len()).collect();
@@ -759,9 +764,26 @@ fn take_level(pool: &mut Vec<Player>, size: usize, pinned: &BTreeSet<u32>) -> Ve
     let mut staff = staff_order(pitchers).into_iter();
     out.extend(staff.by_ref().take(n_p.saturating_sub(pin_p)));
     pool.extend(staff);
+    // The lineup (and a second catcher) is chosen among the pinned position players and the
+    // others together: the others it needs come first, best at their place first, then the
+    // best of the rest by value. (Choosing the first `need` places of the batting order among
+    // the others alone left a Double-A club the regular a major-league club had no place for.)
     let need = n_h.saturating_sub(pin_h);
-    let slots: Vec<Option<Position>> = LINEUP.iter().copied().chain([Some(Position::Catcher)]).take(need).collect();
-    let picked: BTreeSet<usize> = regulars(&hitters, &slots).into_iter().collect();
+    let slots: Vec<Option<Position>> = LINEUP.iter().copied().chain([Some(Position::Catcher)]).collect();
+    let picked: BTreeSet<usize> = {
+        let pinned_h: Vec<&Player> = out.iter().filter(|p| !p.is_pitcher()).collect();
+        let n_pin = pinned_h.len();
+        let cands: Vec<&Player> = pinned_h.into_iter().chain(hitters.iter()).collect();
+        let places = &slots[..slots.len().min(cands.len())];
+        let mut wanted: Vec<(f64, usize)> = lineup_of(&cands, places)
+            .into_iter()
+            .zip(places)
+            .filter(|(j, _)| *j >= n_pin)
+            .map(|(j, &s)| (ability::at_position(cands[j], s), j - n_pin))
+            .collect();
+        wanted.sort_by(|a, b| b.0.total_cmp(&a.0));
+        wanted.into_iter().take(need).map(|(_, i)| i).collect()
+    };
     let (mut chosen, mut others): (Vec<Player>, Vec<Player>) = (Vec::new(), Vec::new());
     for (i, p) in hitters.into_iter().enumerate() {
         if picked.contains(&i) {
@@ -828,13 +850,93 @@ fn age_cost(age: f64, per_year: f64) -> f64 {
     per_year * (age - 30.0).max(0.0)
 }
 
+/// The players of one kind an organisation has kept so far, as its placement will place them:
+/// the top level's places go to those who can play nowhere else (pinned there, or past every
+/// lower level's age limit) and then to the best by their ability now; everyone else must fit
+/// below, on levels 1 to k for those who can go no lower than k.
+struct Fit {
+    /// Places on the top level, and on levels 1 to k for every k (0 for k = 0).
+    top: usize,
+    below: Vec<usize>,
+    /// Players who must play at the top level: pinned there, or past every lower level's age
+    /// limit.
+    must: usize,
+    /// Players pinned to a lower level, by level.
+    pinned: Vec<usize>,
+    /// The others, (ability now, lowest level), best first.
+    free: Vec<(f64, usize)>,
+}
+
+impl Fit {
+    fn new(caps: &[(usize, usize)], pitchers: bool) -> Self {
+        let of = |c: &(usize, usize)| if pitchers { c.0 } else { c.1 };
+        let below = caps
+            .iter()
+            .enumerate()
+            .scan(0, |acc, (k, c)| {
+                if k > 0 {
+                    *acc += of(c);
+                }
+                Some(*acc)
+            })
+            .collect();
+        Fit { top: caps.first().map_or(0, of), below, must: 0, pinned: vec![0; caps.len()], free: Vec::new() }
+    }
+
+    fn fits(&self) -> bool {
+        if self.must > self.top {
+            return false;
+        }
+        let mut at = self.pinned.clone();
+        for &(_, d) in self.free.iter().skip(self.top - self.must) {
+            at[d] += 1;
+        }
+        let mut n = 0;
+        (1..at.len()).all(|k| {
+            n += at[k];
+            n <= self.below[k]
+        })
+    }
+
+    /// Adds a player who can go no lower than `level` (pinned there if `pinned`) if everyone
+    /// still fits.
+    fn add(&mut self, ability: f64, level: usize, pinned: bool) -> bool {
+        if level == 0 {
+            self.must += 1;
+            if self.fits() {
+                return true;
+            }
+            self.must -= 1;
+        } else if pinned {
+            self.pinned[level] += 1;
+            if self.fits() {
+                return true;
+            }
+            self.pinned[level] -= 1;
+        } else {
+            let at = self.free.partition_point(|e| e.0 >= ability);
+            self.free.insert(at, (ability, level));
+            if self.fits() {
+                return true;
+            }
+            self.free.remove(at);
+        }
+        false
+    }
+}
+
 /// Split `players` into the ones an organisation keeps and the ones it lets go, best first
 /// by `value`. Every level takes players up to an age (`deepest` gives the lowest level a
 /// player may still play at, `None` if none), so a player is kept only if everyone kept so
-/// far can still be placed: for every level k, the players who can go no lower than k fit
-/// on the levels down to k. `caps` holds the pitchers and position players of each level;
-/// at least `catchers` catchers and `starters` pitchers with a starter's stamina are kept;
-/// `pinned` players (with their level) always are, and `protected` ones go before the rest.
+/// far can still be placed as the placement places them ([`Fit`]): the best of them by their
+/// ability now on the top level, and for every lower level k, those who can go no lower than
+/// k on levels 1 to k. (Counting the top level's places for everyone let an organisation keep
+/// more veterans and Triple-A depth than its lower levels could hold, and the placement then
+/// had to send the surplus up, over better young players: 14 % of the majors' regulars spent
+/// the next season in Double-A.) `caps` holds the pitchers and position players of each
+/// level; at least `catchers` catchers and `starters` pitchers with a starter's stamina are
+/// kept; `pinned` players (with their level) always are, and `protected` ones go before the
+/// rest.
 fn keep(
     players: Vec<Player>,
     value: &dyn Fn(&Player) -> f64,
@@ -844,29 +946,14 @@ fn keep(
     pinned: &BTreeMap<u32, usize>,
     protected: &BTreeSet<u32>,
 ) -> (Vec<Player>, Vec<Player>) {
-    let n = caps.len();
-    let cum = |pitchers: bool| -> Vec<usize> {
-        caps.iter()
-            .scan(0, |acc, &(p, h)| {
-                *acc += if pitchers { p } else { h };
-                Some(*acc)
-            })
-            .collect()
-    };
-    let (cum_p, cum_h) = (cum(true), cum(false));
-    let (mut cnt_p, mut cnt_h) = (vec![0usize; n], vec![0usize; n]);
+    let (mut fit_p, mut fit_h) = (Fit::new(caps, true), Fit::new(caps, false));
     let mut scored: Vec<(f64, Player)> = players.into_iter().map(|p| (if pinned.contains_key(&p.id) { f64::INFINITY } else { value(&p) }, p)).collect();
     scored.sort_by(|a, b| b.0.total_cmp(&a.0));
     let mut accept = |p: &Player| -> bool {
-        let Some(d) = pinned.get(&p.id).copied().or_else(|| deepest(p)) else { return false };
-        let (cnt, cum) = if p.is_pitcher() { (&mut cnt_p, &cum_p) } else { (&mut cnt_h, &cum_h) };
-        if (d..n).any(|k| cnt[k] + 1 > cum[k]) {
-            return false;
-        }
-        for c in cnt.iter_mut().skip(d) {
-            *c += 1;
-        }
-        true
+        let pin = pinned.get(&p.id).copied();
+        let Some(d) = pin.or_else(|| deepest(p)) else { return false };
+        let fit = if p.is_pitcher() { &mut fit_p } else { &mut fit_h };
+        fit.add(ability::value(p), d, pin.is_some())
     };
     let (mut kept, mut gone) = (Vec::new(), Vec::new());
     // Pinned and protected players, then catchers and starters up to their minimums, then
@@ -2973,6 +3060,95 @@ mod tests {
         assert_eq!(assign(&[vec![10.0, 9.0], vec![8.0, 1.0]]), vec![1, 0]);
         // Three slots, four players: 4 + 3 + 5 = 12 beats every other choice.
         assert_eq!(assign(&[vec![5.0, 4.0, 0.0, 0.0], vec![5.0, 0.0, 3.0, 0.0], vec![5.0, 0.0, 0.0, 2.0]]), vec![1, 2, 0]);
+    }
+
+    #[test]
+    fn a_level_with_pinned_players_takes_the_best_of_the_others() {
+        // Nine pinned average regulars fill every place in the lineup; the four places left
+        // go to the four best hitters, outfielders, and not to the best catcher and infielders
+        // of the rest (the old rule filled them with the first four places of the batting
+        // order, catcher first, and left a star outfielder for the level below).
+        let mut rng = Rng::new(5);
+        let mut pool = Vec::new();
+        let mut pinned = BTreeSet::new();
+        let average = [
+            Some(Position::Catcher),
+            Some(Position::First),
+            Some(Position::Second),
+            Some(Position::Third),
+            Some(Position::Short),
+            Some(Position::Left),
+            Some(Position::Center),
+            Some(Position::Right),
+            Some(Position::First),
+        ];
+        for (i, pos) in average.into_iter().enumerate() {
+            let mut p = position_player(&mut rng, i as u32, pos, &Talent::MAJOR);
+            p.attrs = Default::default();
+            pinned.insert(p.id);
+            pool.push(p);
+        }
+        let mut stars = Vec::new();
+        for (i, pos) in [Position::Left, Position::Center, Position::Right, Position::Left].into_iter().enumerate() {
+            let mut p = position_player(&mut rng, 100 + i as u32, Some(pos), &Talent::MAJOR);
+            p.attrs = Default::default();
+            for a in [crate::attr::Attr::Power, crate::attr::Attr::Contact, crate::attr::Attr::Timing] {
+                p.attrs[a] = 0.6;
+            }
+            stars.push(p.id);
+            pool.push(p);
+        }
+        for (i, pos) in [Position::Catcher, Position::Second, Position::Third, Position::Short, Position::Catcher, Position::Second].into_iter().enumerate() {
+            let mut p = position_player(&mut rng, 200 + i as u32, Some(pos), &Talent::MAJOR);
+            p.attrs = Default::default();
+            if pos != Position::Catcher {
+                for a in [crate::attr::Attr::Power, crate::attr::Attr::Contact, crate::attr::Attr::Timing] {
+                    p.attrs[a] = -1.0;
+                }
+            }
+            pool.push(p);
+        }
+        for i in 0..13 {
+            pool.push(pitcher(&mut rng, 300 + i, if i < 6 { Role::Starter } else { Role::Reliever }, &Talent::MAJOR));
+        }
+        let taken: BTreeSet<u32> = take_level(&mut pool, 26, &pinned).iter().map(|p| p.id).collect();
+        assert!(pinned.iter().all(|id| taken.contains(id)));
+        assert!(stars.iter().all(|id| taken.contains(id)), "taken {taken:?}");
+        assert_eq!(taken.len(), 26);
+    }
+
+    #[test]
+    fn an_organisation_keeps_no_more_veterans_than_the_levels_below_the_top_hold() {
+        // Three levels of two position players each. Two young hitters (who may still go two
+        // levels down) are the best and take the top level; four veterans may go no lower
+        // than the second level, which holds two of them. The two veterans the organisation
+        // values least go (the old count gave the veterans the top level's places too, kept
+        // all six, and the placement then sent two veterans up and the young players down).
+        let mut rng = Rng::new(9);
+        let hitter = |rng: &mut Rng, id: u32, level: f32| {
+            let mut p = position_player(rng, id, Some(Position::Left), &Talent::MAJOR);
+            p.attrs = Default::default();
+            for a in [crate::attr::Attr::Power, crate::attr::Attr::Contact, crate::attr::Attr::Timing] {
+                p.attrs[a] = level;
+            }
+            p
+        };
+        let young = [hitter(&mut rng, 1, 1.0), hitter(&mut rng, 2, 0.9)];
+        let veterans = [hitter(&mut rng, 3, 0.0), hitter(&mut rng, 4, -0.2), hitter(&mut rng, 5, -0.4), hitter(&mut rng, 6, -0.6)];
+        let worth: BTreeMap<u32, f64> = [(1, 10.0), (2, 9.0), (3, 5.0), (4, 4.0), (5, 3.0), (6, 2.0)].into_iter().collect();
+        let players: Vec<Player> = young.into_iter().chain(veterans).collect();
+        let (kept, gone) = keep(
+            players,
+            &|p: &Player| worth[&p.id],
+            &[(0, 2), (0, 2), (0, 2)],
+            (0, 0),
+            &|p: &Player| Some(if p.id <= 2 { 2 } else { 1 }),
+            &BTreeMap::new(),
+            &BTreeSet::new(),
+        );
+        let ids = |v: &[Player]| v.iter().map(|p| p.id).collect::<BTreeSet<u32>>();
+        assert_eq!(ids(&kept), [1, 2, 3, 4].into_iter().collect());
+        assert_eq!(ids(&gone), [5, 6].into_iter().collect());
     }
 
     #[test]

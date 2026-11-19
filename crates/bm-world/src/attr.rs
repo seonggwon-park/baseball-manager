@@ -317,7 +317,9 @@ pub struct Hidden {
     pub temperament: f32,
     /// Positive = smaller than usual disadvantage against same-sided opponents.
     pub platoon: f32,
-    /// Positive = develops early and declines early; negative = late bloomer who lasts.
+    /// How fast he declines with age (standard score): every decline of his attributes is
+    /// scaled by a factor of his own ([`crate::develop::AgingTable::decline_rate`]); positive =
+    /// declines faster, negative = lasts.
     pub growth: f32,
     /// Potential ability, on the scale of [`crate::ability`] (not a standard score).
     pub potential: f32,

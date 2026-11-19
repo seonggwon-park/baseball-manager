@@ -3,8 +3,9 @@
 //! Every attribute belongs to a group with its own aging drift by age (for example, a
 //! fastball loses about 3.75 mph between 26 and 38, sprint speed 0.14 ft/s a year from
 //! 23). Before his peak a player also closes a share of the gap to his potential each
-//! year. Each year adds noise of the group's size. The curves are in the editable file
-//! `data/people/aging.json`, each with the evidence behind it
+//! year. Each year adds noise of the group's size. Players decline at rates of their own:
+//! every decline is scaled by a factor set by the hidden growth attribute. The curves are
+//! in the editable file `data/people/aging.json`, each with the evidence behind it
 //! (`docs/research/world/aging.md`).
 
 use crate::attr::{Attr, Attributes, N_ATTR};
@@ -34,7 +35,17 @@ struct AgingFile {
     /// Spread of a player's growth between attribute groups (relative standard deviation).
     #[serde(default = "quarter")]
     group_spread: f32,
+    /// Spread of players' own rates of decline, position players and pitchers.
+    #[serde(default)]
+    decline_spread: DeclineSpread,
     groups: BTreeMap<String, GroupFile>,
+}
+
+/// Spread (log standard deviation) of the factor on a player's declines.
+#[derive(Clone, Copy, Debug, Default, Deserialize)]
+struct DeclineSpread {
+    hitters: f32,
+    pitchers: f32,
 }
 
 fn quarter() -> f32 {
@@ -48,6 +59,7 @@ pub struct AgingTable {
     growth: Vec<f32>,
     remaining: Vec<f32>,
     group_spread: f32,
+    decline_spread: DeclineSpread,
     /// Per attribute: drift by age and yearly noise.
     drift: Vec<Vec<f32>>,
     noise: [f32; N_ATTR],
@@ -100,6 +112,7 @@ impl AgingTable {
             growth: f.growth,
             remaining: f.remaining_growth,
             group_spread: f.group_spread,
+            decline_spread: f.decline_spread,
             drift,
             noise,
             group_of,
@@ -138,6 +151,17 @@ impl AgingTable {
     /// Mean gap between a player's current attributes and his peak at `age`.
     pub fn remaining_growth(&self, age: f64) -> f32 {
         at(&self.remaining, self.from_age, age)
+    }
+
+    /// The factor on every decline of `player` (the negative drifts of his attributes and
+    /// pitch grades): exp(s g - s^2 / 2) for his hidden growth attribute g, a standard score,
+    /// and the spread s of his kind, so that the factor averages 1 over players. Players differ
+    /// in how they age more than one player's career varies (Hakes & Turner 2011), and
+    /// pitchers who keep their velocity hold their fielding-independent pitching from 21 to 38
+    /// (Zimmerman 2012): with one curve for everyone, too few veterans stay good.
+    pub fn decline_rate(&self, player: &Player) -> f32 {
+        let s = if player.is_pitcher() { self.decline_spread.pitchers } else { self.decline_spread.hitters };
+        (s * player.hidden.growth - s * s / 2.0).exp()
     }
 }
 
@@ -295,10 +319,12 @@ pub fn develop_idle(player: &mut Player, potential: &mut Potential, age: f64, ta
 
 fn year(player: &mut Player, potential: &mut Potential, age: f64, table: &AgingTable, rng: &mut Rng, grows: bool) {
     let grow = if grows { 1.0 } else { 0.0 };
+    let rate = table.decline_rate(player);
+    let own = |drift: f32| if drift < 0.0 { drift * rate } else { drift };
     let stuff_gap = (potential.attrs[Attr::Stuff] - player.attrs[Attr::Stuff]).max(0.0);
     for a in Attr::ALL {
         let gap = (potential.attrs[a] - player.attrs[a]).max(0.0);
-        let shift = table.drift(a, age) + table.noise(a) * rng.gauss(0.0, 1.0) as f32;
+        let shift = own(table.drift(a, age)) + table.noise(a) * rng.gauss(0.0, 1.0) as f32;
         potential.attrs[a] = (potential.attrs[a] + shift).clamp(-6.0, 4.0);
         player.attrs[a] = (player.attrs[a] + grow * table.growth_of(a, age) * gap + shift).clamp(-6.0, 4.0);
     }
@@ -306,7 +332,7 @@ fn year(player: &mut Player, potential: &mut Potential, age: f64, table: &AgingT
     let growth = grow * at(&table.growth, table.from_age, age - table.stuff_delay as f64);
     if let Some(p) = player.pitching.as_mut() {
         for pitch in &mut p.pitches {
-            let change = growth * stuff_gap + at(&table.stuff_drift, table.from_age, age) + table.stuff_noise * rng.gauss(0.0, 1.0) as f32;
+            let change = growth * stuff_gap + own(at(&table.stuff_drift, table.from_age, age)) + table.stuff_noise * rng.gauss(0.0, 1.0) as f32;
             pitch.grade = (pitch.grade + change).clamp(-6.0, 4.0);
         }
     }
@@ -368,6 +394,45 @@ mod tests {
         let late = mean_change(Attr::Power, 32, 36, spread::BAT_SPEED_MPH, false) / 4.0;
         assert!(early.abs() < 0.25, "bat speed before 28: {early:.2} mph");
         assert!((-0.4..-0.22).contains(&late), "bat speed after 31: {late:.2} mph a year");
+    }
+
+    #[test]
+    fn players_decline_at_rates_of_their_own() {
+        // The bundled curves without noise, with decline spreads of 0.6 (position players)
+        // and 0.9 (pitchers).
+        let mut file: serde_json::Value = serde_json::from_str(AGING).unwrap();
+        file["decline_spread"] = serde_json::json!({"hitters": 0.6, "pitchers": 0.9});
+        for g in file["groups"].as_object_mut().unwrap().values_mut() {
+            g["noise"] = serde_json::json!(0.0);
+        }
+        let t = AgingTable::from_json(&file.to_string()).unwrap();
+        let mut rng = Rng::new(6);
+        let base = position_player(&mut rng, 1, Some(Position::Center), &Talent::MAJOR);
+        let year_at = |growth: f32, age: f64, attr: Attr| {
+            let mut p = base.clone();
+            p.hidden.growth = growth;
+            let mut ceiling = Potential { attrs: p.attrs };
+            develop(&mut p, &mut ceiling, age, &t, &mut Rng::new(1));
+            (p.attrs[attr] - base.attrs[attr]) as f64
+        };
+        // At 33 bat speed falls 0.12 SD a year on average: by exp(0.6 g - 0.18) times that.
+        let (fast, slow) = (year_at(1.0, 33.0, Attr::Power), year_at(-1.0, 33.0, Attr::Power));
+        let mean = t.drift(Attr::Power, 33.0) as f64;
+        assert!((fast - mean * (0.6f64 - 0.18).exp()).abs() < 1e-4, "fast {fast:.4}");
+        assert!((slow - mean * (-0.6f64 - 0.18).exp()).abs() < 1e-4, "slow {slow:.4}");
+        // Gains are everyone's: the mind's drift before 32 is the same for both.
+        assert!((year_at(1.0, 25.0, Attr::Composure) - year_at(-1.0, 25.0, Attr::Composure)).abs() < 1e-6);
+        // The factor averages 1 over players.
+        let mut p = base.clone();
+        let n = 20000;
+        let mean_rate: f64 = (0..n)
+            .map(|_| {
+                p.hidden.growth = rng.gauss(0.0, 1.0) as f32;
+                t.decline_rate(&p) as f64
+            })
+            .sum::<f64>()
+            / n as f64;
+        assert!((mean_rate - 1.0).abs() < 0.02, "mean factor {mean_rate:.3}");
     }
 
     #[test]

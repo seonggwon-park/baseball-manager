@@ -171,6 +171,9 @@ struct LevelAges {
     /// Mean and standard deviation.
     batters: (f64, f64),
     pitchers: (f64, f64),
+    /// Shares of the playing time at 23 or younger and at 34 or older.
+    batter_tails: (f64, f64),
+    pitcher_tails: (f64, f64),
     /// Mean weight of a player in each role of the roster he started the season on: lineup,
     /// bench, reserve position player, starter, reliever, reserve pitcher.
     roles: [f64; 6],
@@ -234,9 +237,23 @@ fn level_ages(pop: &bm_world::Population, season: &Season) -> BTreeMap<String, L
         let m = v.iter().map(|x| x.0 * x.1).sum::<f64>() / w;
         (m, (v.iter().map(|x| x.1 * (x.0 - m).powi(2)).sum::<f64>() / w).sqrt())
     };
+    let tails = |v: &[(f64, f64)]| {
+        let w: f64 = v.iter().map(|x| x.1).sum();
+        let share = |keep: &dyn Fn(f64) -> bool| v.iter().filter(|x| keep(x.0)).map(|x| x.1).sum::<f64>() / w;
+        (share(&|a| a <= 23.0), share(&|a| a >= 34.0))
+    };
     acc.into_iter()
         .filter(|(_, a)| a.b.iter().any(|x| x.1 > 0.0) && a.p.iter().any(|x| x.1 > 0.0))
-        .map(|(l, a)| (l.to_string(), LevelAges { batters: moments(&a.b), pitchers: moments(&a.p), roles: a.roles.map(|(w, n)| w / n.max(1.0)) }))
+        .map(|(l, a)| {
+            let ages = LevelAges {
+                batters: moments(&a.b),
+                pitchers: moments(&a.p),
+                batter_tails: tails(&a.b),
+                pitcher_tails: tails(&a.p),
+                roles: a.roles.map(|(w, n)| w / n.max(1.0)),
+            };
+            (l.to_string(), ages)
+        })
         .collect()
 }
 
@@ -346,6 +363,10 @@ pub fn run(tuning: &Tuning, seed: u64, threads: usize, o: &Options) {
                             v["age_b_sd"] = a.batters.1.into();
                             v["age_p"] = a.pitchers.0.into();
                             v["age_p_sd"] = a.pitchers.1.into();
+                            v["age_b_young"] = a.batter_tails.0.into();
+                            v["age_b_old"] = a.batter_tails.1.into();
+                            v["age_p_young"] = a.pitcher_tails.0.into();
+                            v["age_p_old"] = a.pitcher_tails.1.into();
                             v["roles"] = serde_json::json!(a.roles);
                         }
                         (k, v)

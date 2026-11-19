@@ -9,13 +9,13 @@
   "mlb": {
    "premium": 0.1,
    "max_bidders": 4,
-   "home": 0.1177,
+   "home": 0.0916,
    "taste": 0.1,
    "slack": 0.05,
    "bench_share": 0.1,
    "displaced": 0.3,
    "depth_signings": 8,
-   "retirement": 0.4429,
+   "retirement": 0.5031,
    "qualifying_offer": 0.9,
    "revenue_sharing_payees": 15,
    "compensation_guarantee": 50000000,
@@ -30,9 +30,9 @@
    "bench_share": 0.1,
    "displaced": 0.3,
    "depth_signings": 4,
-   "retirement": 0.4406,
+   "retirement": 0.423,
    "declare": 0.0073,
-   "markup": 0.1759,
+   "markup": 0.1563,
    "abroad": 0.0,
    "basis": "The KBO market (stage 3), the same rules as the majors' (premium, home, taste, slack, bench share, depth signings, retirement factor; starting values) and declare: a player with the seasons for free agency declares it when the log of the pay he expects on the market (his price raised by the premium of the clubs that would want him as a regular; a bench player's share of it, not below the minimum; the minimum if no club wants him) over the pay his club would set for him, plus his taste, is above it. markup: a free agent's price over the club pay of his WAR, above the minimum (reserved players are paid below what the market pays, Scully 1974; FA contracts pay several times the players' last salaries, contracts_kbo.md 9.2). Measured, 2021-22 to 2025-26: 14-21 of 19-40 eligible players applied, 8-16 re-signed and 3-11 moved (contracts_kbo.md 9.1). home, declare, markup and retirement fitted with the careers and the other markets (2026-11-19); seeds 5-8: 15.8 eligible, 13.8 declared, 4.0 moved a year"
   },
@@ -45,9 +45,9 @@
    "bench_share": 0.1,
    "displaced": 0.3,
    "depth_signings": 4,
-   "retirement": 0.9034,
-   "declare": 0.432,
-   "markup": 0.1121,
+   "retirement": 0.8527,
+   "declare": 0.4271,
+   "markup": 0.0915,
    "abroad": 0.0,
    "basis": "The NPB market (stage 3), as the KBO's; the pay a player would get by staying is floored by the reduction limit. Measured, 2020-2025: 3-10 of about 105 qualified players declared a year; of the 42 who declared, 18 stayed, 20 moved within NPB and 4 went to the majors (contracts_npb.md 6A). home, declare, markup and retirement fitted with the careers and the other markets (2026-11-19); seeds 5-8: 8.0 declared a year, 34 % stayed, 64 % moved"
   }
@@ -89,8 +89,8 @@
     "basis": "Measured in the engine: wins above .500 against run differential, 120 major-league team seasons of the 30-offseason world (seeds 21-24); Pythagenpat at the same 9.13 runs a game gives 9.7"
    },
    "replacement": {
-    "hitter": -18.58,
-    "pitcher": -8.62,
+    "hitter": -9.93,
+    "pitcher": -7.61,
     "basis": "Runs per 162 games (ability::value: a position player every day, a pitcher over an average pitcher's share) of the median Triple-A player of the world, the freely available talent (decision 2026-11-18), measured on the world of the joint careers and market fit (2026-11-19; seeds 13-16, offseasons 16-30 after the 20 of the past; measured again on the final point: -18.14 and -8.48). On this scale a major-league season holds about 1,520 wins above replacement, 21 % of them pitchers' (seeds 5-8). FanGraphs' scale (1,000 WAR a season, 43 % to pitchers; Cameron 2013) gives -4.25 and -11.40 on the same world: the engine's major-league pitchers still differ too little (free-agent starters' WAR spread 0.42 against 1.83 for hitters), and on that scale every pitcher is priced alike and high (docs/contracts.md, known limits)"
    },
    "minimum": {
@@ -111,7 +111,7 @@
     "basis": "Weekly championship-season pay of a first minor-league contract and the minimum season lengths, 2023-2027 Minor League Basic Agreement Art. VII(A) and Art. VI(A)(1); the rookie scale for the two development squads"
    },
    "price_per_war": {
-    "by_year": {"2026": 3941252},
+    "by_year": {"2026": 3414924},
     "exponent": 1.26,
     "basis": "Free-agent pay above the minimum = price x WAR^exponent. The exponent fits FanGraphs' price per projected WAR by quality (Clemens, 2026: $7.4M for 0-1 WAR players, $8.6M for 1-2, $11.8M for 2+; contracts_markets.md 2A) at 0.5 and 3 WAR; on FanGraphs' WAR scale the 2026 price would be $9.4M. Fitted with the careers and the other markets (2026-11-19), then set again on the measured replacement levels so that the 30-offseason world's payroll meets its budgets (seeds 5-8: 1.00). The world then signs 129 major-league free agents a year (2021-22 to 2025-26: 157-187); at payroll 0.89 it signed 144: in this market the number of signings and the payroll cannot both be met"
    },
@@ -154,8 +154,8 @@
    },
    "runs_per_win": {"value": 10.18, "basis": "Pythagenpat (exponent = runs per game^0.287) at the KBO's 2025-2026 official 4.90 runs per team game"},
    "replacement": {
-    "hitter": -41.36,
-    "pitcher": -21.39,
+    "hitter": -40.91,
+    "pitcher": -19.44,
     "basis": "FanGraphs' way (Cameron 2013) on the KBO first teams of the same world: a .294 team over 144 games, 296.6 WAR a season, 57 % to position players (bench players at a tenth of a regular's time, pitchers by their share of the innings)"
    },
    "minimum": {
@@ -173,7 +173,7 @@
    },
    "seasons_for_fa": {"high_school": 8, "college": 7, "again": 4, "days": 145, "basis": "Bylaws Arts. 162-164 (from the end of the 2022 season)"},
    "pay": {
-    "by_year": {"2026": 193042396},
+    "by_year": {"2026": 198082030},
     "exponent": 1.26,
     "shift": -0.391,
     "basis": "Club-set pay of reserved players: minimum + scale x (WAR - shift)^exponent, the exponent of the major-league price. Shift and the first scale fit the 2026 average salary (rookies and foreigners excluded) of 1억 7,536만 and the average of each club's top 29 of 2억 8,750만 (KBO release 11861; contracts_kbo.md 9.3). The scale was fitted again with the careers and markets (2026-11-19) to the clubs' budgets: payroll 1.09 of budget on seeds 5-8"
@@ -212,7 +212,7 @@
    },
    "raise": {"rate": 0.037, "basis": "Players' association survey: average salary ¥41.89M in 2020 to ¥52.16M in 2026 (contracts_npb.md 6E)"},
    "runs_per_win": {"value": 7.91, "basis": "Pythagenpat at NPB's 2025-2026 official 3.44 runs per team game"},
-   "replacement": {"hitter": -40.42, "pitcher": -15.76, "basis": "As for kbo, on the NPB first teams: a .294 team over 143 games, 353.5 WAR a season"},
+   "replacement": {"hitter": -37.66, "pitcher": -14.88, "basis": "As for kbo, on the NPB first teams: a .294 team over 143 games, 353.5 WAR a season"},
    "minimum": {
     "by_year": {"2025": 4200000, "2026": 4200000},
     "basis": "支配下 minimum, 野球協約 2025 Art. 89 (the newest edition; no change found for 2026)"
@@ -222,7 +222,7 @@
     "basis": "育成 minimum, 育成規約 2014 Art. 7(2) (the newest edition)"
    },
    "pay": {
-    "by_year": {"2026": 26861404},
+    "by_year": {"2026": 26372737},
     "exponent": 1.26,
     "shift": -1.809,
     "basis": "As for kbo: the 2026 survey's average of ¥52.16M and median of ¥20M (Japanese registered players; contracts_npb.md 6E) for the shift and the first scale. NPB pays its farm players well above the minimum, hence the shift below replacement. The scale was fitted again with the careers and markets (2026-11-19): payroll 1.01 of budget on seeds 5-8"
