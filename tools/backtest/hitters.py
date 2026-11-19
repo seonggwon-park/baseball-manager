@@ -28,8 +28,9 @@ age factor 1 + (29 - age) x 0.006 under 29 and x 0.003 over 29 on every rate.
 Evaluation: hitters with at least 200 PA in 2026 and 100 in 2025; error weighted by 2026
 plate appearances, for strikeout, walk and home-run rates per PA, BABIP, ISO, OBP and SLG.
 
-usage: hitters.py POP_DIR DATA_DIR AGING.json OUT.json [TARGET]   (TARGET default 2026; 2025 is the
-  validation year used to choose the aging mode and the carry-over before looking at 2026)
+usage: [AGING=full|drift|none|world [WORLD_AGING=TABLE.json]] hitters.py POP_DIR DATA_DIR AGING.json OUT.json [TARGET]
+  (TARGET default 2026; 2025 is the validation year used to choose the aging mode and the
+  carry-over before looking at 2026; AGING=world: tools/backtest/world_aging.py --table)
   POP_DIR: p*.csv and p*.json from `bm players --clubs 60 --games 162 --seed S --json pS.json > pS.csv`
   DATA_DIR: hit_YYYY.json (MLB Stats API season hitting, TARGET-3 .. TARGET) and savant_bat_YYYY.csv
   (Statcast custom leaderboard, TARGET-3 .. TARGET-1)"""
@@ -161,7 +162,18 @@ def slash(c):
     return {'k': c['so'], 'bb': c['bb'], 'hr': c['hr'], 'babip': babip, 'iso': (tb - h) / ab, 'obp': (h + c['bb'] + c['hbp']) / max(ab + c['bb'] + c['hbp'] + c['sf'], 1e-6), 'slg': tb / ab}
 
 
-AGING_MODE = os.environ.get('AGING', 'full')  # full: drift + expected growth; drift: drift only; none
+AGING_MODE = os.environ.get('AGING', 'full')  # full: drift + expected growth; drift: drift only; none; world
+# AGING=world: the mean one-year change of each aging group among the world's major leaguers, by
+# age (tools/backtest/world_aging.py --table), instead of the table's drift and growth.
+WORLD = json.load(open(os.environ['WORLD_AGING']))['hitters'] if AGING_MODE == 'world' else None
+
+
+def world_delta(group, age):
+    by_age = WORLD.get(group)
+    if not by_age:
+        return 0.0
+    ages = sorted(int(k) for k in by_age)
+    return by_age[str(min(max(int(math.floor(age)), ages[0]), ages[-1]))]
 
 
 def aging_delta(table, age):
@@ -175,6 +187,8 @@ def aging_delta(table, age):
         return arr[min(max(i, 0), len(arr) - 1)] if arr else 0.0
     growth, remaining = table['growth'], table['remaining_growth']
     group_of = {a: g for g, spec in table['groups'].items() for a in spec['attrs']}
+    if AGING_MODE == 'world':
+        return np.array([world_delta(group_of[name], age) if name in group_of else 0.0 for name in LATENT])
     out = []
     for name in LATENT:
         if name not in group_of:

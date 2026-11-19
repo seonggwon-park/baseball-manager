@@ -34,7 +34,8 @@
 //!                                                                 quality of rotations and bullpens, how many regulars play
 //!                                                                 their own position, and attribute correlations (--years 0:
 //!                                                                 the new world); --out: every player's outcome of each
-//!                                                                 offseason from N on (age, level, value, stayed or how he left)
+//!                                                                 offseason from N on (age, level, value, stayed or how he left);
+//!                                                                 --attrs-out: every major leaguer's attributes before each one
 //! bm contacts --out FILE [--games N] [--invert FILE]              balls in play with the swing that hit them (simulated), or the
 //!             [--face-lead DEG] [--dir-shift DEG] [--swings]      impact parameter that reproduces each row's launch angle;
 //!                                                                 --swings: every full swing instead of balls in play
@@ -120,6 +121,7 @@ struct Args {
     json: Option<std::path::PathBuf>,
     /// `bm contacts`: where to write the rows, and rows to run the collision model backwards on.
     out: Option<std::path::PathBuf>,
+    attrs_out: Option<std::path::PathBuf>,
     invert: Option<std::path::PathBuf>,
     face_lead: f64,
     dir_shift: f64,
@@ -169,6 +171,7 @@ fn parse_args() -> Args {
         aging_file: None,
         json: None,
         out: None,
+        attrs_out: None,
         invert: None,
         face_lead: 0.0,
         dir_shift: 0.0,
@@ -241,6 +244,7 @@ fn parse_args() -> Args {
             "--contracts" => a.contracts_file = Some(v.into()),
             "--json" => a.json = Some(v.into()),
             "--out" => a.out = Some(v.into()),
+            "--attrs-out" => a.attrs_out = Some(v.into()),
             "--invert" => a.invert = Some(v.into()),
             "--face-lead" => a.face_lead = v.parse().expect("--face-lead DEG"),
             "--dir-shift" => a.dir_shift = v.parse().expect("--dir-shift DEG"),
@@ -640,6 +644,7 @@ fn main() {
             args.contracts_file.as_deref(),
             args.json.as_deref(),
             args.out.as_deref(),
+            args.attrs_out.as_deref(),
         ),
         "players" => {
             players::run(&env, &args.tuning.baseline, args.tuning.style, args.seed, args.threads, args.clubs.min(60), args.games.min(400), args.json.as_deref())

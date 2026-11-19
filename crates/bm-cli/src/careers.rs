@@ -535,6 +535,9 @@ struct Before {
     /// (`ability::per_sd`).
     value: f64,
     value_sd: f64,
+    /// A hitter's batting and running alone in runs per 162 games as a regular (`ability::batting`;
+    /// NaN for pitchers): what the published aging curves of hitters measure.
+    batting: f64,
     /// A KBO or NPB club's foreign player.
     foreign: bool,
     /// Wins above replacement with his economy's first team (`contract::ContractRules::war`).
@@ -576,6 +579,7 @@ fn snapshot(pop: &Population, rules: &ContractRules) -> Vec<Before> {
                     pitcher: p.is_pitcher(),
                     value,
                     value_sd: value / ability::per_sd(p),
+                    batting: if p.is_pitcher() { f64::NAN } else { ability::batting(p) },
                     foreign: pop.foreign.contains_key(&p.id),
                     war: rules.war(p, economy),
                     contract,
@@ -610,7 +614,7 @@ fn write_outcomes(out: &mut impl std::io::Write, pop: &Population, before: &[Bef
         };
         writeln!(
             out,
-            "{year},{id},{age:.2},{},{},{},{:.2},{:.3},{},{:.3},{},{outcome},{new_level},{}",
+            "{year},{id},{age:.2},{},{},{},{:.2},{:.3},{},{:.3},{},{outcome},{new_level},{},{:.2}",
             b.level,
             b.slot,
             u8::from(b.pitcher),
@@ -619,9 +623,33 @@ fn write_outcomes(out: &mut impl std::io::Write, pop: &Population, before: &[Bef
             u8::from(b.foreign),
             b.war,
             b.contract,
-            after(*id)
+            after(*id),
+            b.batting
         )
         .expect("write --out");
+    }
+}
+
+/// Every major-league regular, bench player, starter and reliever before an offseason: his age at
+/// 1 November and his attributes (`--attrs-out`), for the aging of major leaguers as it happens in
+/// the world (tools/backtest/world_aging.py).
+fn write_attrs(out: &mut impl std::io::Write, pop: &Population, year: i32) {
+    let nov = Date::new(year, 11, 1);
+    for r in pop.rosters.iter().filter(|r| r.level == "mlb") {
+        let s = &r.squad;
+        let groups: [(&'static str, Vec<&bm_world::Player>); 4] = [
+            ("lineup", s.hitters.iter().map(|(p, _)| p).collect()),
+            ("bench", s.bench.iter().map(|(p, _)| p).collect()),
+            ("starter", s.starters.iter().collect()),
+            ("reliever", s.relievers.iter().collect()),
+        ];
+        for (slot, players) in groups {
+            for p in players {
+                let age = pop.people.get(&p.id).map_or(f64::NAN, |h| nov.days_since(h.born) as f64 / 365.2425);
+                let z: Vec<String> = Attr::ALL.iter().map(|&a| format!("{:.3}", p.attrs.z(a))).collect();
+                writeln!(out, "{year},{},{age:.2},{slot},{},{}", p.id, u8::from(p.is_pitcher()), z.join(",")).expect("write --attrs-out");
+            }
+        }
     }
 }
 
@@ -670,6 +698,7 @@ pub fn run(
     contracts_file: Option<&Path>,
     json: Option<&Path>,
     out: Option<&Path>,
+    attrs_out: Option<&Path>,
 ) {
     let read = |p: &Path| std::fs::read_to_string(p).unwrap_or_else(|e| panic!("{}: {e}", p.display()));
     let world = World::bundled();
@@ -704,11 +733,20 @@ pub fn run(
     }
     let mut out = out.map(|p| {
         let mut f = std::io::BufWriter::new(std::fs::File::create(p).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
-        writeln!(f, "year,id,age,level,slot,pitcher,value,value_sd,foreign,war,org,kind,terms,years_left,salary,service,outcome,new_level,new_org,new_kind,new_terms,new_years,new_salary").expect("write --out");
+        writeln!(f, "year,id,age,level,slot,pitcher,value,value_sd,foreign,war,org,kind,terms,years_left,salary,service,outcome,new_level,new_org,new_kind,new_terms,new_years,new_salary,batting").expect("write --out");
+        f
+    });
+    let mut attrs_out = attrs_out.map(|p| {
+        let mut f = std::io::BufWriter::new(std::fs::File::create(p).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
+        let keys: Vec<&str> = Attr::ALL.iter().map(|a| a.key()).collect();
+        writeln!(f, "year,id,age,slot,pitcher,{}", keys.join(",")).expect("write --attrs-out");
         f
     });
     for y in 0..years {
         let year = 2027 + y as i32;
+        if let Some(f) = attrs_out.as_mut().filter(|_| y >= from) {
+            write_attrs(f, &pop, year);
+        }
         let before = if out.is_some() && y >= from { snapshot(&pop, &contracts) } else { Vec::new() };
         let r = offseason(&ctx, &mut pop, year, None, seed);
         last = year;
