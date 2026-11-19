@@ -1962,10 +1962,20 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
                 let club = rules.club_pay(e, war, year + 1).max(rules.lowest_renewal(e, last));
                 let dollars = mlb_expected(&p);
                 let age = age_of(id, next_season);
+                // A Korean player who has neither served nor been exempted does not go abroad:
+                // from 25 he needs leave to be out of the country (Military Service Act, art.
+                // 70) and must be back within it (art. 94), and the KBO's posting needs seven
+                // seasons (decision 2026-11-19).
+                let may_leave = e != Economy::Kbo || matches!(career.service, Some(Service::Done { .. }));
                 // Posting: for a player the majors would want as a regular.
                 let amateur = posting_rules.is_none_or(|pr| age < pr.amateur_age || pro_seasons < pr.amateur_seasons);
                 if let (Some((usd, true)), Some(pr)) = (dollars, posting_rules) {
-                    if !abroad_right && seasons >= r.posting_after() && !amateur && (usd * r.per_usd() / club).ln() + rng.gauss(0.0, m.taste) > m.abroad {
+                    if may_leave
+                        && !abroad_right
+                        && seasons >= r.posting_after()
+                        && !amateur
+                        && (usd * r.per_usd() / club).ln() + rng.gauss(0.0, m.taste) > m.abroad
+                    {
                         let years = expected_years(age, rules.war(&p, Economy::Mlb)).round().clamp(1.0, 8.0);
                         let fee = pr.fee(usd * years) * r.per_usd();
                         let until = abroad_needed.saturating_sub(since).max(1);
@@ -1986,8 +1996,9 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
                     continue;
                 }
                 report.fa_eligible[ix] += 1;
-                let to_majors =
-                    abroad_right && dollars.is_some_and(|(usd, _)| (usd * r.per_usd() / expected.max(club)).ln() + rng.gauss(0.0, m.taste) > m.abroad);
+                let to_majors = may_leave
+                    && abroad_right
+                    && dollars.is_some_and(|(usd, _)| (usd * r.per_usd() / expected.max(club)).ln() + rng.gauss(0.0, m.taste) > m.abroad);
                 if !to_majors && (expected / club).ln() + rng.gauss(0.0, m.taste) <= m.declare {
                     stay.push(p);
                     continue;
@@ -3056,7 +3067,15 @@ mod tests {
     #[test]
     fn kbo_and_npb_free_agents_declare_move_and_bring_compensation() {
         let (world, levels, aging, careers, people) = ctx_parts();
-        let rules = crate::contract::ContractRules::bundled();
+        // The mechanism, not the rates (those are fitted and checked by the calibration): the
+        // eligible free agents of both leagues declare as soon as the market would pay them a
+        // little less than their clubs do, so that ranked players move within these seasons.
+        let mut rules = crate::contract::ContractRules::bundled();
+        for e in [Economy::Kbo, Economy::Npb] {
+            if let Some(m) = rules.market.get_mut(&e) {
+                m.declare = m.declare.min(-0.5);
+            }
+        }
         let ctx = Offseason { world: &world, levels: &levels, aging: &aging, careers: &careers, people: &people, contracts: &rules };
         let mut pop = populate(&world, &levels, Date::new(2027, 2, 1), 7);
         let japanese: BTreeSet<String> = organisations(&world).into_iter().filter(|o| o.kind == OrgKind::Japanese).map(|o| o.id).collect();

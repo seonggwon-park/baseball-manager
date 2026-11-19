@@ -457,11 +457,11 @@ impl ModelParams {
 impl Default for ModelParams {
     fn default() -> Self {
         ModelParams {
-            target_sd_x: 0.13,
-            target_sd_z: 0.155,
+            target_sd_x: 0.118,
+            target_sd_z: 0.157,
             aim_adapt: 1.5,
-            aim_reference: 6.45 * INCH,
-            wild_fraction: 0.037,
+            aim_reference: 6.784 * INCH,
+            wild_fraction: 0.044,
             wild_factor: 2.0,
             release_sd_side: 2.1 * INCH,
             release_sd_height: 1.3 * INCH,

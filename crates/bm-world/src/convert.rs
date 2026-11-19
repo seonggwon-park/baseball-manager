@@ -61,8 +61,20 @@ pub mod spread {
     /// Pitching: fastball velocity (mph), relative location error on each axis of the
     /// error ellipse, deception as a change of the batter's pick-up probability,
     /// time to the plate (s), pitches of stamina.
-    pub const VELOCITY_MPH: f64 = 2.2;
-    pub const LOCATION: f64 = 0.05;
+    ///
+    /// Velocity carries the fastballs' whole spread of speed (0.9 x 2.465 = 2.22 mph a
+    /// standard deviation, what the attribute and a separate 1 mph draw of each fastball gave
+    /// before; decision 2026-11-18: a pitcher's worth in his attributes). Location: 10 % a
+    /// standard deviation on each axis, about 7.5 % on the miss distance, between the two
+    /// measurements: pitchers' mean miss from their intended spot spreads by 1.10 in on 9.14 in,
+    /// 12 % (Ludwig, Brill & Wyner 2025, Statcast 2008-2023), and their location ellipses by
+    /// 7-9 % on each axis in the 2025 Statcast sample (with the differences of aim). At 5 % the
+    /// attributes explained a tenth of the pitchers' walk rates (control and walks -0.16;
+    /// Location+ and walks among 2026 starters -0.54, Martin 2026). With no aim drawn at random
+    /// (generate.rs `AIM_HEIGHT`), 10 % gives control and walks -0.39 to -0.48 and walk rates
+    /// spread 1.07-1.08 times the measured ones (12 %: -0.50 to -0.54 and 1.16-1.22 times).
+    pub const VELOCITY_MPH: f64 = 2.465;
+    pub const LOCATION: f64 = 0.10;
     pub const DECEPTION: f64 = 0.03;
     pub const TIME_TO_PLATE: f64 = 0.08;
     pub const STAMINA: f64 = 16.0;
@@ -84,8 +96,10 @@ pub mod spread {
 pub mod mean {
     /// Arm strength of a position player on a full-effort throw, mph.
     pub const ARM_MPH: f64 = 85.9;
-    /// Location error of the average pitcher on a fastball, root mean square over the two axes, in.
-    pub const COMMAND_IN: f64 = 6.45;
+    /// Location error of the average pitcher on a fastball, root mean square over the two axes, in
+    /// (6.45 before the aims stopped being drawn at random, 2026-11-18; 6.6 brings the league's
+    /// walk rate back: 8.55 % against MLB 2025's 8.41 %).
+    pub const COMMAND_IN: f64 = 6.6;
     /// Pitches before fatigue for a pitcher of average stamina (starters sit near +2, relievers near -2).
     pub const STAMINA: f64 = 60.0;
     /// Fastball velocity of a starter with an average velocity attribute relative to the
@@ -270,19 +284,121 @@ pub fn catcher(p: &Player) -> CatcherProfile {
     }
 }
 
-/// What makes each pitch type better, per point of its grade:
-/// (release speed in mph, spin rate in rpm, active-spin fraction, spin tilt in degrees).
-pub fn quality_direction(kind: PitchKind) -> (f64, f64, f64, f64) {
-    match kind {
-        PitchKind::FourSeam => (0.0, 90.0, 0.03, 0.0),
-        PitchKind::Sinker => (0.0, 40.0, 0.02, 5.0),
-        PitchKind::Cutter => (0.7, 110.0, 0.0, 0.0),
-        PitchKind::Slider => (0.6, 120.0, 0.0, 0.0),
-        PitchKind::Sweeper => (0.0, 120.0, 0.05, 0.0),
-        PitchKind::Curve => (0.0, 140.0, 0.04, 0.0),
-        PitchKind::Changeup => (-0.5, -100.0, 0.02, 0.0),
-        PitchKind::Splitter => (-0.3, -120.0, 0.0, 0.0),
+/// The direction each pitch type's grade was designed to move its shape, per point
+/// (release speed in mph, spin rate in rpm, active-spin fraction, spin tilt in degrees). Since
+/// 2026-11-18 the grade moves the shape along `quality_direction` instead; this direction and the
+/// generator's own draws together still make up the spread of the type's shapes.
+const DESIGNED: [(f64, f64, f64, f64); 8] = [
+    (0.0, 90.0, 0.03, 0.0),
+    (0.0, 40.0, 0.02, 5.0),
+    (0.7, 110.0, 0.0, 0.0),
+    (0.6, 120.0, 0.0, 0.0),
+    (0.0, 120.0, 0.05, 0.0),
+    (0.0, 140.0, 0.04, 0.0),
+    (-0.5, -100.0, 0.02, 0.0),
+    (-0.3, -120.0, 0.0, 0.0),
+];
+
+/// Spreads of the generator's own deviations of a pitch's shape, in the units the player
+/// stores them (speed m/s, spin rad/s, active spin, tilt rad). A fastball's speed is its
+/// velocity attribute's alone.
+pub fn shape_spread(kind: PitchKind) -> [f64; 4] {
+    let speed = if matches!(kind, PitchKind::FourSeam | PitchKind::Sinker) { 0.0 } else { MPH };
+    [speed, 80.0 * RPM, 0.05, 6f64.to_radians()]
+}
+
+/// How each pitch type's shape changes the pitcher's value (fewer runs per nine, per stored unit
+/// of speed, spin, active spin and tilt): the pitching value model's weights on the type's own
+/// deviations, fitted on 2026-11-18 on 6,000 starters of the engine with the location spread
+/// above, no random aim and the shapes still drawn at random, each shrunk by t^2 / (t^2 + 4)
+/// (t: weight over its bootstrap standard error) so that the weights the starters do not pin
+/// down move little. Sliders, sweepers, curves, changeups and splitters are worth more the
+/// further below the fastball they come (t 2.6-5.5); the 2025 Statcast sample agrees for
+/// sliders (+0.18 runs per 100 pitches for each mph closer to the fastball, t 1.8) and is
+/// flat within its noise for the others. The value model itself (`data/people/pitch_value.json`)
+/// is refitted on top.
+const VALUE_GRADIENT: [[f64; 4]; 8] = [
+    [0.0, 0.003603, 1.883192, -1.239279],
+    [0.0, -0.000466, -0.873531, 2.304876],
+    [-0.004205, -0.006166, 1.755860, 0.008122],
+    [-0.374884, -0.000060, 1.541961, 0.067194],
+    [-0.187253, -0.002987, 0.484738, 1.144624],
+    [-0.177159, 0.0, -0.011326, -0.161779],
+    [-0.279916, -0.000388, 0.330396, 0.404284],
+    [-0.594605, 0.000164, -0.014583, 0.676274],
+];
+
+/// What a pitch's own shape deviations (stored units) are worth to its pitcher: fewer runs per
+/// nine if he threw nothing else, by the value gradient above.
+pub fn shape_value(kind: PitchKind, dev: &[f64; 4]) -> f64 {
+    VALUE_GRADIENT[kind.index()].iter().zip(dev).map(|(g, d)| g * d).sum()
+}
+
+fn designed(kind: PitchKind) -> [f64; 4] {
+    let (mph, rpm, active, deg) = DESIGNED[kind.index()];
+    [mph * MPH, rpm * RPM, active, deg.to_radians()]
+}
+
+/// Covariance of a pitch type's shape among pitchers of the same talent, stored units: the
+/// designed direction (one standard deviation of grade) and the generator's own draws.
+fn shape_cov(kind: PitchKind) -> [[f64; 4]; 4] {
+    let (d, sd) = (designed(kind), shape_spread(kind));
+    let mut c = [[0.0; 4]; 4];
+    for i in 0..4 {
+        for j in 0..4 {
+            c[i][j] = d[i] * d[j] + if i == j { sd[i] * sd[i] } else { 0.0 };
+        }
     }
+    c
+}
+
+/// The covariance times the value gradient, and the value's variance (gradient' cov gradient).
+fn cov_gradient(kind: PitchKind) -> ([f64; 4], f64) {
+    let (c, h) = (shape_cov(kind), VALUE_GRADIENT[kind.index()]);
+    let ch: [f64; 4] = std::array::from_fn(|i| c[i].iter().zip(h).map(|(a, b)| a * b).sum());
+    let var = h.iter().zip(ch).map(|(a, b)| a * b).sum();
+    (ch, var)
+}
+
+/// What makes each pitch type better, per point of its grade (the stuff attribute for the
+/// main fastball): (release speed in mph, spin rate in rpm, active-spin fraction, spin tilt
+/// in degrees). It is the regression of the type's shapes on their value (covariance times
+/// value gradient over the value's spread), so the grade carries all of what the shape is
+/// worth, and the rest of the shape's spread, drawn by the generator, is worth nothing
+/// (`neutralise`; decision 2026-11-18: a pitcher's worth in his attributes). The spread of the
+/// shapes is the same as before: the designed direction plus the generator's draws.
+pub fn quality_direction(kind: PitchKind) -> (f64, f64, f64, f64) {
+    let (ch, var) = cov_gradient(kind);
+    if var <= 0.0 {
+        return DESIGNED[kind.index()];
+    }
+    let l = ch.map(|x| x / var.sqrt());
+    (l[0] / MPH, l[1] / RPM, l[2], l[3].to_degrees())
+}
+
+/// One pitch's style: a draw of the type's whole shape spread (`shape_cov`, as `z` standard
+/// deviations of the designed direction and the generator's own deviations `dev`) with its
+/// value part taken out (the regression on the value), so that it is worth nothing.
+pub fn neutralise(kind: PitchKind, dev: &mut [f64; 4]) {
+    let h = VALUE_GRADIENT[kind.index()];
+    let (ch, var) = cov_gradient(kind);
+    if var <= 0.0 {
+        return;
+    }
+    let value: f64 = h.iter().zip(dev.iter()).map(|(g, d)| g * d).sum();
+    for (d, c) in dev.iter_mut().zip(ch) {
+        *d -= c * value / var;
+    }
+}
+
+/// A pitch's own shape deviations as the generator draws them: the designed direction times
+/// a standard normal `z` (the style part of what the grade used to move) plus the type's own
+/// draws `own` (standard normals scaled by `shape_spread`), with the value part taken out.
+pub fn style(kind: PitchKind, z: f64, own: [f64; 4]) -> [f64; 4] {
+    let (d, sd) = (designed(kind), shape_spread(kind));
+    let mut dev: [f64; 4] = std::array::from_fn(|i| z * d[i] + own[i] * sd[i]);
+    neutralise(kind, &mut dev);
+    dev
 }
 
 /// How much of a change in arm slot shows up in the spin axis of each pitch type:
@@ -568,11 +684,14 @@ mod tests {
         assert!(c2 < 0.97 * c0 && close(a2, a0, 1e-9));
         assert!(pup(Attr::Deception).deception > 0.0 && pup(Attr::HoldRunners).time_to_plate < p0.time_to_plate);
         assert!(pup(Attr::Stamina).stamina > p0.stamina && pup(Attr::Concentration).wildness < p0.wildness && pup(Attr::Composure).pressure < 0.0);
-        // A better secondary pitch moves more and is located better.
+        // A better secondary pitch has a better shape (by what the engine's starters showed a
+        // shape to be worth; decision 2026-11-18) and is located better.
         let mut better = arm.clone();
         better.pitching.as_mut().unwrap().pitches[1].grade = 1.0;
         let pb = pitcher(&better, false).unwrap();
-        assert!(pb.pitches[1].shape.spin_rate > p0.pitches[1].shape.spin_rate && pb.pitches[1].command < p0.pitches[1].command);
+        let (s0, s1) = (&p0.pitches[1].shape, &pb.pitches[1].shape);
+        let gain = shape_value(p0.pitches[1].kind, &[s1.speed - s0.speed, s1.spin_rate - s0.spin_rate, s1.active - s0.active, s1.tilt - s0.tilt]);
+        assert!(gain > 0.0 && pb.pitches[1].command < p0.pitches[1].command, "{gain}");
         assert!(pb.pitches[1].disguise > 0.0 && p0.pitches[1].disguise == 0.0);
         assert_eq!(pb.pitches[0], p0.pitches[0]);
     }

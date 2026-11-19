@@ -147,10 +147,15 @@ pub mod shape {
     pub const LIFT_AIM: f64 = 0.35;
     pub const TIMING_BIAS: f64 = 0.0027;
     /// Where pitchers like to work: between-pitcher spread of the intended height, m, for
-    /// the pitcher as a whole and for each pitch on top of that (2025 Statcast sample: the
-    /// average height of a pitcher's four-seamers spreads by 6.0 cm, sliders 8.2 cm).
-    pub const AIM_HEIGHT: f64 = 0.045;
-    pub const AIM_HEIGHT_PITCH: f64 = 0.04;
+    /// the pitcher as a whole and for each pitch on top of that. The 2025 Statcast sample has
+    /// the average height of a pitcher's four-seamers spreading by 6.0 cm and of his sliders by
+    /// 8.2 cm, and 4.5 cm and 4 cm reproduced that, but in the engine these hidden draws decided
+    /// a pitcher's walks and zone rate more than his control did (R2 0.33 against 0.07) and
+    /// carried as much of his worth as his attributes. None since 2026-11-18 (decision: a
+    /// pitcher's worth in his attributes): the location comes from his command (convert.rs
+    /// `LOCATION`) and the engine's aim, and the spread of pitchers' average heights is lost.
+    pub const AIM_HEIGHT: f64 = 0.0;
+    pub const AIM_HEIGHT_PITCH: f64 = 0.0;
     /// A catcher's exchange against his arm strength: the quick ones tend to have the
     /// weaker arms (pop time spreads less than exchange and arm would if independent).
     pub const EXCHANGE_ARM: f64 = -0.4;
@@ -264,14 +269,21 @@ const ARSENAL: [(PitchKind, f64, f64); 8] = [
 
 fn pitch(rng: &mut Rng, kind: PitchKind, weight: f64, t: &Talent, works: f64) -> PitchSkill {
     let s = t.spread as f64;
+    let height = (works + rng.gauss(0.0, shape::AIM_HEIGHT_PITCH)) as f32;
+    let grade = z(rng, t.pitching as f64, s);
+    // The shape's style: a draw of the type's whole spread of shapes with what it is worth
+    // taken out (the grade carries that; `convert::quality_direction`).
+    let z_style = rng.gauss(0.0, 1.0);
+    let own: [f64; 4] = std::array::from_fn(|_| rng.gauss(0.0, 1.0));
+    let dev = convert::style(kind, z_style, own);
     PitchSkill {
-        height: (works + rng.gauss(0.0, shape::AIM_HEIGHT_PITCH)) as f32,
+        height,
         kind,
-        grade: z(rng, t.pitching as f64, s),
-        speed: rng.gauss(0.0, 1.0 * MPH) as f32,
-        spin: rng.gauss(0.0, 80.0 * RPM) as f32,
-        active: rng.gauss(0.0, 0.05) as f32,
-        tilt: rng.gauss(0.0, 6.0f64.to_radians()) as f32,
+        grade,
+        speed: dev[0] as f32,
+        spin: dev[1] as f32,
+        active: dev[2] as f32,
+        tilt: dev[3] as f32,
         usage: (weight * rng.gauss(0.0, 0.30).exp()) as f32,
     }
 }
@@ -490,10 +502,22 @@ mod tests {
         assert!((m - 94.0).abs() < 0.5 && (sd - 2.1).abs() < 0.35, "four-seam velocity {m} +- {sd}");
         let c = corr(&four.iter().map(|f| f.2).collect::<Vec<_>>(), &four.iter().map(|f| f.1).collect::<Vec<_>>());
         assert!(c < -0.7, "a higher arm slot should stand the spin axis up: {c}");
-        // Where pitchers like to work: the height of a pitcher's fastballs spreads by about 6 cm.
-        let heights: Vec<f64> = arms.iter().filter_map(|p| p.pitching.as_ref()?.pitches.first().map(|k| k.height as f64)).collect();
-        let (_, sd) = mean_sd(&heights);
-        assert!((sd - 0.06).abs() < 0.012, "aim height spread {sd}");
+        // No aim is drawn at random (decision 2026-11-18), and what is left of each pitch's own
+        // shape draws is worth nothing to the pitcher: the grades carry the rest.
+        let all: Vec<&crate::player::PitchSkill> = arms.iter().filter_map(|p| p.pitching.as_ref()).flat_map(|x| x.pitches.iter()).collect();
+        assert!(all.iter().all(|k| k.height == 0.0), "aims are not drawn");
+        for kind in [PitchKind::FourSeam, PitchKind::Slider, PitchKind::Changeup] {
+            let devs: Vec<[f64; 4]> = all.iter().filter(|k| k.kind == kind).map(|k| [k.speed, k.spin, k.active, k.tilt].map(f64::from)).collect();
+            assert!(devs.len() > 30, "{kind:?}");
+            for d in &devs {
+                let mut again = *d;
+                convert::neutralise(kind, &mut again);
+                assert!(d.iter().zip(again).all(|(a, b)| (a - b).abs() < 1e-5), "{kind:?}: a stored draw still has a value part {d:?}");
+            }
+            // The draws keep a style of their own: the spin still spreads.
+            let (_, spin) = mean_sd(&devs.iter().map(|d| d[1] / RPM).collect::<Vec<_>>());
+            assert!(spin > 30.0, "{kind:?} spin style {spin}");
+        }
     }
 
     #[test]
