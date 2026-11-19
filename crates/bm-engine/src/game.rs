@@ -248,12 +248,24 @@ pub struct ManagerStyle {
     pub pinch_run: f64,
     /// Plays the infield in, at double-play depth, or the outfield deep when the situation calls for it.
     pub situational_defence: bool,
+    /// Puts three infielders on the pull side of pull hitters where the rules allow it, as
+    /// MLB clubs did until 2022 (thresholds `full_shift_left_below` / `full_shift_right_below`).
+    pub full_shift: bool,
 }
 
 impl ManagerStyle {
     /// A manager who never calls anything: every batter hits away against a standard defence.
     pub const fn none() -> Self {
-        ManagerStyle { sac_bunt: 0.0, bunt_for_hit: 0.0, hit_and_run: 0.0, intentional_walk: 0.0, pinch_hit: 0.0, pinch_run: 0.0, situational_defence: false }
+        ManagerStyle {
+            sac_bunt: 0.0,
+            bunt_for_hit: 0.0,
+            hit_and_run: 0.0,
+            intentional_walk: 0.0,
+            pinch_hit: 0.0,
+            pinch_run: 0.0,
+            situational_defence: false,
+            full_shift: false,
+        }
     }
 
     /// Calibrated to the 2025 MLB frequencies of sacrifice bunts (0.115 per team
@@ -267,7 +279,15 @@ impl ManagerStyle {
             pinch_hit: 0.5,
             pinch_run: 0.5,
             situational_defence: true,
+            full_shift: false,
         }
+    }
+
+    /// [`ManagerStyle::mlb`] with the full shift of the years before the 2023 restriction.
+    pub const fn mlb_2022() -> Self {
+        let mut s = ManagerStyle::mlb();
+        s.full_shift = true;
+        s
     }
 }
 
@@ -1124,6 +1144,16 @@ impl GameSim {
         if pull_hitter {
             a.shift = Shift::Shade;
         }
+        // Before the 2023 restriction, three infielders on the pull side.
+        if self.style[fld].full_shift && !self.env.rules.shift_restricted {
+            let full = match batter.hand {
+                Hand::Left => batter.timing_bias < p.full_shift_left_below,
+                Hand::Right => batter.timing_bias < p.full_shift_right_below,
+            };
+            if full {
+                a.shift = Shift::Full;
+            }
+        }
         let lead = self.score[fld] as i32 - self.score[bat] as i32;
         let innings = self.env.rules.innings;
         let (r1, r3) = (self.bases[0].is_some(), self.bases[2].is_some());
@@ -1805,6 +1835,37 @@ mod tests {
     }
 
     #[test]
+    fn full_shift_only_for_managers_who_use_it_where_the_rules_allow_it() {
+        // Pitches to left-handed batters, and those with the shortstop right of second base.
+        struct Shifts(u32, u32);
+        impl Observer for Shifts {
+            fn pitch(&mut self, e: &PitchEvent) {
+                if e.batter_hand == Hand::Left {
+                    self.1 += 1;
+                    if e.positions[crate::fielding::SS].x > 0.0 {
+                        self.0 += 1;
+                    }
+                }
+            }
+        }
+        let (a, h) = clubs(5);
+        let mut free = MatchEnv::neutral_mlb();
+        free.rules.shift_restricted = false;
+        let run = |env: &MatchEnv, style: ManagerStyle| {
+            let mut o = Shifts(0, 0);
+            let mut rng = Rng::new(3);
+            for _ in 0..6 {
+                play_game_styled(env, &a.team_for_game(0, true), &h.team_for_game(0, true), [style; 2], &mut rng, &mut o);
+            }
+            o
+        };
+        let shifted = run(&free, ManagerStyle::mlb_2022());
+        assert!(shifted.1 > 100 && shifted.0 > 0, "{} of {}", shifted.0, shifted.1);
+        assert_eq!(run(&free, ManagerStyle::mlb()).0, 0);
+        assert_eq!(run(&MatchEnv::neutral_mlb(), ManagerStyle::mlb_2022()).0, 0);
+    }
+
+    #[test]
     fn same_seed_gives_the_same_game() {
         let env = MatchEnv::neutral_mlb();
         let (a, h) = clubs(5);
@@ -2126,6 +2187,7 @@ mod tests {
             pinch_hit: 1.0,
             pinch_run: 1.0,
             situational_defence: true,
+            full_shift: true,
         };
         let (a, h) = clubs(12);
         let mut rng = Rng::new(77);

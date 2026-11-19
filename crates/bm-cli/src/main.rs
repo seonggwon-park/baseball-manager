@@ -6,6 +6,10 @@
 //!             [--style none|mlb] [--set name=value]               AI manager preset, model constants
 //!             [--population world|engine]                         players drawn from attributes (default) or as physical profiles
 //!             [--parks world|neutral]                             the 30 major-league parks of the world data (default) or one average park
+//! bm tactics [--games N] [--seed S] [--json FILE]                 the games of `bm validate`: run expectancy by base-out state,
+//!            [--shift-rule on|off]                                what bunts, intentional walks and steals returned, BABIP by
+//!                                                                 batter hand; --shift-rule off: MLB's rules before 2023 (also
+//!                                                                 for validate), when the AI managers use the full shift
 //! bm attributes [--games N] [--only NAME]                         value of one standard deviation of each attribute
 //!               [--by-position]                                   fielding value of the regular at each position (2 SD steps)
 //! bm players [--clubs K] [--games G] [--json FILE]                season lines of individual players as CSV (G games per club);
@@ -47,6 +51,7 @@ mod report;
 mod season;
 mod sensitivity;
 mod serve;
+mod tactics;
 mod tally;
 mod tuning;
 
@@ -95,6 +100,8 @@ struct Args {
     /// change of their exit speed (mph).
     balls: Option<std::path::PathBuf>,
     ev_shift: f64,
+    /// `bm validate`, `bm tactics`: infield shifts restricted (MLB since 2023) or not.
+    shift_rule: Option<bool>,
     /// `bm season`: play up to this date instead of the whole season.
     until: Option<bm_world::Date>,
     /// `bm careers`: offseasons to run, how often to print, other level and career files.
@@ -148,6 +155,7 @@ fn parse_args() -> Args {
         foreign_given: false,
         balls: None,
         ev_shift: 0.0,
+        shift_rule: None,
         until: None,
         years: 20,
         seasons: 1,
@@ -216,6 +224,13 @@ fn parse_args() -> Args {
             "--elevation" => a.elevation = v.parse().expect("--elevation M"),
             "--balls" => a.balls = Some(v.into()),
             "--ev-shift" => a.ev_shift = v.parse().expect("--ev-shift MPH"),
+            "--shift-rule" => {
+                a.shift_rule = Some(match v.as_str() {
+                    "on" => true,
+                    "off" => false,
+                    _ => panic!("--shift-rule on|off"),
+                })
+            }
             "--seasons" => a.seasons = v.parse().expect("--seasons N"),
             "--warmup" => a.warmup = v.parse().expect("--warmup N"),
             "--history" => a.history = Some(v.parse().expect("--history H")),
@@ -442,14 +457,27 @@ fn print_box(res: &GameResult) {
 }
 
 fn main() {
-    let args = parse_args();
+    let mut args = parse_args();
     // Neutral MLB-like conditions (see `MatchEnv::neutral_mlb`) with any command-line overrides.
     let mut env = MatchEnv::new(&Atmosphere::new(24.0, 760.0, 55.0, 180.0), Wind::CALM, Park::mlb_average(), Rules::mlb_2025(), args.tuning.params.clone());
     env.ball = args.tuning.ball;
+    if let Some(restricted) = args.shift_rule {
+        // Without the restriction the AI managers shift as MLB clubs did in 2022.
+        env.rules.shift_restricted = restricted;
+        args.tuning.style.full_shift = !restricted;
+    }
     let level: &Level = &args.tuning.level;
     let world = args.world.then_some(&args.tuning.baseline);
     let envs = if args.parks { level::park_envs(&["us-major"], &env.rules, &args.tuning).0 } else { vec![env.clone()] };
     match args.cmd.as_str() {
+        "tactics" => {
+            let clubs = make_clubs(args.clubs, args.seed, level, world);
+            let t = tactics::run(&envs, &clubs, args.tuning.style, args.games, args.seed, args.threads);
+            tactics::print(&t);
+            if let Some(path) = &args.json {
+                std::fs::write(path, serde_json::to_string_pretty(&t.json()).expect("json")).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+            }
+        }
         "validate" => {
             let clubs = make_clubs(args.clubs, args.seed, level, world);
             let start = Instant::now();
@@ -631,7 +659,9 @@ fn main() {
             }
         }
         other => {
-            eprintln!("unknown command {other}; use validate | attributes | players | level | park | season | careers | game | bench | population | serve");
+            eprintln!(
+                "unknown command {other}; use validate | tactics | attributes | players | level | park | season | careers | game | bench | population | serve"
+            );
             std::process::exit(2);
         }
     }

@@ -194,6 +194,15 @@ pub struct ModelParams {
     /// pitches, 8 % of right-handed).
     pub shade_left_below: f64,
     pub shade_right_below: f64,
+    /// An AI manager with `ManagerStyle::full_shift`, where the rules allow it (MLB before
+    /// 2023), puts three infielders on the pull side of left-handed (right-handed) batters
+    /// whose timing bias is below this, s.
+    /// Set so that generated hitters (timing bias 2.6 +- 2.7 ms) see the full shift as often
+    /// as 2022 MLB batters did (Statcast `if_fielding_alignment` "Infield shift" at the first
+    /// pitch of the plate appearance, six days of 2022: 50.9 % of left-handed batters,
+    /// 18.7 % of right-handed). Not fitted to any outcome.
+    pub full_shift_left_below: f64,
+    pub full_shift_right_below: f64,
     /// Every defence leans toward the batter's pull side, deg: corner infielders, middle
     /// infielders, outfielders. Chosen among the values tried by the batting average of
     /// ground balls by bearing in the 2025 Statcast sample: with these the pull-line side
@@ -525,6 +534,8 @@ impl Default for ModelParams {
             spray_turn: 0.0698,
             shade_left_below: 0.00233,
             shade_right_below: -0.00119,
+            full_shift_left_below: 0.00266,
+            full_shift_right_below: 0.00020,
             lean_corner: 3.0,
             lean_middle: 5.0,
             lean_outfield: 0.0,
