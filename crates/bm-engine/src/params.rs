@@ -362,6 +362,18 @@ pub struct ModelParams {
     pub gather_time: f64,
     /// Margin the defence wants before going for the force at second instead of the out at first, s.
     pub force_margin: f64,
+    /// Fewer than two outs, the infield back and the runner on third not forced: the chance
+    /// that he breaks for the plate on a ground ball the defence plays at first, fielded by the
+    /// second baseman or the shortstop (`third_go_middle`) or by anyone else (pitcher, catcher,
+    /// corners: `third_go_other`), and on one it plays at second for the force (`third_go_force`,
+    /// a runner on first). Set (2026-11-19) to the share of such ground-ball outs on which a run
+    /// scored in the 2025 Statcast sample: with first base empty 0.61 of 75 to the middle
+    /// infielders and 0.29 of 55 to the others; with a runner on first 0.67-0.83 of the outs
+    /// that were not double plays (docs/tactics.md 7). The runner who breaks scores; the infield
+    /// does not throw home.
+    pub third_go_middle: f64,
+    pub third_go_other: f64,
+    pub third_go_force: f64,
     /// Chance that a runner on second advances on a ground out to the left side.
     pub advance_left_side: f64,
     /// Transfer time of a short feed to second base, as a fraction of a normal transfer.
@@ -607,6 +619,9 @@ impl Default for ModelParams {
             field_height: 1.5,
             gather_time: 0.10,
             force_margin: 0.40,
+            third_go_middle: 0.61,
+            third_go_other: 0.29,
+            third_go_force: 0.80,
             advance_left_side: 0.42,
             feed_transfer: 0.80,
             pivot_time: 0.64,

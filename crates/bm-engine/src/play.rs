@@ -3,7 +3,7 @@
 //! fielder arrival, transfer, throw) and the runners.
 
 use crate::batting::BattedInfo;
-use crate::fielding::{arrival_time, best_catch, best_pickup, move_time, throw_time, B1, B2, C, LF, P, SS};
+use crate::fielding::{arrival_time, best_catch, best_pickup, move_time, throw_time, B1, B2, C, LF, SS};
 use crate::params::ModelParams;
 use crate::pitching::MatchEnv;
 use crate::profile::FielderProfile;
@@ -52,6 +52,16 @@ pub enum PlayKind {
 impl PlayKind {
     pub fn is_hit(self) -> bool {
         matches!(self, PlayKind::Single | PlayKind::Double | PlayKind::Triple | PlayKind::HomeRun | PlayKind::GroundRuleDouble)
+    }
+}
+
+/// Chance that a runner on third who is not forced breaks for the plate on a ground ball
+/// fielded by `fielder`, with fewer than two outs and the infield back.
+fn third_go(p: &ModelParams, fielder: usize) -> f64 {
+    if fielder == B2 || fielder == SS {
+        p.third_go_middle
+    } else {
+        p.third_go_other
     }
 }
 
@@ -600,7 +610,7 @@ fn infield_play(inp: &PlayInput, clock: &Clock, pk: &crate::fielding::Pickup, rn
                     res.trace.run(&r, 2, 3, clock.go, clock.runner(&r, 2, 1), false);
                 }
                 if let Some(r) = r3 {
-                    if third_holds && r2.is_none() {
+                    if r2.is_none() && (third_holds || !rng.chance(p.third_go_force)) {
                         res.bases[2] = Some(r);
                     } else {
                         res.score(r, !doubled);
@@ -624,7 +634,7 @@ fn infield_play(inp: &PlayInput, clock: &Clock, pk: &crate::fielding::Pickup, rn
             res.bases = [Some(inp.batter), Some(lead), r2];
         }
         if let Some(r) = r3 {
-            if third_holds && r2.is_none() {
+            if r2.is_none() && (third_holds || !rng.chance(p.third_go_force)) {
                 res.bases[2] = Some(r);
             } else {
                 res.score(r, true);
@@ -681,9 +691,10 @@ fn infield_play(inp: &PlayInput, clock: &Clock, pk: &crate::fielding::Pickup, rn
         res.bases[0] = Some(inp.batter);
     }
     // Runners. With two outs they were running on contact; otherwise the runner on third
-    // goes on a ball to the middle infield and the runner on second on a ball behind him.
+    // breaks more often on a ball to the middle infield (`third_go`) and the runner on second
+    // goes on a ball behind him.
     let forced_from_first = !batter_out && r1.is_some();
-    let third_goes = two_outs || (forced_from_first && r2.is_some()) || !(third_holds || pk.fielder == P || pk.fielder == C || pk.pos.horiz() < 28.0);
+    let third_goes = two_outs || (forced_from_first && r2.is_some()) || (!third_holds && rng.chance(third_go(p, pk.fielder)));
     // A runner on second moves up on a ball hit behind him, and often on a ball to the
     // left side once the throw goes across the diamond.
     let second_goes = two_outs || forced_from_first || inp.info.bunt || pk.pos.x > 0.0 || rng.chance(p.advance_left_side);
@@ -1006,16 +1017,29 @@ mod tests {
     }
 
     #[test]
+    fn runner_on_third_breaks_more_often_on_a_ball_to_the_middle_infield() {
+        // In the 2025 Statcast sample a run scored on 0.56 of the ground-ball outs to the
+        // shortstop with a runner on third (not forced, fewer than two outs) and on 0.39 of
+        // those to the third baseman.
+        let rig = Rig::new();
+        let third = [None, None, Some(runner(3, 27.0))];
+        let to_short = rig.rate(88.0, -6.0, -13.0, third, 1, |r| r.n_scored == 1);
+        let to_third = rig.rate(80.0, -8.0, -31.0, third, 1, |r| r.n_scored == 1);
+        assert!(to_short > to_third + 0.1 && to_third > 0.2, "run scores: grounder to short {to_short}, to third base {to_third}");
+    }
+
+    #[test]
     fn drawn_in_infield_holds_the_runner_at_third() {
         use crate::fielding::{alignment, Alignment, InfieldDepth};
         let mut rig = Rig::new();
         let third = [None, None, Some(runner(3, 27.0))];
-        // Routine grounder to short with one out: the run scores against a normal infield.
+        // Routine grounder to short with one out: against a normal infield the run scores most
+        // of the time (in the 2025 Statcast sample on 56 % of such outs to the shortstop).
         let back = rig.rate(88.0, -6.0, -13.0, third, 1, |r| r.n_scored == 1);
         rig.positions = alignment(&Alignment { infield: InfieldDepth::In, ..Default::default() }, -1.0, [0.0; 3], false, false, true);
         let n = 300;
         let scored_in = (0..n).filter(|&s| rig.play_with(88.0, -6.0, -13.0, third, 1, [0.0; 3], true, s as u64 + 1).n_scored == 1).count() as f64 / n as f64;
-        assert!(back > 0.9 && scored_in < 0.15, "run scores: infield back {back}, infield in {scored_in}");
+        assert!(back > 0.5 && scored_in < 0.15, "run scores: infield back {back}, infield in {scored_in}");
         // The price: a harder grounder gets through the drawn-in infield more often.
         let through = |rig: &Rig, inn: bool| {
             (0..n).filter(|&s| rig.play_with(97.0, -3.0, -7.0, third, 1, [0.0; 3], inn, s as u64 + 1).kind.is_hit()).count() as f64 / n as f64

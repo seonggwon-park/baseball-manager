@@ -9,6 +9,9 @@
 //!   offered at a pitch: missed, fouled or put in play, as Statcast can see it) and intentional
 //!   walks, by base-out state, with the runs that followed and the state the plate appearance
 //!   left; stolen-base attempts and successes by base.
+//! * Plate appearances that start with a runner on third and fewer than two outs (innings
+//!   1-8), by how they ended and whether a run scored during them (Statcast's events can be
+//!   counted the same way: tools/tactics/third_base.py).
 //! * Batting average on balls in play by batter hand, with the bases empty and overall, and
 //!   how often the infield stood in a full shift (three infielders on the pull side): the
 //!   measures of the 2023 shift restriction (`--shift-rule off` plays the earlier rules).
@@ -82,6 +85,15 @@ pub struct Tactics {
     babip: [[[f64; 4]; 2]; 2],
     /// Batter hand and full shift at the first pitch of the plate appearance under way.
     hand_now: Option<(usize, bool)>,
+    /// Runner on third, fewer than two outs, innings 1-8: by outcome (`third_label`), plate
+    /// appearances and those during which a run scored.
+    third: std::collections::BTreeMap<&'static str, [f64; 2]>,
+    /// Ground-ball outs (with fielder's choices and double plays) in those plate appearances,
+    /// [not forced, forced (bases loaded)][fielder P..SS]: count and those during which a run
+    /// scored (tools/tactics/third_base.py counts Statcast's the same way).
+    third_ground: [[[f64; 2]; 6]; 2],
+    /// Fielder and kind of the last ball in play of the plate appearance under way.
+    play_now: Option<(usize, PlayKind)>,
     half: Vec<Pa>,
     /// The half-inning under way: inning and top.
     key: (u8, bool),
@@ -123,6 +135,12 @@ impl Tactics {
         add(self.sac_after.as_flattened_mut().as_flattened_mut().as_flattened_mut(), o.sac_after.as_flattened().as_flattened().as_flattened());
         add(self.steals.as_flattened_mut(), o.steals.as_flattened());
         add(self.babip.as_flattened_mut().as_flattened_mut(), o.babip.as_flattened().as_flattened());
+        add(self.third_ground.as_flattened_mut().as_flattened_mut(), o.third_ground.as_flattened().as_flattened());
+        for (k, v) in &o.third {
+            let e = self.third.entry(k).or_default();
+            e[0] += v[0];
+            e[1] += v[1];
+        }
         self.games += o.games;
         self.runs += o.runs;
     }
@@ -179,6 +197,11 @@ impl Tactics {
             "steal_second": { "attempts": self.steals[0][0], "safe": self.steals[0][1] },
             "steal_third": { "attempts": self.steals[1][0], "safe": self.steals[1][1] },
             "babip": babip,
+            "runner_on_third_ground_outs": (["not_forced", "forced"].iter().zip(&self.third_ground).map(|(k, row)| {
+                let by: serde_json::Map<_, _> = ["P", "C", "1B", "2B", "3B", "SS"].iter().zip(row).map(|(f, c)| ((*f).to_string(), serde_json::json!({ "outs": c[0], "scored": c[1] }))).collect();
+                ((*k).to_string(), serde_json::Value::Object(by))
+            }).collect::<serde_json::Map<_, _>>()),
+            "runner_on_third": self.third.iter().map(|(k, v)| ((*k).to_string(), serde_json::json!({ "plate_appearances": v[0], "scored": v[1] }))).collect::<serde_json::Map<_, _>>(),
         })
     }
 }
@@ -187,6 +210,9 @@ impl Observer for Tactics {
     fn pitch(&mut self, e: &PitchEvent) {
         if e.approach.is_bunt() && e.swung {
             self.sac_now = true;
+        }
+        if let Some(play) = e.play {
+            self.play_now = Some((play.fielder, play.kind));
         }
         if self.hand_now.is_none() {
             // Full shift: the shortstop right of second against a left-handed batter, the
@@ -229,6 +255,23 @@ impl Observer for Tactics {
                 c[3] += full as u8 as f64;
             }
         }
+        let play = self.play_now.take();
+        if e.inning <= 8 && e.bases_before & 4 != 0 && e.outs_before < 2 {
+            let c = self.third.entry(third_label(e)).or_default();
+            c[0] += 1.0;
+            if e.runs > 0 {
+                c[1] += 1.0;
+            }
+            if let (Some((fielder, kind)), true) = (play, e.ground_ball) {
+                if matches!(kind, PlayKind::GroundOut | PlayKind::FieldersChoice | PlayKind::DoublePlay) && fielder < 6 {
+                    let c = &mut self.third_ground[(e.bases_before == 7) as usize][fielder];
+                    c[0] += 1.0;
+                    if e.runs > 0 {
+                        c[1] += 1.0;
+                    }
+                }
+            }
+        }
         self.half.push(Pa {
             bases: e.bases_before,
             outs: e.outs_before,
@@ -254,6 +297,32 @@ impl Observer for Tactics {
             }
             _ => {}
         }
+    }
+}
+
+/// How a plate appearance ended, in the groups Statcast's events can be put into
+/// (tools/tactics/third_base.py): ground-ball outs of every kind (with fielder's choices and
+/// double plays) together, fly-ball outs apart from sacrifice flies, walks with hit batters.
+fn third_label(e: &PaEvent) -> &'static str {
+    match e.outcome {
+        PaOutcome::Strikeout => "strikeout",
+        PaOutcome::Walk if e.intentional => "intentional walk",
+        PaOutcome::Walk | PaOutcome::HitByPitch => "walk or hit by pitch",
+        PaOutcome::Interrupted => "inning ended on the bases",
+        PaOutcome::Play(k) => match k {
+            PlayKind::Single => "single",
+            PlayKind::Double | PlayKind::GroundRuleDouble => "double",
+            PlayKind::Triple => "triple",
+            PlayKind::HomeRun => "home run",
+            PlayKind::SacFly => "sacrifice fly",
+            PlayKind::GroundOut | PlayKind::FieldersChoice | PlayKind::DoublePlay => "ground-ball out, fielder's choice or double play",
+            PlayKind::FlyOut => "fly out",
+            PlayKind::LineOut => "line out",
+            PlayKind::PopOut | PlayKind::FoulOut => "pop or foul out",
+            PlayKind::Error => "error",
+            PlayKind::SacBunt => "sacrifice bunt",
+            PlayKind::Foul => "other",
+        },
     }
 }
 
@@ -312,6 +381,23 @@ pub fn print(t: &Tactics) {
     }
     for (t_, name) in t.steals.iter().zip(["second", "third"]) {
         println!("steals of {name}: {:.0} attempts, {:.1}% safe", t_[0], 100.0 * t_[1] / t_[0].max(1.0));
+    }
+    let n3: f64 = t.third.values().map(|v| v[0]).sum();
+    println!(
+        "runner on third, fewer than two outs, innings 1-8: {n3:.0} plate appearances; a run scored during {:.3}",
+        t.third.values().map(|v| v[1]).sum::<f64>() / n3.max(1.0)
+    );
+    for (k, v) in &t.third {
+        println!("  {k:50} {:.3} of them, a run scored in {:.2}, contributes {:.3}", v[0] / n3.max(1.0), v[1] / v[0].max(1.0), v[1] / n3.max(1.0));
+    }
+    for (label, row) in ["not forced", "forced (bases loaded)"].iter().zip(&t.third_ground) {
+        let cells: Vec<String> = ["P", "C", "1B", "2B", "3B", "SS"]
+            .iter()
+            .zip(row)
+            .filter(|(_, c)| c[0] > 0.0)
+            .map(|(f, c)| format!("{f} {:.2} ({:.0})", c[1] / c[0], c[0]))
+            .collect();
+        println!("  ground-ball outs, {label}: a run scored in {}", cells.join(", "));
     }
     let s = &t.sac[1][0];
     println!("bunt attempts with a runner on first and no outs: {:.0}, {:.3} runs to the end of the inning", s.n, s.runs / s.n.max(1.0));

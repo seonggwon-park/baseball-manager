@@ -236,6 +236,38 @@ pub trait Observer {
 pub struct NoObserver;
 impl Observer for NoObserver {}
 
+/// Relative rates of the AI manager's tactics by situation, from the 2025 Statcast sample
+/// (432 games; docs/tactics.md 7, tools/tactics/situations.py). Bunt attempts per plate
+/// appearance with runners on first and/or second, none on third and nobody out were 0.039
+/// with a runner on first, 0.063 on second and 0.109 on both in innings 1-8, and about a fifth
+/// of that with one out; with nobody out they were 0.042, 0.058, 0.070 and 0.126 in innings
+/// 1-3, 4-6, 7-8 and 9 on (extra innings start with a runner on second). Bunts for a hit with
+/// the bases empty were 0.0084, 0.0080 and 0.0068 per plate appearance with 0, 1 and 2 outs,
+/// and 0.0034 with runners on and two outs. Intentional walks per plate appearance with first
+/// base open and a runner in scoring position were 0.003, 0.018, 0.032 and 0.040 by the same
+/// inning groups, and five times as frequent with runners on second and third (0.048) as with
+/// one of them (0.009-0.010).
+const SAC_RUNNER_ON_FIRST: f64 = 0.55;
+const SAC_RUNNER_ON_SECOND: f64 = 0.9;
+const SAC_FIRST_AND_SECOND: f64 = 1.5;
+const SAC_ONE_OUT: f64 = 0.2;
+const SAC_INNING: [f64; 4] = [0.6, 0.85, 1.0, 1.8];
+const BUNT_HIT_TWO_OUTS: f64 = 0.8;
+const BUNT_HIT_RUNNERS_TWO_OUTS: f64 = 0.5;
+const IBB_INNING: [f64; 4] = [0.1, 0.57, 1.0, 1.25];
+const IBB_SECOND_AND_THIRD: f64 = 3.0;
+const IBB_FIRST_TAKEN: f64 = 0.15;
+
+/// Innings 1-3, 4-6, 7-8, 9 and later.
+fn inning_group(inning: u8) -> usize {
+    match inning {
+        0..=3 => 0,
+        4..=6 => 1,
+        7..=8 => 2,
+        _ => 3,
+    }
+}
+
 /// Tendencies of the AI manager. Rates are probabilities per opportunity, before
 /// the situation and the players involved are taken into account.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -268,14 +300,14 @@ impl ManagerStyle {
         }
     }
 
-    /// Calibrated to the 2025 MLB frequencies of sacrifice bunts (0.115 per team
-    /// game) and intentional walks (0.114 per team game).
+    /// Calibrated, with the situational factors above, to the 2025 MLB frequencies of
+    /// sacrifice bunts (0.115 per team game) and intentional walks (0.114 per team game).
     pub const fn mlb() -> Self {
         ManagerStyle {
-            sac_bunt: 0.70,
-            bunt_for_hit: 0.15,
+            sac_bunt: 0.39,
+            bunt_for_hit: 0.117,
             hit_and_run: 0.03,
-            intentional_walk: 0.45,
+            intentional_walk: 0.19,
             pinch_hit: 0.5,
             pinch_run: 0.5,
             situational_defence: true,
@@ -1078,25 +1110,34 @@ impl GameSim {
             Some(plan) => plan,
             None => {
                 let mut plan = Approach::Normal;
-                if style.sac_bunt > 0.0 && self.outs == 0 && (r1 || r2) && !r3 && diff.abs() <= 2 {
-                    // Sacrifice: nobody out, a runner to move up, a close game and a hitter
-                    // who is not expected to do damage.
+                if style.sac_bunt > 0.0 && self.outs < 2 && (r1 || r2) && !r3 && diff.abs() <= 2 {
+                    // Sacrifice: a runner to move up, a close game and a hitter who is not
+                    // expected to do damage. How often by base state, outs and inning follows
+                    // the bunt attempts of the 2025 Statcast sample (docs/tactics.md).
                     let weak = sigmoid((0.97 - batter.quality()) / 0.05);
-                    let late = if self.inning >= 7 {
-                        1.0
-                    } else if self.inning >= 4 {
-                        0.5
-                    } else {
-                        0.25
-                    };
                     let close = if diff.abs() <= 1 { 1.0 } else { 0.5 };
-                    if rng.chance((style.sac_bunt * weak * late * close * (0.5 + batter.bunt)).min(0.95)) {
+                    let base = match (r1, r2) {
+                        (true, false) => SAC_RUNNER_ON_FIRST,
+                        (false, true) => SAC_RUNNER_ON_SECOND,
+                        _ => SAC_FIRST_AND_SECOND,
+                    };
+                    let outs = if self.outs == 0 { 1.0 } else { SAC_ONE_OUT };
+                    let inning = SAC_INNING[inning_group(self.inning)];
+                    if rng.chance((style.sac_bunt * weak * close * base * outs * inning * (0.5 + batter.bunt)).min(0.95)) {
                         plan = Approach::SacrificeBunt;
                     }
-                } else if style.bunt_for_hit > 0.0 && !r1 && !r2 && !r3 && self.outs < 2 {
-                    // Bunting for a hit is for quick runners who can handle the bat.
+                } else if style.bunt_for_hit > 0.0 && !r3 && ((!r1 && !r2) || self.outs == 2) {
+                    // Bunting for a hit is for quick runners who can handle the bat: mostly with
+                    // the bases empty, now and then with two outs and runners on.
                     let speed = ((batter.sprint / FT - 28.0) / 1.5).clamp(0.0, 1.5);
-                    let prob = style.bunt_for_hit * speed * (0.5 + batter.bunt);
+                    let situation = if r1 || r2 {
+                        BUNT_HIT_RUNNERS_TWO_OUTS
+                    } else if self.outs == 2 {
+                        BUNT_HIT_TWO_OUTS
+                    } else {
+                        1.0
+                    };
+                    let prob = style.bunt_for_hit * speed * situation * (0.5 + batter.bunt);
                     if prob > 0.0 && rng.chance(prob.min(0.5)) {
                         plan = Approach::BuntForHit;
                     }
@@ -1176,12 +1217,18 @@ impl GameSim {
     /// Does the AI manager walk this hitter on purpose?
     fn ai_walk(&self, pa: &Pa, bat: usize, fld: usize, rng: &mut Rng) -> bool {
         let style = &self.style[fld];
-        if style.intentional_walk <= 0.0 || self.bases[0].is_some() || (self.bases[1].is_none() && self.bases[2].is_none()) {
+        let [r1, r2, r3] = [self.bases[0].is_some(), self.bases[1].is_some(), self.bases[2].is_some()];
+        if style.intentional_walk <= 0.0 || (!r2 && !r3) {
+            return false;
+        }
+        // With first base taken only to face a weaker hitter with two outs, never with the
+        // bases loaded.
+        if r1 && (self.outs < 2 || (r2 && r3)) {
             return false;
         }
         let lead = self.score[fld] as i32 - self.score[bat] as i32;
         let innings = self.env.rules.innings;
-        if self.inning + 2 < innings || !(-1..=2).contains(&lead) {
+        if !(-1..=2).contains(&lead) {
             return false;
         }
         let s = &self.sides[bat];
@@ -1199,7 +1246,17 @@ impl GameSim {
         } else {
             0.3
         };
-        rng.chance((style.intentional_walk * situation * sigmoid((gap - 0.04) / 0.04)).min(0.95))
+        // How often by inning and base state follows the 2025 Statcast sample (docs/tactics.md):
+        // rarely early, mostly with runners on second and third to set up a force.
+        let inning = IBB_INNING[inning_group(self.inning)];
+        let state = if r1 {
+            IBB_FIRST_TAKEN
+        } else if r2 && r3 {
+            IBB_SECOND_AND_THIRD
+        } else {
+            1.0
+        };
+        rng.chance((style.intentional_walk * situation * inning * state * sigmoid((gap - 0.04) / 0.04)).min(0.95))
     }
 
     /// How much is at stake right now, 0..=1: late innings of a close game, more so
@@ -1832,6 +1889,39 @@ mod tests {
         let mut rng = Rng::new(seed);
         let level = Level::mlb();
         (Club::random(&mut rng, 1000, &level), Club::random(&mut rng, 2000, &level))
+    }
+
+    #[test]
+    fn ai_managers_bunt_with_one_out_and_walk_hitters_before_the_seventh() {
+        // The 2025 Statcast sample has a fifth of the sacrifice attempts with one out and
+        // intentional walks from the fourth inning on (docs/tactics.md 7).
+        struct Seen {
+            inning: u8,
+            one_out_bunts: u32,
+            early_walks: u32,
+        }
+        impl Observer for Seen {
+            fn pitch(&mut self, e: &PitchEvent) {
+                if e.approach == Approach::SacrificeBunt && e.outs == 1 {
+                    self.one_out_bunts += 1;
+                }
+            }
+            fn event(&mut self, e: &GameEvent) {
+                match *e {
+                    GameEvent::HalfInning { inning, .. } => self.inning = inning,
+                    GameEvent::IntentionalWalk { .. } if self.inning < 7 => self.early_walks += 1,
+                    _ => {}
+                }
+            }
+        }
+        let env = MatchEnv::neutral_mlb();
+        let (a, h) = clubs(9);
+        let mut rng = Rng::new(11);
+        let mut seen = Seen { inning: 0, one_out_bunts: 0, early_walks: 0 };
+        for g in 0..300 {
+            play_game_styled(&env, &a.team_for_game(g % 5, true), &h.team_for_game((g + 2) % 5, true), [ManagerStyle::mlb(); 2], &mut rng, &mut seen);
+        }
+        assert!(seen.one_out_bunts > 0 && seen.early_walks > 0, "one-out bunt pitches {}, walks before the seventh {}", seen.one_out_bunts, seen.early_walks);
     }
 
     #[test]
