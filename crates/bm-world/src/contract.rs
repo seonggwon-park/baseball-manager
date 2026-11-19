@@ -437,6 +437,15 @@ impl EconomyRules {
         self.minimum.at(year, self.raise.rate)
     }
 
+    /// The salaries of a contract of `years` seasons from `from` at `pay` a season: every
+    /// season pays at least that season's minimum, which rises from year to year (the
+    /// majors' minimum is a rate for each season, BA Art. VI(A)(1); the same for the KBO and
+    /// NPB), so that a deal signed near one season's minimum never pays less than a later
+    /// one's.
+    pub fn salaries(&self, pay: f64, from: i32, years: usize) -> Vec<f64> {
+        (0..years as i32).map(|i| pay.max(self.minimum(from + i))).collect()
+    }
+
     pub fn development_minimum(&self, year: i32) -> f64 {
         self.development_minimum.as_ref().map_or_else(|| self.minimum(year), |s| s.at(year, self.raise.rate))
     }
@@ -867,7 +876,7 @@ fn new_contract(
                 // that lets him go elsewhere is the next stage).
                 let n = draw_years(age, war, rng);
                 let pay = rules.free_agent_pay(war, year);
-                Contract::new(org, Kind::Major, Terms::FreeAgent, year, &vec![pay; n])
+                Contract::new(org, Kind::Major, Terms::FreeAgent, year, &r.salaries(pay, year, n))
             }
         }
         OrgKind::Korean | OrgKind::Japanese => {
@@ -886,7 +895,7 @@ fn new_contract(
             // and one who did not declare it is reserved for another season.
             if due && !amateur && first {
                 let n = draw_years(age, war, rng).min(4);
-                Contract::new(org, kind, Terms::FreeAgent, year, &vec![pay; n])
+                Contract::new(org, kind, Terms::FreeAgent, year, &r.salaries(pay, year, n))
             } else {
                 Contract::one_season(org, kind, if amateur { Terms::Amateur } else { Terms::Renewal }, year, pay)
             }
@@ -1087,15 +1096,30 @@ mod tests {
         // world a game starts from: the first world after its history (careers.json, decision
         // 2026-11-18). The first world's own contracts pay well under the budgets (0.4-0.6 of
         // them in its first two seasons) until that history has settled it.
-        let mut pop = crate::career::new_world(&ctx, Date::new(2027, 2, 1), careers.history, 3);
+        // Seed 8: before an exercised club option paid at least the season's minimum, two of
+        // its major leaguers were paid the 2026 minimum in 2027.
+        let mut pop = crate::career::new_world(&ctx, Date::new(2027, 2, 1), careers.history, 8);
         check(&pop, 2027);
-        offseason(&ctx, &mut pop, 2027, None, 3);
+        offseason(&ctx, &mut pop, 2027, None, 8);
         check(&pop, 2028);
         let budgets = Budgets::bundled();
         let rows = payrolls(&world, &pop, &rules, &budgets, 2028);
         let (pay, budget): (f64, f64) =
             rows.iter().filter(|r| r.economy == Economy::Mlb).fold((0.0, 0.0), |a, r| (a.0 + r.total, a.1 + r.budget.unwrap_or(0.0)));
         assert!(pay > 0.5 * budget && pay < 2.0 * budget, "{pay:.3e} against {budget:.3e}");
+    }
+
+    #[test]
+    fn every_season_of_a_contract_pays_at_least_its_minimum() {
+        let r = ContractRules::bundled();
+        let m = r.of(Economy::Mlb);
+        // Signed at the 2026 minimum for three seasons: the later seasons pay their own.
+        let s = m.salaries(m.minimum(2026), 2026, 3);
+        assert_eq!(s.len(), 3);
+        assert!((s[1] - m.minimum(2027)).abs() < 1e-6 && (s[2] - m.minimum(2028)).abs() < 1e-6, "{s:?}");
+        assert!(s[2] > s[1] && s[1] > s[0]);
+        // A salary above every minimum stays as signed.
+        assert_eq!(m.salaries(5.0e6, 2026, 2), vec![5.0e6, 5.0e6]);
     }
 
     #[test]

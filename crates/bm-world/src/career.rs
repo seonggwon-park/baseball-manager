@@ -1837,7 +1837,9 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
                     if c.last() == year {
                         if let Some(o) = c.option.take() {
                             if price(war * place(&p)) * (1.0 + club_lean) >= o.salary - o.buyout {
-                                c.salary.push(o.salary);
+                                // The option's salary was set when he signed; the season's
+                                // minimum may have risen past it since (BA Art. VI(A)(1)).
+                                c.salary.push(o.salary.max(r.minimum(year + 1)));
                                 report.options_exercised += 1;
                             } else {
                                 report.options_declined += 1;
@@ -2290,7 +2292,7 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
             }
             let contract = match e {
                 Economy::Mlb if s.major => {
-                    let mut c = Contract::new(&orgs[k].id, Kind::Major, Terms::FreeAgent, year + 1, &vec![s.pay; s.years]);
+                    let mut c = Contract::new(&orgs[k].id, Kind::Major, Terms::FreeAgent, year + 1, &r.salaries(s.pay, year + 1, s.years));
                     c.option = s.option.clone();
                     c.opt_out = s.opt_out_after.map(|a| year + a as i32);
                     // A qualified free agent who signs with another organisation: a pick for the
@@ -2322,7 +2324,7 @@ pub fn offseason(ctx: &Offseason, pop: &mut Population, year: i32, standings: Op
                     depth_only.insert(id);
                     Contract::one_season(&orgs[k].id, Kind::Minor, Terms::FreeAgent, year + 1, s.pay)
                 }
-                _ if s.major => Contract::new(&orgs[k].id, Kind::Registered, Terms::FreeAgent, year + 1, &vec![s.pay; s.years]),
+                _ if s.major => Contract::new(&orgs[k].id, Kind::Registered, Terms::FreeAgent, year + 1, &r.salaries(s.pay, year + 1, s.years)),
                 _ => {
                     // A second team's place: an NPB club signs a development contract; an
                     // independent club's players are not paid by the model.
