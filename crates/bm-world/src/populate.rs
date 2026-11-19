@@ -57,6 +57,12 @@ pub struct ForeignSlots {
     pub reserves: usize,
 }
 
+impl ForeignSlots {
+    pub fn talent(&self) -> Talent {
+        talent(&self.talent)
+    }
+}
+
 /// One level of play as the data file describes it.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct LevelProfile {

@@ -290,6 +290,73 @@ fn own_league(env: &Env, games: usize, seed: u64, threads: usize, style: bm_engi
     total
 }
 
+/// `bm park`: the level's clubs, made as `bm level` makes them and playing under the league's
+/// rules, play every game in one ballpark (fence distances at the five bearings, wall heights,
+/// elevation and surface, built as the world data builds its parks). The clubs and the games'
+/// random numbers depend only on the seed, so two parks compare with the same players; what
+/// differs between them beyond the park is the games' own randomness, which shrinks with
+/// `games`. Prints the rates and, with `json`, writes them with the counts per team-game.
+#[allow(clippy::too_many_arguments)]
+pub fn park(
+    level: &str,
+    talent: Talent,
+    foreign: Talent,
+    ballpark: &bm_world::league::Ballpark,
+    games: usize,
+    seed: u64,
+    threads: usize,
+    tuning: &Tuning,
+    drag: f64,
+    json: Option<&std::path::Path>,
+) {
+    let mut env = build(level, &talent, &foreign, tuning, seed, drag);
+    let rules = env.envs[0].rules.clone();
+    let mut m = MatchEnv::new(&Atmosphere::new(24.0, 760.0, 55.0, ballpark.elevation()), Wind::CALM, ballpark.field(), rules, tuning.params.clone());
+    m.ball = tuning.ball;
+    m.batted_flight.aero.cd0 *= drag;
+    env.envs = vec![m; env.clubs.len()];
+    let (line, speeds) = own_league(&env, games, seed, threads, tuning.style);
+    let s = line.rates();
+    let f = &ballpark.fence_m;
+    let w = &ballpark.wall_m;
+    println!(
+        "park: fence {:.1}/{:.1}/{:.1}/{:.1}/{:.1} m, wall {:.1}/{:.1}/{:.1} m, elevation {:.0} m, {}; level {level}, {} clubs, {games} games",
+        f[0],
+        f[1],
+        f[2],
+        f[3],
+        f[4],
+        w[0],
+        w[1],
+        w[2],
+        ballpark.elevation(),
+        if ballpark.surface == bm_world::league::Surface::Turf { "turf" } else { "grass" },
+        env.clubs.len()
+    );
+    println!("                 R/G     AVG    OBP    SLG     K%    BB%   HR/PA");
+    println!("  sim          {:5.2}   {:.3}  {:.3}  {:.3}  {:5.1}  {:5.1}  {:5.2}", s.r, s.avg, s.obp, s.slg, s.k, s.bb, s.hr);
+    let per = |x: f64| x / line.team_games.max(1.0);
+    println!(
+        "  per team-game: runs {:.3}, hits {:.3}, doubles {:.3}, triples {:.4}, home runs {:.4}; exit velocity {:.1} mph",
+        per(line.runs),
+        per(line.h),
+        per(line.doubles),
+        per(line.triples),
+        per(line.hr),
+        speeds.ev.0 / speeds.ev.1.max(1.0)
+    );
+    if let Some(path) = json {
+        let doc = serde_json::json!({
+            "level": level, "games": games, "seed": seed,
+            "fence_m": f, "wall_m": w, "elevation_m": ballpark.elevation(),
+            "team_games": line.team_games, "pa": line.pa,
+            "runs": line.runs, "hits": line.h, "doubles": line.doubles, "triples": line.triples, "home_runs": line.hr,
+            "r_per_game": s.r, "avg": s.avg, "obp": s.obp, "slg": s.slg, "k_pct": s.k, "bb_pct": s.bb, "hr_pct": s.hr,
+        });
+        std::fs::write(path, serde_json::to_string_pretty(&doc).expect("json")).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    }
+}
+
 /// Runs per plate appearance of `bat` hitters against `pitch` pitchers in a neutral park.
 fn cross(bat: &[Club], pitch: &[Club], games: usize, seed: u64, threads: usize, tuning: &Tuning) -> Line {
     let mut env = MatchEnv::new(&Atmosphere::new(24.0, 760.0, 55.0, 180.0), Wind::CALM, Park::mlb_average(), Rules::mlb_2025(), tuning.params.clone());

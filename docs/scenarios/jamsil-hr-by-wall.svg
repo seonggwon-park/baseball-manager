@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 460" width="760" height="460" font-family="'Noto Sans CJK KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif">
+<rect width="760" height="460" fill="#fcfcfb"/>
+<text x="24" y="34" font-size="20" font-weight="700" fill="#0b0b0b">임시 구장 담장 높이별 경기당 홈런 (모델)</text>
+<text x="24" y="58" font-size="13" fill="#52514e">KBO 수준 선수, 구장마다 20,000경기, 두 팀 합계. 좌우 95 m, 좌우중간 113.4 m(추정), 중앙 124 m</text>
+<line x1="70" x2="720" y1="390.0" y2="390.0" stroke="#e4e3df" stroke-width="1"/>
+<text x="60" y="394.0" font-size="12" fill="#52514e" text-anchor="end">0.0</text>
+<line x1="70" x2="720" y1="330.4" y2="330.4" stroke="#e4e3df" stroke-width="1"/>
+<text x="60" y="334.4" font-size="12" fill="#52514e" text-anchor="end">0.5</text>
+<line x1="70" x2="720" y1="270.8" y2="270.8" stroke="#e4e3df" stroke-width="1"/>
+<text x="60" y="274.8" font-size="12" fill="#52514e" text-anchor="end">1.0</text>
+<line x1="70" x2="720" y1="211.2" y2="211.2" stroke="#e4e3df" stroke-width="1"/>
+<text x="60" y="215.2" font-size="12" fill="#52514e" text-anchor="end">1.5</text>
+<line x1="70" x2="720" y1="151.6" y2="151.6" stroke="#e4e3df" stroke-width="1"/>
+<text x="60" y="155.6" font-size="12" fill="#52514e" text-anchor="end">2.0</text>
+<line x1="70" x2="720" y1="92.0" y2="92.0" stroke="#e4e3df" stroke-width="1"/>
+<text x="60" y="96.0" font-size="12" fill="#52514e" text-anchor="end">2.5</text>
+<text x="70.0" y="410" font-size="12" fill="#52514e" text-anchor="middle">2</text>
+<text x="156.7" y="410" font-size="12" fill="#52514e" text-anchor="middle">3</text>
+<text x="243.3" y="410" font-size="12" fill="#52514e" text-anchor="middle">4</text>
+<text x="330.0" y="410" font-size="12" fill="#52514e" text-anchor="middle">5</text>
+<text x="416.7" y="410" font-size="12" fill="#52514e" text-anchor="middle">6</text>
+<text x="503.3" y="410" font-size="12" fill="#52514e" text-anchor="middle">7</text>
+<text x="590.0" y="410" font-size="12" fill="#52514e" text-anchor="middle">8</text>
+<text x="676.7" y="410" font-size="12" fill="#52514e" text-anchor="middle">9</text>
+<text x="395.0" y="436" font-size="13" fill="#52514e" text-anchor="middle">임시 구장 담장 높이 (m)</text>
+<text x="18" y="241.0" font-size="13" fill="#52514e" text-anchor="middle" transform="rotate(-90 18 241.0)">경기당 홈런</text>
+<line x1="70" x2="720" y1="257.6" y2="257.6" stroke="#8a8984" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="716" y="251.6" font-size="12" fill="#52514e" text-anchor="end">잠실(2026) 1.11</text>
+<line x1="70" x2="720" y1="183.5" y2="183.5" stroke="#8a8984" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="716" y="177.5" font-size="12" fill="#52514e" text-anchor="end">KBO 평균(2027 구장) 1.73</text>
+<line x1="563.9" x2="563.9" y1="257.6" y2="390" stroke="#8a8984" stroke-width="1" stroke-dasharray="2 3"/>
+<text x="569.9" y="382" font-size="12" fill="#52514e">잠실과 같아지는 높이 ≈ 7.7 m</text>
+<path d="M122.0,148.4 L243.3,182.5 L416.7,228.4 L503.3,244.9 L590.0,263.1 L676.7,277.8" fill="none" stroke="#2a78d6" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="122.0" cy="148.4" r="5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="243.3" cy="182.5" r="5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="416.7" cy="228.4" r="5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="503.3" cy="244.9" r="5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="590.0" cy="263.1" r="5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="676.7" cy="277.8" r="5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<text x="130.0" y="139.4" font-size="12" fill="#0b0b0b">2.03</text>
+<text x="251.3" y="173.5" font-size="12" fill="#0b0b0b">1.74 (게임 자료의 가정)</text>
+<text x="424.7" y="219.4" font-size="12" fill="#0b0b0b">1.36</text>
+<text x="24" y="454" font-size="11" fill="#8a8984">bm park, 같은 선수(시드 고정). 담장 높이와 좌우중간 거리는 발표되지 않아 범위로 보였다.</text>
+</svg>

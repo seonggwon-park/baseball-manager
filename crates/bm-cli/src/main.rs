@@ -14,6 +14,9 @@
 //!          [--foreign h,p,f,x] [--cross-games N]                   mlb) in its own parks against its official rates; talent of
 //!          [--vs-mlb-pitchers] [--ball-drag F]                     the foreign players of KBO and NPB clubs; wRC+ of the level's
 //!                                                                  hitters (and pitchers) against major-leaguers; `pool` = only that
+//! bm park --level L --fence l,lc,c,rc,r [--wall l,c,r | --wall h] one ballpark experiment: the level's clubs (levels.json talent
+//!         [--elevation M] [--turf] [--talent ...] [--foreign ...]  unless given) play every game in one park (fence distances and
+//!         [--games N] [--seed S] [--json FILE]                    wall heights in m); the same seed gives the same clubs
 //! bm season [--seed S] [--until YYYY-MM-DD] [--seasons N]         generate the world and play a season of every league
 //!           [--warmup K] [--levels FILE] [--careers FILE]         (N seasons with offseasons between them, after K offseasons
 //!           [--aging FILE] [--contracts FILE] [--json FILE]       without games); --json: each level's rates in the last season;
@@ -79,6 +82,14 @@ struct Args {
     by_position: bool,
     /// `bm level`: factor on the batted ball's drag in the level's own games.
     ball_drag: f64,
+    /// `bm park`: the ballpark (fence distances and wall heights, m), its elevation and
+    /// surface, and whether the talent was given on the command line.
+    fence: Option<[f64; 5]>,
+    wall: Option<[f64; 3]>,
+    elevation: f64,
+    turf: bool,
+    talent_given: bool,
+    foreign_given: bool,
     /// `bm season`: play up to this date instead of the whole season.
     until: Option<bm_world::Date>,
     /// `bm careers`: offseasons to run, how often to print, other level and career files.
@@ -124,6 +135,12 @@ fn parse_args() -> Args {
         vs_mlb_pitchers: false,
         by_position: false,
         ball_drag: 1.0,
+        fence: None,
+        wall: None,
+        elevation: 0.0,
+        turf: false,
+        talent_given: false,
+        foreign_given: false,
         until: None,
         years: 20,
         seasons: 1,
@@ -165,11 +182,31 @@ fn parse_args() -> Args {
             a.vs_mlb_pitchers = true;
             continue;
         }
+        if k == "--turf" {
+            a.turf = true;
+            continue;
+        }
         let v = it.next().unwrap_or_default();
         match k.as_str() {
             "--games" => a.games = v.parse().expect("--games N"),
             "--years" => a.years = v.parse().expect("--years N"),
             "--ball-drag" => a.ball_drag = v.parse().expect("--ball-drag F"),
+            "--fence" | "--wall" => {
+                let x: Vec<f64> = v.split(',').map(|x| x.trim().parse().unwrap_or_else(|_| panic!("{k}: numbers in m, comma-separated"))).collect();
+                if k == "--fence" {
+                    a.fence = Some(
+                        x.try_into()
+                            .unwrap_or_else(|_: Vec<f64>| panic!("--fence needs five distances: left line, left-centre, centre, right-centre, right line")),
+                    );
+                } else {
+                    a.wall = Some(match x.len() {
+                        1 => [x[0]; 3],
+                        3 => [x[0], x[1], x[2]],
+                        _ => panic!("--wall needs one height or three (left, centre, right)"),
+                    });
+                }
+            }
+            "--elevation" => a.elevation = v.parse().expect("--elevation M"),
             "--seasons" => a.seasons = v.parse().expect("--seasons N"),
             "--warmup" => a.warmup = v.parse().expect("--warmup N"),
             "--history" => a.history = Some(v.parse().expect("--history H")),
@@ -236,8 +273,10 @@ fn parse_args() -> Args {
                 };
                 if k == "--talent" {
                     a.talent = talent;
+                    a.talent_given = true;
                 } else {
                     a.foreign = talent;
+                    a.foreign_given = true;
                 }
             }
             "--static" => a.static_dir = Some(v.into()),
@@ -514,6 +553,24 @@ fn main() {
             let vs = args.vs_mlb.then(|| level::VsMlb { games: args.cross_games.unwrap_or(args.games.max(400)), pitchers: args.vs_mlb_pitchers });
             level::run(&args.level, args.talent, args.foreign, args.games, args.seed, args.threads, &args.tuning, vs, args.ball_drag)
         }
+        "park" => {
+            let levels = bm_world::LevelTable::bundled();
+            let profile = levels.levels.get(&args.level).unwrap_or_else(|| panic!("unknown level '{}'", args.level));
+            let talent = if args.talent_given { args.talent } else { profile.talent() };
+            let foreign = if args.foreign_given { args.foreign } else { profile.foreign.as_ref().map_or(bm_world::Talent::MAJOR, |f| f.talent()) };
+            let drag = if args.ball_drag != 1.0 { args.ball_drag } else { profile.ball_drag };
+            let ballpark = bm_world::league::Ballpark {
+                name: bm_world::league::Text { ko: "실험 구장".into(), en: "Experimental park".into() },
+                capacity: None,
+                elevation_m: Some(args.elevation),
+                roof: bm_world::league::Roof::Open,
+                surface: if args.turf { bm_world::league::Surface::Turf } else { bm_world::league::Surface::Grass },
+                fence_m: args.fence.expect("bm park needs --fence l,lc,c,rc,r (m)"),
+                wall_m: args.wall.unwrap_or([2.4; 3]),
+                estimated: Vec::new(),
+            };
+            level::park(&args.level, talent, foreign, &ballpark, args.games, args.seed, args.threads, &args.tuning, drag, args.json.as_deref())
+        }
         "season" => season::run(
             &args.tuning,
             args.seed,
@@ -562,7 +619,7 @@ fn main() {
             }
         }
         other => {
-            eprintln!("unknown command {other}; use validate | attributes | players | level | season | careers | game | bench | population | serve");
+            eprintln!("unknown command {other}; use validate | attributes | players | level | park | season | careers | game | bench | population | serve");
             std::process::exit(2);
         }
     }
