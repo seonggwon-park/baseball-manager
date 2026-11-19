@@ -114,27 +114,15 @@ impl Tactics {
     }
 
     fn merge(&mut self, o: &Tactics) {
-        for b in 0..8 {
-            for k in 0..3 {
-                self.re[b][k].merge(&o.re[b][k]);
-                self.sac[b][k].merge(&o.sac[b][k]);
-                self.ibb[b][k].merge(&o.ibb[b][k]);
-                for a in 0..8 {
-                    for m in 0..4 {
-                        self.sac_after[b][k][a][m] += o.sac_after[b][k][a][m];
-                    }
-                }
+        for (mine, theirs) in [(&mut self.re, &o.re), (&mut self.sac, &o.sac), (&mut self.ibb, &o.ibb)] {
+            for (c, d) in mine.as_flattened_mut().iter_mut().zip(theirs.as_flattened()) {
+                c.merge(d);
             }
         }
-        for t in 0..2 {
-            self.steals[t][0] += o.steals[t][0];
-            self.steals[t][1] += o.steals[t][1];
-            for k in 0..2 {
-                for m in 0..4 {
-                    self.babip[t][k][m] += o.babip[t][k][m];
-                }
-            }
-        }
+        let add = |dst: &mut [f64], src: &[f64]| dst.iter_mut().zip(src).for_each(|(x, y)| *x += y);
+        add(self.sac_after.as_flattened_mut().as_flattened_mut().as_flattened_mut(), o.sac_after.as_flattened().as_flattened().as_flattened());
+        add(self.steals.as_flattened_mut(), o.steals.as_flattened());
+        add(self.babip.as_flattened_mut().as_flattened_mut(), o.babip.as_flattened().as_flattened());
         self.games += o.games;
         self.runs += o.runs;
     }
@@ -153,12 +141,11 @@ impl Tactics {
 
     pub fn json(&self) -> serde_json::Value {
         let mut after = serde_json::Map::new();
-        for b in 0..8 {
-            for o in 0..3 {
+        for (b, row) in self.sac_after.iter().enumerate() {
+            for (o, by_state) in row.iter().enumerate() {
                 let mut cells = serde_json::Map::new();
-                for a in 0..8 {
-                    for m in 0..4 {
-                        let x = self.sac_after[b][o][a][m];
+                for (a, by_outs) in by_state.iter().enumerate() {
+                    for (m, &x) in by_outs.iter().enumerate() {
                         if x > 0.0 {
                             cells.insert(format!("{a}-{m}"), x.into());
                         }
@@ -315,11 +302,10 @@ pub fn print(t: &Tactics) {
     println!("{:.0} games, {:.3} runs per team-game; innings 1-8", t.games, t.runs / (2.0 * t.games.max(1.0)));
     println!("run expectancy (R1: share of plate appearances after which a run scored)");
     println!("bases   0 outs          1 out           2 outs");
-    for b in 0..8 {
+    for (b, row) in t.re.iter().enumerate() {
         let name: String = ['1', '2', '3'].iter().enumerate().map(|(i, c)| if b >> i & 1 == 1 { *c } else { '_' }).collect();
         print!("{name}  ");
-        for o in 0..3 {
-            let c = &t.re[b][o];
+        for c in row {
             print!("  {:.3} ({:.3})", c.runs / c.n.max(1.0), c.scored / c.n.max(1.0));
         }
         println!();
@@ -329,8 +315,7 @@ pub fn print(t: &Tactics) {
     }
     let s = &t.sac[1][0];
     println!("bunt attempts with a runner on first and no outs: {:.0}, {:.3} runs to the end of the inning", s.n, s.runs / s.n.max(1.0));
-    for (h, name) in ["left", "right"].iter().enumerate() {
-        let [e, a] = &t.babip[h];
+    for ([e, a], name) in t.babip.iter().zip(["left", "right"]) {
         println!(
             "{name}-handed batters: BABIP {:.4} with the bases empty ({:.0} balls in play), {:.4} overall; full shift in {:.1}% of plate appearances ({:.1}% with the bases empty)",
             e[1] / e[0].max(1.0),
