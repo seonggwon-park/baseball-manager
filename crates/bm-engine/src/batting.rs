@@ -818,7 +818,10 @@ mod tests {
         let mut rigid = MatchEnv::neutral_mlb();
         rigid.params.piece_rate = 0.0;
         let (miss_rigid, front_rigid) = on_time(&rigid);
-        assert!(miss_rigid > miss + 0.05, "without the rule {miss_rigid}, with it {miss}");
+        // How many misses the rule saves is a fitted quantity: 7 points of the on-time swings
+        // before the along-bat refit of 2026-11-20, 3.4 after it (more of the remaining misses
+        // are clear of the ball by more than the rule's margin).
+        assert!(miss_rigid > miss + 0.025, "without the rule {miss_rigid}, with it {miss}");
         assert!((front_rigid - front).abs() < 0.03, "the rule turns misses into fouls, not into fair balls");
     }
 
