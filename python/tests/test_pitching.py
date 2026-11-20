@@ -17,9 +17,13 @@ def play(env, seed, pick):
         mask = np.asarray(env.action_mask(), dtype=bool)
         action = pick(mask)
         obs, reward, terminated, truncated, info = env.step(action)
-        # The call is thrown: the pitch type of the action.
+        # The call is thrown: the pitch type of the action, with where it crossed the plate and
+        # what became of it.
         if info["thrown"] is not None:
             assert info["thrown"][0] == bm_gym.PITCH_ACTION_NAMES[action].split("+")[0]
+            x, z, bottom, top = info["location"]
+            assert abs(x) < 3 and 0 < bottom < top < 2
+            assert info["result"] in ("ball", "called_strike", "swinging_strike", "foul", "foul_tip", "in_play", "hit_by_pitch")
         total += reward
         called += 1
         assert not truncated

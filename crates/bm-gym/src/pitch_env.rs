@@ -21,7 +21,10 @@ use crate::re::RunExpectancy;
 use crate::we::bases;
 use bm_engine::pitching::{expectation, expectation_adapted, selection_weights, MAX_PITCHES};
 use bm_engine::profile::{AVERAGE_BARREL_SD, AVERAGE_BAT_SPEED};
-use bm_engine::{Auto, GameSim, Hand, Intent, ManagerStyle, ModelParams, NoObserver, PitchGroup, PitchKind, PitchOrder, Rng, Situation, Step};
+use bm_engine::{
+    Auto, GameSim, Hand, Intent, ManagerStyle, ModelParams, NoObserver, Observer, PitchEvent, PitchGroup, PitchKind, PitchOrder, PitchResult, Rng, Situation,
+    Step,
+};
 use std::sync::Arc;
 
 pub const KINDS: [PitchKind; 8] = PitchKind::ALL;
@@ -151,6 +154,21 @@ pub struct PitchInfo {
     pub runs: u32,
     /// The pitch type and slot actually thrown on the last step (`None` before the first).
     pub thrown: Option<(PitchKind, usize)>,
+    /// Where that pitch crossed the plate and the batter's zone: (x, z, zone bottom, zone top), m.
+    pub location: Option<[f64; 4]>,
+    /// What became of it.
+    pub result: Option<PitchResult>,
+}
+
+/// Records where the pitch of a step crossed the plate and what became of it.
+struct Where(Option<[f64; 4]>, Option<PitchResult>);
+
+impl Observer for Where {
+    fn pitch(&mut self, e: &PitchEvent) {
+        let p = e.thrown.flight.plate_pos;
+        self.0 = Some([p.x, p.z, e.zone.bottom, e.zone.top]);
+        self.1 = Some(e.result);
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -176,6 +194,8 @@ pub struct PitchingEnv {
     last: Option<PitchKind>,
     last_runs: u32,
     thrown: Option<(PitchKind, usize)>,
+    location: Option<[f64; 4]>,
+    result: Option<PitchResult>,
 }
 
 impl PitchingEnv {
@@ -185,7 +205,21 @@ impl PitchingEnv {
     }
 
     pub fn with(cfg: PitchEnvConfig, league: Arc<League>, re: Arc<RunExpectancy>, seed: u64) -> Self {
-        PitchingEnv { cfg, league, re, rng: Rng::new(seed), sim: None, fixture: None, side: 1, decisions: 0, last: None, last_runs: 0, thrown: None }
+        PitchingEnv {
+            cfg,
+            league,
+            re,
+            rng: Rng::new(seed),
+            sim: None,
+            fixture: None,
+            side: 1,
+            decisions: 0,
+            last: None,
+            last_runs: 0,
+            thrown: None,
+            location: None,
+            result: None,
+        }
     }
 
     pub fn config(&self) -> &PitchEnvConfig {
@@ -230,6 +264,8 @@ impl PitchingEnv {
         self.last = None;
         self.last_runs = 0;
         self.thrown = None;
+        self.location = None;
+        self.result = None;
         self.advance();
         (self.observation(), self.info())
     }
@@ -262,11 +298,12 @@ impl PitchingEnv {
         // The managers' moves are already made (`advance` settles the game up to the pitch),
         // so the pitcher who throws is the one the call was made for. An intentional walk
         // may still come first; the call then stands for the next batter's first pitch.
+        let mut seen = Where(None, None);
         loop {
             let idx = self.slot(kind);
             let sim = self.sim.as_mut().expect("game");
             sim.set_pitch_order(PitchOrder { idx, intent });
-            match sim.step(&mut self.rng, &mut NoObserver) {
+            match sim.step(&mut self.rng, &mut seen) {
                 Step::Pitch => {
                     let (prof, _) = sim.pitcher_now(side);
                     let thrown = prof.pitches.get(idx).map(|p| p.kind).unwrap_or(kind);
@@ -286,6 +323,8 @@ impl PitchingEnv {
             }
         }
         self.decisions += 1;
+        self.location = seen.0;
+        self.result = seen.1;
         let sim = self.sim.as_ref().expect("game");
         let s1 = sim.situation();
         let runs = s1.score[batting] - runs0;
@@ -359,6 +398,8 @@ impl PitchingEnv {
             decisions: self.decisions,
             runs: self.last_runs,
             thrown: self.thrown,
+            location: self.location,
+            result: self.result,
         }
     }
 }

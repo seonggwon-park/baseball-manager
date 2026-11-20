@@ -1,7 +1,7 @@
 //! `bm_gym._core`: the bm-gym environment for Python. The Gymnasium wrapper lives in
 //! `python/bm_gym/env.py`; this module only moves numbers across.
 
-use bm_engine::ManagerStyle;
+use bm_engine::{ManagerStyle, PitchResult};
 use bm_gym::pitch_env::{action_name as pitch_action_name, kind_name, obs_names as pitch_obs_names};
 use bm_gym::{
     action_name, EnvConfig, Info, ManagerEnv, PitchEnvConfig, PitchInfo, PitchingEnv, Reward, N_ACTIONS, N_OBS, N_PITCH_ACTIONS, N_PITCH_OBS, OBS_NAMES,
@@ -138,6 +138,19 @@ fn pitch_info_dict<'py>(py: Python<'py>, i: &PitchInfo) -> PyResult<Bound<'py, P
     d.set_item("decisions", i.decisions)?;
     d.set_item("runs", i.runs)?;
     d.set_item("thrown", i.thrown.map(|(k, slot)| (kind_name(k), slot)))?;
+    d.set_item("location", i.location.map(|l| (l[0], l[1], l[2], l[3])))?;
+    d.set_item(
+        "result",
+        i.result.map(|r| match r {
+            PitchResult::Ball => "ball",
+            PitchResult::CalledStrike => "called_strike",
+            PitchResult::SwingingStrike => "swinging_strike",
+            PitchResult::Foul => "foul",
+            PitchResult::FoulTip => "foul_tip",
+            PitchResult::InPlay => "in_play",
+            PitchResult::HitByPitch => "hit_by_pitch",
+        }),
+    )?;
     Ok(d)
 }
 
