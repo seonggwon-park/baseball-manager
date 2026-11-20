@@ -40,9 +40,9 @@ MOTION=$R/pitch.json CLIP=36:150 DECALS=$R/decals $B $T/motion.py -- out/pitch f
 # 스윙 (60 fps, 짧은 셔터)
 python3 -I $T/cmu_fk.py $R/cmu/124.asf $R/cmu/124_07.amc $R/swing60.json 2
 MOTION=$R/swing60.json CLIP=80:250 FPS=60 SHUTTER=0.25 DECALS=$R/decals $B $T/swing.py -- out/swing ffc 16 bat_side
-# 번트 (세로 근접)
+# 번트 (세로, 투수 쪽에서: 몸을 돌려 내민 배트가 가로로 보인다)
 python3 -I $T/cmu_fk.py $R/cmu/124.asf $R/cmu/124_08.amc $R/bunt.json 4
-MOTION=$R/bunt.json CLIP=28:100 DECALS=$R/decals $B $T/swing.py -- out/bunt ffc 16 bat_close
+MOTION=$R/bunt.json CLIP=28:100 DECALS=$R/decals $B $T/swing.py -- out/bunt ffc 16 bat_mound
 # 원본 모션 재기
 python3 -I $T/kin_check.py throw $R/cmu/124.asf $R/cmu/124_01.amc
 python3 -I $T/kin_check.py swing $R/cmu/124.asf $R/cmu/124_07.amc

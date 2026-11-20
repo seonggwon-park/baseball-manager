@@ -4,8 +4,8 @@
 
 ```sh
 cargo run --release --bin bm -- rollout --states 300 --rollouts 200 --seed 2025 --json rollout.json
-# 도입부 그림: tools/render의 번트(124_08, bat_close 카메라) 프레임 폴더
-HOOK_LAST=45 python3 -I tools/content/tactics_short.py rollout.json out/bunt/bat_close short.mp4
+# 도입부 그림: tools/render의 번트(124_08, bat_mound 카메라) 프레임 폴더
+HOOK_LAST=52 python3 -I tools/content/tactics_short.py rollout.json out/bunt/bat_mound short.mp4
 ```
 
 | 시간 | 장면 | 화면 글자 | 내레이션(선택) |

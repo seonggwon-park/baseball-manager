@@ -186,14 +186,16 @@ def scene_hook(cv, t, dur, clip):
     im = im.resize((W * SS, int(W * SS * im.height / im.width)), Image.LANCZOS)
     top = HOOK_TOP
     cv.img.paste(im, (0, top * SS))
-    for i in range(40):  # fade the picture's top edge into the background
-        cv.rect(0, top + i * 4, W, top + i * 4 + 4, BG, (1 - i / 40) ** 1.5)
+    for i in range(75):  # fade the picture's top edge (sky) into the background under the text
+        cv.rect(0, top + i * 4, W, top + i * 4 + 4, BG, min(1.0, 1.25 * (1 - i / 75) ** 1.2))
     a = smooth((t - 0.15) / 0.35)
     cv.text(80, 236, "번트, 정말", 88, INK, a, bold=True)
     cv.text(80, 340, "손해일까?", 88, INK, a, bold=True)
     b = smooth((t - 0.8) / 0.4)
     cv.text(80, 470, "작전만 바꿔 150만 번 시뮬레이션해 봤다", 40, INK2, b)
-    cv.text(80, 1478, "3D 시뮬레이션 · 가상 선수", 28, INK2, 1.0)
+    tag = "3D 시뮬레이션 · 가상 선수"
+    cv.rect(64, 1466, 96 + cv.width(tag, 28), 1520, BG, 0.75, r=12)
+    cv.text(80, 1478, tag, 28, INK2, 1.0)
 
 
 def bezier(p0, p1, p2, p3, n=28, f=1.0):
@@ -314,9 +316,9 @@ def scene_bunt(cv, t, dur):
     header(cv, t, "실험 1 · 희생번트", "희생번트는 강공보다\n얼마나 이길까?", "강공 대비 승리 확률 차이 · 모두 점수 차 1점 이내")
     x0, scale, top, rh = 760, 250, 610, 118
     a = smooth((t - 0.3) / 0.4)
-    cv.line([(x0, top - 20), (x0, top + rh * len(BUNT_ROWS) - 20)], INK2, a, 2)
     for i, (name, v, se) in enumerate(BUNT_ROWS):
         y = top + i * rh
+        cv.line([(x0, y + 42), (x0, y + 96)], INK2, a, 2)
         cv.text(80, y, name, 36, INK, a, bold=False)
         g = ease((t - 0.7 - i * 0.25) / 0.8)
         xv = x0 + v * scale * g

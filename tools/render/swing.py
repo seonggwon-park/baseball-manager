@@ -277,6 +277,8 @@ def main_swing():
         "bat_side": camera("bat_side", (x, 5.6, 1.15), (x, -0.8, 0.95), 45, (1280, 720)),
         "bat_close": camera("bat_close", (x, 4.0, 1.1), (x, -0.8, 0.95), 52, (1080, 1350)),
         "bat_hands": camera("bat_hands", (x + 0.2, 1.2, 1.5), (x, -0.6, 1.15), 50, (900, 900)),
+        # From the mound side, as on a broadcast: a squared-around bunt shows the bat across.
+        "bat_mound": camera("bat_mound", (x - 7.0, -0.85, 1.4), (x, -0.95, 0.95), 100, (1080, 1350)),
     }
     for view in VIEWS:
         cam = cams[view]
