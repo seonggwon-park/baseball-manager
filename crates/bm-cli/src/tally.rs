@@ -432,6 +432,12 @@ pub struct Tally {
     /// jammed, over, under), and on balls in play [n, sum of the contact point's distance from
     /// the tip (in), sum and sum of squares of the impact offset (in)]: the engine's own view.
     pub region_miss: Vec<[[f64; 6]; 2]>,
+    /// By pitch type and in (0) or out of (1) the zone: whiffs by cause (as `region_miss`),
+    /// then swings and fouls (bunts left out).
+    pub kind_zone_miss: [[[f64; 8]; 2]; 8],
+    /// By pitch type, attack region and strike group (as `region_classes`): pitches, swings,
+    /// whiffs (swinging strikes and foul tips).
+    pub kind_region: [[[[f64; 3]; 2]; REGIONS]; 8],
     pub region_contact: Vec<[[f64; 4]; 2]>,
     /// Full swings by pitch height above the middle of the zone (4-in bins from -24 in):
     /// [swings, sum of contact depths (in, relative to the usual point), of attack angles (deg)
@@ -568,6 +574,8 @@ impl Default for Tally {
             region_bip: vec![[[0.0; 6]; 2]; REGIONS],
             region_swing: vec![[[0.0; 4]; 2]; REGIONS],
             region_miss: vec![[[0.0; 6]; 2]; REGIONS],
+            kind_zone_miss: [[[0.0; 8]; 2]; 8],
+            kind_region: [[[[0.0; 3]; 2]; REGIONS]; 8],
             region_contact: vec![[[0.0; 4]; 2]; REGIONS],
             height_geom: [[0.0; 4]; 12],
             bat_speed_all: Mean::default(),
@@ -762,6 +770,14 @@ impl Tally {
         }
         for (a, b) in self.region_miss.iter_mut().zip(&o.region_miss) {
             add_grid(a, b);
+        }
+        for (a, b) in self.kind_zone_miss.iter_mut().zip(&o.kind_zone_miss) {
+            add_grid(a, b);
+        }
+        for (a, b) in self.kind_region.iter_mut().zip(&o.kind_region) {
+            for (x, y) in a.iter_mut().zip(b) {
+                add_grid(x, y);
+            }
         }
         for (a, b) in self.region_contact.iter_mut().zip(&o.region_contact) {
             add_grid(a, b);
@@ -1129,15 +1145,32 @@ impl Observer for Tally {
                 m[0] += 1.0;
                 m[1] += bs / MPH;
             }
+            let kr = &mut self.kind_region[e.thrown.kind.index()][region][two];
+            kr[0] += 1.0;
+            if e.swung {
+                kr[1] += 1.0;
+            }
+            if matches!(e.result, PitchResult::SwingingStrike | PitchResult::FoulTip) {
+                kr[2] += 1.0;
+            }
+            let kz = &mut self.kind_zone_miss[e.thrown.kind.index()][usize::from(e.zone_distance > 0.0)];
+            if e.swung {
+                kz[6] += 1.0;
+            }
+            if matches!(e.result, PitchResult::Foul) {
+                kz[7] += 1.0;
+            }
             if let Some(m) = e.miss {
-                self.region_miss[region][two][match m {
+                let cause = match m {
                     Miss::Early => 0,
                     Miss::Late => 1,
                     Miss::OffTheEnd => 2,
                     Miss::Jammed => 3,
                     Miss::Over => 4,
                     Miss::Under => 5,
-                }] += 1.0;
+                };
+                self.region_miss[region][two][cause] += 1.0;
+                kz[cause] += 1.0;
             }
             if let (Some(shape), false) = (e.swing, matches!(e.miss, Some(Miss::Early | Miss::Late))) {
                 let h = (e.thrown.flight.plate_pos.z - e.zone.mid()) / INCH;

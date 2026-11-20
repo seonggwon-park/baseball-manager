@@ -639,6 +639,8 @@ fn main() {
                     "region_bip": t.region_bip,
                     "region_swing": t.region_swing,
                     "region_miss": t.region_miss,
+                    "kind_zone_miss": t.kind_zone_miss,
+                    "kind_region": t.kind_region,
                     "region_contact": t.region_contact,
                     "height_geom": t.height_geom,
                 });

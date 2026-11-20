@@ -208,10 +208,19 @@ pub struct ModelParams {
     /// (`docs/physics-model.md` 5.3).
     pub barrel_kind: [f64; 8],
     /// Factor by pitch type on the growth of the barrel error outside the zone
-    /// (`barrel_outside_gain`): a breaking ball chased off the plate is harder to hit than its
-    /// type's barrel error in the zone says (2025 Statcast: whiffs per swing on sliders 19 % in
-    /// the zone, 60 % out of it; four-seamers 18 % and 36 %).
+    /// (`barrel_outside_gain`). [fitted] It moves the whiffs off the plate of the fastballs,
+    /// whose misses there come from the barrel error (cutters: 25 % of swings at 0.3, 40 % at
+    /// 3), and hardly those of the breaking balls, whose misses there are systematic (sliders
+    /// 47.5 % and 53.5 %): see `below_kind`. Fitted with it to the whiffs, swings and run values
+    /// of each pitch type in and out of the zone (2025 Statcast; `docs/physics-model.md` 5.1).
     pub outside_kind: [f64; 8],
+    /// Factor by pitch type on `below_zone_bias`: how far the barrel stays above a pitch of that
+    /// type that ends up below the zone. [fitted] Most whiffs on breaking balls off the plate are
+    /// swings over the ball or past the end of the bat, not barrel noise; this term acts off the
+    /// plate only (zero in the zone), so a pitch type can be harder to hit out of the zone
+    /// without being harder in it (2025 Statcast whiffs per swing in / out of the zone: sliders
+    /// 19 / 60 %, sweepers 20 / 56 %, cutters 16 / 39 %, changeups 21 / 47 %).
+    pub below_kind: [f64; 8],
     /// Weight of the straight-line timing geometry in the vertical error. At 1 the barrel
     /// and the ball keep to their paths, so contact a distance `dy` from the planned point
     /// misses by `(tan descent - tan attack) dy`; at 0 the barrel meets the ball's height
@@ -553,28 +562,28 @@ impl Default for ModelParams {
             ump_scale: 0.93 * INCH,
 
             swing_base: [[0.60607, 0.93393, 0.985], [0.71325, 0.96259, 0.985], [0.8093, 0.94741, 0.985], [0.14157, 0.8368, 0.985]],
-            swing_d0: 0.028647,
-            swing_d0_one_strike: 0.015211,
-            swing_d0_two_strikes: 0.060299,
-            swing_width: 0.051598,
+            swing_d0: 0.027883,
+            swing_d0_one_strike: 0.014399,
+            swing_d0_two_strikes: 0.06038,
+            swing_width: 0.053984,
             recognition_sd: 0.08,
-            fooled_recognition: 0.5,
-            noise_residual: 0.056108,
-            recognition_scale: 0.22369,
+            fooled_recognition: 0.5316,
+            noise_residual: 0.062327,
+            recognition_scale: 0.22214,
             recognition_time_scale: 0.14501,
-            timing_adjust: 0.68402,
-            location_adjust: 0.99564,
+            timing_adjust: 0.79258,
+            location_adjust: 0.99743,
             fastball_misread: 0.0,
-            kind_recognition: [0.0, 0.0, 0.010371, -0.079913, 0.07369, 0.29486, -0.023278, -0.33115],
+            kind_recognition: [0.0, 0.0, -0.018834, -0.17942, 0.017113, 0.37608, -0.030661, -0.34494],
             take_kind: [
                 [0.0, 0.0, 0.0],
-                [0.19885, 0.10494, 0.11863],
-                [-0.06985, 0.044837, -0.0046047],
-                [0.081739, 0.023119, -0.017762],
-                [0.27526, 0.10117, -0.0059464],
-                [0.40885, 0.10145, -0.025499],
-                [-0.060513, -0.050318, -0.015074],
-                [0.065229, 0.030025, -0.046005],
+                [0.21191, 0.13746, 0.097642],
+                [0.0038243, 0.024819, 0.0],
+                [0.095927, 0.074289, -0.015517],
+                [0.26855, 0.0065031, -0.040366],
+                [0.43412, 0.076425, -0.025604],
+                [-0.07048, -0.090306, -0.064028],
+                [0.086012, -0.081786, -0.036558],
             ],
             prior_pull: [[0.2866, 0.22428], [0.14069, 0.14469]],
             ride_bias: 0.068054,
@@ -594,7 +603,7 @@ impl Default for ModelParams {
             timing_speed_exp: 3.9675,
             barrel_speed_exp: 3.7199,
             commit_exp: 4.8229,
-            tracking_residual: 0.26031,
+            tracking_residual: 0.26008,
             barrel_outside_gain: 4.5454,
             barrel_outside_gain2: 18.75,
             barrel_outside_offset: 0.034877,
@@ -605,9 +614,10 @@ impl Default for ModelParams {
             reach_limit: 0.40,
             height_bias: 0.094799,
             offset_inside: 0.046601,
-            aim_kind: [0.0, -0.032548, -0.018124, -0.014379, 0.0061355, -0.031321, -0.028653, -0.013767],
-            barrel_kind: [1.0, 0.99257, 1.45, 1.35, 0.95, 0.89343, 1.1298, 1.2133],
-            outside_kind: [1.0; 8],
+            aim_kind: [0.0, -0.031393, -0.015489, -0.012862, 0.0047755, -0.030426, -0.028206, -0.011111],
+            barrel_kind: [1.0, 1.004, 1.3588, 1.2207, 0.84837, 0.9445, 1.2237, 1.1324],
+            outside_kind: [0.94481, 1.0335, 2.2316, 1.0011, 0.9304, 1.1391, 0.68578, 1.0652],
+            below_kind: [1.449, 0.60449, 1.7492, 1.6301, 1.6239, 1.0008, 0.62379, 0.99159],
             plane_mismatch: 0.0,
             mismatch_noise: 1.0481,
             spray_turn: 0.0698,
@@ -637,11 +647,11 @@ impl Default for ModelParams {
             partial_two_strike_gain: 1.62,
             partial_fooled_rate: 0.12,
             partial_speed_min: 0.55,
-            off_end_gain: 0.67564,
+            off_end_gain: 0.74902,
             off_end_late: 0.1,
             pivot_radius: 2.25,
             off_end_linear: 0.015232,
-            off_end_max: 0.17847,
+            off_end_max: 0.19702,
             face_gain: 1.3212,
             face_lead: 0.0,
             face_sd: 0.108,
@@ -667,9 +677,9 @@ impl Default for ModelParams {
             bat_tilt_sd: 0.098,
             chop_foul_dist: 3.0,
             chop_foul_prob: 0.509,
-            contact_along: 0.016626,
+            contact_along: 0.018743,
             reach_per_m: 0.31093,
-            reach_out_per_m: 0.29776,
+            reach_out_per_m: 0.32779,
             foul_tip_catch: 0.55,
             foul_tip_angle: 0.3,
             two_strike_speed: 0.98,

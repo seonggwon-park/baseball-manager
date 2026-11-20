@@ -220,6 +220,7 @@ impl Tuning {
             ["aim_kind", k] => p.aim_kind[idx(k, 8)?] = v,
             ["barrel_kind", k] => p.barrel_kind[idx(k, 8)?] = v,
             ["outside_kind", k] => p.outside_kind[idx(k, 8)?] = v,
+            ["below_kind", k] => p.below_kind[idx(k, 8)?] = v,
             ["w", "command_kind", k] => self.baseline.command_kind[idx(k, 8)?] = v,
             ["attack_kind", k] => p.attack_kind[idx(k, 8)?] = v,
             ["zone_intent", b, s] => p.zone_intent[idx(b, 4)?][idx(s, 3)?] = v,

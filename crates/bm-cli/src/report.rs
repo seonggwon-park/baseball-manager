@@ -962,6 +962,7 @@ pub fn print(t: &Tally) {
     }
     println!("{s}");
     attack_regions(t);
+    kind_zone(t);
     println!("\n== Base states at the start of a plate appearance, % (sim / MLB)");
     let bs_t = [56.35, 18.32, 8.78, 6.56, 2.77, 2.66, 2.36, 2.18];
     let names = ["empty", "1B", "2B", "1B+2B", "3B", "1B+3B", "2B+3B", "loaded"];
@@ -1011,6 +1012,78 @@ pub fn print(t: &Tally) {
         println!("{s}");
     }
     println!("\n== Double plays: GIDP per ground-ball out with a runner on first and fewer than two outs: {:.3}", t.gidp / t.dp_opp_gb.max(1.0));
+}
+
+/// Pitch types in and out of the rulebook zone (grown by the ball's radius): swing rate, whiffs
+/// (and foul tips) per swing, and run value per 100 pitches valued with the count-by-result table
+/// of the 2025 Statcast sample (the mean `delta_run_exp` of each result in each count), against
+/// that sample (30 dates, 121,915 pitches of these types; bunts and automatic or intentional
+/// pitches left out). The table makes the value of a result independent of how the engine scores
+/// runs, so a difference is in the mix of results.
+fn kind_zone(t: &Tally) {
+    // [count = balls * 3 + strikes][class as `tally::pitch_class`]
+    const RV: [[f64; 12]; 12] = [
+        [0.0330, -0.0393, -0.0404, -0.0407, -0.0399, 0.3333, -0.2515, 0.4093, 0.7188, 1.0116, 1.5633, 0.4308],
+        [0.0265, -0.0653, -0.0667, -0.0670, -0.0661, 0.3697, -0.2161, 0.4502, 0.7551, 1.0949, 1.6012, 0.4732],
+        [0.0265, -0.1570, -0.1551, -0.1572, 0.0000, 0.4476, -0.1502, 0.5156, 0.8278, 1.1652, 1.5925, 0.5669],
+        [0.0655, -0.0464, -0.0459, -0.0452, -0.0461, 0.2948, -0.2859, 0.3862, 0.6848, 0.9887, 1.5245, 0.3676],
+        [0.0463, -0.0656, -0.0663, -0.0668, -0.0662, 0.3556, -0.2399, 0.4323, 0.7216, 1.0564, 1.5401, 0.4371],
+        [0.0397, -0.1818, -0.1833, -0.1809, 0.0001, 0.4269, -0.1768, 0.5034, 0.7907, 1.1198, 1.6163, 0.5247],
+        [0.0967, -0.0664, -0.0635, -0.0636, -0.0663, 0.1967, -0.3536, 0.3256, 0.6045, 0.9260, 1.2961, 0.3766],
+        [0.0973, -0.0730, -0.0722, -0.0716, -0.0723, 0.3463, -0.2902, 0.3878, 0.6771, 0.9345, 1.5613, 0.3996],
+        [0.0888, -0.2208, -0.2241, -0.2274, 0.0000, 0.3674, -0.2167, 0.4571, 0.7349, 1.0548, 1.4759, 0.4668],
+        [0.1254, -0.0656, -0.0643, -0.0637, -0.0578, 0.0000, -0.4445, 0.2693, 0.4830, 0.9070, 1.0945, 0.3730],
+        [0.1909, -0.0807, -0.0797, -0.0866, -0.0821, 0.2178, -0.3829, 0.2969, 0.5715, 0.7617, 1.3929, 0.2824],
+        [0.2756, -0.3096, -0.3150, -0.3062, 0.0000, 0.2899, -0.3035, 0.3734, 0.6668, 0.9682, 1.5284, 0.3672],
+    ];
+    // [in, out]: swing %, whiff % of swings, run value per 100 pitches, its standard error.
+    const MLB: [[[f64; 4]; 2]; 8] = [
+        [[68.6, 18.2, -2.33, 0.17], [23.3, 35.6, 2.94, 0.10]],
+        [[60.0, 10.9, -2.58, 0.24], [24.9, 24.4, 3.05, 0.15]],
+        [[67.9, 16.2, -1.79, 0.40], [25.7, 39.4, 2.66, 0.19]],
+        [[68.9, 19.4, -1.48, 0.31], [31.9, 59.7, 0.96, 0.13]],
+        [[64.4, 19.7, -2.19, 0.41], [30.5, 55.8, 1.34, 0.17]],
+        [[57.5, 15.4, -1.30, 0.43], [27.9, 54.0, 1.77, 0.19]],
+        [[76.6, 20.6, -1.81, 0.40], [33.9, 46.5, 1.26, 0.15]],
+        [[80.4, 22.7, -1.30, 0.76], [34.6, 53.9, 0.63, 0.26]],
+    ];
+    println!("\n== Pitch types in and out of the zone: sim / MLB (run value of the results with the MLB count-by-result table)");
+    println!("  type zone   swing %       whiff %       runs/100 pitches (MLB s.e.)");
+    let mut chi2 = 0.0;
+    for (k, m) in MLB.iter().enumerate() {
+        for (z, name) in ["in ", "out"].iter().enumerate() {
+            let (mut n, mut sw, mut wh, mut rv) = (0.0, 0.0, 0.0, 0.0);
+            for c in 0..12 {
+                for j in 0..12 {
+                    let all = t.pitch_classes[k][c][j];
+                    let inz = t.pitch_classes_zone[k][c][j];
+                    let v = if z == 0 { inz } else { all - inz };
+                    n += v;
+                    rv += v * RV[c][j];
+                    if (2..=4).contains(&j) || j >= 6 {
+                        sw += v;
+                    }
+                    if matches!(j, 2 | 3) {
+                        wh += v;
+                    }
+                }
+            }
+            let r = 100.0 * rv / n.max(1.0);
+            chi2 += ((r - m[z][2]) / m[z][3]).powi(2);
+            println!(
+                "  {:<4} {name}   {:5.1}/{:5.1}   {:5.1}/{:5.1}   {:+5.2}/{:+5.2} ({:.2})",
+                PitchKind::ALL[k].code(),
+                pct(sw, n),
+                m[z][0],
+                pct(wh, sw),
+                m[z][1],
+                r,
+                m[z][2],
+                m[z][3]
+            );
+        }
+    }
+    println!("  chi-square of the run values over the 16 cells (MLB s.e.): {chi2:.0}");
 }
 
 /// Swing outcomes, bat speed and contact quality by attack region of the plate

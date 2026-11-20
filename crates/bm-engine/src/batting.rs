@@ -427,7 +427,7 @@ pub fn swing(
         - p.noise_residual * (per.perceived_z - f.plate_pos.z - per.bias_z)
         + p.height_bias * (f.plate_pos.z - zone.mid())
         + p.offset_inside * inside
-        - p.below_zone_bias * below
+        - p.below_zone_bias * p.below_kind[k] * below
         + p.above_zone_bias * above
         + p.ride_bias * (f.move_z - ride_expected)
         + p.plane_mismatch * (descent.tan() - plane_pitch.tan()) * dy
