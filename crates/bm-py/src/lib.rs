@@ -2,7 +2,10 @@
 //! `python/bm_gym/env.py`; this module only moves numbers across.
 
 use bm_engine::ManagerStyle;
-use bm_gym::{action_name, EnvConfig, Info, ManagerEnv, Reward, N_ACTIONS, N_OBS, OBS_NAMES};
+use bm_gym::pitch_env::{action_name as pitch_action_name, kind_name, obs_names as pitch_obs_names};
+use bm_gym::{
+    action_name, EnvConfig, Info, ManagerEnv, PitchEnvConfig, PitchInfo, PitchingEnv, Reward, N_ACTIONS, N_OBS, N_PITCH_ACTIONS, N_PITCH_OBS, OBS_NAMES,
+};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
@@ -122,10 +125,102 @@ impl PyManagerEnv {
     }
 }
 
+fn pitch_info_dict<'py>(py: Python<'py>, i: &PitchInfo) -> PyResult<Bound<'py, PyDict>> {
+    let d = PyDict::new(py);
+    d.set_item("inning", i.inning)?;
+    d.set_item("top", i.top)?;
+    d.set_item("outs", i.outs)?;
+    d.set_item("balls", i.balls)?;
+    d.set_item("strikes", i.strikes)?;
+    d.set_item("bases", i.bases)?;
+    d.set_item("score", (i.score[0], i.score[1]))?;
+    d.set_item("side", i.side)?;
+    d.set_item("decisions", i.decisions)?;
+    d.set_item("runs", i.runs)?;
+    d.set_item("thrown", i.thrown.map(|(k, slot)| (kind_name(k), slot)))?;
+    Ok(d)
+}
+
+/// One game at a time: the agent calls every pitch its club throws.
+#[pyclass(module = "bm_gym._core", name = "PitchingEnv")]
+#[derive(Clone)]
+struct PyPitchingEnv {
+    env: PitchingEnv,
+}
+
+#[pymethods]
+impl PyPitchingEnv {
+    #[new]
+    #[pyo3(signature = (seed = 0, side = None, league_seed = 2025, opponent = "mlb", own = "mlb", adapt = 1.0, perturb = 0.0))]
+    fn new(seed: u64, side: Option<usize>, league_seed: u64, opponent: &str, own: &str, adapt: f64, perturb: f64) -> PyResult<Self> {
+        if matches!(side, Some(s) if s > 1) {
+            return Err(PyValueError::new_err("side is 0 (away), 1 (home) or None (random)"));
+        }
+        if !(0.0..=1.0).contains(&adapt) || perturb < 0.0 {
+            return Err(PyValueError::new_err("adapt is in 0..1 and perturb is not negative"));
+        }
+        let cfg = PitchEnvConfig { side, opponent: style(opponent)?, own: style(own)?, league_seed, adapt, perturb };
+        Ok(PyPitchingEnv { env: PitchingEnv::new(cfg, seed) })
+    }
+
+    /// Start a new game; returns (observation, info).
+    #[pyo3(signature = (seed = None))]
+    fn reset<'py>(&mut self, py: Python<'py>, seed: Option<u64>) -> PyResult<(Vec<f32>, Bound<'py, PyDict>)> {
+        let (obs, info) = self.env.reset(seed);
+        Ok((obs.to_vec(), pitch_info_dict(py, &info)?))
+    }
+
+    /// Call the next pitch; returns (observation, reward, terminated, truncated, info).
+    fn step<'py>(&mut self, py: Python<'py>, action: usize) -> PyResult<StepTuple<'py>> {
+        if action >= N_PITCH_ACTIONS {
+            return Err(PyValueError::new_err(format!("action {action} out of range 0..{N_PITCH_ACTIONS}")));
+        }
+        if self.env.sim().is_none() || self.env.sim().is_some_and(|g| g.is_over()) {
+            return Err(PyValueError::new_err("no game in progress: call reset()"));
+        }
+        let r = self.env.step(action);
+        Ok((r.obs.to_vec(), r.reward, r.terminated, r.truncated, pitch_info_dict(py, &r.info)?))
+    }
+
+    /// Pitch types the current pitcher throws, each with the three intents.
+    fn action_mask(&self) -> PyResult<Vec<bool>> {
+        if self.env.sim().is_none() {
+            return Err(PyValueError::new_err("call reset() first"));
+        }
+        Ok(self.env.action_mask().to_vec())
+    }
+
+    fn copy(&self) -> Self {
+        self.clone()
+    }
+
+    fn seed(&mut self, seed: u64) {
+        self.env.seed(seed);
+    }
+
+    #[getter]
+    fn side(&self) -> usize {
+        self.env.side()
+    }
+
+    #[staticmethod]
+    fn observation_names() -> Vec<String> {
+        pitch_obs_names()
+    }
+
+    #[staticmethod]
+    fn action_names() -> Vec<String> {
+        (0..N_PITCH_ACTIONS).map(pitch_action_name).collect()
+    }
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyManagerEnv>()?;
+    m.add_class::<PyPitchingEnv>()?;
     m.add("N_ACTIONS", N_ACTIONS)?;
     m.add("N_OBS", N_OBS)?;
+    m.add("N_PITCH_ACTIONS", N_PITCH_ACTIONS)?;
+    m.add("N_PITCH_OBS", N_PITCH_OBS)?;
     Ok(())
 }

@@ -34,6 +34,7 @@ jobs:
           cargo run --release --bin bm -- game --seed 7
           cargo run --release --bin bm -- validate --games 500 --seed 1
           cargo run --release --bin bm -- we --games 300 --json "$RUNNER_TEMP/we.json"
+          cargo run --release --bin bm -- re --games 300 --json "$RUNNER_TEMP/re.json"
 
   python:
     name: Python environment (bm_gym)

@@ -81,6 +81,52 @@ pub struct PitchMean {
 pub struct PitcherState {
     pub means: Vec<PitchMean>,
     pub pitch_count: u32,
+    /// What the batting side has picked up about his choices since he came in.
+    pub tendency: Tendency,
+}
+
+/// What the batting side has picked up about a pitcher's choices in this game. Batters'
+/// expectations follow the pitches they have seen (Gray 2002); here the whole lineup shares
+/// what it has seen of the current pitcher. For each pitch of the arsenal it keeps an
+/// exponentially weighted average of (thrown − usual share), the usual share being the pitch's
+/// selection weight in that count against a batter of that side, and the chance spread of that
+/// average. Only the part of a deviation beyond chance (`ModelParams::tendency_dead_zone`
+/// spreads) moves the batters, so a pitcher who mixes as usual leaves them where they were.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Tendency {
+    /// Weighted average of (thrown − usual share), per pitch.
+    pub dev: [f64; MAX_PITCHES],
+    /// Variance of that average if the pitcher threw his usual mix.
+    pub var: [f64; MAX_PITCHES],
+    pub seen: u32,
+}
+
+impl Tendency {
+    /// Count a pitch: `idx` thrown when the usual selection weights were `weights`.
+    pub fn record(&mut self, idx: usize, weights: &[f64], params: &ModelParams) {
+        let total: f64 = weights.iter().sum();
+        if total <= 0.0 || params.tendency_halflife <= 0.0 {
+            return;
+        }
+        let a = 1.0 - 0.5f64.powf(1.0 / params.tendency_halflife);
+        for (i, &w) in weights.iter().enumerate().take(MAX_PITCHES) {
+            let p = w / total;
+            let x = if i == idx { 1.0 - p } else { -p };
+            self.dev[i] = (1.0 - a) * self.dev[i] + a * x;
+            self.var[i] = (1.0 - a) * (1.0 - a) * self.var[i] + a * a * p * (1.0 - p);
+        }
+        self.seen += 1;
+    }
+
+    /// The deviation of each pitch's share beyond chance (zero inside the dead zone).
+    pub fn beyond_chance(&self, params: &ModelParams) -> [f64; MAX_PITCHES] {
+        let mut out = [0.0; MAX_PITCHES];
+        for (o, (&d, &v)) in out.iter_mut().zip(self.dev.iter().zip(&self.var)) {
+            let zone = params.tendency_dead_zone * v.sqrt();
+            *o = d.signum() * (d.abs() - zone).max(0.0);
+        }
+        out
+    }
 }
 
 impl PitcherState {
@@ -93,7 +139,7 @@ impl PitcherState {
                 PitchMean { spec, aim: AimModel::build(&spec, &env.pitch_flight, 0.0, 0.77, PITCH_DT) }
             })
             .collect();
-        PitcherState { means, pitch_count: 0 }
+        PitcherState { means, pitch_count: 0, tendency: Tendency::default() }
     }
 }
 
@@ -217,6 +263,66 @@ pub fn expectation(profile: &PitcherProfile, state: &PitcherState, weights: &[f6
     }
 }
 
+/// The batter's expectation when the batting side reads the pitcher's tendency in this game
+/// (`ModelParams::tendency_strength` > 0). The usual weights are moved by the deviations beyond
+/// chance; the location prior and the main fastball follow the moved weights, and the timing
+/// leans from the fastball toward the average pitch by the share of extra off-speed pitches
+/// (none extra: the plain expectation, timed on the fastball).
+pub fn expectation_adapted(profile: &PitcherProfile, state: &PitcherState, weights: &[f64], params: &ModelParams) -> Expectation {
+    let total: f64 = weights.iter().sum();
+    if total <= 0.0 {
+        return expectation(profile, state, weights, params.expect_mix);
+    }
+    let d = state.tendency.beyond_chance(params);
+    let mut belief = [0.0; MAX_PITCHES];
+    let n = weights.len().min(MAX_PITCHES);
+    for ((b, &w), &dev) in belief.iter_mut().zip(weights).zip(&d) {
+        *b = (w / total + params.tendency_strength * dev).max(0.0);
+    }
+    let b_total: f64 = belief[..n].iter().sum();
+    if b_total <= 0.0 {
+        return expectation(profile, state, weights, params.expect_mix);
+    }
+    let fast =
+        |w: &[f64], t: f64| -> f64 { profile.pitches.iter().zip(w).filter(|(p, _)| p.kind.group() == PitchGroup::Fastball).map(|(_, &x)| x / t).sum::<f64>() };
+    let usual_off = 1.0 - fast(&weights[..n], total);
+    let extra_off = (1.0 - fast(&belief[..n], b_total)) - usual_off;
+    let lean = if usual_off < 1.0 - 1e-9 { (extra_off.max(0.0) / (1.0 - usual_off)).min(1.0) } else { 0.0 };
+    expectation(profile, state, &belief[..n], (params.expect_mix + lean).min(1.0))
+}
+
+/// How the pitcher means to work the batter with one pitch.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Intent {
+    /// Into the zone, as in the most hitter-friendly count the engine's pitchers know (3-1).
+    Attack,
+    /// The usual intent in this count.
+    Normal,
+    /// Off the plate to get a chase, as in the most pitcher-friendly count (0-2).
+    Chase,
+}
+
+impl Intent {
+    pub const ALL: [Intent; 3] = [Intent::Attack, Intent::Normal, Intent::Chase];
+
+    /// The zone intent (`ModelParams::zone_intent` scale) this stands for in a count.
+    pub fn value(self, balls: usize, strikes: usize, params: &ModelParams) -> f64 {
+        let all = params.zone_intent.iter().flatten();
+        match self {
+            Intent::Attack => all.fold(f64::MIN, |a, &b| a.max(b)),
+            Intent::Normal => params.zone_intent[balls.min(3)][strikes.min(2)],
+            Intent::Chase => all.fold(f64::MAX, |a, &b| a.min(b)),
+        }
+    }
+}
+
+/// An order for the next pitch: which pitch of the arsenal and how to aim it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PitchOrder {
+    pub idx: usize,
+    pub intent: Intent,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PitchChoice {
     pub idx: usize,
@@ -258,11 +364,16 @@ pub fn choose_pitch(
     rng: &mut Rng,
 ) -> PitchChoice {
     let idx = rng.pick_weighted(weights);
+    aim_pitch(profile, batter_hand, zone, idx, params.zone_intent[balls.min(3)][strikes.min(2)], params, rng)
+}
+
+/// The intended location of pitch `idx` thrown with a zone `intent` (`ModelParams::zone_intent`
+/// scale: above zero toward the middle, below zero off the plate in the pitch's chase direction).
+pub fn aim_pitch(profile: &PitcherProfile, batter_hand: Hand, zone: &StrikeZone, idx: usize, intent: f64, params: &ModelParams, rng: &mut Rng) -> PitchChoice {
     let kind = profile.pitches[idx].kind;
     let aim_height = profile.pitches[idx].aim_height;
     let same_side = profile.hand == batter_hand;
     let (x_out, zf) = kind.typical_target(same_side);
-    let intent = params.zone_intent[balls.min(3)][strikes.min(2)];
     let (x, z_frac) = if intent >= 0.0 {
         (x_out * (1.0 - 0.8 * intent), 0.5 + (zf - 0.5) * (1.0 - 0.8 * intent))
     } else {
@@ -451,5 +562,88 @@ mod tests {
         assert!(fresh - tired > 1.0 * MPH && fresh - tired < 3.0 * MPH, "velocity loss {} mph", (fresh - tired) / MPH);
         // A left-hander releases from the first-base side.
         assert!(st.means[0].spec.release_pos.x > 0.3);
+    }
+
+    /// Usual selection weights in a random count against a right-handed batter.
+    fn usual(prof: &PitcherProfile, params: &ModelParams, rng: &mut Rng, w: &mut [f64; MAX_PITCHES]) -> (usize, usize, usize) {
+        let (b, s) = ((rng.f64() * 4.0) as usize, (rng.f64() * 3.0) as usize);
+        let n = selection_weights(prof, Hand::Right, b, s, params, w);
+        (n, b, s)
+    }
+
+    #[test]
+    fn the_usual_mix_stays_inside_chance() {
+        let env = MatchEnv::neutral_mlb();
+        let params = ModelParams { tendency_strength: 1.0, ..ModelParams::default() };
+        let prof = PitcherProfile::league_average(Hand::Right);
+        let mut rng = Rng::new(21);
+        let (mut moved, mut total, mut lean) = (0usize, 0usize, 0.0);
+        for _ in 0..40 {
+            // A pitcher's outing: 100 pitches drawn from his usual weights.
+            let mut st = PitcherState::new(&prof, &env);
+            for _ in 0..100 {
+                let mut w = [0.0; MAX_PITCHES];
+                let (n, _, _) = usual(&prof, &params, &mut rng, &mut w);
+                let plain = expectation(&prof, &st, &w[..n], params.expect_mix);
+                let adapted = expectation_adapted(&prof, &st, &w[..n], &params);
+                moved += usize::from(st.tendency.beyond_chance(&params).iter().any(|&d| d != 0.0));
+                lean += (adapted.time - plain.time).abs();
+                total += 1;
+                let idx = rng.pick_weighted(&w[..n]);
+                st.tendency.record(idx, &w[..n], &params);
+            }
+        }
+        let share = moved as f64 / total as f64;
+        assert!(share < 0.2, "share of pitches with a deviation beyond chance {share}");
+        // On average the batters' timing barely moves (a quarter of a millisecond).
+        assert!(lean / (total as f64) < 0.00025, "mean timing shift {} s", lean / total as f64);
+    }
+
+    #[test]
+    fn a_pitcher_who_leans_on_one_pitch_moves_the_batters() {
+        let env = MatchEnv::neutral_mlb();
+        let params = ModelParams { tendency_strength: 1.0, ..ModelParams::default() };
+        let prof = PitcherProfile::league_average(Hand::Right);
+        let slow = prof.pitches.iter().position(|p| p.kind.group() != PitchGroup::Fastball).expect("an off-speed pitch");
+        let mut st = PitcherState::new(&prof, &env);
+        let mut rng = Rng::new(5);
+        let mut w = [0.0; MAX_PITCHES];
+        for _ in 0..40 {
+            let (n, _, _) = usual(&prof, &params, &mut rng, &mut w);
+            st.tendency.record(slow, &w[..n], &params);
+        }
+        let n = selection_weights(&prof, Hand::Right, 1, 1, &params, &mut w);
+        let plain = expectation(&prof, &st, &w[..n], params.expect_mix);
+        let adapted = expectation_adapted(&prof, &st, &w[..n], &params);
+        // Expecting the slower pitch: later timing, and the location prior moves toward it.
+        assert!(adapted.time > plain.time + 0.005, "timing {} -> {}", plain.time, adapted.time);
+        let m = &st.means[slow].aim;
+        let slow_drop = m.move_z - 0.5 * G * m.time * m.time;
+        assert!((adapted.prior_z - slow_drop).abs() < (plain.prior_z - slow_drop).abs());
+        // With the reading switched off nothing moves.
+        let off = ModelParams { tendency_strength: 0.0, ..params };
+        assert_eq!(expectation_adapted(&prof, &st, &w[..n], &off).time, plain.time);
+        // A new pitcher starts unread.
+        assert!(PitcherState::new(&prof, &env).tendency.beyond_chance(&params).iter().all(|&d| d == 0.0));
+    }
+
+    #[test]
+    fn intents_span_the_engine_counts() {
+        let p = ModelParams::default();
+        assert_eq!(Intent::Normal.value(1, 1, &p), p.zone_intent[1][1]);
+        assert!(Intent::Attack.value(0, 2, &p) >= p.zone_intent[3][1] && Intent::Chase.value(3, 0, &p) <= p.zone_intent[0][2]);
+        // Aiming to attack puts the target nearer the middle than aiming to chase.
+        let env = MatchEnv::neutral_mlb();
+        let prof = PitcherProfile::league_average(Hand::Right);
+        let zone = StrikeZone::for_batter(1.85, &env.rules);
+        let mut rng = Rng::new(2);
+        let (mut a, mut c) = (0.0, 0.0);
+        for _ in 0..400 {
+            let t = aim_pitch(&prof, Hand::Right, &zone, 0, Intent::Attack.value(0, 0, &p), &p, &mut rng);
+            a += t.target_x.abs() + (t.target_z - zone.mid()).abs();
+            let t = aim_pitch(&prof, Hand::Right, &zone, 0, Intent::Chase.value(0, 0, &p), &p, &mut rng);
+            c += t.target_x.abs() + (t.target_z - zone.mid()).abs();
+        }
+        assert!(a < c, "attack {a} chase {c}");
     }
 }

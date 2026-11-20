@@ -8,7 +8,7 @@ import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 
-from ._core import N_ACTIONS, N_OBS, ManagerEnv
+from ._core import N_ACTIONS, N_OBS, N_PITCH_ACTIONS, N_PITCH_OBS, ManagerEnv, PitchingEnv
 
 OBS_BOUND = 20.0
 
@@ -58,4 +58,50 @@ class BaseballManagerEnv(gym.Env):
     @property
     def engine(self) -> ManagerEnv:
         """The binding underneath (``copy()`` it to try an action several ways)."""
+        return self._env
+
+
+class BaseballPitchingEnv(gym.Env):
+    """Call a club's pitches; an episode is one game.
+
+    Actions: ``kind * 3 + intent`` with kind in (four_seam, sinker, cutter, slider, sweeper,
+    curve, changeup, splitter) and intent in (attack, normal, chase); ``PITCH_ACTION_NAMES``
+    lists them. Only the current pitcher's pitch types are allowed: ``info["action_mask"]``
+    and ``action_masks()``. A type he does not throw is played as his most-used pitch.
+
+    Reward: the pitch's run value for the fielding side, minus the change of run expectancy
+    (bases, outs, count) and minus the runs that scored on it. ``adapt`` (0..1) is how much
+    the batters read a pitcher who strays from his usual mix; ``perturb`` shakes the batters'
+    perception constants for every game (0 = the engine's own).
+    """
+
+    metadata = {"render_modes": []}
+
+    def __init__(self, side: int | None = None, league_seed: int = 2025, opponent: str = "mlb", own: str = "mlb",
+                 adapt: float = 1.0, perturb: float = 0.0, seed: int | None = None):
+        super().__init__()
+        self._env = PitchingEnv(seed=0 if seed is None else int(seed), side=side, league_seed=league_seed,
+                                opponent=opponent, own=own, adapt=adapt, perturb=perturb)
+        self.observation_space = spaces.Box(low=-OBS_BOUND, high=OBS_BOUND, shape=(N_PITCH_OBS,), dtype=np.float32)
+        self.action_space = spaces.Discrete(N_PITCH_ACTIONS)
+
+    def _out(self, obs: list[float], info: dict[str, Any]) -> tuple[np.ndarray, dict[str, Any]]:
+        info["action_mask"] = np.asarray(self._env.action_mask(), dtype=bool)
+        return np.clip(np.asarray(obs, dtype=np.float32), -OBS_BOUND, OBS_BOUND), info
+
+    def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None):
+        super().reset(seed=seed)
+        obs, info = self._env.reset(seed)
+        return self._out(obs, info)
+
+    def step(self, action):
+        obs, reward, terminated, truncated, info = self._env.step(int(action))
+        obs, info = self._out(obs, info)
+        return obs, float(reward), bool(terminated), bool(truncated), info
+
+    def action_masks(self) -> np.ndarray:
+        return np.asarray(self._env.action_mask(), dtype=bool)
+
+    @property
+    def engine(self) -> PitchingEnv:
         return self._env

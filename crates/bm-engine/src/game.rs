@@ -7,7 +7,9 @@
 use crate::batting::{respond_with, Approach, BattedInfo, Miss, Swing, SwingShape};
 use crate::fielding::{alignment, move_time, Alignment, InfieldDepth, OutfieldDepth, Shift, C, P};
 use crate::params::ModelParams;
-use crate::pitching::{choose_pitch, expectation, selection_weights, throw_pitch, MatchEnv, PitcherState, Thrown, MAX_PITCHES};
+use crate::pitching::{
+    aim_pitch, choose_pitch, expectation, expectation_adapted, selection_weights, throw_pitch, MatchEnv, PitchOrder, PitcherState, Thrown, MAX_PITCHES,
+};
 use crate::play::{resolve, PlayInput, PlayKind, PlayResult, Runner};
 use crate::profile::{BatterProfile, CatcherProfile, FielderProfile, Hand, PitchKind, PitcherProfile, Player};
 use crate::rng::{sigmoid, Rng};
@@ -566,6 +568,8 @@ pub struct GameSim {
     style: [ManagerStyle; 2],
     offense_orders: OffenseOrders,
     defense_orders: DefenseOrders,
+    /// Order for the next pitch only (`set_pitch_order`).
+    pitch_order: Option<PitchOrder>,
     inning: u8,
     top: bool,
     outs: u8,
@@ -611,6 +615,7 @@ impl GameSim {
             style: [ManagerStyle::default(); 2],
             offense_orders: OffenseOrders::default(),
             defense_orders: DefenseOrders::default(),
+            pitch_order: None,
             inning: 1,
             top: true,
             outs: 0,
@@ -746,6 +751,23 @@ impl GameSim {
     }
 
     /// Orders for the team in the field (see [`DefenseOrders`]).
+    /// Which pitch the fielding side throws next and how it aims it; good for that pitch
+    /// only. An index outside the arsenal is ignored (the pitcher picks as usual).
+    pub fn set_pitch_order(&mut self, order: PitchOrder) {
+        self.pitch_order = Some(order);
+    }
+
+    /// Withdraw an order for the next pitch that has not been used.
+    pub fn clear_pitch_order(&mut self) {
+        self.pitch_order = None;
+    }
+
+    /// The pitcher of `team` (0 = away, 1 = home) and his state in this game.
+    pub fn pitcher_now(&self, team: usize) -> (&PitcherProfile, &PitcherState) {
+        let s = &self.sides[team];
+        (profile_of(&s.team, s.pitcher), &s.pitcher_state)
+    }
+
     pub fn set_defense_orders(&mut self, orders: DefenseOrders) {
         self.defense_orders = orders;
     }
@@ -893,6 +915,34 @@ impl GameSim {
     /// Advance the game: throw the next pitch and resolve everything that follows
     /// from it, or let an AI manager make a move first.
     pub fn step<O: Observer>(&mut self, rng: &mut Rng, obs: &mut O) -> Step {
+        match self.settle(rng, obs) {
+            Step::Pitch => {}
+            other => return other,
+        }
+        let (bat, fld) = self.sides_now();
+        let thrown = self.pitch(bat, fld, rng, obs);
+        // The home side wins the moment it goes ahead in the last inning, even in the
+        // middle of a plate appearance (a wild pitch, say).
+        let walk_off = !self.top && self.inning >= self.env.rules.innings && self.score[1] > self.score[0];
+        if self.pa.as_ref().is_some_and(|pa| pa.outcome.is_some()) || self.outs >= 3 || walk_off {
+            self.end_pa(bat, fld, obs);
+            if self.outs >= 3 || walk_off {
+                self.close_half(bat, fld, obs);
+            }
+        }
+        if thrown {
+            Step::Pitch
+        } else {
+            Step::IntentionalWalk
+        }
+    }
+
+    /// Bring the game up to the next pitch without throwing it: open the half inning, let
+    /// the AI managers make their moves before the plate appearance (each comes back as
+    /// `Step::Change`; call again) and start it. `Step::Pitch` means the next `step` throws
+    /// (or the batter is walked intentionally), so the pitcher, batter and runners seen now
+    /// are those of that pitch. `step` does the same first, drawing the same random numbers.
+    pub fn settle<O: Observer>(&mut self, rng: &mut Rng, obs: &mut O) -> Step {
         if self.result.is_some() {
             return Step::GameOver;
         }
@@ -917,21 +967,7 @@ impl GameSim {
             }
             self.begin_pa(bat, fld);
         }
-        let thrown = self.pitch(bat, fld, rng, obs);
-        // The home side wins the moment it goes ahead in the last inning, even in the
-        // middle of a plate appearance (a wild pitch, say).
-        let walk_off = !self.top && self.inning >= self.env.rules.innings && self.score[1] > self.score[0];
-        if self.pa.as_ref().is_some_and(|pa| pa.outcome.is_some()) || self.outs >= 3 || walk_off {
-            self.end_pa(bat, fld, obs);
-            if self.outs >= 3 || walk_off {
-                self.close_half(bat, fld, obs);
-            }
-        }
-        if thrown {
-            Step::Pitch
-        } else {
-            Step::IntentionalWalk
-        }
+        Step::Pitch
     }
 
     fn open_half<O: Observer>(&mut self, obs: &mut O) {
@@ -1387,9 +1423,17 @@ impl GameSim {
 
         let mut w = [0.0; MAX_PITCHES];
         let n = selection_weights(pprof, batter.hand, balls, strikes, params, &mut w);
-        let exp = expectation(pprof, &self.sides[fld].pitcher_state, &w[..n], params.expect_mix);
-        let choice = choose_pitch(pprof, batter.hand, &zone, balls, strikes, &w[..n], params, rng);
+        let exp = if params.tendency_strength > 0.0 {
+            expectation_adapted(pprof, &self.sides[fld].pitcher_state, &w[..n], params)
+        } else {
+            expectation(pprof, &self.sides[fld].pitcher_state, &w[..n], params.expect_mix)
+        };
+        let choice = match self.pitch_order.take() {
+            Some(order) if order.idx < n => aim_pitch(pprof, batter.hand, &zone, order.idx, order.intent.value(balls, strikes, params), params, rng),
+            _ => choose_pitch(pprof, batter.hand, &zone, balls, strikes, &w[..n], params, rng),
+        };
         let thrown = throw_pitch(pprof, &mut self.sides[fld].pitcher_state, &choice, command_scale, env, rng);
+        self.sides[fld].pitcher_state.tendency.record(choice.idx, &w[..n], params);
         pa.pitches = pa.pitches.saturating_add(1);
 
         // ---- runners leaving with the pitch ----
@@ -2125,6 +2169,44 @@ mod tests {
         assert_eq!(res.line_score, whole.line_score);
         assert_eq!(res.boxes[0].batting, whole.boxes[0].batting);
         assert_eq!(g.situation().score, whole.score);
+    }
+
+    #[test]
+    fn pitch_orders_set_the_next_pitch_only() {
+        use crate::pitching::{Intent, PitchOrder};
+        // Where an intent puts the pitch is tested with the aim itself (`pitching`).
+        struct Thrown(Vec<(bool, usize, f64)>);
+        impl Observer for Thrown {
+            fn pitch(&mut self, e: &PitchEvent) {
+                self.0.push((e.top, e.thrown.idx, e.zone_distance));
+            }
+        }
+        let mut g = sim(6);
+        let mut rng = Rng::new(4);
+        // The home starter stays in, so the ordered index is always in his arsenal.
+        g.set_auto(1, Auto::NONE);
+        let last = g.pitcher_now(1).0.pitches.len() - 1;
+        let mut seen = Thrown(Vec::new());
+        let mut ordered = 0;
+        while ordered < 100 && !g.situation().over {
+            let s = g.situation();
+            let mine = s.fielding == 1;
+            if mine {
+                g.set_pitch_order(PitchOrder { idx: last, intent: if ordered % 2 == 0 { Intent::Chase } else { Intent::Attack } });
+            }
+            let before = seen.0.len();
+            if g.step(&mut rng, &mut seen) == Step::Pitch && mine && seen.0.len() > before {
+                let (top, idx, _) = seen.0[before];
+                assert!(top && idx == last, "ordered pitch {last}, thrown {idx}");
+                // The order was used up by this pitch.
+                assert!(g.pitch_order.is_none());
+                ordered += 1;
+            }
+        }
+        assert_eq!(ordered, 100);
+        // Without an order the away pitcher keeps mixing his pitches.
+        let away: std::collections::HashSet<usize> = seen.0.iter().filter(|p| !p.0).map(|p| p.1).collect();
+        assert!(away.len() > 1);
     }
 
     #[test]

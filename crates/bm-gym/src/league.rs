@@ -53,4 +53,12 @@ impl League {
     pub fn start(&self, f: &Fixture) -> GameSim {
         GameSim::new(self.envs[f.env].clone(), f.teams[0].clone(), f.teams[1].clone())
     }
+
+    /// A new game of the fixture with other model constants (the park, the ball and the
+    /// rules stay those of the fixture).
+    pub fn start_with(&self, f: &Fixture, params: ModelParams) -> GameSim {
+        let mut env = (*self.envs[f.env]).clone();
+        env.params = params;
+        GameSim::new(Arc::new(env), f.teams[0].clone(), f.teams[1].clone())
+    }
 }

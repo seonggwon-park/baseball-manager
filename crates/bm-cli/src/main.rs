@@ -42,6 +42,9 @@
 //! bm we [--games N] [--seed S] [--json FILE]                     win expectancy of games between the AI managers by inning, half,
 //!                                                                 outs, bases and score: the table behind bm-gym's reward
 //!                                                                 (default FILE data/engine/win_expectancy.json)
+//! bm re [--games N] [--seed S] [--json FILE]                     run expectancy by base state, outs and count before each pitch
+//!                                                                 (innings 1-8 and the top of the 9th): the pitching
+//!                                                                 environment's reward (default FILE data/engine/run_expectancy.json)
 //! bm rollout [--states N] [--rollouts R] [--seed S] [--json FILE] the tactics of bm-gym's classes (bunt, steal, hit and run, ...)
 //!                                                                 tried from copies of N plate appearances each, R rollouts per
 //!                                                                 tactic, the AI managers finishing the game: change of the
@@ -542,6 +545,38 @@ fn main() {
                 println!("  {label:<44} {:.3}", t.home(inning, top, outs, bases, lead));
             }
             let path = args.json.clone().unwrap_or_else(|| "data/engine/win_expectancy.json".into());
+            std::fs::write(&path, serde_json::to_string(&t).expect("json") + "\n").unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+            println!("written {}", path.display());
+        }
+        "re" => {
+            let league = bm_gym::League::mlb(args.seed);
+            let start = Instant::now();
+            let t = bm_gym::RunExpectancy::build(&league, args.tuning.style, args.games, args.seed, args.threads);
+            println!("{} games, {} pitches, {:.1} s", t.games, t.pitches(), start.elapsed().as_secs_f64());
+            println!("runs to the end of the half inning, before the pitch (rows: base state; columns: count):");
+            print!("  {:<16}", "bases/outs");
+            let counts = [(0, 0), (1, 0), (0, 1), (2, 0), (1, 1), (0, 2), (3, 0), (2, 1), (1, 2), (3, 1), (2, 2), (3, 2)];
+            for (b, s) in counts {
+                print!(" {b}-{s}  ");
+            }
+            println!();
+            for bases in [0u8, 1, 2, 3, 4, 5, 6, 7] {
+                for outs in 0..3u8 {
+                    let label = format!(
+                        "{}{}{} {} out",
+                        if bases & 1 != 0 { '1' } else { '-' },
+                        if bases & 2 != 0 { '2' } else { '-' },
+                        if bases & 4 != 0 { '3' } else { '-' },
+                        outs
+                    );
+                    print!("  {label:<16}");
+                    for (b, s) in counts {
+                        print!(" {:.3}", t.value(bases, outs, b, s));
+                    }
+                    println!();
+                }
+            }
+            let path = args.json.clone().unwrap_or_else(|| "data/engine/run_expectancy.json".into());
             std::fs::write(&path, serde_json::to_string(&t).expect("json") + "\n").unwrap_or_else(|e| panic!("{}: {e}", path.display()));
             println!("written {}", path.display());
         }

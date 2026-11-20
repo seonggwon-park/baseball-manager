@@ -18,7 +18,7 @@ pub use game::{
     PaEvent, PaOutcome, PitchEvent, PitchLine, PitchResult, Situation, StealOrder, Step, Substitution, Team, TeamBox, BATTED_DT, BATTED_SAMPLE_DT,
 };
 pub use params::ModelParams;
-pub use pitching::{MatchEnv, Thrown};
+pub use pitching::{Intent, MatchEnv, PitchOrder, PitcherState, Tendency, Thrown};
 pub use play::{PlayKind, PlayResult, Runner};
 pub use population::{Club, Level};
 pub use profile::{BatterProfile, CatcherProfile, FielderProfile, Hand, PitchDef, PitchGroup, PitchKind, PitcherProfile, Player};

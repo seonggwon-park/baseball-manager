@@ -130,6 +130,14 @@ pub struct ModelParams {
     /// How far the batter's expectation leans from the main fastball toward the
     /// count's average pitch (0..1).
     pub expect_mix: f64,
+    /// How much of a pitcher's deviation from his usual mix (beyond chance) the batting side
+    /// reads into its expectation (`pitching::Tendency`): 0 = not at all (the calibrated
+    /// default, pitchers only ever throw their usual mix), 1 = all of it.
+    pub tendency_strength: f64,
+    /// Half-life of what the batting side remembers of the pitcher's choices, pitches.
+    pub tendency_halflife: f64,
+    /// A deviation counts only beyond this many chance spreads.
+    pub tendency_dead_zone: f64,
     /// Share of pitches whose location is badly misread, and the noise multiplier then.
     pub misread_rate: f64,
     pub misread_factor: f64,
@@ -526,6 +534,9 @@ impl Default for ModelParams {
             ride_confusion: 0.6,
             velocity_lag: 0.10,
             expect_mix: 0.0,
+            tendency_strength: 0.0,
+            tendency_halflife: 25.0,
+            tendency_dead_zone: 2.0,
             misread_rate: 0.12,
             misread_factor: 2.5,
 
