@@ -42,6 +42,10 @@
 //! bm we [--games N] [--seed S] [--json FILE]                     win expectancy of games between the AI managers by inning, half,
 //!                                                                 outs, bases and score: the table behind bm-gym's reward
 //!                                                                 (default FILE data/engine/win_expectancy.json)
+//! bm rollout [--states N] [--rollouts R] [--seed S] [--json FILE] the tactics of bm-gym's classes (bunt, steal, hit and run, ...)
+//!                                                                 tried from copies of N plate appearances each, R rollouts per
+//!                                                                 tactic, the AI managers finishing the game: change of the
+//!                                                                 chance of winning and of the runs to the end of the inning
 //! bm game [--seed S]                                              play one game and print the box score
 //! bm bench [--games N]                                            measure simulation speed
 //! bm serve [--port P] [--static DIR]                              session API over HTTP for the interface in a browser
@@ -87,6 +91,9 @@ struct Args {
     /// Games per side of the comparison with major-leaguers (default: `--games`, at least 400),
     /// and whether to play the level's pitchers against them too.
     cross_games: Option<usize>,
+    /// `bm rollout`: plate appearances per class and rollouts per tactic.
+    states: usize,
+    rollouts: usize,
     vs_mlb_pitchers: bool,
     /// `bm attributes`: fielding value position by position instead of the attribute table.
     by_position: bool,
@@ -149,6 +156,8 @@ fn parse_args() -> Args {
         foreign: bm_world::Talent::MAJOR,
         vs_mlb: false,
         cross_games: None,
+        states: 120,
+        rollouts: 200,
         vs_mlb_pitchers: false,
         by_position: false,
         ball_drag: 1.0,
@@ -279,6 +288,8 @@ fn parse_args() -> Args {
             "--only" => a.only = Some(v),
             "--level" => a.level = v,
             "--cross-games" => a.cross_games = Some(v.parse().expect("--cross-games N")),
+            "--states" => a.states = v.parse::<usize>().expect("--states N").max(1),
+            "--rollouts" => a.rollouts = v.parse::<usize>().expect("--rollouts R").max(1),
             "--until" => a.until = Some(bm_world::Date::parse(&v).expect("--until YYYY-MM-DD")),
             "--talent" | "--foreign" => {
                 let t: Vec<f32> = v
@@ -463,6 +474,34 @@ fn print_box(res: &GameResult) {
     show("S", res.save);
 }
 
+/// Per class: each tactic's change of the chance of winning and of the runs to the end of the
+/// inning against the first tactic (swinging away), mean over plate appearances ± standard error.
+fn print_rollouts(res: &[bm_gym::StateResult]) {
+    use bm_gym::rollout::mean_se;
+    for (c, class) in bm_gym::CLASSES.iter().enumerate() {
+        let rows: Vec<&bm_gym::StateResult> = res.iter().filter(|r| r.class == c).collect();
+        if rows.is_empty() {
+            continue;
+        }
+        let base_win = mean_se(&rows.iter().map(|r| r.win[0]).collect::<Vec<_>>()).0;
+        let base_runs = mean_se(&rows.iter().map(|r| r.runs[0]).collect::<Vec<_>>()).0;
+        println!();
+        println!(
+            "{} ({} plate appearances): {} wins {:.3}, runs to the end of the inning {:.3}",
+            class.name,
+            rows.len(),
+            class.tactics[0].name(),
+            base_win,
+            base_runs
+        );
+        for (t, tactic) in class.tactics.iter().enumerate().skip(1) {
+            let (dw, sw) = mean_se(&rows.iter().map(|r| r.win[t] - r.win[0]).collect::<Vec<_>>());
+            let (dr, sr) = mean_se(&rows.iter().map(|r| r.runs[t] - r.runs[0]).collect::<Vec<_>>());
+            println!("  {:<13} win {:+.4} ± {:.4}   runs {:+.3} ± {:.3}", tactic.name(), dw, sw, dr, sr);
+        }
+    }
+}
+
 fn main() {
     let mut args = parse_args();
     // Neutral MLB-like conditions (see `MatchEnv::neutral_mlb`) with any command-line overrides.
@@ -505,6 +544,27 @@ fn main() {
             let path = args.json.clone().unwrap_or_else(|| "data/engine/win_expectancy.json".into());
             std::fs::write(&path, serde_json::to_string(&t).expect("json") + "\n").unwrap_or_else(|e| panic!("{}: {e}", path.display()));
             println!("written {}", path.display());
+        }
+        "rollout" => {
+            let league = std::sync::Arc::new(bm_gym::League::mlb(args.seed));
+            let we = std::sync::Arc::new(bm_gym::WinExpectancy::bundled());
+            let cfg = bm_gym::rollout::Config { states: args.states, rollouts: args.rollouts, seed: args.seed, threads: args.threads, sample: 0.25 };
+            let start = Instant::now();
+            let res = bm_gym::rollout::evaluate(league, we, &cfg);
+            println!("{} plate appearances, {} rollouts per tactic, {:.0} s", res.len(), args.rollouts, start.elapsed().as_secs_f64());
+            print_rollouts(&res);
+            if let Some(path) = &args.json {
+                let rows: Vec<serde_json::Value> = res
+                    .iter()
+                    .map(|r| {
+                        let mut v = serde_json::to_value(r).expect("json");
+                        v["class_name"] = bm_gym::CLASSES[r.class].name.into();
+                        v["tactics"] = bm_gym::CLASSES[r.class].tactics.iter().map(|t| t.name()).collect::<Vec<_>>().into();
+                        v
+                    })
+                    .collect();
+                std::fs::write(path, serde_json::to_string(&rows).expect("json") + "\n").unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+            }
         }
         "validate" => {
             let clubs = make_clubs(args.clubs, args.seed, level, world);

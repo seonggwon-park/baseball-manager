@@ -12,9 +12,11 @@
 pub mod env;
 pub mod league;
 pub mod obs;
+pub mod rollout;
 pub mod we;
 
 pub use env::{action_name, coerce, decode, encode, mask, EnvConfig, Info, ManagerEnv, Reward, StepResult, APPROACHES, N_ACTIONS, STEALS};
 pub use league::{Fixture, League};
 pub use obs::{observe, NAMES as OBS_NAMES, N_OBS};
+pub use rollout::{Class, StateResult, Tactic, CLASSES};
 pub use we::WinExpectancy;

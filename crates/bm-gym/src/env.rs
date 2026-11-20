@@ -308,6 +308,59 @@ impl ManagerEnv {
         }
     }
 
+    /// Plate appearances the agent's club has completed in this game.
+    pub fn plate_appearances(&self) -> u32 {
+        let sim = self.sim.as_ref().expect("game");
+        sim.box_score(self.side).batting.iter().map(|l| u32::from(l.pa)).sum()
+    }
+
+    /// Play the current plate appearance with `order` (asked before each pitch, with the
+    /// situation and the number of pitches already thrown in it), then hand the club's
+    /// offence to its AI manager for the rest of the game. Call it at the start of a plate
+    /// appearance. Returns whether the club won and the runs it scored from now to the end
+    /// of this half-inning.
+    pub fn rollout<F: FnMut(&Situation, u32) -> usize>(&mut self, mut order: F) -> (bool, u32) {
+        let side = self.side;
+        let s0 = self.sim.as_ref().expect("game").situation();
+        let half = (s0.inning, s0.top);
+        let start = s0.score[side];
+        let pa0 = self.plate_appearances();
+        let mut pitch = 0;
+        let mut half_runs = None;
+        loop {
+            let sim = self.sim.as_ref().expect("game");
+            if sim.is_over() {
+                break;
+            }
+            let s = sim.situation();
+            if (s.inning, s.top) != half {
+                half_runs = Some(s.score[side] - start);
+                break;
+            }
+            if self.plate_appearances() > pa0 {
+                break;
+            }
+            let a = order(&s, pitch);
+            self.step(a);
+            pitch += 1;
+        }
+        let sim = self.sim.as_mut().expect("game");
+        sim.set_auto(side, Auto::ALL);
+        while !sim.is_over() {
+            if half_runs.is_none() {
+                let s = sim.situation();
+                if (s.inning, s.top) != half {
+                    half_runs = Some(s.score[side] - start);
+                }
+            }
+            sim.step(&mut self.rng, &mut NoObserver);
+        }
+        let r = sim.result().expect("over");
+        // A game that ends in this half-inning (a walk-off) counts its runs to the end.
+        let runs = half_runs.unwrap_or(r.score[side] - start);
+        (r.score[side] > r.score[1 - side], runs)
+    }
+
     /// Play the rest of the game with the agent's offence handed back to its AI manager:
     /// returns whether the agent's club won. For comparing a decision with what follows it.
     pub fn finish_with_ai(&mut self) -> bool {
