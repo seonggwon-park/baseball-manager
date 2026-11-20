@@ -419,6 +419,24 @@ pub struct Tally {
     pub pitch_classes: Vec<[[f64; PITCH_CLASSES.len()]; 12]>,
     /// The same for the pitches in the strike zone only.
     pub pitch_classes_zone: Vec<[[f64; PITCH_CLASSES.len()]; 12]>,
+    /// Pitches by attack region of the plate (`attack_region`), strikes (0-1, 2) and class
+    /// (`PITCH_CLASSES`), bunts left out.
+    pub region_classes: Vec<[[f64; PITCH_CLASSES.len()]; 2]>,
+    /// Balls in play by attack region and strikes: [n, sum and sum of squares of the exit speed
+    /// (mph), hard hit (95 mph or more), sum and sum of squares of the launch angle (deg)].
+    pub region_bip: Vec<[[f64; 6]; 2]>,
+    /// Swings by attack region and strikes: [swings, sum of bat speeds (mph); balls in play,
+    /// sum of their collision efficiencies (`Efficiency`)].
+    pub region_swing: Vec<[[f64; 4]; 2]>,
+    /// Swings and misses by attack region, strikes and cause (early, late, off the end,
+    /// jammed, over, under), and on balls in play [n, sum of the contact point's distance from
+    /// the tip (in), sum and sum of squares of the impact offset (in)]: the engine's own view.
+    pub region_miss: Vec<[[f64; 6]; 2]>,
+    pub region_contact: Vec<[[f64; 4]; 2]>,
+    /// Full swings by pitch height above the middle of the zone (4-in bins from -24 in):
+    /// [swings, sum of contact depths (in, relative to the usual point), of attack angles (deg)
+    /// and of bat speeds (mph)].
+    pub height_geom: [[f64; 4]; 12],
     pub bat_speed_all: Mean,
     pub bat_speed_bip: Mean,
     pub eff_all: Efficiency,
@@ -546,6 +564,12 @@ impl Default for Tally {
             kinds: [KindStat::default(); 8],
             pitch_classes: vec![[[0.0; PITCH_CLASSES.len()]; 12]; 8],
             pitch_classes_zone: vec![[[0.0; PITCH_CLASSES.len()]; 12]; 8],
+            region_classes: vec![[[0.0; PITCH_CLASSES.len()]; 2]; REGIONS],
+            region_bip: vec![[[0.0; 6]; 2]; REGIONS],
+            region_swing: vec![[[0.0; 4]; 2]; REGIONS],
+            region_miss: vec![[[0.0; 6]; 2]; REGIONS],
+            region_contact: vec![[[0.0; 4]; 2]; REGIONS],
+            height_geom: [[0.0; 4]; 12],
             bat_speed_all: Mean::default(),
             bat_speed_bip: Mean::default(),
             eff_all: Efficiency::default(),
@@ -651,6 +675,55 @@ pub fn pitch_class(e: &PitchEvent) -> usize {
     }
 }
 
+/// Attack regions of the plate, by the signed distance d of the ball from the strike zone
+/// (`StrikeZone::signed_distance`, which grows the zone by the ball's radius) and the edge the
+/// ball is nearest to or furthest past (inside, toward the batter; outside; bottom; top):
+/// the heart (d < -6 in, then -6 to -2.9 in), the shadow one ball wide either side of the edge,
+/// the chase out to three balls past it, and the waste beyond. The same regions are counted in
+/// the Statcast sample for `report::print`.
+pub const REGIONS: usize = 15;
+pub const REGION_NAMES: [&str; REGIONS] = [
+    "heart, deep",
+    "heart, outer",
+    "shadow in, inside",
+    "shadow in, outside",
+    "shadow in, bottom",
+    "shadow in, top",
+    "shadow out, inside",
+    "shadow out, outside",
+    "shadow out, bottom",
+    "shadow out, top",
+    "chase, inside",
+    "chase, outside",
+    "chase, bottom",
+    "chase, top",
+    "waste",
+];
+
+/// The attack region (`REGION_NAMES`) of a pitch.
+pub fn attack_region(e: &PitchEvent) -> usize {
+    let pos = e.thrown.flight.plate_pos;
+    let r = bm_engine::ZONE_BALL_RADIUS;
+    let out_x = e.batter_hand.outside_sign() * pos.x;
+    let hw = e.zone.half_width + r;
+    let past = [-hw - out_x, out_x - hw, (e.zone.bottom - r) - pos.z, pos.z - (e.zone.top + r)];
+    let edge = (1..4).fold(0, |b, i| if past[i] > past[b] { i } else { b });
+    let d = e.zone_distance / INCH;
+    if d < -6.0 {
+        0
+    } else if d < -2.9 {
+        1
+    } else if d < 0.0 {
+        2 + edge
+    } else if d < 2.9 {
+        6 + edge
+    } else if d < 8.7 {
+        10 + edge
+    } else {
+        14
+    }
+}
+
 pub fn is_barrel(ev_mph: f64, la_deg: f64) -> bool {
     if ev_mph < 98.0 {
         return false;
@@ -678,6 +751,22 @@ impl Tally {
                 add_arr(x, y);
             }
         }
+        for (a, b) in self.region_classes.iter_mut().zip(&o.region_classes) {
+            add_grid(a, b);
+        }
+        for (a, b) in self.region_bip.iter_mut().zip(&o.region_bip) {
+            add_grid(a, b);
+        }
+        for (a, b) in self.region_swing.iter_mut().zip(&o.region_swing) {
+            add_grid(a, b);
+        }
+        for (a, b) in self.region_miss.iter_mut().zip(&o.region_miss) {
+            add_grid(a, b);
+        }
+        for (a, b) in self.region_contact.iter_mut().zip(&o.region_contact) {
+            add_grid(a, b);
+        }
+        add_grid(&mut self.height_geom, &o.height_geom);
         macro_rules! addf { ($($f:ident),*) => { $( self.$f += o.$f; )* } }
         addf!(
             games,
@@ -1029,6 +1118,60 @@ impl Observer for Tally {
         self.pitch_classes[e.thrown.kind.index()][count][pitch_class(e)] += 1.0;
         if e.zone_distance <= 0.0 {
             self.pitch_classes_zone[e.thrown.kind.index()][count][pitch_class(e)] += 1.0;
+        }
+        if !e.approach.is_bunt() {
+            let region = attack_region(e);
+            let two = usize::from(e.strikes >= 2);
+            let class = pitch_class(e);
+            self.region_classes[region][two][class] += 1.0;
+            if let Some(bs) = e.bat_speed {
+                let m = &mut self.region_swing[region][two];
+                m[0] += 1.0;
+                m[1] += bs / MPH;
+            }
+            if let Some(m) = e.miss {
+                self.region_miss[region][two][match m {
+                    Miss::Early => 0,
+                    Miss::Late => 1,
+                    Miss::OffTheEnd => 2,
+                    Miss::Jammed => 3,
+                    Miss::Over => 4,
+                    Miss::Under => 5,
+                }] += 1.0;
+            }
+            if let (Some(shape), false) = (e.swing, matches!(e.miss, Some(Miss::Early | Miss::Late))) {
+                let h = (e.thrown.flight.plate_pos.z - e.zone.mid()) / INCH;
+                if (-24.0..24.0).contains(&h) {
+                    let m = &mut self.height_geom[((h + 24.0) / 4.0) as usize];
+                    m[0] += 1.0;
+                    m[1] += shape.depth / INCH;
+                    m[2] += shape.attack.to_degrees();
+                    m[3] += shape.bat_speed / MPH;
+                }
+            }
+            if let (true, Some(shape)) = (class >= 6, e.swing) {
+                let m = &mut self.region_contact[region][two];
+                m[0] += 1.0;
+                m[1] += shape.along / INCH;
+                m[2] += shape.offset / INCH;
+                m[3] += (shape.offset / INCH).powi(2);
+            }
+            if let (true, Some(info)) = (class >= 6, e.batted) {
+                let ev = info.exit_speed / MPH;
+                let la = info.launch_angle.to_degrees();
+                let m = &mut self.region_swing[region][two];
+                m[2] += 1.0;
+                m[3] += ev / (1.23 * info.bat_speed / MPH + 0.23 * e.thrown.flight.plate_vel.norm() / MPH);
+                let m = &mut self.region_bip[region][two];
+                m[0] += 1.0;
+                m[1] += ev;
+                m[2] += ev * ev;
+                if ev >= 95.0 {
+                    m[3] += 1.0;
+                }
+                m[4] += la;
+                m[5] += la * la;
+            }
         }
         if e.approach.is_bunt() {
             let t = &mut self.tactics;

@@ -8,7 +8,7 @@
 // The tables below pair simulated arrays with constant target arrays by index.
 #![allow(clippy::needless_range_loop)]
 
-use crate::tally::{Tally, CALL_EDGES, DEPTH_EDGES, DIST_EDGES, EFF_BAT_EDGES, EFF_LA_EDGES, ELEV_EDGES, NB, NC, ND, NE};
+use crate::tally::{Tally, CALL_EDGES, DEPTH_EDGES, DIST_EDGES, EFF_BAT_EDGES, EFF_LA_EDGES, ELEV_EDGES, NB, NC, ND, NE, REGIONS, REGION_NAMES};
 use bm_engine::PitchKind;
 
 pub struct Row {
@@ -961,6 +961,7 @@ pub fn print(t: &Tally) {
         s += &format!("  [{:.1},{:.1}) {:5.1}/{:5.1}", 1.0 + 0.5 * i as f64, 1.5 + 0.5 * i as f64, t.la_height_la[i] / t.la_height_n[i], hz[i]);
     }
     println!("{s}");
+    attack_regions(t);
     println!("\n== Base states at the start of a plate appearance, % (sim / MLB)");
     let bs_t = [56.35, 18.32, 8.78, 6.56, 2.77, 2.66, 2.36, 2.18];
     let names = ["empty", "1B", "2B", "1B+2B", "3B", "1B+3B", "2B+3B", "loaded"];
@@ -1010,4 +1011,91 @@ pub fn print(t: &Tally) {
         println!("{s}");
     }
     println!("\n== Double plays: GIDP per ground-ball out with a runner on first and fewer than two outs: {:.3}", t.gidp / t.dp_opp_gb.max(1.0));
+}
+
+/// Swing outcomes, bat speed and contact quality by attack region of the plate
+/// (`tally::REGION_NAMES`) and the swing's geometry by pitch height, against the 2025 Statcast
+/// sample (30 dates, 125,396 pitches; bunts left out; NA where the sample has fewer than 150
+/// swings or balls in play).
+fn attack_regions(t: &Tally) {
+    const NA: f64 = f64::NAN;
+    // swing %, whiff % of swings, foul % of swings, bat speed (mph, all swings), exit velocity
+    // (mph), collision efficiency (`Efficiency`), launch angle (deg); [0-1 strikes, two strikes].
+    const REGION_MLB: [[[f64; 7]; 2]; REGIONS] = [
+        [[68.6, 13.0, 40.3, 72.7, 94.8, 0.868, 16.4], [95.4, 11.5, 40.1, 71.4, 92.7, 0.862, 14.8]],
+        [[60.8, 17.9, 39.9, 71.9, 91.7, 0.847, 14.7], [90.8, 14.1, 42.1, 70.6, 90.9, 0.852, 14.2]],
+        [[57.6, 12.4, 45.2, 71.3, 84.3, 0.784, 16.8], [81.9, 12.0, 47.2, 70.1, 82.5, 0.778, 18.2]],
+        [[45.5, 24.6, 35.1, 70.7, 87.4, 0.818, 8.5], [81.1, 19.6, 37.6, 69.0, 89.3, 0.854, 9.2]],
+        [[49.5, 31.0, 32.9, 72.4, 89.4, 0.823, 4.6], [80.6, 22.1, 36.2, 71.0, 89.3, 0.840, 8.1]],
+        [[50.8, 33.6, 43.4, 68.4, 91.1, 0.868, 28.9], [85.9, 25.7, 48.1, 67.3, 90.1, 0.867, 24.1]],
+        [[44.7, 20.0, 47.5, 70.2, 77.7, 0.732, 17.6], [66.4, 17.7, 51.9, 68.9, 75.8, 0.732, 17.7]],
+        [[30.2, 37.6, 31.2, 69.4, 81.5, 0.769, 5.4], [61.4, 26.5, 34.6, 67.1, 84.0, 0.821, 5.3]],
+        [[38.9, 50.4, 26.1, 71.0, 85.9, 0.802, 0.1], [65.3, 35.0, 32.6, 69.7, 84.8, 0.808, 3.4]],
+        [[33.0, 43.7, 38.7, 66.0, NA, NA, NA], [66.8, 36.1, 43.7, 65.2, 88.0, NA, 28.9]],
+        [[26.0, 32.5, 49.1, 66.3, 67.8, NA, 9.1], [40.1, 30.1, 50.0, 65.8, NA, NA, NA]],
+        [[14.8, 59.2, 23.1, 66.3, 77.7, 0.744, 4.4], [37.7, 36.1, 33.2, 64.6, 77.5, 0.778, -0.9]],
+        [[28.1, 75.6, 15.3, 67.5, NA, NA, NA], [50.0, 57.4, 23.6, 67.0, 81.5, 0.806, 3.0]],
+        [[14.2, 56.3, 29.3, 61.1, NA, NA, NA], [37.3, 46.8, 39.6, 61.6, NA, NA, NA]],
+        [[6.6, 92.4, 6.1, 57.9, NA, NA, NA], [11.6, 79.5, 14.1, 57.9, NA, NA, NA]],
+    ];
+    println!("\n== Attack regions of the plate (heart / shadow one ball either side of the edge / chase / waste, by nearest edge): sim / MLB");
+    for (g, label) in ["0-1 strikes", "two strikes"].iter().enumerate() {
+        println!("  {label:<22} swing %       whiff %       foul %        bat speed     exit velo     efficiency      launch angle");
+        for (i, name) in REGION_NAMES.iter().enumerate() {
+            let h = &t.region_classes[i][g];
+            let n: f64 = h.iter().sum();
+            let sw = h[2] + h[3] + h[4] + h[6..].iter().sum::<f64>();
+            let b = &t.region_bip[i][g];
+            let q = &t.region_swing[i][g];
+            let m = &REGION_MLB[i][g];
+            println!(
+                "    {name:<20} {:5.1}/{:5.1}   {:5.1}/{:5.1}   {:5.1}/{:5.1}   {:5.1}/{:5.1}   {:5.1}/{:5.1}   {:5.3}/{:5.3}   {:5.1}/{:5.1}",
+                pct(sw, n),
+                m[0],
+                pct(h[2] + h[3], sw),
+                m[1],
+                pct(h[4], sw),
+                m[2],
+                q[1] / q[0],
+                m[3],
+                b[1] / b[0],
+                m[4],
+                q[3] / q[2],
+                m[5],
+                b[4] / b[0],
+                m[6]
+            );
+        }
+    }
+    // MLB, all tracked swings by pitch height above the middle of the zone (4-in bins from
+    // -24 in): intercept depth (in, relative to 30 in), attack angle (deg), bat speed (mph).
+    const GEOM_MLB: [[f64; 3]; 12] = [
+        [12.0, 19.1, 62.2],
+        [10.5, 17.8, 66.6],
+        [8.7, 16.1, 69.6],
+        [6.0, 13.6, 71.1],
+        [2.7, 10.7, 71.7],
+        [0.0, 8.6, 71.6],
+        [-2.8, 6.8, 71.0],
+        [-5.3, 5.5, 69.5],
+        [-7.5, 4.7, 67.7],
+        [-10.3, 4.0, 64.7],
+        [-12.6, 4.0, 61.1],
+        [-13.6, 4.3, 58.6],
+    ];
+    println!("  swings by pitch height above the middle of the zone (in): sim / MLB contact depth (in; MLB intercept less 30 in), attack angle (deg), bat speed (mph)");
+    for (i, (c, m)) in t.height_geom.iter().zip(&GEOM_MLB).enumerate() {
+        println!(
+            "    [{:3},{:3})  share {:4.1}   depth {:6.1}/{:6.1}   attack {:5.1}/{:5.1}   bat speed {:5.1}/{:5.1}",
+            -24 + 4 * i as i32,
+            -20 + 4 * i as i32,
+            pct(c[0], t.height_geom.iter().map(|r| r[0]).sum()),
+            c[1] / c[0],
+            m[0],
+            c[2] / c[0],
+            m[1],
+            c[3] / c[0],
+            m[2]
+        );
+    }
 }

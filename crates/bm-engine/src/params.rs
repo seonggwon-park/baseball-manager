@@ -165,11 +165,26 @@ pub struct ModelParams {
     pub barrel_outside_gain2: f64,
     /// Offset added to the distance outside the zone before the gain applies, m.
     pub barrel_outside_offset: f64,
+    /// Vertical barrel bias per metre the pitch is below the zone (the barrel stays above the
+    /// ball) and above it (under the ball), m/m, on top of `height_bias`.
+    pub below_zone_bias: f64,
+    pub above_zone_bias: f64,
+    /// Loss of bat speed per metre the batter sees the pitch past `barrel_outside_offset`
+    /// inside the edge of the zone, and per metre above the middle of the zone: swings at
+    /// pitches he has to reach for, and the shorter, flatter swings at high pitches (2025
+    /// Statcast bat tracking by attack region: 72.7 mph in the heart, 66 in the chase
+    /// region, 61 above the zone).
+    pub bat_speed_reach: f64,
+    pub bat_speed_high: f64,
     /// Distance outside the plate centre beyond which the barrel cannot reach, m.
     pub reach_limit: f64,
     /// Vertical barrel bias per metre of pitch height above the middle of the zone
     /// (batters get under high pitches and on top of low ones).
     pub height_bias: f64,
+    /// Vertical barrel bias per metre of location toward the batter: reaching for a pitch
+    /// away he rolls over the top of it (2025 Statcast: launch angle 5 deg on pitches just
+    /// off the outside edge, 18 deg just off the inside edge).
+    pub offset_inside: f64,
     /// Aim under (+) or over (-) the ball's centre by pitch type, m, on top of the
     /// batter's own aim; indexed by `PitchKind::index`, four-seamers 0.
     pub aim_kind: [f64; 8],
@@ -243,6 +258,11 @@ pub struct ModelParams {
     pub bat_speed_depth_gain: f64,
     /// Contact depth of a square swing, m in front of the back tip of the plate.
     pub contact_depth: f64,
+    /// Planned contact point further out in front per metre the batter sees the pitch below
+    /// the middle of the zone, m/m: 2025 bat tracking puts the intercept 0.68 in further out
+    /// per inch lower over all swings. The barrel's direction follows the timing alone
+    /// (attack direction does not change with height in the same data).
+    pub depth_height: f64,
     /// Horizontal bat angle beyond which the barrel is out of the hitting zone, rad.
     pub max_bat_angle: f64,
     /// Bat-speed loss when badly fooled on timing (fraction at a full mistime).
@@ -329,8 +349,11 @@ pub struct ModelParams {
     pub chop_foul_prob: f64,
     /// Where along the bat the batter means to meet the ball, m toward the hands from the sweet spot.
     pub contact_along: f64,
-    /// Jam / reach: shift of the contact point along the bat per metre of location, m/m.
+    /// Jam / reach: shift of the contact point along the bat per metre of location toward
+    /// the batter (`reach_per_m`, toward the hands) and away from him (`reach_out_per_m`,
+    /// toward the tip), m/m.
     pub reach_per_m: f64,
+    pub reach_out_per_m: f64,
     /// Fraction of a ball tipped straight back that the catcher holds.
     pub foul_tip_catch: f64,
     /// Deflection below which a ball going backward is a tip, rad.
@@ -338,6 +361,11 @@ pub struct ModelParams {
     /// Two-strike swing: bat-speed factor and precision gain.
     pub two_strike_speed: f64,
     pub two_strike_precision: f64,
+    /// Two-strike swing at a pitch off the plate: factor on the growth of the barrel error
+    /// outside the zone and on the contact point's shift toward the tip on pitches away (the
+    /// batter shortens up to protect the plate; 2025 Statcast: whiffs per swing in the chase
+    /// region 36 % on pitches away with two strikes against 59 % before).
+    pub two_strike_reach: f64,
 
     // ---- hit by pitch / wild pitch ----
     /// Lateral distance from the plate centre to the batter's body, m.
@@ -505,17 +533,17 @@ impl Default for ModelParams {
             ump_scale: 0.93 * INCH,
 
             swing_base: [[0.60607, 0.93393, 0.985], [0.71325, 0.96259, 0.985], [0.8093, 0.94741, 0.985], [0.14157, 0.8368, 0.985]],
-            swing_d0: 0.030229,
-            swing_d0_one_strike: 0.015674,
-            swing_d0_two_strikes: 0.062162,
-            swing_width: 0.05031,
+            swing_d0: 0.028647,
+            swing_d0_one_strike: 0.015211,
+            swing_d0_two_strikes: 0.060299,
+            swing_width: 0.051598,
             recognition_sd: 0.08,
             fooled_recognition: 0.5,
-            noise_residual: 0.098279,
+            noise_residual: 0.056108,
             recognition_scale: 0.22369,
             recognition_time_scale: 0.14501,
             timing_adjust: 0.68402,
-            location_adjust: 0.98853,
+            location_adjust: 0.99564,
             fastball_misread: 0.0,
             kind_recognition: [0.0, 0.0, 0.010371, -0.079913, 0.07369, 0.29486, -0.023278, -0.33115],
             take_kind: [
@@ -528,8 +556,8 @@ impl Default for ModelParams {
                 [-0.060513, -0.050318, -0.015074],
                 [0.065229, 0.030025, -0.046005],
             ],
-            prior_pull: [[0.28366, 0.22544], [0.15755, 0.17194]],
-            ride_bias: 0.085453,
+            prior_pull: [[0.2866, 0.22428], [0.14069, 0.14469]],
+            ride_bias: 0.068054,
             ride_reference: 0.375,
             ride_confusion: 0.6,
             velocity_lag: 0.10,
@@ -544,16 +572,21 @@ impl Default for ModelParams {
             timing_speed_exp: 3.9675,
             barrel_speed_exp: 3.7199,
             commit_exp: 4.8229,
-            tracking_residual: 0.21647,
-            barrel_outside_gain: 7.2635,
-            barrel_outside_gain2: 70.0,
-            barrel_outside_offset: 0.03,
+            tracking_residual: 0.26031,
+            barrel_outside_gain: 4.5454,
+            barrel_outside_gain2: 18.75,
+            barrel_outside_offset: 0.034877,
+            below_zone_bias: 0.69243,
+            above_zone_bias: 0.20128,
+            bat_speed_reach: 0.54735,
+            bat_speed_high: 0.11447,
             reach_limit: 0.40,
-            height_bias: 0.076376,
+            height_bias: 0.094799,
+            offset_inside: 0.046601,
             aim_kind: [0.0, -0.032548, -0.018124, -0.014379, 0.0061355, -0.031321, -0.028653, -0.013767],
             barrel_kind: [1.0, 0.99257, 1.45, 1.35, 0.95, 0.89343, 1.1298, 1.2133],
             plane_mismatch: 0.0,
-            mismatch_noise: 1.7742,
+            mismatch_noise: 1.0481,
             spray_turn: 0.0698,
             shade_left_below: 0.00233,
             shade_right_below: -0.00119,
@@ -562,8 +595,8 @@ impl Default for ModelParams {
             lean_corner: 3.0,
             lean_middle: 5.0,
             lean_outfield: 0.0,
-            attack_shift: -0.034162,
-            attack_height: 0.1898,
+            attack_shift: -0.024249,
+            attack_height: 0.066893,
             attack_depth: 0.20017,
             attack_inside: -0.2150,
             attack_kind: [0.0, -0.0168, -0.0036, -0.02491, -0.02615, -0.03656, -0.01897, -0.01948],
@@ -573,6 +606,7 @@ impl Default for ModelParams {
             swing_radius: 0.63,
             bat_speed_depth_gain: 0.115,
             contact_depth: 0.90,
+            depth_height: 0.4701,
             max_bat_angle: 1.05,
             fooled_speed_loss: 0.25,
             fooled_time: 0.045,
@@ -600,22 +634,24 @@ impl Default for ModelParams {
             max_depth: 0.90,
             bat_speed_depth_cap: 0.15,
             partial_precision: 1.5,
-            piece_rate: 0.53993,
+            piece_rate: 0.45812,
             piece_reach: 0.046436,
             piece_band: 0.022,
             piece_depth: 0.37,
             piece_centre: 0.11,
-            piece_two_strikes: 1.33,
+            piece_two_strikes: 1.367,
             direction_sd: 0.115,
             bat_tilt_sd: 0.098,
             chop_foul_dist: 3.0,
             chop_foul_prob: 0.509,
-            contact_along: 0.021778,
-            reach_per_m: 0.15,
+            contact_along: 0.016626,
+            reach_per_m: 0.31093,
+            reach_out_per_m: 0.29776,
             foul_tip_catch: 0.55,
             foul_tip_angle: 0.3,
             two_strike_speed: 0.98,
-            two_strike_precision: 0.78,
+            two_strike_precision: 0.79418,
+            two_strike_reach: 0.66823,
 
             batter_body_x: 0.63,
             hbp_width: 0.063,

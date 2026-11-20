@@ -343,6 +343,11 @@ pub fn swing(
         bat_speed *= 1.0 - ((1.0 - rng.range(p.partial_speed_min, 0.92)) * batter.speed_loss).min(0.9);
     }
     let prec = prec * if partial { p.partial_precision } else { 1.0 };
+    // The swing is planned for where the batter sees the pitch: shorter and slower when he
+    // has to reach for it or get on top of a high one.
+    let seen = zone.signed_distance(per.perceived_x, per.perceived_z, env.ball.radius);
+    let reach_loss = p.bat_speed_reach * (seen + p.barrel_outside_offset).max(0.0) + p.bat_speed_high * (per.perceived_z - zone.mid()).max(0.0);
+    bat_speed *= (1.0 - reach_loss).max(0.5);
     bat_speed = bat_speed.max(8.0);
     // Late against a pitcher who throws harder than the fastballs the batter sees every day.
     let lag = p.velocity_lag * (env.typical_fastball_time - expected.time);
@@ -361,11 +366,14 @@ pub fn swing(
         let shape = SwingShape { bat_speed, depth: dy.clamp(-1.5, 1.5), direction: theta, ..Default::default() };
         return Swing::Whiff { shape, miss: if dy > 0.0 { Miss::Early } else { Miss::Late } };
     }
+    // Low pitches are met further out in front and high ones deeper (`depth_height`); the
+    // direction of the barrel follows the timing alone.
+    let depth = dy + p.depth_height * (zone.mid() - per.perceived_z);
     // The barrel is still accelerating through the hitting zone: contact out in front
     // is made with more bat speed than contact deep in the zone, up to a point.
-    let bat_speed = bat_speed * (1.0 + p.bat_speed_depth_gain * dy.clamp(-0.6, p.bat_speed_depth_cap));
-    let mut shape = SwingShape { bat_speed, depth: dy, direction: theta, ..Default::default() };
-    let y_c = p.contact_depth + dy;
+    let bat_speed = bat_speed * (1.0 + p.bat_speed_depth_gain * depth.clamp(-0.6, p.bat_speed_depth_cap));
+    let mut shape = SwingShape { bat_speed, depth, direction: theta, ..Default::default() };
+    let y_c = p.contact_depth + depth;
 
     // Ball at the contact depth (straight-line extrapolation over well under a metre).
     let vel = f.plate_vel;
@@ -388,7 +396,7 @@ pub fn swing(
         batter.attack_angle
             + p.attack_shift
             + p.attack_height * (f.plate_pos.z - zone.mid())
-            + p.attack_depth * dy
+            + p.attack_depth * depth
             + p.attack_inside * inside
             + p.attack_kind[k],
         batter.attack_sd,
@@ -398,7 +406,15 @@ pub fn swing(
     let arc_rise = 0.5 * tilt.sin() / p.swing_arc_radius * (p.arc_scale * behind * behind + p.arc_scale_early * ahead * ahead);
     let d_act = zone.signed_distance(f.plate_pos.x, f.plate_pos.z, env.ball.radius);
     let d_out = (d_act + p.barrel_outside_offset).max(0.0);
-    let loc_gain = 1.0 + p.barrel_outside_gain * d_out + p.barrel_outside_gain2 * d_out * d_out;
+    // With two strikes the batter shortens up to protect the plate (`two_strike_reach`).
+    let shorten = if two { p.two_strike_reach } else { 1.0 };
+    let loc_gain = 1.0 + shorten * (p.barrel_outside_gain * d_out + p.barrel_outside_gain2 * d_out * d_out);
+    // Below the zone the barrel stays above the ball, above it under the ball: the batter
+    // cannot bring the barrel all the way down to a pitch at his knees or get on top of one at
+    // his letters (2025 Statcast: launch angle 0 deg on balls chased below the zone, 21-28 deg
+    // above it).
+    let below = ((zone.bottom - env.ball.radius) - f.plate_pos.z).max(0.0);
+    let above = (f.plate_pos.z - (zone.top + env.ball.radius)).max(0.0);
     // Batters adapt only in part to how much a pitch rises or sinks compared with what
     // they expect of it: the league's typical pitch of its type, except that four-seamers
     // and sinkers are partly taken for one generic fastball.
@@ -410,6 +426,9 @@ pub fn swing(
         - p.tracking_residual * per.bias_z
         - p.noise_residual * (per.perceived_z - f.plate_pos.z - per.bias_z)
         + p.height_bias * (f.plate_pos.z - zone.mid())
+        + p.offset_inside * inside
+        - p.below_zone_bias * below
+        + p.above_zone_bias * above
         + p.ride_bias * (f.move_z - ride_expected)
         + p.plane_mismatch * (descent.tan() - plane_pitch.tan()) * dy
         + rng.gauss(0.0, p.mismatch_noise * ((descent.tan() - plane_pitch.tan()) * dy).abs())
@@ -443,7 +462,8 @@ pub fn swing(
         if theta > 0.0 { p.off_end_gain } else { p.off_end_late } * p.pivot_radius * (1.0 / theta.cos().max(0.3) - 1.0) + p.off_end_linear * theta.max(0.0);
     // The batter still gets the last few centimetres of the barrel to the ball.
     let off_end = p.off_end_max * (1.0 - (-off_end / p.off_end_max).exp());
-    let along = bat.sweet_spot_from_tip + p.contact_along + p.reach_per_m * inside - beyond - off_end
+    let reach = if inside >= 0.0 { p.reach_per_m } else { p.reach_out_per_m * shorten };
+    let along = bat.sweet_spot_from_tip + p.contact_along + reach * inside - beyond - off_end
         + p.tracking_residual * (inside - inside_perceived)
         + rng.gauss(0.0, batter.reach_sd);
     if along > 0.60 {
@@ -716,6 +736,71 @@ mod tests {
         // More spin on a curve is more drop.
         let (sharp, lazy) = (launch(&only(PitchKind::Curve, 400.0)), launch(&only(PitchKind::Curve, -400.0)));
         assert!(sharp < lazy - 1.0, "curve with more drop {sharp} deg, with less {lazy} deg");
+    }
+
+    /// Balls put in play by the average right-handed batter against the average pitcher, with
+    /// where the pitch crossed the plate: signed distance from the zone (m), height above the
+    /// middle of the zone (m), toward the batter (m), exit velocity (mph), launch angle (deg)
+    /// and bat speed (mph).
+    fn located(env: &MatchEnv, n: usize, seed: u64) -> Vec<[f64; 6]> {
+        let batter = BatterProfile::league_average(Hand::Right);
+        let pitcher = PitcherProfile::league_average(Hand::Right);
+        let mut st = PitcherState::new(&pitcher, env);
+        let zone = StrikeZone::for_batter(batter.height, &env.rules);
+        let mut rng = Rng::new(seed);
+        let mut w = [0.0; MAX_PITCHES];
+        let mut out = Vec::new();
+        for i in 0..n {
+            let (balls, strikes) = (i % 3, i % 2);
+            let k = selection_weights(&pitcher, batter.hand, balls, strikes, &env.params, &mut w);
+            let exp = expectation(&pitcher, &st, &w[..k], env.params.expect_mix);
+            let choice = choose_pitch(&pitcher, batter.hand, &zone, balls, strikes, &w[..k], &env.params, &mut rng);
+            st.pitch_count = 30;
+            let thrown = throw_pitch(&pitcher, &mut st, &choice, 1.0, env, &mut rng);
+            if let Swing::Batted { info, .. } = respond(env, &batter, &zone, balls, strikes, &thrown, &exp, &mut rng) {
+                let pos = thrown.flight.plate_pos;
+                out.push([
+                    zone.signed_distance(pos.x, pos.z, env.ball.radius),
+                    pos.z - zone.mid(),
+                    -batter.hand.outside_sign() * pos.x,
+                    info.exit_speed / MPH,
+                    info.launch_angle.to_degrees(),
+                    info.bat_speed / MPH,
+                ]);
+            }
+        }
+        out
+    }
+
+    /// The heart of the plate is hit hardest; pitches off the inside edge are jammed, pitches
+    /// low in the zone are hit on the ground and high ones in the air, and high pitches are
+    /// met with less bat speed. 2025 Statcast by attack region, 0-1 strikes
+    /// (`docs/validation/mlb-2025.txt`): exit velocity 94.8 mph more than 6 in inside the
+    /// zone, 77.7 just off its inside edge and 81.5 just off its outside edge; launch angle
+    /// 4.6 deg along the bottom of the zone and 28.9 along its top; bat speed over all swings
+    /// 72.7 mph in the heart and 66.0 just above the zone.
+    #[test]
+    fn the_heart_of_the_plate_is_hit_hardest() {
+        let env = MatchEnv::neutral_mlb();
+        let v = located(&env, 300_000, 17);
+        let inch = bm_physics::units::INCH;
+        let edge = StrikeZone::for_batter(BatterProfile::league_average(Hand::Right).height, &env.rules).half_width + env.ball.radius;
+        let mean = |f: &dyn Fn(&[f64; 6]) -> bool, j: usize| {
+            let s: Vec<f64> = v.iter().filter(|r| f(r)).map(|r| r[j]).collect();
+            assert!(s.len() > 300, "{} balls", s.len());
+            s.iter().sum::<f64>() / s.len() as f64
+        };
+        let heart = mean(&|r| r[0] < -6.0 * inch, 3);
+        let off_inside = mean(&|r| (0.0..2.9 * inch).contains(&r[0]) && r[2] > edge, 3);
+        let off_outside = mean(&|r| (0.0..2.9 * inch).contains(&r[0]) && r[2] < -edge, 3);
+        assert!(heart > off_inside + 6.0, "exit velocity: heart {heart:.1} mph, off the inside edge {off_inside:.1}");
+        assert!(heart > off_outside + 3.0, "exit velocity: heart {heart:.1} mph, off the outside edge {off_outside:.1}");
+        let low = mean(&|r| (-2.9 * inch..0.0).contains(&r[0]) && r[1] < -0.15, 4);
+        let high = mean(&|r| (-2.9 * inch..0.0).contains(&r[0]) && r[1] > 0.15, 4);
+        assert!(high > low + 12.0, "launch angle: top of the zone {high:.1} deg, bottom {low:.1}");
+        let bat_heart = mean(&|r| r[0] < -6.0 * inch, 5);
+        let bat_above = mean(&|r| r[0] > 0.0 && r[1] > 0.30, 5);
+        assert!(bat_heart > bat_above + 3.0, "bat speed: heart {bat_heart:.1} mph, above the zone {bat_above:.1}");
     }
 
     #[test]

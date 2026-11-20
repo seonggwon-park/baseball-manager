@@ -92,7 +92,7 @@ impl BatSpec {
             cor_falloff: 30.0,
             cor_floor: 0.25,
             bpf: 1.0,
-            cor_obliquity: 0.55826,
+            cor_obliquity: 0.45054,
             tangential_cor: 0.20,
             friction: 0.15,
         }
