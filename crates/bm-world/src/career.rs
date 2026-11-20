@@ -3248,6 +3248,12 @@ mod tests {
         // The mechanism, not the rates (those are fitted and checked by the calibration): the
         // eligible free agents of both leagues declare as soon as the market would pay them a
         // little less than their clubs do, so that ranked players move within these seasons.
+        // Ten offseasons: a world fresh from `populate` has few players with the eight
+        // first-team seasons free agency asks for, and over its first six offseasons an NPB
+        // club got an extra pick about twice per world, none in 3 of 10 seeds (seed 7 among
+        // them) with the attribute weights of 2026-11-20 and in 1 of 10 with the weights before
+        // them; with ten offseasons the three got 7-9 each (NPB declarations 43 in the first
+        // six, 151 in all ten).
         let mut rules = crate::contract::ContractRules::bundled();
         for e in [Economy::Kbo, Economy::Npb] {
             if let Some(m) = rules.market.get_mut(&e) {
@@ -3258,7 +3264,7 @@ mod tests {
         let mut pop = populate(&world, &levels, Date::new(2027, 2, 1), 7);
         let japanese: BTreeSet<String> = organisations(&world).into_iter().filter(|o| o.kind == OrgKind::Japanese).map(|o| o.id).collect();
         let mut total = Report::default();
-        for year in 2027..2033 {
+        for year in 2027..2037 {
             let r = offseason(&ctx, &mut pop, year, None, 7);
             for i in 0..2 {
                 assert!(r.fa_declared[i] <= r.fa_eligible[i] && r.fa_stayed[i] + r.fa_moved[i] <= r.fa_declared[i], "{r:?}");
