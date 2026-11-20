@@ -99,6 +99,10 @@ pub struct Tendency {
     /// Variance of that average if the pitcher threw his usual mix.
     pub var: [f64; MAX_PITCHES],
     pub seen: u32,
+    /// The same for the pitcher's location: weighted average of (in the zone − the usual share
+    /// of pitches in the zone in that count, `ModelParams::zone_usual`), and its chance variance.
+    pub zone_dev: f64,
+    pub zone_var: f64,
 }
 
 impl Tendency {
@@ -116,6 +120,26 @@ impl Tendency {
             self.var[i] = (1.0 - a) * (1.0 - a) * self.var[i] + a * a * p * (1.0 - p);
         }
         self.seen += 1;
+    }
+
+    /// Count where a pitch ended up: in the zone or not, when `usual` of the pitches in that
+    /// count are.
+    pub fn record_zone(&mut self, in_zone: bool, usual: f64, params: &ModelParams) {
+        if params.tendency_halflife <= 0.0 {
+            return;
+        }
+        let a = 1.0 - 0.5f64.powf(1.0 / params.tendency_halflife);
+        let p = usual.clamp(0.01, 0.99);
+        let x = if in_zone { 1.0 - p } else { -p };
+        self.zone_dev = (1.0 - a) * self.zone_dev + a * x;
+        self.zone_var = (1.0 - a) * (1.0 - a) * self.zone_var + a * a * p * (1.0 - p);
+    }
+
+    /// How much more (+) or less (−) often than usual the pitcher has been in the zone, beyond
+    /// chance (zero inside the dead zone).
+    pub fn zone_beyond_chance(&self, params: &ModelParams) -> f64 {
+        let band = params.tendency_dead_zone * self.zone_var.sqrt();
+        self.zone_dev.signum() * (self.zone_dev.abs() - band).max(0.0)
     }
 
     /// The deviation of each pitch's share beyond chance (zero inside the dead zone).
@@ -174,6 +198,10 @@ pub struct Expectation {
     /// where a pitch ends up before he has seen its late break (`ModelParams::prior_pull`).
     pub prior_x: f64,
     pub prior_z: f64,
+    /// Relative change of the batter's readiness to swing (`swing_base`) when the batting
+    /// side reads that the pitcher has been in the zone more (or less) than usual in this game
+    /// (`ModelParams::zone_lean`); 0 when it does not read him.
+    pub swing_lean: f64,
 }
 
 /// Selection weights for each pitch of the arsenal in a given count.
@@ -221,7 +249,7 @@ pub fn selection_weights(
 pub fn expectation(profile: &PitcherProfile, state: &PitcherState, weights: &[f64], mix: f64) -> Expectation {
     let of = |m: &PitchMean| {
         let drop_z = m.aim.move_z - 0.5 * G * m.aim.time * m.aim.time;
-        Expectation { time: m.aim.time, move_x: m.aim.move_x, drop_z, fastball: false, prior_x: m.aim.move_x, prior_z: drop_z }
+        Expectation { time: m.aim.time, move_x: m.aim.move_x, drop_z, fastball: false, prior_x: m.aim.move_x, prior_z: drop_z, swing_lean: 0.0 }
     };
     // Main fastball: the most used fastball in this situation, else the fastest pitch.
     let mut best: Option<usize> = None;
@@ -260,6 +288,7 @@ pub fn expectation(profile: &PitcherProfile, state: &PitcherState, weights: &[f6
         fastball: base.fastball,
         prior_x: avg.move_x,
         prior_z: avg.drop_z,
+        swing_lean: 0.0,
     }
 }
 
@@ -267,8 +296,15 @@ pub fn expectation(profile: &PitcherProfile, state: &PitcherState, weights: &[f6
 /// (`ModelParams::tendency_strength` > 0). The usual weights are moved by the deviations beyond
 /// chance; the location prior and the main fastball follow the moved weights, and the timing
 /// leans from the fastball toward the average pitch by the share of extra off-speed pitches
-/// (none extra: the plain expectation, timed on the fastball).
+/// (none extra: the plain expectation, timed on the fastball). A pitcher who has been in the
+/// zone more than usual, beyond chance, makes the batters readier to swing, one who has been
+/// out of it less ready (`ModelParams::zone_lean`).
 pub fn expectation_adapted(profile: &PitcherProfile, state: &PitcherState, weights: &[f64], params: &ModelParams) -> Expectation {
+    let lean = (params.tendency_strength * params.zone_lean * state.tendency.zone_beyond_chance(params)).clamp(-0.5, 0.5);
+    Expectation { swing_lean: lean, ..expectation_by_mix(profile, state, weights, params) }
+}
+
+fn expectation_by_mix(profile: &PitcherProfile, state: &PitcherState, weights: &[f64], params: &ModelParams) -> Expectation {
     let total: f64 = weights.iter().sum();
     if total <= 0.0 {
         return expectation(profile, state, weights, params.expect_mix);
@@ -625,6 +661,48 @@ mod tests {
         assert_eq!(expectation_adapted(&prof, &st, &w[..n], &off).time, plain.time);
         // A new pitcher starts unread.
         assert!(PitcherState::new(&prof, &env).tendency.beyond_chance(&params).iter().all(|&d| d == 0.0));
+    }
+
+    #[test]
+    fn a_pitcher_who_lives_in_the_zone_makes_the_batters_readier() {
+        let env = MatchEnv::neutral_mlb();
+        let params = ModelParams { tendency_strength: 1.0, ..ModelParams::default() };
+        let prof = PitcherProfile::league_average(Hand::Right);
+        let mut w = [0.0; MAX_PITCHES];
+        let n = selection_weights(&prof, Hand::Right, 1, 1, &params, &mut w);
+        let usual = params.zone_usual[1][1];
+        // In the zone at the usual rate: almost always inside chance, and the batters stay put.
+        let mut rng = Rng::new(9);
+        let (mut moved, mut total, mut lean) = (0usize, 0usize, 0.0);
+        for _ in 0..40 {
+            let mut st = PitcherState::new(&prof, &env);
+            for _ in 0..100 {
+                st.tendency.record_zone(rng.chance(usual), usual, &params);
+                moved += usize::from(st.tendency.zone_beyond_chance(&params) != 0.0);
+                lean += expectation_adapted(&prof, &st, &w[..n], &params).swing_lean.abs();
+                total += 1;
+            }
+        }
+        assert!((moved as f64) < 0.1 * total as f64, "share beyond chance {}", moved as f64 / total as f64);
+        assert!(lean / (total as f64) < 0.002, "mean lean {}", lean / total as f64);
+        // Thirty pitches in a row in (or out of) the zone: readier (less ready) to swing.
+        let run = |in_zone: bool| {
+            let mut st = PitcherState::new(&prof, &env);
+            for _ in 0..30 {
+                st.tendency.record_zone(in_zone, usual, &params);
+            }
+            st
+        };
+        let (hot, cold) = (run(true), run(false));
+        let up = expectation_adapted(&prof, &hot, &w[..n], &params);
+        let down = expectation_adapted(&prof, &cold, &w[..n], &params);
+        assert!(up.swing_lean > 0.02 && down.swing_lean < -0.02, "lean {} / {}", up.swing_lean, down.swing_lean);
+        // Location reading leaves the pitch reading alone.
+        let plain = expectation_adapted(&prof, &PitcherState::new(&prof, &env), &w[..n], &params);
+        assert_eq!((up.time, up.prior_x, up.prior_z), (plain.time, plain.prior_x, plain.prior_z));
+        // Switched off: no lean.
+        let off = ModelParams { tendency_strength: 0.0, ..params };
+        assert_eq!(expectation_adapted(&prof, &hot, &w[..n], &off).swing_lean, 0.0);
     }
 
     #[test]

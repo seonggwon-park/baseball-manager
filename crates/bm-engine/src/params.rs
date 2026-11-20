@@ -138,6 +138,21 @@ pub struct ModelParams {
     pub tendency_halflife: f64,
     /// A deviation counts only beyond this many chance spreads.
     pub tendency_dead_zone: f64,
+    /// Share of pitches in the zone by count (balls, strikes) when pitchers work as usual: the
+    /// batters' reference for reading a pitcher's location (MLB 2025, Statcast sample; the
+    /// engine's are within 1.4 points, `bm validate`).
+    pub zone_usual: [[f64; 3]; 4],
+    /// Relative change of the batters' readiness to swing (`swing_base`, so in and out of the
+    /// zone alike) per unit of the in-zone share they read beyond chance, when they read the
+    /// pitcher (`tendency_strength`). [assumption, weakly measured] Across 2025 starters (120+
+    /// innings) the batters' swing rate in the zone rises 0.35 points per point of the
+    /// pitcher's zone rate (s.e. 0.11), against 0.23 (0.06) in the engine without this term;
+    /// the 0.12 difference, within one standard error of zero, is taken as the batters' answer
+    /// to a zone rate they know and sets the size: ten points read beyond chance make them 1.8 %
+    /// readier, 1.2 points more swings in the zone and 0.5 out of it (where the 2025 starters
+    /// show none). Only the part beyond the dead zone is read, so a pitcher ten points above
+    /// the usual rate all game is read at 0.7 points on average, twenty points above at 4.
+    pub zone_lean: f64,
     /// Share of pitches whose location is badly misread, and the noise multiplier then.
     pub misread_rate: f64,
     pub misread_factor: f64,
@@ -192,6 +207,11 @@ pub struct ModelParams {
     /// type is to square up, fitted to its rate of hard contact, home runs and whiffs
     /// (`docs/physics-model.md` 5.3).
     pub barrel_kind: [f64; 8],
+    /// Factor by pitch type on the growth of the barrel error outside the zone
+    /// (`barrel_outside_gain`): a breaking ball chased off the plate is harder to hit than its
+    /// type's barrel error in the zone says (2025 Statcast: whiffs per swing on sliders 19 % in
+    /// the zone, 60 % out of it; four-seamers 18 % and 36 %).
+    pub outside_kind: [f64; 8],
     /// Weight of the straight-line timing geometry in the vertical error. At 1 the barrel
     /// and the ball keep to their paths, so contact a distance `dy` from the planned point
     /// misses by `(tan descent - tan attack) dy`; at 0 the barrel meets the ball's height
@@ -565,6 +585,8 @@ impl Default for ModelParams {
             tendency_strength: 0.0,
             tendency_halflife: 25.0,
             tendency_dead_zone: 2.0,
+            zone_usual: [[0.549, 0.465, 0.327], [0.565, 0.509, 0.389], [0.596, 0.575, 0.481], [0.639, 0.640, 0.596]],
+            zone_lean: 0.18,
             misread_rate: 0.12,
             misread_factor: 2.5,
 
@@ -585,6 +607,7 @@ impl Default for ModelParams {
             offset_inside: 0.046601,
             aim_kind: [0.0, -0.032548, -0.018124, -0.014379, 0.0061355, -0.031321, -0.028653, -0.013767],
             barrel_kind: [1.0, 0.99257, 1.45, 1.35, 0.95, 0.89343, 1.1298, 1.2133],
+            outside_kind: [1.0; 8],
             plane_mismatch: 0.0,
             mismatch_noise: 1.0481,
             spray_turn: 0.0698,

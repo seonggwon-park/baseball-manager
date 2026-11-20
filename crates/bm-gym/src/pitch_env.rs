@@ -130,11 +130,11 @@ pub fn obs_names() -> Vec<String> {
         let n = kind_name(k);
         v.extend([format!("{n}_available"), format!("{n}_usual"), format!("{n}_read"), format!("{n}_command"), format!("{n}_last")]);
     }
-    v.extend(["first_pitch", "batters_lean"].map(String::from));
+    v.extend(["first_pitch", "batters_lean", "batters_zone_lean"].map(String::from));
     v
 }
 
-pub const N_PITCH_OBS: usize = 12 + 9 + 7 + 8 * 5 + 2;
+pub const N_PITCH_OBS: usize = 12 + 9 + 7 + 8 * 5 + 3;
 
 /// What the step left, for logging and analysis.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -462,6 +462,9 @@ pub fn observe(sim: &GameSim, side: usize, re: &RunExpectancy, last: Option<Pitc
         let plain = expectation(prof, st, &w[..n], params.expect_mix);
         let adapted = expectation_adapted(prof, st, &w[..n], params);
         o[69] = ((adapted.time - plain.time) / 0.01) as f32;
+        // How much readier (+) or slower (−) to swing the batters are from the pitcher's
+        // location in this game, in tenths.
+        o[70] = (adapted.swing_lean / 0.1) as f32;
     }
     o
 }

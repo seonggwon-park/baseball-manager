@@ -1450,6 +1450,7 @@ impl GameSim {
 
         let f = thrown.flight;
         let zone_distance = zone.signed_distance(f.plate_pos.x, f.plate_pos.z, env.ball.radius);
+        self.sides[fld].pitcher_state.tendency.record_zone(zone_distance <= 0.0, params.zone_usual[balls.min(3)][strikes.min(2)], params);
         let mut ev = PitchEvent {
             inning: self.inning,
             top: self.top,

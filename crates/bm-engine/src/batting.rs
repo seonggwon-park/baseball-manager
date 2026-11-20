@@ -184,7 +184,7 @@ pub fn perceive(
             1 => params.swing_d0_one_strike,
             _ => params.swing_d0_two_strikes,
         };
-    let base = (params.swing_base[balls.min(3)][strikes.min(2)] * batter.aggression).min(0.992);
+    let base = (params.swing_base[balls.min(3)][strikes.min(2)] * batter.aggression * (1.0 + expected.swing_lean)).min(0.992);
     let swing_prob = (base * sigmoid(-(d_hat - d0) / params.swing_width) * (1.0 - take)).min(0.995);
     Perception { recognition: rho, perceived_x: px, perceived_z: pz, bias_z: miss * dmz, swing_prob }
 }
@@ -408,7 +408,7 @@ pub fn swing(
     let d_out = (d_act + p.barrel_outside_offset).max(0.0);
     // With two strikes the batter shortens up to protect the plate (`two_strike_reach`).
     let shorten = if two { p.two_strike_reach } else { 1.0 };
-    let loc_gain = 1.0 + shorten * (p.barrel_outside_gain * d_out + p.barrel_outside_gain2 * d_out * d_out);
+    let loc_gain = 1.0 + shorten * p.outside_kind[k] * (p.barrel_outside_gain * d_out + p.barrel_outside_gain2 * d_out * d_out);
     // Below the zone the barrel stays above the ball, above it under the ball: the batter
     // cannot bring the barrel all the way down to a pitch at his knees or get on top of one at
     // his letters (2025 Statcast: launch angle 0 deg on balls chased below the zone, 21-28 deg
