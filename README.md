@@ -16,6 +16,7 @@
 | 앱 (`app/`): React + PixiJS 화면, Tauri 데스크톱 셸 | 경기 화면 동작. Windows 설치 파일은 CI에서 빌드 |
 | 검증 도구 (`bm-cli`): MLB 2025 기록·Statcast와 비교(리그 총량, 선수 간 분포, 능력치의 가치), 개발 서버 | 동작 |
 | 월드 (`bm-world`): 선수 능력치, 능력치 → 물리량 변환, 선수 생성 | 능력치 체계 동작 |
+| 강화학습 환경 (`bm-gym`, `python/`): 감독 결정 학습·탐색, Gymnasium 인터페이스 | 공격 작전 환경 동작, 전술 탐색 진행 중 |
 | 리그 월드 (한·미·일): 리그·일정, 이적·계약·재정·스카우트·훈련, 세이브 | 구단 198개·구장 데이터, 날짜, 한·미·일 1군과 마이너리그의 정규 시즌 일정, 수준별 선수 약 8,300명 생성(이름·생년월일·출생국, KBO·NPB 외국인 선수, MLB 산하 육성군 2개), SQLite 세이브(`bm-save`). 수준별 재능은 공식 기록에 맞추는 중이고, 시즌 진행·이적·계약은 시작 전 |
 
 경기 화면에서 할 수 있는 것:
@@ -95,13 +96,14 @@ MLB 30개 구장(실제 거리·담장 높이·고도)에서 치른 10,000경기
 엔진과 검증 도구는 Rust 1.82 이상만 있으면 된다.
 
 ```sh
-cargo test --workspace                                        # 단위 테스트 147개
+cargo test --workspace                                        # 단위 테스트 155개
 cargo run --release --bin bm -- game --seed 7                 # 한 경기 박스스코어
 cargo run --release --bin bm -- validate --games 10000        # MLB 2025와 비교한 리포트
 cargo run --release --bin bm -- tactics --games 100000        # 득점 기대값 표와 작전의 결과(docs/tactics.md)
 cargo run --release --bin bm -- players > players.csv         # 가상 리그 162경기의 선수별 기록 (선수 간 분포 확인용)
 cargo run --release --bin bm -- attributes --games 8000       # 능력치 1 표준편차의 득점 가치
 cargo run --release --bin bm -- bench --games 2000            # 시뮬레이션 속도
+cargo run --release --bin bm -- we --games 300000             # 강화학습 보상의 승리 기대값 표(data/engine/win_expectancy.json)
 cargo run --release --bin bm -- park --level kbo --fence 95,113.4,124,113.4,95 --wall 4 --elevation 22 --games 20000
                                                               # 구장 실험: 한 구장에서만 치른 KBO 수준 경기
                                                               # (--balls FILE: 경기 대신 실측 타구를 이 구장에 날린다)
@@ -123,6 +125,13 @@ npm run build
 cargo run --release --bin bm -- serve --static app/dist      # 저장소 루트에서, http://127.0.0.1:8787
 ```
 
+강화학습 환경(Python, Gymnasium식)은 Rust 툴체인과 Python 3.9 이상이 필요하다([`docs/rl.md`](docs/rl.md)).
+
+```sh
+pip install "./python[gym]"          # crates/bm-py를 maturin으로 빌드해 bm_gym 패키지를 설치
+pytest python/tests
+```
+
 Windows 설치 파일은 GitHub Actions의 "Windows app" 워크플로가 PR마다 빌드한다. 실행 결과 페이지의 Artifacts에서 `baseball-manager-windows`를 받으면 된다. 코드 서명을 하지 않았으므로 실행할 때 Windows SmartScreen 경고가 뜬다.
 
 같은 시드와 같은 지시는 항상 같은 경기를 만든다.
@@ -136,7 +145,11 @@ crates/
   bm-world/     선수 능력치(40개 + 숨김 13개), 능력치 → 엔진 물리량 변환, 선수 생성, 구단·리그·일정, 세계의 선수 배치
   bm-save/      세이브 파일(SQLite): 사람, 선수, 로스터
   bm-session/   경기 한 판을 명령으로 진행하고 직렬화 가능한 화면 데이터로 변환 (앱과 개발 서버가 공유)
+  bm-gym/       강화학습 환경: 한 구단의 공격을 투구마다 지휘(행동 15가지, 관찰 35개, 승리 기대값 보상), 상태 복제
+  bm-py/        bm-gym의 Python 바인딩(PyO3, 워크스페이스와 따로 maturin으로 빌드)
   bm-cli/       bm 명령: 검증 리포트, 선수별 기록, 능력치 가치표, 벤치마크, 한 경기 출력, 개발 서버
+python/
+  bm_gym/       Gymnasium 래퍼, tests/ (pytest)
 app/
   src/          React + TypeScript 화면, PixiJS 경기장, 한국어·영어 번역
   src-tauri/    Tauri 데스크톱 셸 (엔진 워크스페이스와 따로 빌드)
@@ -146,6 +159,7 @@ data/
   leagues/jp.json   일본 구단 26개: 1군 12 + 2군 리그 14 (2군 전용 구단 2개 포함)
   names/            선수 이름: 한국(성·이름 음절), 미국·캐나다, 스페인어권, 일본, 대만(한글·로마자 표기). 편집 가능
   people/           출생국 비율(수준별), 리그 수준(재능·나이·로스터 크기·외국인 선수). 편집 가능
+  engine/           승리 기대값 표(bm we가 만든다; 강화학습 보상과 관찰에 쓴다)
 docs/
   physics-model.md          모델, 상수와 출처, 검증 결과, 한계
   attributes.md             능력치와 물리량의 대응, 근거, 선수 간 분포 검증, 능력치의 가치, 한계
@@ -153,6 +167,7 @@ docs/
   contracts.md              계약과 FA 시장 설계(정한 것, 구조, 보정 목표, 단계와 보정 결과)
   tactics.md                감독 전술 영역 검증: 득점 기대값 표, 도루·번트·고의사구의 값, 2023 시프트 제한
   backtest.md               실제 타자를 능력치로 옮겨 다음 시즌 예측(2025 → 2026, Marcel·통계 회귀와 비교)
+  rl.md                     강화학습 환경: 행동·관찰·보상, 승리 기대값 표, 쓰는 법, 한계
   research/world/           MLB·KBO·NPB 리그 구조 조사 원자료 (도시, 구장 치수, 일정·규칙, 출처)
   validation/mlb-2025.txt   bm validate --games 10000 --seed 2025 의 전체 출력
   scenarios/                게임 엔진으로 돌린 가정 실험(잠실 임시 구장 등)과 재현 방법

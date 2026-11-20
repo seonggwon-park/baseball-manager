@@ -427,6 +427,7 @@ pub struct Situation {
     pub over: bool,
 }
 
+#[derive(Clone)]
 struct Side {
     team: Arc<Team>,
     lineup: [usize; 9],
@@ -514,6 +515,7 @@ struct Stealing {
 }
 
 /// The plate appearance in progress.
+#[derive(Clone)]
 struct Pa {
     batter_idx: usize,
     pitcher_idx: usize,
@@ -554,7 +556,9 @@ pub enum Step {
     GameOver,
 }
 
-/// A game in progress, advanced one pitch at a time.
+/// A game in progress, advanced one pitch at a time. Cloning it copies the whole
+/// state, so that a decision can be tried several ways from the same moment.
+#[derive(Clone)]
 pub struct GameSim {
     env: Arc<MatchEnv>,
     sides: [Side; 2],

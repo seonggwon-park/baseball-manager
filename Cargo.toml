@@ -1,8 +1,9 @@
 [workspace]
 resolver = "2"
-members = ["crates/bm-physics", "crates/bm-engine", "crates/bm-world", "crates/bm-save", "crates/bm-session", "crates/bm-cli"]
-# The desktop shell has its own lock file and is built separately (see app/src-tauri).
-exclude = ["app/src-tauri"]
+members = ["crates/bm-physics", "crates/bm-engine", "crates/bm-world", "crates/bm-save", "crates/bm-session", "crates/bm-gym", "crates/bm-cli"]
+# The desktop shell and the Python binding have their own lock files and are built separately
+# (app/src-tauri; crates/bm-py through python/pyproject.toml).
+exclude = ["app/src-tauri", "crates/bm-py"]
 
 [workspace.package]
 version = "0.1.0"

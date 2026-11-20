@@ -5,3 +5,9 @@ dist/
 .DS_Store
 *.log
 __pycache__/
+# The Python binding (python/, crates/bm-py): its own cargo target, the built module, test caches
+crates/bm-py/target/
+python/bm_gym/*.so
+python/bm_gym/*.pyd
+.pytest_cache/
+*.egg-info/

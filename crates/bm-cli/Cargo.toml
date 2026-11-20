@@ -15,4 +15,5 @@ bm-physics = { path = "../bm-physics" }
 bm-engine = { path = "../bm-engine" }
 bm-world = { path = "../bm-world" }
 bm-session = { path = "../bm-session" }
+bm-gym = { path = "../bm-gym" }
 serde_json = "1"

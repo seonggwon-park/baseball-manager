@@ -4,7 +4,8 @@
 //! Cities, ballpark dimensions and the league structure follow the real 2026 leagues
 //! (`docs/research/world`); the names of clubs, leagues and ballparks are invented.
 
-use bm_physics::{FencePoint, Park};
+use bm_engine::{MatchEnv, ModelParams, Rules};
+use bm_physics::{Atmosphere, BallSpec, FencePoint, Park, Wind};
 use serde::{Deserialize, Serialize};
 use std::f64::consts::{FRAC_PI_2, FRAC_PI_4};
 
@@ -202,6 +203,24 @@ impl World {
     /// Top-level clubs a manager can take charge of.
     pub fn first_teams(&self) -> impl Iterator<Item = &Club> {
         self.clubs().filter(|c| c.parent.is_none() && self.level_of(c) == Level::Top)
+    }
+
+    /// Match conditions in the ballparks of the clubs of the given leagues, in data-file
+    /// order: a mild day (24 °C, 760 mmHg, 55 % humidity), no wind, the park's fences and
+    /// elevation, with the batted ball's drag multiplied by `drag` (1 = the major-league
+    /// ball). Returns the environments and, for each, the index of its league in `ids`.
+    pub fn park_envs(&self, ids: &[&str], rules: &Rules, params: &ModelParams, ball: BallSpec, drag: f64) -> (Vec<MatchEnv>, Vec<usize>) {
+        let (mut envs, mut league) = (Vec::new(), Vec::new());
+        for (li, id) in ids.iter().enumerate() {
+            for c in self.clubs().filter(|c| c.league == *id) {
+                let mut env = MatchEnv::new(&Atmosphere::new(24.0, 760.0, 55.0, c.park.elevation()), Wind::CALM, c.park.field(), rules.clone(), params.clone());
+                env.ball = ball;
+                env.batted_flight.aero.cd0 *= drag;
+                envs.push(env);
+                league.push(li);
+            }
+        }
+        (envs, league)
     }
 }
 

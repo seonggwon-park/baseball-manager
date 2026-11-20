@@ -25,6 +25,7 @@ name = "bm-cli"
 version = "0.1.0"
 dependencies = [
  "bm-engine",
+ "bm-gym",
  "bm-physics",
  "bm-session",
  "bm-world",
@@ -36,6 +37,17 @@ name = "bm-engine"
 version = "0.1.0"
 dependencies = [
  "bm-physics",
+]
+
+[[package]]
+name = "bm-gym"
+version = "0.1.0"
+dependencies = [
+ "bm-engine",
+ "bm-physics",
+ "bm-world",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

@@ -39,6 +39,9 @@
 //! bm contacts --out FILE [--games N] [--invert FILE]              balls in play with the swing that hit them (simulated), or the
 //!             [--face-lead DEG] [--dir-shift DEG] [--swings]      impact parameter that reproduces each row's launch angle;
 //!                                                                 --swings: every full swing instead of balls in play
+//! bm we [--games N] [--seed S] [--json FILE]                     win expectancy of games between the AI managers by inning, half,
+//!                                                                 outs, bases and score: the table behind bm-gym's reward
+//!                                                                 (default FILE data/engine/win_expectancy.json)
 //! bm game [--seed S]                                              play one game and print the box score
 //! bm bench [--games N]                                            measure simulation speed
 //! bm serve [--port P] [--static DIR]                              session API over HTTP for the interface in a browser
@@ -481,6 +484,27 @@ fn main() {
             if let Some(path) = &args.json {
                 std::fs::write(path, serde_json::to_string_pretty(&t.json()).expect("json")).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
             }
+        }
+        "we" => {
+            let league = bm_gym::League::mlb(args.seed);
+            let start = Instant::now();
+            let t = bm_gym::WinExpectancy::build(&league, args.tuning.style, args.games, args.seed, args.threads);
+            println!("{} games, {} plate appearances, {:.1} s", t.games, t.plate_appearances(), start.elapsed().as_secs_f64());
+            println!("home team's chance of winning (start of a plate appearance):");
+            for (label, inning, top, outs, bases, lead) in [
+                ("start of the game", 1, true, 0, 0, 0),
+                ("top 9th, home up 1, nobody on, 0 out", 9, true, 0, 0, 1),
+                ("bottom 9th, tied, nobody on, 0 out", 9, false, 0, 0, 0),
+                ("bottom 9th, tied, runner on 1st, 0 out", 9, false, 0, 1, 0),
+                ("bottom 9th, tied, runner on 2nd, 1 out", 9, false, 1, 2, 0),
+                ("bottom 9th, down 1, bases loaded, 2 out", 9, false, 2, 7, -1),
+                ("top 5th, home up 3, nobody on, 0 out", 5, true, 0, 0, 3),
+            ] {
+                println!("  {label:<44} {:.3}", t.home(inning, top, outs, bases, lead));
+            }
+            let path = args.json.clone().unwrap_or_else(|| "data/engine/win_expectancy.json".into());
+            std::fs::write(&path, serde_json::to_string(&t).expect("json") + "\n").unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+            println!("written {}", path.display());
         }
         "validate" => {
             let clubs = make_clubs(args.clubs, args.seed, level, world);

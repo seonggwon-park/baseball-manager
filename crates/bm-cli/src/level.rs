@@ -200,19 +200,7 @@ pub fn park_envs(ids: &[&str], rules: &Rules, tuning: &Tuning) -> (Vec<MatchEnv>
 /// [`park_envs`] with the batted ball's drag multiplied by `drag` (the ball of the lower
 /// minors).
 pub fn park_envs_with(ids: &[&str], rules: &Rules, tuning: &Tuning, drag: f64) -> (Vec<MatchEnv>, Vec<usize>) {
-    let world = World::bundled();
-    let (mut envs, mut league) = (Vec::new(), Vec::new());
-    for (li, id) in ids.iter().enumerate() {
-        for c in world.clubs().filter(|c| c.league == *id) {
-            let mut env =
-                MatchEnv::new(&Atmosphere::new(24.0, 760.0, 55.0, c.park.elevation()), Wind::CALM, c.park.field(), rules.clone(), tuning.params.clone());
-            env.ball = tuning.ball;
-            env.batted_flight.aero.cd0 *= drag;
-            envs.push(env);
-            league.push(li);
-        }
-    }
-    (envs, league)
+    World::bundled().park_envs(ids, rules, &tuning.params, tuning.ball, drag)
 }
 
 /// Foreign players a first-team club of the level uses: starting pitchers, relievers and

@@ -33,6 +33,29 @@ jobs:
         run: |
           cargo run --release --bin bm -- game --seed 7
           cargo run --release --bin bm -- validate --games 500 --seed 1
+          cargo run --release --bin bm -- we --games 300 --json "$RUNNER_TEMP/we.json"
+
+  python:
+    name: Python environment (bm_gym)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the stable toolchain
+        run: |
+          rustup update stable --no-self-update
+          rustup default stable
+          rustup component add rustfmt clippy
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Format and clippy (binding)
+        run: |
+          cargo fmt --manifest-path crates/bm-py/Cargo.toml -- --check
+          cargo clippy --manifest-path crates/bm-py/Cargo.toml -- -D warnings
+      - name: Build and install
+        run: pip install "./python[test]"
+      - name: Tests
+        run: pytest -q python/tests
 
   interface:
     name: interface type-check and build

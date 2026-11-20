@@ -1,0 +1,14 @@
+[package]
+name = "bm-gym"
+description = "Reinforcement-learning environment on the match engine: an agent manages a club's offence pitch by pitch"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+bm-physics = { path = "../bm-physics" }
+bm-engine = { path = "../bm-engine" }
+bm-world = { path = "../bm-world" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
