@@ -209,9 +209,13 @@ mod tests {
     fn bundled_table_makes_sense() {
         let t = WinExpectancy::bundled();
         assert!(t.games >= 100_000, "{} games", t.games);
-        // Even game at the start: the home side is slightly favoured.
+        // Even game at the start. The engine gives the home side no edge but batting last
+        // (docs/rl.md 3), and tables built from it start at 0.500-0.502, so the bound is 0.5
+        // less four sampling errors of the cell (each game starts there once: 0.0009 over
+        // 300,000 games). Real home sides win about 54 %, which the engine does not model.
         let start = t.home(1, true, 0, 0, 0);
-        assert!((0.50..0.58).contains(&start), "{start}");
+        let sampling = (0.25 / t.games as f64).sqrt();
+        assert!(start > 0.5 - 4.0 * sampling && start < 0.58, "{start} ({} games)", t.games);
         // A lead is worth more the later it is.
         assert!(t.home(9, true, 0, 0, 1) > t.home(3, true, 0, 0, 1));
         assert!(t.home(9, true, 0, 0, -1) < t.home(3, true, 0, 0, -1));
