@@ -302,6 +302,23 @@ impl Play {
     }
 }
 
+/// A game just played, as [`Season::play_until_with`] reports it.
+pub struct PlayedGame<'a> {
+    /// Index of the fixture in [`Season::fixtures`].
+    pub index: usize,
+    pub fixture: &'a Fixture,
+    pub result: &'a bm_engine::GameResult,
+    /// Person ids of the players behind the box score's lines, `[away, home]`.
+    pub players: [&'a [u32]; 2],
+    /// Batting orders and starting fielders (P, C, 1B, 2B, 3B, SS, LF, CF, RF) as indices
+    /// into `players`.
+    pub lineups: [[usize; 9]; 2],
+    pub defense: [[usize; 9]; 2],
+}
+
+/// The engine's teams of one game and the person ids behind their players.
+type Played = (usize, bm_engine::GameResult, Vec<u32>, Vec<u32>, [[usize; 9]; 2], [[usize; 9]; 2]);
+
 /// A season in progress.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Season {
@@ -352,6 +369,11 @@ impl Season {
 
     /// Play every fixture up to and including `until`.
     pub fn play_until(&mut self, world: &World, population: &Population, play: &Play, until: Date) {
+        self.play_until_with(world, population, play, until, &mut |_| {});
+    }
+
+    /// [`Season::play_until`], calling `on_game` for every game played, in fixture order.
+    pub fn play_until_with(&mut self, world: &World, population: &Population, play: &Play, until: Date, on_game: &mut dyn FnMut(&PlayedGame)) {
         let end = self.played + self.fixtures[self.played..].iter().take_while(|f| f.date <= until).count();
         if end == self.played {
             return;
@@ -380,7 +402,7 @@ impl Season {
         let chunk = jobs.len().div_ceil(threads);
         let fixtures = &self.fixtures;
         let seed = self.seed;
-        let results: Vec<(usize, bm_engine::GameResult, Vec<u32>, Vec<u32>)> = std::thread::scope(|scope| {
+        let results: Vec<Played> = std::thread::scope(|scope| {
             let handles: Vec<_> = jobs
                 .chunks(chunk.max(1))
                 .map(|part| {
@@ -395,7 +417,8 @@ impl Season {
                                 let (away, home) = (a.team_for_game(away_start, dh), h.team_for_game(home_start, dh));
                                 let mut rng = Rng::new(seed ^ 0xF1C7_0000_0000 ^ (i as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15));
                                 let res = play_game_styled(env, &away, &home, [play.style; 2], &mut rng, &mut NoObserver);
-                                Some((i, res, away.players.iter().map(|p| p.id).collect(), home.players.iter().map(|p| p.id).collect()))
+                                let ids = |t: &bm_engine::Team| t.players.iter().map(|p| p.id).collect();
+                                Some((i, res, ids(&away), ids(&home), [away.lineup, home.lineup], [away.defense, home.defense]))
                             })
                             .collect::<Vec<_>>()
                     })
@@ -403,7 +426,7 @@ impl Season {
                 .collect();
             handles.into_iter().flat_map(|h| h.join().expect("season thread panicked")).collect()
         });
-        for (i, res, away_ids, home_ids) in results {
+        for (i, res, away_ids, home_ids, lineups, defense) in results {
             let f = &self.fixtures[i];
             let (ra, rh) = (res.score[0], res.score[1]);
             for (club, us, them) in [(&f.away, ra, rh), (&f.home, rh, ra)] {
@@ -428,14 +451,20 @@ impl Season {
                     }
                 }
             }
+            on_game(&PlayedGame { index: i, fixture: f, result: &res, players: [&away_ids, &home_ids], lineups, defense });
         }
         self.played = end;
     }
 
     /// Play the rest of the season.
     pub fn play_out(&mut self, world: &World, population: &Population, play: &Play) {
+        self.play_out_with(world, population, play, &mut |_| {});
+    }
+
+    /// [`Season::play_out`], calling `on_game` for every game played, in fixture order.
+    pub fn play_out_with(&mut self, world: &World, population: &Population, play: &Play, on_game: &mut dyn FnMut(&PlayedGame)) {
         if let Some(last) = self.fixtures.last().map(|f| f.date) {
-            self.play_until(world, population, play, last);
+            self.play_until_with(world, population, play, last, on_game);
         }
     }
 }
@@ -510,5 +539,36 @@ mod tests {
         again.play_until(&world, &pop, &Play { threads: 2, ..Play::default() }, first.add_days(6));
         assert_eq!(again.standings, season.standings);
         assert_eq!(again.batting, season.batting);
+    }
+
+    #[test]
+    fn each_game_is_reported_once_and_its_lines_make_the_season_lines() {
+        let world = World::bundled();
+        let pop = populate(&world, &LevelTable::bundled(), Date::new(2027, 2, 1), 5);
+        let mut season = Season::new(&world, 2027, 5);
+        let first = season.next_date().unwrap();
+        let (mut seen, mut batting, mut outs) = (Vec::new(), BTreeMap::<u32, Batting>::new(), 0u32);
+        season.play_until_with(&world, &pop, &Play { threads: 3, ..Play::default() }, first.add_days(2), &mut |g| {
+            seen.push(g.index);
+            for side in 0..2 {
+                let ids = g.players[side];
+                assert_eq!(g.result.boxes[side].batting.len(), ids.len());
+                // Nine different batters in the order, a pitcher among the fielders.
+                let mut order = g.lineups[side].to_vec();
+                order.sort_unstable();
+                order.dedup();
+                assert_eq!(order.len(), 9);
+                assert!(g.result.boxes[side].pitching[g.defense[side][0]].started);
+                for (k, l) in g.result.boxes[side].batting.iter().enumerate() {
+                    if l.pa > 0 {
+                        batting.entry(ids[k]).or_default().add(l);
+                    }
+                }
+                outs += g.result.boxes[side].pitching.iter().map(|l| l.outs as u32).sum::<u32>();
+            }
+        });
+        assert_eq!(seen, (0..season.played).collect::<Vec<_>>());
+        assert_eq!(batting, season.batting);
+        assert_eq!(outs, season.pitching.values().map(|p| p.outs).sum::<u32>());
     }
 }

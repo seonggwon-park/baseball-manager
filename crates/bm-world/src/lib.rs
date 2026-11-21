@@ -31,4 +31,4 @@ pub use league::{Ballpark, Club, Country, League, Level, World};
 pub use people::{AgeSpread, PeopleMaker, Person};
 pub use player::{Bats, HitStyle, PitchSkill, Pitching, Player, Position, Role, Side};
 pub use populate::{populate, populate_with, Away, LevelProfile, LevelTable, Population, Roster};
-pub use season::{Fixture, Season, Standing};
+pub use season::{Fixture, PlayedGame, Season, Standing};

@@ -29,7 +29,8 @@
 //! bm season [--seed S] [--until YYYY-MM-DD] [--seasons N]         generate the world and play a season of every league
 //!           [--warmup K] [--levels FILE] [--careers FILE]         (N seasons with offseasons between them, after K offseasons
 //!           [--aging FILE] [--contracts FILE] [--json FILE]       without games); --json: each level's rates in the last season;
-//!           [--history H]                                         --history: offseasons of the new world's past (careers.json)
+//!           [--history H] [--game-logs DIR]                       --history: offseasons of the new world's past (careers.json);
+//!                                                                 --game-logs: every game's batting and pitching lines as CSV
 //! bm careers [--years N] [--every K] [--from N]                   offseasons back to back: each level's talent and ages (every
 //!            [--levels FILE] [--careers FILE] [--aging FILE]      K years and averaged from offseason N), and how the drafted
 //!            [--contracts FILE] [--json FILE] [--out FILE]        and signed prospects turn out, from a new world with H
@@ -141,6 +142,8 @@ struct Args {
     /// `bm contacts`: where to write the rows, and rows to run the collision model backwards on.
     out: Option<std::path::PathBuf>,
     attrs_out: Option<std::path::PathBuf>,
+    /// `bm season`: directory for every game's box-score lines.
+    game_logs: Option<std::path::PathBuf>,
     invert: Option<std::path::PathBuf>,
     face_lead: f64,
     dir_shift: f64,
@@ -194,6 +197,7 @@ fn parse_args() -> Args {
         json: None,
         out: None,
         attrs_out: None,
+        game_logs: None,
         invert: None,
         face_lead: 0.0,
         dir_shift: 0.0,
@@ -278,6 +282,7 @@ fn parse_args() -> Args {
             "--json" => a.json = Some(v.into()),
             "--out" => a.out = Some(v.into()),
             "--attrs-out" => a.attrs_out = Some(v.into()),
+            "--game-logs" => a.game_logs = Some(v.into()),
             "--invert" => a.invert = Some(v.into()),
             "--face-lead" => a.face_lead = v.parse().expect("--face-lead DEG"),
             "--dir-shift" => a.dir_shift = v.parse().expect("--dir-shift DEG"),
@@ -797,6 +802,7 @@ fn main() {
                 aging_file: args.aging_file.as_deref(),
                 json: args.json.as_deref(),
                 out: args.out.as_deref(),
+                game_logs: args.game_logs.as_deref(),
             },
         ),
         "careers" => careers::run(

@@ -103,6 +103,126 @@ pub struct Options<'a> {
     /// Write every player's line of the last season played here (CSV): his level and role,
     /// his value (`ability::value`) and his batting and pitching.
     pub out: Option<&'a std::path::Path>,
+    /// Write every game's box-score lines of every season played into this directory
+    /// (`batting.csv`, `pitching.csv`; [`GameLogs`]).
+    pub game_logs: Option<&'a std::path::Path>,
+}
+
+/// Fielding positions in the order of the engine's `Team::defense`.
+const POSITIONS: [&str; 9] = ["P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF"];
+
+/// A field of a CSV row, quoted when it holds a comma, a quote or a line break.
+fn csv(s: &str) -> String {
+    if s.contains([',', '"', '\n']) {
+        format!("\"{}\"", s.replace('"', "\"\""))
+    } else {
+        s.to_string()
+    }
+}
+
+/// The box score of every game as CSV (`bm season --game-logs DIR`): `batting.csv` has a row
+/// for every player who came to the plate, scored or ran in a game (a defensive substitute
+/// with nothing to count has none), `pitching.csv` one for every pitcher who pitched. Both start with the season, date, fixture index, league, club, opponent, whether
+/// the club was at home (1) and the final score from the club's side, then the player's id and
+/// names. A batter's `order` is his place in the starting batting order (0 for a substitute)
+/// and `position` the position he started at (DH for the designated hitter, empty for a
+/// substitute, whose positions the box score does not keep).
+struct GameLogs {
+    batting: std::io::BufWriter<std::fs::File>,
+    pitching: std::io::BufWriter<std::fs::File>,
+}
+
+impl GameLogs {
+    fn create(dir: &std::path::Path) -> Self {
+        use std::io::Write;
+        std::fs::create_dir_all(dir).unwrap_or_else(|e| panic!("{}: {e}", dir.display()));
+        let open = |name: &str, header: &str| {
+            let path = dir.join(name);
+            let mut f = std::io::BufWriter::new(std::fs::File::create(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display())));
+            writeln!(f, "{header}").unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+            f
+        };
+        const GAME: &str = "season,date,game,league,club,opponent,home,runs,opp_runs,player,name,name_ko";
+        GameLogs {
+            batting: open("batting.csv", &format!("{GAME},order,position,pa,ab,r,h,2b,3b,hr,rbi,bb,ibb,hbp,so,sf,sh,gidp,sb,cs,roe")),
+            pitching: open("pitching.csv", &format!("{GAME},gs,decision,outs,ip,bf,h,r,er,bb,ibb,so,hr,hbp,pitches,strikes,wp")),
+        }
+    }
+
+    fn write(&mut self, year: i32, pop: &bm_world::Population, g: &bm_world::PlayedGame) {
+        use std::io::Write;
+        let (f, res) = (g.fixture, g.result);
+        for side in 0..2 {
+            let (club, opp) = if side == 0 { (&f.away, &f.home) } else { (&f.home, &f.away) };
+            let head = format!("{year},{},{},{},{club},{opp},{side},{},{}", f.date, g.index, f.league, res.score[side], res.score[1 - side]);
+            let ids = g.players[side];
+            let who = |k: usize| {
+                let (en, ko) = pop.people.get(&ids[k]).map_or((String::new(), String::new()), |p| (csv(&p.name.en), csv(&p.name.ko)));
+                format!("{},{en},{ko}", ids[k])
+            };
+            let bx = &res.boxes[side];
+            // Pinch runners score and steal without a plate appearance.
+            for (k, l) in bx.batting.iter().enumerate().filter(|(_, l)| l.pa + l.r + l.sb + l.cs > 0) {
+                let order = g.lineups[side].iter().position(|&i| i == k).map_or(0, |o| o + 1);
+                let position = g.defense[side].iter().position(|&i| i == k).map_or(if order > 0 { "DH" } else { "" }, |p| POSITIONS[p]);
+                writeln!(
+                    self.batting,
+                    "{head},{},{order},{position},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
+                    who(k),
+                    l.pa,
+                    l.ab,
+                    l.r,
+                    l.h,
+                    l.doubles,
+                    l.triples,
+                    l.hr,
+                    l.rbi,
+                    l.bb,
+                    l.ibb,
+                    l.hbp,
+                    l.so,
+                    l.sf,
+                    l.sh,
+                    l.gidp,
+                    l.sb,
+                    l.cs,
+                    l.roe
+                )
+                .expect("batting.csv");
+            }
+            for (k, l) in bx.pitching.iter().enumerate().filter(|(_, l)| l.appeared) {
+                let decision = [(res.win, "W"), (res.loss, "L"), (res.save, "S")].iter().find(|(d, _)| *d == Some((side, k))).map_or("", |(_, s)| s);
+                writeln!(
+                    self.pitching,
+                    "{head},{},{},{decision},{},{}.{},{},{},{},{},{},{},{},{},{},{},{},{}",
+                    who(k),
+                    u8::from(l.started),
+                    l.outs,
+                    l.outs / 3,
+                    l.outs % 3,
+                    l.bf,
+                    l.h,
+                    l.r,
+                    l.er,
+                    l.bb,
+                    l.ibb,
+                    l.so,
+                    l.hr,
+                    l.hbp,
+                    l.pitches,
+                    l.strikes,
+                    l.wp
+                )
+                .expect("pitching.csv");
+            }
+        }
+    }
+
+    fn finish(mut self) {
+        use std::io::Write;
+        self.batting.flush().expect("batting.csv");
+        self.pitching.flush().expect("pitching.csv");
+    }
 }
 
 /// Every rostered player's line of `season` as CSV rows (`bm season --out`).
@@ -321,13 +441,21 @@ pub fn run(tuning: &Tuning, seed: u64, threads: usize, o: &Options) {
     let play = Play { params: tuning.params.clone(), baseline: tuning.baseline.clone(), style: tuning.style, threads, ..Play::default() }.with_balls(&levels);
     let (until, seasons) = (o.until, o.seasons);
     let seasons = seasons.max(1);
+    let mut logs = o.game_logs.map(GameLogs::create);
     for k in 0..seasons {
         let year = first + k as i32;
         let mut season = Season::new(&world, year, seed.wrapping_add(k as u64));
         let t1 = Instant::now();
-        match until.filter(|_| seasons == 1) {
-            Some(d) => season.play_until(&world, &pop, &play, d),
-            None => season.play_out(&world, &pop, &play),
+        {
+            let mut on_game = |g: &bm_world::PlayedGame| {
+                if let Some(l) = logs.as_mut() {
+                    l.write(year, &pop, g);
+                }
+            };
+            match until.filter(|_| seasons == 1) {
+                Some(d) => season.play_until_with(&world, &pop, &play, d, &mut on_game),
+                None => season.play_out_with(&world, &pop, &play, &mut on_game),
+            }
         }
         let secs = t1.elapsed().as_secs_f64();
         println!(
@@ -379,6 +507,10 @@ pub fn run(tuning: &Tuning, seed: u64, threads: usize, o: &Options) {
                 write_players(path, &pop, &season);
             }
             standings(&world, &season);
+            if let Some(l) = logs.take() {
+                l.finish();
+                println!("game logs written to {}", o.game_logs.map_or(String::new(), |d| d.display().to_string()));
+            }
         } else {
             let r = bm_world::offseason(&ctx, &mut pop, year, Some(&season.standings), seed);
             println!(
