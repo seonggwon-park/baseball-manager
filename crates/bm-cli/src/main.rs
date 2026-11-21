@@ -21,7 +21,8 @@
 //! bm park --level L --fence l,lc,c,rc,r [--wall l,c,r | --wall h] one ballpark experiment: the level's clubs (levels.json talent
 //!         [--elevation M] [--turf] [--talent ...] [--foreign ...]  unless given) play every game in one park (fence distances and
 //!         [--games N] [--seed S] [--json FILE]                    wall heights in m); the same seed gives the same clubs
-//!         [--balls FILE [--ev-shift MPH]]                         or measured batted balls flown through the park instead of games
+//!         [--balls FILE [--ev-shift MPH]]                         or measured batted balls flown through the park instead of games;
+//!         [--temp C] [--humidity PCT]                             the air (default 24 C, 55 %; --temp also replaces the balls' own)
 //! bm season [--seed S] [--until YYYY-MM-DD] [--seasons N]         generate the world and play a season of every league
 //!           [--warmup K] [--levels FILE] [--careers FILE]         (N seasons with offseasons between them, after K offseasons
 //!           [--aging FILE] [--contracts FILE] [--json FILE]       without games); --json: each level's rates in the last season;
@@ -114,6 +115,8 @@ struct Args {
     /// change of their exit speed (mph).
     balls: Option<std::path::PathBuf>,
     ev_shift: f64,
+    /// `bm park`: air temperature and humidity of the experiment.
+    weather: level::Weather,
     /// `bm validate`, `bm tactics`: infield shifts restricted (MLB since 2023) or not.
     shift_rule: Option<bool>,
     /// `bm season`: play up to this date instead of the whole season.
@@ -172,6 +175,7 @@ fn parse_args() -> Args {
         foreign_given: false,
         balls: None,
         ev_shift: 0.0,
+        weather: level::Weather::default(),
         shift_rule: None,
         until: None,
         years: 20,
@@ -242,6 +246,11 @@ fn parse_args() -> Args {
             "--elevation" => a.elevation = v.parse().expect("--elevation M"),
             "--balls" => a.balls = Some(v.into()),
             "--ev-shift" => a.ev_shift = v.parse().expect("--ev-shift MPH"),
+            "--temp" => a.weather.temp_c = Some(v.parse().expect("--temp C")),
+            "--humidity" => {
+                a.weather.humidity = v.parse().expect("--humidity PCT");
+                assert!((0.0..=100.0).contains(&a.weather.humidity), "--humidity is a percentage (0-100)");
+            }
             "--shift-rule" => {
                 a.shift_rule = Some(match v.as_str() {
                     "on" => true,
@@ -739,8 +748,20 @@ fn main() {
                 estimated: Vec::new(),
             };
             match &args.balls {
-                Some(balls) => level::park_balls(&args.level, &ballpark, balls, args.ev_shift, &args.tuning, drag, args.json.as_deref()),
-                None => level::park(&args.level, talent, foreign, &ballpark, args.games, args.seed, args.threads, &args.tuning, drag, args.json.as_deref()),
+                Some(balls) => level::park_balls(&args.level, &ballpark, balls, args.ev_shift, &args.tuning, drag, args.weather, args.json.as_deref()),
+                None => level::park(
+                    &args.level,
+                    talent,
+                    foreign,
+                    &ballpark,
+                    args.games,
+                    args.seed,
+                    args.threads,
+                    &args.tuning,
+                    drag,
+                    args.weather,
+                    args.json.as_deref(),
+                ),
             }
         }
         "season" => season::run(

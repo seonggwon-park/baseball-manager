@@ -56,6 +56,8 @@ SVP = 4.5841 · exp((18.687 − T/234.5)·T / (257.14 + T))                  [mm
 
 `T` 기온(℃), `P` 해면 기압(mmHg), `h` 고도(m), `RH` 상대습도(%), β = 1.217×10⁻⁴ /m. 날씨는 경기 평균값 24 ℃, 760 mmHg, 55%로 고정하고 고도만 구장마다 다르다(MLB 구장 평균 158 m, 덴버 1,582 m). 고도 180 m의 "중립 MLB 환경"은 ρ = 1.155다. **[가정]** 경기별 기온·바람은 아직 쓰지 않는다. 타구마다 항력 계수를 흔드는 장치(`drag_jitter`)가 있지만 0으로 둔다. 타구 자체의 회전 차이만으로 같은 타구 속도·발사각의 비거리 퍼짐이 Statcast만큼 나온다(발사각 20–35°에서 23–30 ft, 실측 22–31 ft). 여기에 흔들림을 더하면 느린 뜬공의 홈런이 실측보다 많아진다.
 
+`bm park --temp C --humidity %`는 실험 구장 하나의 기온과 습도를 바꾼다(투구와 타구 모두. `--balls`에서는 실측 타구마다 붙은 기온도 이 값으로 바꾸고 바람은 그대로 둔다). 엔진은 날씨를 공기 밀도로만 쓴다. 2025년 실측 인플레이 타구 22,107개를 평균 구장(330/377/404 ft, 담장 2.6 m, 고도 180 m, 바람 없음)에 날리면 홈런이 5 ℃ 710개, 15 ℃ 864개, 24 ℃ 1,040개, 35 ℃ 1,238개다. 1 ℃에 약 1.8%(15–35 ℃의 로그 기울기)다. 엔진 경기(KBO 수준, 임시 잠실 구장, 시드 7, 3,000경기)에서는 10 ℃에서 30 ℃로 팀 경기당 홈런이 0.677개에서 1.051개(1 ℃에 2.2%), 득점이 4.38점에서 5.24점이 된다. 투구의 무브먼트도 공기가 옅으면 줄기 때문에 삼진율도 19.8%에서 19.2%로 내려간다. **[측정]** Callahan 외(2023)는 MLB 경기 약 10만 개로, 돔이 없는 구장에서 그날 최고 기온이 1 ℃ 높으면 경기의 홈런이 1.96%(95% 신뢰구간 1.5–2.4%) 많다고 추정했다(낮 경기 2.4%, 밤 경기 1.7%). Statcast 타구로 타구 속도와 발사각을 고정하면 뜬공이 홈런이 될 확률이 1 ℃에 0.16%p 오른다(경기당 홈런 2.38개, 뜬공 24.98개로 나누면 상대 약 1.7%, 우리 계산). 기준이 그날 최고 기온이라 경기 시각의 기온과 같지는 않지만, 엔진의 크기는 이 범위 안에 있다. **[한계]** 공 자체의 온도가 반발계수를 바꾸는 효과는 없다. Nathan 외(2011)는 MLB 공의 반발계수(원통면 기준)가 1 °F에 5×10⁻⁴ 오르고, 35 °F(1.7 ℃)에 보관한 공은 70 °F(21 ℃) 공보다 뜬공 비거리가 약 10 ft 짧아 홈런이 약 19% 줄 것으로 추정했다(실험실 측정에 Adair의 "비거리 1%당 홈런 약 7%"를 곱한 추정). 실제 경기의 공 온도는 보관 온도와 기온 사이 어딘가이므로, 추운 날에는 엔진보다 홈런이 더 줄 수 있다.
+
 ### 1.4 공
 
 | 항목 | 값 | 근거 |
@@ -585,7 +587,7 @@ Cross & Nathan(2006)과 Kensrud, Nathan & Smith(2017)의 강체 충돌 모델을
 
 - 주루가 소극적이다: 단타 때 1루 주자의 3루 진루 29.3%(33.7%), 2루타 때 1루 주자 득점 37.1%(40.7%).
 - 그라운드 홈런(인사이드 더 파크)이 나오지 않는다.
-- 경기별 기온과 바람이 없다. 비거리의 퍼짐은 타구 회전의 차이에서만 나온다.
+- 게임의 경기에는 경기별 기온과 바람이 없다(`bm park --temp`로 실험 구장 하나의 기온만 바꿀 수 있다). 비거리의 퍼짐은 타구 회전의 차이에서만 나온다. 공 온도에 따른 반발계수 변화도 없다(1.3절).
 - **주자 3루·2아웃 미만의 득점 확률은 이제 조금 낮다**(3루 무사 0.824, Tango 2010–2015 0.843; 1아웃 0.640, 0.660). 땅볼 때 3루 주자가 너무 자주 들어오던 것(이전 0.883, 0.704)을 실측에 맞춘 뒤 남은 차이로, 단타·희생플라이 부족에서 온다. 득점 기대값 표와 Tango 표의 차이(RMS)는 0.029점에서 0.054점으로, 득점 수준 차이를 배율 하나로 맞춘 뒤에도 0.022점에서 0.030점으로 오히려 커졌다. 이전의 오차들이 서로 가려 주고 있었다는 뜻이다([`tactics.md`](tactics.md) 7절). 2026-11-20 엔진 수정 뒤에는 0.041점, 0.031점이다. 주자 1루·2아웃 미만 번트에서 선행 주자 아웃이 6.7%로 실측(4.2%)보다 많다. 작전 빈도를 맞추기 전에는 4.4%였다. 1·2루 번트와 1아웃 번트가 늘어난 것과 관계가 있어 보이지만 상황별로 나눠 재지 않았다.
 - **2023년 시프트 제한의 효과가 실측의 3분의 1 남짓이다**(주자 없을 때 BABIP 좌·우타 이중차분 +0.0032 ± 0.0008, 실측 추정 +0.009; 구종 × 존 보정 뒤 +0.0018, 2026-11-19 +0.0030, 그 전 +0.0040). 좌타자의 BABIP는 제한 뒤 거의 오르지 않는다(+0.0009 ± 0.0006, 실측 +0.012). 땅볼이 덜 당겨지는 것이 후보다([`tactics.md`](tactics.md) 4절).
 - **구장별 홈런 차이가 실제와 잘 맞지 않는다.** 실제 타구를 MLB 28개 구장에 날린 홈런 지수와 Statcast 구장 계수(2023–2025)의 상관이 0.28, 차이의 RMS가 15.3점(실제 퍼짐 12.3점)이다. 모델은 구장 간 차이를 크게 보기도 하고(1.4배 이상으로 본 쌍의 실제 평균 1.17배), 담장을 옮긴 효과를 작게 보기도 한다(캠던 야즈 2022, 모델 −19%, 실제 −32 – −39%). 합계(+2.5%)와 비거리별 홈런 비율은 맞는다. 그래서 구장을 바꾸는 시나리오는 방향만 믿을 만하다(7절 '구장별 홈런 차이', [`scenarios/jamsil-temporary-park.md`](scenarios/jamsil-temporary-park.md)).
@@ -606,7 +608,8 @@ Cross & Nathan(2006)과 Kensrud, Nathan & Smith(2017)의 강체 충돌 모델을
 - A. M. Nathan, "Dynamics of the baseball–bat collision", Am. J. Phys. 68, 979 (2000). <https://baseball.physics.illinois.edu/AJP-Nov2000.pdf>
 - A. M. Nathan, "Characterizing the performance of baseball bats", Am. J. Phys. 71, 134 (2003). <https://baseball.physics.illinois.edu/AJP-Feb2003.pdf>
 - R. Cross, A. M. Nathan, "Scattering of a baseball by a bat", Am. J. Phys. 74, 896 (2006). <https://arxiv.org/abs/physics/0605040>
-- A. M. Nathan, L. V. Smith, W. L. Faber, D. A. Russell, "Corked bats, juiced balls, and humidors: The physics of cheating in baseball", Am. J. Phys. 79, 575 (2011). <https://baseball.physics.illinois.edu/AJP-June2011.pdf>
+- A. M. Nathan, L. V. Smith, W. L. Faber, D. A. Russell, "Corked bats, juiced balls, and humidors: The physics of cheating in baseball", Am. J. Phys. 79, 575 (2011). <https://baseball.physics.illinois.edu/AJP-June2011.pdf> (5장 "The humidor": 공 온도와 반발계수, 35 °F 보관의 효과. 같은 글 <https://arxiv.org/abs/1009.2549>)
+- C. W. Callahan, N. J. Dominy, J. M. DeSilva, J. S. Mankin, "Global warming, home runs, and the future of America's pastime", Bull. Amer. Meteor. Soc. 104, E1006–E1016 (2023). <https://doi.org/10.1175/BAMS-D-22-0235.1> (기온 1 ℃당 경기 홈런 1.96%, 뜬공의 홈런 확률 0.16%p)
 - A. M. Nathan, J. Cantakos, R. Kesman, B. Mathew, W. Lukash, "Spin of a batted baseball", Procedia Engineering 34, 182 (2012). <https://baseball.physics.illinois.edu/ProcediaEngineering34Spin.pdf>
 - J. R. Kensrud, A. M. Nathan, L. V. Smith, "Oblique collisions of baseballs and softballs with a bat", Am. J. Phys. 85, 503 (2017). <https://arxiv.org/abs/1610.03464>
 - D. Kagan, A. M. Nathan, "Simplified models for the drag coefficient of a pitched baseball", The Physics Teacher 52, 278 (2014). <https://baseball.physics.illinois.edu/DragTPTMay2014.pdf>

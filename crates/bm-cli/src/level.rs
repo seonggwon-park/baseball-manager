@@ -278,12 +278,38 @@ fn own_league(env: &Env, games: usize, seed: u64, threads: usize, style: bm_engi
     total
 }
 
+/// Air of a `bm park` experiment (sea-level pressure 760 mmHg, no wind). The engine uses the
+/// weather only through the air's density, for pitches and batted balls alike; the ball's own
+/// temperature, which changes its bounciness (Nathan et al. 2011), is not modelled.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Weather {
+    /// Air temperature, C. `None`: 24 C, the game average the world's parks play in, except
+    /// for measured balls that carry their own temperature, which keep it.
+    pub temp_c: Option<f64>,
+    /// Relative humidity, percent.
+    pub humidity: f64,
+}
+
+impl Default for Weather {
+    fn default() -> Self {
+        Weather { temp_c: None, humidity: 55.0 }
+    }
+}
+
+impl Weather {
+    /// The air at `elevation` m.
+    pub fn atmosphere(&self, elevation: f64) -> Atmosphere {
+        Atmosphere::new(self.temp_c.unwrap_or(24.0), 760.0, self.humidity, elevation)
+    }
+}
+
 /// `bm park`: the level's clubs, made as `bm level` makes them and playing under the league's
 /// rules, play every game in one ballpark (fence distances at the five bearings, wall heights,
 /// elevation and surface, built as the world data builds its parks). The clubs and the games'
-/// random numbers depend only on the seed, so two parks compare with the same players; what
-/// differs between them beyond the park is the games' own randomness, which shrinks with
-/// `games`. Prints the rates and, with `json`, writes them with the counts per team-game.
+/// random numbers depend only on the seed, so two parks (or two weathers) compare with the same
+/// players; what differs between them beyond the park is the games' own randomness, which
+/// shrinks with `games`. Prints the rates and, with `json`, writes them with the counts per
+/// team-game.
 #[allow(clippy::too_many_arguments)]
 pub fn park(
     level: &str,
@@ -295,17 +321,19 @@ pub fn park(
     threads: usize,
     tuning: &Tuning,
     drag: f64,
+    weather: Weather,
     json: Option<&std::path::Path>,
 ) {
     let mut env = build(level, &talent, &foreign, tuning, seed, drag);
-    let m = park_env(ballpark, env.envs[0].rules.clone(), tuning, drag);
+    let air = weather.atmosphere(ballpark.elevation());
+    let m = park_env(ballpark, env.envs[0].rules.clone(), tuning, drag, &air);
     env.envs = vec![m; env.clubs.len()];
     let (line, speeds) = own_league(&env, games, seed, threads, tuning.style);
     let s = line.rates();
     let f = &ballpark.fence_m;
     let w = &ballpark.wall_m;
     println!(
-        "park: fence {:.1}/{:.1}/{:.1}/{:.1}/{:.1} m, wall {:.1}/{:.1}/{:.1} m, elevation {:.0} m, {}; level {level}, {} clubs, {games} games",
+        "park: fence {:.1}/{:.1}/{:.1}/{:.1}/{:.1} m, wall {:.1}/{:.1}/{:.1} m, elevation {:.0} m, {}; {:.1} C, {:.0} % humidity (air {:.4} kg/m3); level {level}, {} clubs, {games} games",
         f[0],
         f[1],
         f[2],
@@ -316,6 +344,9 @@ pub fn park(
         w[2],
         ballpark.elevation(),
         if ballpark.surface == bm_world::league::Surface::Turf { "turf" } else { "grass" },
+        air.temp_c,
+        air.rel_humidity,
+        air.air_density(),
         env.clubs.len()
     );
     println!("                 R/G     AVG    OBP    SLG     K%    BB%   HR/PA");
@@ -334,6 +365,7 @@ pub fn park(
         let doc = serde_json::json!({
             "level": level, "games": games, "seed": seed,
             "fence_m": f, "wall_m": w, "elevation_m": ballpark.elevation(),
+            "temp_c": air.temp_c, "humidity_pct": air.rel_humidity, "air_density": air.air_density(),
             "team_games": line.team_games, "pa": line.pa,
             "runs": line.runs, "hits": line.h, "doubles": line.doubles, "triples": line.triples, "home_runs": line.hr,
             "r_per_game": s.r, "avg": s.avg, "obp": s.obp, "slg": s.slg, "k_pct": s.k, "bb_pct": s.bb, "hr_pct": s.hr,
@@ -342,10 +374,11 @@ pub fn park(
     }
 }
 
-/// The match environment of a `bm park` experiment: the ballpark in the game-average weather
-/// (24 C, 760 mmHg, 55%, no wind) at its elevation, with the level's ball.
-fn park_env(ballpark: &bm_world::league::Ballpark, rules: Rules, tuning: &Tuning, drag: f64) -> MatchEnv {
-    let mut m = MatchEnv::new(&Atmosphere::new(24.0, 760.0, 55.0, ballpark.elevation()), Wind::CALM, ballpark.field(), rules, tuning.params.clone());
+/// The match environment of a `bm park` experiment: the ballpark in the air `air` (by default
+/// the game average, 24 C, 760 mmHg, 55 %, at the park's elevation) without wind, with the
+/// level's ball.
+fn park_env(ballpark: &bm_world::league::Ballpark, rules: Rules, tuning: &Tuning, drag: f64, air: &Atmosphere) -> MatchEnv {
+    let mut m = MatchEnv::new(air, Wind::CALM, ballpark.field(), rules, tuning.params.clone());
     m.ball = tuning.ball;
     m.batted_flight.aero.cd0 *= drag;
     m
@@ -358,12 +391,13 @@ fn park_env(ballpark: &bm_world::league::Ballpark, rules: Rules, tuning: &Tuning
 /// batter; further columns are ignored, a line that does not parse is skipped). A line of
 /// exactly seven numbers carries its own weather in columns 5-7: temperature (C) and the
 /// wind's x and y (m/s, x toward right field, y toward centre field); other balls fly in the
-/// game-average weather. Each ball leaves the contact point (0, 0.6, 0.9) m with `ev_shift`
+/// air of `weather`. A temperature in `weather` replaces every ball's own (the wind stays). Each ball leaves the contact point (0, 0.6, 0.9) m with `ev_shift`
 /// mph added to its exit speed and the spin of Nathan's Statcast regressions, as in
 /// `flight_check`: backspin -763 + 120 LA + 21 spray sign, sidespin -849 sign - 94 spray rpm.
 /// It flies with the game's own batted-ball model, step and park geometry, so the count of
 /// home runs depends on the park, the weather and the measured balls only, not on the
 /// engine's batters.
+#[allow(clippy::too_many_arguments)]
 pub fn park_balls(
     level: &str,
     ballpark: &bm_world::league::Ballpark,
@@ -371,19 +405,22 @@ pub fn park_balls(
     ev_shift: f64,
     tuning: &Tuning,
     drag: f64,
+    weather: Weather,
     json: Option<&std::path::Path>,
 ) {
     let (_, rules) = leagues(level).unwrap_or_else(|| panic!("unknown level '{level}'"));
-    let m = park_env(ballpark, rules, tuning, drag);
+    let air = weather.atmosphere(ballpark.elevation());
+    let m = park_env(ballpark, rules, tuning, drag, &air);
     let text = std::fs::read_to_string(balls).unwrap_or_else(|e| panic!("{}: {e}", balls.display()));
-    let (n, hr, wall) = fly_balls(&m, ballpark.elevation(), &text, ev_shift);
-    report_balls(ballpark, level, balls, ev_shift, (n, hr, wall), json);
+    let (n, hr, wall) = fly_balls(&m, &air, weather.temp_c, &text, ev_shift);
+    report_balls(ballpark, level, balls, ev_shift, weather, (n, hr, wall), json);
 }
 
-/// Fly the balls of `text` (the lines [`park_balls`] reads) through the park of `m`, whose
-/// elevation is `elevation` m: balls flown, home runs, and balls off the wall on the fly.
-fn fly_balls(m: &MatchEnv, elevation: f64, text: &str, ev_shift: f64) -> (usize, usize, usize) {
-    let rho = Atmosphere::new(24.0, 760.0, 55.0, elevation).air_density();
+/// Fly the balls of `text` (the lines [`park_balls`] reads) through the park of `m`, which was
+/// built in the air `air`: balls flown, home runs, and balls off the wall on the fly. A ball
+/// with its own weather flies at `temp` C if given, else at its own temperature.
+fn fly_balls(m: &MatchEnv, air: &Atmosphere, temp: Option<f64>, text: &str, ev_shift: f64) -> (usize, usize, usize) {
+    let rho = air.air_density();
     let mut path = BattedPath::default();
     let (mut n, mut hr, mut wall) = (0usize, 0usize, 0usize);
     for line in text.lines() {
@@ -393,8 +430,8 @@ fn fly_balls(m: &MatchEnv, elevation: f64, text: &str, ev_shift: f64) -> (usize,
         }
         let (ev, la, spray, sign) = (f[0], f[1], f[2], f[3]);
         let mut flight = m.batted_flight;
-        if let &[_, _, _, _, temp, wx, wy] = f.as_slice() {
-            flight.k *= Atmosphere::new(temp, 760.0, 55.0, elevation).air_density() / rho;
+        if let &[_, _, _, _, own, wx, wy] = f.as_slice() {
+            flight.k *= Atmosphere { temp_c: temp.unwrap_or(own), ..*air }.air_density() / rho;
             flight.wind = Wind { velocity: Vec3::new(wx, wy, 0.0), min_height: 0.0 };
         }
         let mut sim = BattedSim::new(&flight, &m.ball, &m.park);
@@ -425,13 +462,14 @@ fn report_balls(
     level: &str,
     balls: &std::path::Path,
     ev_shift: f64,
+    weather: Weather,
     (n, hr, wall): (usize, usize, usize),
     json: Option<&std::path::Path>,
 ) {
     let f = &ballpark.fence_m;
     let w = &ballpark.wall_m;
     println!(
-        "park: fence {:.1}/{:.1}/{:.1}/{:.1}/{:.1} m, wall {:.1}/{:.1}/{:.1} m, elevation {:.0} m; {n} measured balls from {}, exit speed {ev_shift:+.1} mph",
+        "park: fence {:.1}/{:.1}/{:.1}/{:.1}/{:.1} m, wall {:.1}/{:.1}/{:.1} m, elevation {:.0} m; {}, {:.0} % humidity; {n} measured balls from {}, exit speed {ev_shift:+.1} mph",
         f[0],
         f[1],
         f[2],
@@ -441,12 +479,15 @@ fn report_balls(
         w[1],
         w[2],
         ballpark.elevation(),
+        weather.temp_c.map_or("24 C or the ball's own".to_string(), |t| format!("{t:.1} C")),
+        weather.humidity,
         balls.display()
     );
     println!("  home runs {hr} ({:.3} per 100 balls), off the wall on the fly {wall}", 100.0 * hr as f64 / n.max(1) as f64);
     if let Some(path) = json {
         let doc = serde_json::json!({
             "level": level, "fence_m": f, "wall_m": w, "elevation_m": ballpark.elevation(),
+            "temp_c": weather.temp_c, "humidity_pct": weather.humidity,
             "balls": n, "ev_shift_mph": ev_shift, "home_runs": hr, "wall_on_fly": wall,
         });
         std::fs::write(path, serde_json::to_string_pretty(&doc).expect("json")).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
@@ -595,14 +636,14 @@ mod tests {
     use super::*;
     use bm_engine::ModelParams;
 
+    const AIR: Atmosphere = Atmosphere { temp_c: 24.0, pressure_mmhg: 760.0, rel_humidity: 55.0, elevation_m: 0.0 };
+
+    fn env_in(air: &Atmosphere) -> MatchEnv {
+        MatchEnv::new(air, Wind::CALM, Park::symmetric(100.0, 115.0, 122.0, 2.5), Rules::mlb_2025(), ModelParams::default())
+    }
+
     fn env() -> MatchEnv {
-        MatchEnv::new(
-            &Atmosphere::new(24.0, 760.0, 55.0, 0.0),
-            Wind::CALM,
-            Park::symmetric(100.0, 115.0, 122.0, 2.5),
-            Rules::mlb_2025(),
-            ModelParams::default(),
-        )
+        env_in(&AIR)
     }
 
     #[test]
@@ -611,13 +652,31 @@ mod tests {
         // A crushed fly ball to centre goes out, a ground ball does not, the header is skipped,
         // and the same fly ball into a 15 m/s wind blowing in from centre stays in the park.
         let text = "exit_speed,launch_angle,spray,sign\n110,28,0,1,431,home_run,BAL\n95,-5,10,-1\n110,28,0,1,24,0,-15\n";
-        assert_eq!(fly_balls(&m, 0.0, text, 0.0), (3, 1, 0));
+        assert_eq!(fly_balls(&m, &AIR, None, text, 0.0), (3, 1, 0));
     }
 
     #[test]
     fn exit_speed_shift_applies_to_every_ball() {
         let m = env();
-        assert_eq!(fly_balls(&m, 0.0, "95,28,0,1\n", 0.0).1, 0);
-        assert_eq!(fly_balls(&m, 0.0, "95,28,0,1\n", 15.0).1, 1);
+        assert_eq!(fly_balls(&m, &AIR, None, "95,28,0,1\n", 0.0).1, 0);
+        assert_eq!(fly_balls(&m, &AIR, None, "95,28,0,1\n", 15.0).1, 1);
+    }
+
+    #[test]
+    fn warm_air_carries_further_and_replaces_the_balls_own_temperature() {
+        // Forty fly balls to centre, 95-114.5 mph, some of them just short of the fence.
+        let balls: String = (0..40).map(|i| format!("{},28,0,1\n", 95.0 + 0.5 * i as f64)).collect();
+        let cold = Weather { temp_c: Some(5.0), ..Weather::default() };
+        let warm = Weather { temp_c: Some(35.0), ..Weather::default() };
+        let (ca, wa) = (cold.atmosphere(0.0), warm.atmosphere(0.0));
+        let (n, hr_cold, _) = fly_balls(&env_in(&ca), &ca, cold.temp_c, &balls, 0.0);
+        let (_, hr_warm, _) = fly_balls(&env_in(&wa), &wa, warm.temp_c, &balls, 0.0);
+        assert_eq!(n, 40);
+        assert!(hr_warm > hr_cold && hr_cold > 0, "{hr_cold} home runs at 5 C, {hr_warm} at 35 C");
+        // The same balls measured at 5 C: in warm air they keep their own temperature unless
+        // the experiment gives one.
+        let own: String = (0..40).map(|i| format!("{},28,0,1,5,0,0\n", 95.0 + 0.5 * i as f64)).collect();
+        assert_eq!(fly_balls(&env_in(&wa), &wa, None, &own, 0.0).1, hr_cold);
+        assert_eq!(fly_balls(&env_in(&wa), &wa, warm.temp_c, &own, 0.0).1, hr_warm);
     }
 }

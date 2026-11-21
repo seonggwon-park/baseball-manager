@@ -111,7 +111,8 @@ cargo run --release --bin bm -- rollout --states 300          # 같은 순간을
 cargo run --release --bin bm -- re --games 300000             # 볼카운트를 포함한 득점 기대값 표, 투수 환경의 보상(docs/rl.md 9절)
 cargo run --release --bin bm -- park --level kbo --fence 95,113.4,124,113.4,95 --wall 4 --elevation 22 --games 20000
                                                               # 구장 실험: 한 구장에서만 치른 KBO 수준 경기
-                                                              # (--balls FILE: 경기 대신 실측 타구를 이 구장에 날린다)
+                                                              # (--balls FILE: 경기 대신 실측 타구를 이 구장에 날린다;
+                                                              #  --temp C --humidity %: 기온·습도, 기본 24 ℃·55%)
 ```
 
 `validate`의 옵션: `--seed S`, `--threads T`, `--clubs K`(무작위 구단 수, 기본 300), `--style none|mlb`(AI 감독 성향), `--set 이름=값`(모델 상수를 바꿔서 실행. 이름은 `crates/bm-cli/src/tuning.rs` 참고).
