@@ -125,6 +125,7 @@ Cross & Nathan(2006)과 Kensrud, Nathan & Smith(2017)의 강체 충돌 모델을
 
 - **투수**: 볼카운트별 구종 선택과 목표 지점, 위치 오차(팔 스윙 방향으로 길쭉한 타원, 5.2절), 투구 수에 따른 구속·제구 저하. 구종마다 그 볼카운트에서 던지는 비율은 Statcast에서 잰 값이다(5.2절 끝).
 - **심판**: 사람 심판은 존 경계에서 로지스틱 확률로 판정한다(MLB). ABS는 규정을 그대로 적용한다(KBO: 타자 키의 55.75% / 27.04%, 홈플레이트 좌우 2 cm 확장, 중간면과 뒷면 모두 통과). **[측정]** KBO 2025 규정.
+  `--zone human|kbo-abs|mlb-abs`(`bm validate`, `tactics`, `players`, `attributes`, `level`, `park`)는 같은 선수로 판정 방식만 바꾼다. `mlb-abs`는 MLB가 2026년 챌린지 제도에 쓰는 존(홈플레이트 가운데의 2차원 사각형, 폭 17인치, 타자 키의 27–53.5%, 공이 조금이라도 닿으면 스트라이크)을 모든 공에 적용한 가상의 전면 ABS다. 실제 MLB는 심판이 모두 판정하고 팀마다 챌린지 2번(성공하면 유지)을 쓴다. 타자와 투수의 판단도 규칙의 존을 기준으로 하므로 존이 바뀌면 함께 따라간다. `kbo`처럼 ABS 리그를 `human`으로 돌리면 MLB 심판 모델을 빌려 쓰는 가정이다(KBO 심판의 판정 자료는 쓰지 않았다). 엔진에서 같은 MLB 수준 선수 3,000경기(시드 1)의 볼넷율은 사람 심판 8.55%, KBO ABS 8.07%, MLB ABS 10.59%이고 팀 경기당 득점은 4.34, 4.35, 4.72다. MLB ABS의 존 위쪽이 Statcast 규정 존(키의 56.5%)보다 1.855 m 타자 기준 2.2인치 낮기 때문이다. 이 차이는 모델 안의 값이다. 실제 제도와 비교하지 않았다.
 - **타자의 인지**: 투수의 주력 속구를 기준으로 공이 올 시간과 위치를 예상하고, 구종을 알아채거나 못 알아챈다. 못 알아챈 만큼 타이밍과 높이를 잘못 읽는다.
 - **스윙 결정**: `기본 스윙률[볼카운트] × sigmoid(−(체감 거리 − d0)/폭) × (1 − 흘려보내기)`. 체감 위치는 공의 늦은 꺾임을 보기 전에 정해지고(5.3절 9번), 구종을 알아챈 공은 구종·스트라이크 수마다 정한 비율만큼 일부러 보낸다(5.3절 8번).
 - **스윙 실행**: 타이밍 오차가 접촉 깊이와 배트 방향을 정하고, 조준·높이 판단·배럴 높이 교정의 잡음이 수직 오차를 정한다. 이렇게 정해진 배트 속도·방향·빗맞은 정도가 3장의 충돌 모델에 들어가고, 타구 속도·발사각·방향·회전은 충돌 결과로 나온다. 결과 확률표는 쓰지 않는다. 자세한 내용은 5.1절.
@@ -609,6 +610,7 @@ Cross & Nathan(2006)과 Kensrud, Nathan & Smith(2017)의 강체 충돌 모델을
 - A. M. Nathan, "Characterizing the performance of baseball bats", Am. J. Phys. 71, 134 (2003). <https://baseball.physics.illinois.edu/AJP-Feb2003.pdf>
 - R. Cross, A. M. Nathan, "Scattering of a baseball by a bat", Am. J. Phys. 74, 896 (2006). <https://arxiv.org/abs/physics/0605040>
 - A. M. Nathan, L. V. Smith, W. L. Faber, D. A. Russell, "Corked bats, juiced balls, and humidors: The physics of cheating in baseball", Am. J. Phys. 79, 575 (2011). <https://baseball.physics.illinois.edu/AJP-June2011.pdf> (5장 "The humidor": 공 온도와 반발계수, 35 °F 보관의 효과. 같은 글 <https://arxiv.org/abs/1009.2549>)
+- MLB, "MLB announces ABS Challenge System coming to the Major Leagues beginning in the 2026 season" (보도자료, 2025-09-23): 존의 정의와 챌린지 규칙. <https://www.mlb.com/press-release/press-release-mlb-announces-abs-challenge-system-coming-to-the-major-leagues-beginning-in-the-2026-season>
 - C. W. Callahan, N. J. Dominy, J. M. DeSilva, J. S. Mankin, "Global warming, home runs, and the future of America's pastime", Bull. Amer. Meteor. Soc. 104, E1006–E1016 (2023). <https://doi.org/10.1175/BAMS-D-22-0235.1> (기온 1 ℃당 경기 홈런 1.96%, 뜬공의 홈런 확률 0.16%p)
 - A. M. Nathan, J. Cantakos, R. Kesman, B. Mathew, W. Lukash, "Spin of a batted baseball", Procedia Engineering 34, 182 (2012). <https://baseball.physics.illinois.edu/ProcediaEngineering34Spin.pdf>
 - J. R. Kensrud, A. M. Nathan, L. V. Smith, "Oblique collisions of baseballs and softballs with a bat", Am. J. Phys. 85, 503 (2017). <https://arxiv.org/abs/1610.03464>

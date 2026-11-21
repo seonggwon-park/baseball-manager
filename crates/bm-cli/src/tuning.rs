@@ -1,6 +1,6 @@
 //! Command-line overrides of model constants (`--set name=value`), used while calibrating.
 
-use bm_engine::{Level, ManagerStyle, ModelParams};
+use bm_engine::{Level, ManagerStyle, ModelParams, Rules, ZonePreset};
 use bm_physics::units::MPH;
 use bm_physics::BallSpec;
 
@@ -11,6 +11,8 @@ pub struct Tuning {
     pub style: ManagerStyle,
     /// League averages behind the attribute system (`--set w.<name>=value`).
     pub baseline: bm_world::Baseline,
+    /// Ball-strike calls of every game the command plays (`--zone`), in place of the league's.
+    pub zone: Option<ZonePreset>,
 }
 
 macro_rules! set_scalar {
@@ -27,6 +29,15 @@ impl Tuning {
             ball: BallSpec::mlb(),
             style: ManagerStyle::default(),
             baseline: bm_world::Baseline::default(),
+            zone: None,
+        }
+    }
+
+    /// The rules with the ball-strike calls of `--zone`, if it was given.
+    pub fn rules(&self, rules: Rules) -> Rules {
+        match self.zone {
+            Some(z) => rules.with_zone(z),
+            None => rules,
         }
     }
 

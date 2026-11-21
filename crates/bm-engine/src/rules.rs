@@ -14,6 +14,41 @@ pub enum ZoneCall {
     Automated,
 }
 
+/// A way of calling balls and strikes, to compare umpires and automated systems with the same
+/// players ([`Rules::with_zone`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ZonePreset {
+    /// MLB's human plate umpires (2025): the rule-book zone as Statcast reports it, called with
+    /// the soft edges of [`StrikeZone::called_strike`].
+    Human,
+    /// The KBO's automated ball-strike system (2025), as in [`Rules::kbo_2025`].
+    KboAbs,
+    /// The zone of MLB's ABS Challenge System (2026), applied to every pitch: a rectangle in the
+    /// middle of the plate, 17 in wide, from 27 % to 53.5 % of the batter's height, a strike
+    /// when any part of the ball touches it (MLB press release, 2025-09-23). In MLB the umpire
+    /// still calls every pitch and each club has two challenges; this preset has no umpire.
+    MlbAbs,
+}
+
+impl ZonePreset {
+    pub fn parse(s: &str) -> Option<Self> {
+        Some(match s {
+            "human" => ZonePreset::Human,
+            "kbo-abs" => ZonePreset::KboAbs,
+            "mlb-abs" => ZonePreset::MlbAbs,
+            _ => return None,
+        })
+    }
+
+    pub fn name(self) -> &'static str {
+        match self {
+            ZonePreset::Human => "human",
+            ZonePreset::KboAbs => "kbo-abs",
+            ZonePreset::MlbAbs => "mlb-abs",
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Rules {
     /// Regulation innings.
@@ -98,6 +133,22 @@ impl Rules {
             min_batters_faced: 1,
             shift_restricted: false,
         }
+    }
+
+    /// The same rules with balls and strikes called as `preset` calls them: who calls them and
+    /// the zone's height, width and planes. Nothing else changes.
+    pub fn with_zone(mut self, preset: ZonePreset) -> Self {
+        let (call, top, bottom, extra, back) = match preset {
+            ZonePreset::Human => (ZoneCall::Human, 0.565, 0.264, 0.0, false),
+            ZonePreset::KboAbs => (ZoneCall::Automated, 0.5575, 0.2704, 0.02, true),
+            ZonePreset::MlbAbs => (ZoneCall::Automated, 0.535, 0.27, 0.0, false),
+        };
+        self.zone_call = call;
+        self.zone_top_frac = top;
+        self.zone_bottom_frac = bottom;
+        self.zone_extra_half_width = extra;
+        self.zone_check_back_plane = back;
+        self
     }
 }
 
@@ -217,5 +268,31 @@ mod tests {
         // cannot happen; one that is in at the middle but under the bottom at the back is a ball.
         let low = Vec3::new(0.0, PLATE_FRONT_Y, z.bottom - r + 0.03);
         assert!(!z.called_strike(&abs, &p, low, Vec3::new(0.0, -36.0, -6.0), r, 0.0, 0.5));
+    }
+
+    #[test]
+    fn zone_presets_reproduce_the_leagues_and_change_only_the_calls() {
+        assert_eq!(Rules::mlb_2025().with_zone(ZonePreset::Human), Rules::mlb_2025());
+        assert_eq!(Rules::kbo_2025().with_zone(ZonePreset::KboAbs), Rules::kbo_2025());
+        let kbo_human = Rules::kbo_2025().with_zone(ZonePreset::Human);
+        assert_eq!((kbo_human.max_innings, kbo_human.min_batters_faced), (Some(11), 1));
+        for s in ["human", "kbo-abs", "mlb-abs"] {
+            assert_eq!(ZonePreset::parse(s).map(ZonePreset::name), Some(s));
+        }
+        // MLB's ABS zone tops out 2 in lower than Statcast's rule-book zone for a 1.855 m batter
+        // (53.5 % against 56.5 % of his height): a pitch 1 in above the ABS top over the middle of
+        // the plate is a ball for the machine and usually a strike for the umpire.
+        let p = ModelParams::default();
+        let r = ZONE_BALL_RADIUS;
+        let abs = Rules::mlb_2025().with_zone(ZonePreset::MlbAbs);
+        let za = StrikeZone::for_batter(1.855, &abs);
+        let zh = StrikeZone::for_batter(1.855, &Rules::mlb_2025());
+        assert!(((zh.top - za.top) / INCH - 2.19).abs() < 0.02, "{}", (zh.top - za.top) / INCH);
+        let high = Vec3::new(0.0, PLATE_FRONT_Y, za.top + r + INCH);
+        let flat = Vec3::new(0.0, -38.0, 0.0);
+        assert!(!za.called_strike(&abs, &p, high, flat, r, 0.0, 0.0));
+        let human = Rules::mlb_2025();
+        let strikes = (0..1000).filter(|i| zh.called_strike(&human, &p, high, flat, r, 0.0, (*i as f64 + 0.5) / 1000.0)).count();
+        assert!(strikes > 600, "{strikes} of 1000");
     }
 }

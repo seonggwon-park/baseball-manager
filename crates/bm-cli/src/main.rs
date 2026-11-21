@@ -4,6 +4,9 @@
 //! bm validate [--games N] [--seed S] [--threads T] [--clubs K]   compare simulated aggregates with MLB 2025;
 //!             [--json FILE]                                       --json: pitches by type, count and result
 //!             [--style none|mlb] [--set name=value]               AI manager preset, model constants
+//!             [--zone human|kbo-abs|mlb-abs]                      who calls balls and strikes, for the same players (also for
+//!                                                                 tactics, players, attributes, level and park): MLB's umpires,
+//!                                                                 the KBO's ABS, or MLB's 2026 ABS zone on every pitch
 //!             [--population world|engine]                         players drawn from attributes (default) or as physical profiles
 //!             [--parks world|neutral]                             the 30 major-league parks of the world data (default) or one average park
 //! bm tactics [--games N] [--seed S] [--json FILE]                 the games of `bm validate`: run expectancy by base-out state,
@@ -246,6 +249,12 @@ fn parse_args() -> Args {
             "--elevation" => a.elevation = v.parse().expect("--elevation M"),
             "--balls" => a.balls = Some(v.into()),
             "--ev-shift" => a.ev_shift = v.parse().expect("--ev-shift MPH"),
+            "--zone" => {
+                a.tuning.zone = Some(bm_engine::ZonePreset::parse(&v).unwrap_or_else(|| {
+                    eprintln!("unknown zone {v}; use human | kbo-abs | mlb-abs");
+                    std::process::exit(2);
+                }))
+            }
             "--temp" => a.weather.temp_c = Some(v.parse().expect("--temp C")),
             "--humidity" => {
                 a.weather.humidity = v.parse().expect("--humidity PCT");
@@ -517,8 +526,17 @@ fn print_rollouts(res: &[bm_gym::StateResult]) {
 fn main() {
     let mut args = parse_args();
     // Neutral MLB-like conditions (see `MatchEnv::neutral_mlb`) with any command-line overrides.
-    let mut env = MatchEnv::new(&Atmosphere::new(24.0, 760.0, 55.0, 180.0), Wind::CALM, Park::mlb_average(), Rules::mlb_2025(), args.tuning.params.clone());
+    let mut env = MatchEnv::new(
+        &Atmosphere::new(24.0, 760.0, 55.0, 180.0),
+        Wind::CALM,
+        Park::mlb_average(),
+        args.tuning.rules(Rules::mlb_2025()),
+        args.tuning.params.clone(),
+    );
     env.ball = args.tuning.ball;
+    if let Some(z) = args.tuning.zone {
+        println!("ball-strike calls: {} (--zone)", z.name());
+    }
     if let Some(restricted) = args.shift_rule {
         // Without the restriction the AI managers shift as MLB clubs did in 2022.
         env.rules.shift_restricted = restricted;

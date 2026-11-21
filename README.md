@@ -115,7 +115,7 @@ cargo run --release --bin bm -- park --level kbo --fence 95,113.4,124,113.4,95 -
                                                               #  --temp C --humidity %: 기온·습도, 기본 24 ℃·55%)
 ```
 
-`validate`의 옵션: `--seed S`, `--threads T`, `--clubs K`(무작위 구단 수, 기본 300), `--style none|mlb`(AI 감독 성향), `--set 이름=값`(모델 상수를 바꿔서 실행. 이름은 `crates/bm-cli/src/tuning.rs` 참고).
+`validate`의 옵션: `--seed S`, `--threads T`, `--clubs K`(무작위 구단 수, 기본 300), `--style none|mlb`(AI 감독 성향), `--set 이름=값`(모델 상수를 바꿔서 실행. 이름은 `crates/bm-cli/src/tuning.rs` 참고), `--zone human|kbo-abs|mlb-abs`(같은 선수로 볼·스트라이크 판정만 바꾼다: MLB 심판, KBO ABS, 모든 공에 MLB 2026 ABS 존. `tactics`, `players`, `attributes`, `level`, `park`에도 쓴다).
 
 앱은 Node.js 22 이상이 추가로 필요하다.
 

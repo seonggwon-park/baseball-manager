@@ -217,7 +217,7 @@ fn foreign_slots(level: &str) -> (usize, usize, &'static [usize]) {
 
 fn build(level: &str, talent: &Talent, foreign: &Talent, tuning: &Tuning, seed: u64, drag: f64) -> Env {
     let (ids, rules) = leagues(level).unwrap_or_else(|| panic!("unknown level '{level}'"));
-    let (envs, league) = park_envs_with(&ids, &rules, tuning, drag);
+    let (envs, league) = park_envs_with(&ids, &tuning.rules(rules), tuning, drag);
     let mut rng = Rng::new(seed ^ 0x1E7E1);
     let (fs, fr, fh) = foreign_slots(level);
     let clubs = (0..envs.len())
@@ -496,7 +496,8 @@ fn report_balls(
 
 /// Runs per plate appearance of `bat` hitters against `pitch` pitchers in a neutral park.
 fn cross(bat: &[Club], pitch: &[Club], games: usize, seed: u64, threads: usize, tuning: &Tuning) -> Line {
-    let mut env = MatchEnv::new(&Atmosphere::new(24.0, 760.0, 55.0, 180.0), Wind::CALM, Park::mlb_average(), Rules::mlb_2025(), tuning.params.clone());
+    let mut env =
+        MatchEnv::new(&Atmosphere::new(24.0, 760.0, 55.0, 180.0), Wind::CALM, Park::mlb_average(), tuning.rules(Rules::mlb_2025()), tuning.params.clone());
     env.ball = tuning.ball;
     let style = tuning.style;
     let per = games.div_ceil(threads);

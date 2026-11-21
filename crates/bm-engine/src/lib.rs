@@ -23,4 +23,4 @@ pub use play::{PlayKind, PlayResult, Runner};
 pub use population::{Club, Level};
 pub use profile::{BatterProfile, CatcherProfile, FielderProfile, Hand, PitchDef, PitchGroup, PitchKind, PitcherProfile, Player};
 pub use rng::Rng;
-pub use rules::{Rules, StrikeZone, ZoneCall, ZONE_BALL_RADIUS};
+pub use rules::{Rules, StrikeZone, ZoneCall, ZonePreset, ZONE_BALL_RADIUS};
