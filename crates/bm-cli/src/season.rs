@@ -404,7 +404,8 @@ impl GameLogs {
 fn write_players(path: &std::path::Path, pop: &bm_world::Population, season: &Season) {
     use std::io::Write;
     let mut f = std::io::BufWriter::new(std::fs::File::create(path).unwrap_or_else(|e| panic!("{}: {e}", path.display())));
-    writeln!(f, "id,level,slot,pitcher,age,value,g,pa,ab,h,doubles,triples,hr,bb,hbp,so,sf,r,gp,gs,outs,bf,ph,pr,er,pbb,pso,phr").expect("write --out");
+    writeln!(f, "id,level,slot,pitcher,age,value,g,pa,ab,h,doubles,triples,hr,bb,hbp,so,sf,r,gp,gs,outs,bf,ph,pr,er,pbb,pso,phr,club,batting")
+        .expect("write --out");
     let jun30 = Date::new(season.year, 6, 30);
     for r in &pop.rosters {
         let s = &r.squad;
@@ -422,7 +423,7 @@ fn write_players(path: &std::path::Path, pop: &bm_world::Population, season: &Se
                 let q = season.pitching.get(&p.id).cloned().unwrap_or_default();
                 writeln!(
                     f,
-                    "{},{},{slot},{},{age:.2},{:.2},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
+                    "{},{},{slot},{},{age:.2},{:.2},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{:.2}",
                     p.id,
                     r.level,
                     u8::from(p.is_pitcher()),
@@ -448,7 +449,9 @@ fn write_players(path: &std::path::Path, pop: &bm_world::Population, season: &Se
                     q.er,
                     q.bb,
                     q.so,
-                    q.hr
+                    q.hr,
+                    r.club,
+                    if p.is_pitcher() { 0.0 } else { bm_world::ability::batting(p) }
                 )
                 .expect("write --out");
             }

@@ -460,8 +460,9 @@ pub fn swing(
     // ball stays near the sweet spot (88 mph at 15-25 in deep).
     let off_end =
         if theta > 0.0 { p.off_end_gain } else { p.off_end_late } * p.pivot_radius * (1.0 / theta.cos().max(0.3) - 1.0) + p.off_end_linear * theta.max(0.0);
-    // The batter still gets the last few centimetres of the barrel to the ball.
-    let off_end = p.off_end_max * (1.0 - (-off_end / p.off_end_max).exp());
+    // The batter still gets the last few centimetres of the barrel to the ball. A negative
+    // shift (`off_end_late` below zero: a late ball met nearer the hands) saturates the same way.
+    let off_end = p.off_end_max * off_end.signum() * (1.0 - (-off_end.abs() / p.off_end_max).exp());
     let reach = if inside >= 0.0 { p.reach_per_m } else { p.reach_out_per_m * shorten };
     let along = bat.sweet_spot_from_tip + p.contact_along + reach * inside - beyond - off_end
         + p.tracking_residual * (inside - inside_perceived)

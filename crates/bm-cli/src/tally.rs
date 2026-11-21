@@ -140,6 +140,13 @@ impl Fit {
 
 /// Edges of the contact-depth bins, inches ahead of the batter's usual contact point.
 pub const DEPTH_EDGES: [f64; 11] = [-60.0, -25.0, -15.0, -8.0, -3.0, 1.0, 5.0, 10.0, 17.0, 25.0, 60.0];
+
+/// Cell of `SwingGeo::depth_fine` for a contact depth in inches: bin `b` (0-119, the inch
+/// `[b - 60, b - 59)`, the ends open) is `[b / 30][b % 30]`.
+pub fn depth_fine_bin(depth_in: f64) -> (usize, usize) {
+    let b = ((depth_in + 60.0).floor().clamp(0.0, 119.0)) as usize;
+    (b / 30, b % 30)
+}
 pub const ND: usize = DEPTH_EDGES.len() - 1;
 
 /// Contact depth of the full swings at one type of pitch: mean and spread, and a
@@ -174,6 +181,10 @@ pub struct SwingGeo {
     /// launch angle, exit velocity, efficiency, pull-side spray.
     pub by_depth: [[f64; 3]; ND],
     pub depth_bip: [[Mean; 8]; ND],
+    /// Every full swing by depth of contact in 1-in bins from -60 to +60 in ([`depth_fine_bin`]):
+    /// swings, whiffs, fouls, balls in play, and the balls in play's summed exit velocity (mph)
+    /// and launch angle (deg), so that tables can be made around any centre (`validate --json`).
+    pub depth_fine: [[[f64; 6]; 30]; 4],
     /// By launch-angle class (GB, LD, FB, PU): pull-side spray, direction, depth, attack angle.
     pub by_la: [[Mean; 4]; 4],
     pub spray: Mean,
@@ -240,6 +251,11 @@ impl SwingGeo {
         }
         for (a, b) in self.fits.iter_mut().zip(&o.fits) {
             a.merge(b);
+        }
+        for (a, b) in self.depth_fine.iter_mut().zip(&o.depth_fine) {
+            for (x, y) in a.iter_mut().zip(b) {
+                add_arr(x, y);
+            }
         }
         for i in 0..ND {
             for k in 0..3 {
@@ -1268,6 +1284,9 @@ impl Observer for Tally {
                     kd.hist[h][1] += 1.0;
                 }
                 let bin_i = bin(&DEPTH_EDGES, depth);
+                let (fa, fb) = depth_fine_bin(depth);
+                g.depth_fine[fa][fb][0] += 1.0;
+                g.depth_fine[fa][fb][1 + outcome] += 1.0;
                 // Ball centre more than 8.5 cm inside the edge of the zone, within 3.7 cm of leaving it, or beyond.
                 let zone = if e.zone_distance < -0.085 {
                     0
@@ -1317,6 +1336,8 @@ impl Observer for Tally {
                             g.depth_bip[i][k].add(v);
                         }
                     }
+                    g.depth_fine[fa][fb][4] += ev;
+                    g.depth_fine[fa][fb][5] += la;
                     let c = &mut g.by_la[bb_type(la)];
                     c[0].add(spray);
                     c[1].add(dir);

@@ -34,9 +34,11 @@ pub struct BatSpec {
     pub taper_end: f64,
     /// Location of maximum effective COR ("sweet spot"), m from the tip.
     pub sweet_spot_from_tip: f64,
-    /// Quadratic fall-off of the effective COR away from the sweet spot, 1/m^2:
-    /// `e_eff = e0 * max(floor, 1 - k * dz^2)`.
+    /// Quadratic fall-off of the effective COR away from the sweet spot toward the handle,
+    /// 1/m^2: `e_eff = e0 * max(floor, 1 - k * dz^2)`.
     pub cor_falloff: f64,
+    /// The same between the sweet spot and the tip of the bat.
+    pub cor_falloff_tip: f64,
     /// Lower bound of the fall-off factor.
     pub cor_floor: f64,
     /// Bat performance factor e/e0 at the sweet spot (about 1 for wood).
@@ -90,6 +92,7 @@ impl BatSpec {
             taper_end: 22.0 * INCH,
             sweet_spot_from_tip: 5.5 * INCH,
             cor_falloff: 30.0,
+            cor_falloff_tip: 30.0,
             cor_floor: 0.25,
             bpf: 1.0,
             cor_obliquity: 0.45054,
@@ -137,7 +140,8 @@ impl BatSpec {
     #[inline]
     pub fn cor(&self, ball: &BallSpec, dist_from_tip: f64, normal_speed: f64) -> f64 {
         let dz = dist_from_tip - self.sweet_spot_from_tip;
-        let f = (1.0 - self.cor_falloff * dz * dz).max(self.cor_floor);
+        let k = if dz < 0.0 { self.cor_falloff_tip } else { self.cor_falloff };
+        let f = (1.0 - k * dz * dz).max(self.cor_floor);
         self.bpf * ball.cor_at(normal_speed) * f
     }
 

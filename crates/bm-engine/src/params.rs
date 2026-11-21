@@ -306,8 +306,9 @@ pub struct ModelParams {
     pub partial_fooled_rate: f64,
     pub partial_speed_min: f64,
     /// Share of the geometric off-the-end shift of a mistimed swing that the hands do
-    /// not compensate (0..1), for contact out in front and for contact deep in the zone,
-    /// and the distance from the point the bat sweeps about to the sweet spot, m.
+    /// not compensate (0..1), for contact out in front and for contact deep in the zone
+    /// (where a negative share moves the ball toward the hands instead), and the distance
+    /// from the point the bat sweeps about to the sweet spot, m.
     pub off_end_gain: f64,
     pub off_end_late: f64,
     pub pivot_radius: f64,

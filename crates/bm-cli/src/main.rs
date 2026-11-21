@@ -710,6 +710,8 @@ fn main() {
                     "kind_region": t.kind_region,
                     "region_contact": t.region_contact,
                     "height_geom": t.height_geom,
+                    "depth_fine_from_in": -60,
+                    "depth_fine": t.geo.depth_fine.iter().flatten().collect::<Vec<_>>(),
                 });
                 std::fs::write(path, serde_json::to_string_pretty(&doc).expect("json")).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
             }
