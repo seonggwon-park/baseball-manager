@@ -17,7 +17,7 @@
 | 검증 도구 (`bm-cli`): MLB 2025 기록·Statcast와 비교(리그 총량, 선수 간 분포, 능력치의 가치), 개발 서버 | 동작 |
 | 월드 (`bm-world`): 선수 능력치, 능력치 → 물리량 변환, 선수 생성 | 능력치 체계 동작 |
 | 강화학습 환경 (`bm-gym`, `python/`): 감독 결정 학습·탐색, Gymnasium 인터페이스 | 공격 작전 환경, 작전 롤아웃, 표 형태 학습 시연, 투수의 볼 배합 환경(타자가 투수의 성향을 읽음) 동작 |
-| 콘텐츠 도구 (`tools/render`, `tools/content`): MakeHuman 몸 렌더링, 공개 모션 캡처 입히기, 숏폼 영상 | 투구·스윙·번트 동작 시험(몸에 입히기는 동작, 원본 모션은 선수 동작이 아님), 전술 결과 숏폼 시제품 1편 |
+| 콘텐츠 도구 (`tools/render`, `tools/content`): MakeHuman 몸 렌더링, 공개 모션 캡처 입히기, 숏폼 영상 | 투구·스윙·번트 동작 시험(몸에 입히기는 동작, 원본 모션은 선수 동작이 아님), 전술 결과 숏폼 시제품 1편, 경기 기록의 연속 안타·무안타 집계(`streaks.py`) |
 | 리그 월드 (한·미·일): 리그·일정, 이적·계약·재정·스카우트·훈련, 세이브 | 구단 198개·구장 데이터, 날짜, 한·미·일 1군과 마이너리그의 정규 시즌 일정, 수준별 선수 약 8,300명 생성(이름·생년월일·출생국, KBO·NPB 외국인 선수, MLB 산하 육성군 2개), SQLite 세이브(`bm-save`). 수준별 재능은 공식 기록에 맞추는 중이고, 시즌 진행·이적·계약은 시작 전 |
 
 경기 화면에서 할 수 있는 것:
@@ -110,6 +110,9 @@ cargo run --release --bin bm -- we --games 300000             # 강화학습 보
 cargo run --release --bin bm -- rollout --states 300          # 같은 순간을 복제해 작전(번트·도루 등)의 값을 잼(docs/rl.md 6절)
 cargo run --release --bin bm -- re --games 300000             # 볼카운트를 포함한 득점 기대값 표, 투수 환경의 보상(docs/rl.md 9절)
 cargo run --release --bin bm -- season --seed 1 --game-logs logs # 세계의 모든 리그 한 시즌, 경기별 타자·투수 기록(logs/batting.csv, pitching.csv)
+python3 -I tools/content/streaks.py logs/batting.csv --league us-major --min-pa 502
+                                                              # 규정타석 타자의 최장 연속 안타·연속 무안타(경기·타수). 엔진에는 슬럼프 장치가
+                                                              # 없으므로 운만으로 생기는 연속 기록의 기준선
 cargo run --release --bin bm -- season --seed 1 --repeat 100 --standings-out st.csv
                                                               # 같은 선수단·일정으로 첫 시즌을 100번(운만 바뀜): 구단별 승수 퍼짐,
                                                               # 1위·포스트시즌 비율(MLB 12팀, KBO 5팀, NPB 리그별 3팀)
