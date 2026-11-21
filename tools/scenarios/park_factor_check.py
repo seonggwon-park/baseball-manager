@@ -57,12 +57,12 @@ def main():
     for code, venue in sorted(VENUES.items()):
         p = parks[CLUBS[code]]
         elev = p.get('elevation_m') or 0
-        hr = fly(bm, plain, p['fence_m'], p['wall_m'], elev, os.path.join(outdir, f'factor-{code}.json'))
+        hr = fly(bm, plain, p['fence_m'], p['wall_m'], elev, os.path.join(outdir, f'factor-{code}.json'), p.get('batted_drag', 1.0))
         t = sum(temp[code]) / len(temp[code])
         warm = os.path.join(outdir, f'balls-{code}-temp.csv')
         with open(warm, 'w') as f:
             f.writelines(','.join(x[:4]) + f',{t:.1f},0,0\n' for x in lines)
-        hr_t = fly(bm, warm, p['fence_m'], p['wall_m'], elev, os.path.join(outdir, f'factor-temp-{code}.json'))
+        hr_t = fly(bm, warm, p['fence_m'], p['wall_m'], elev, os.path.join(outdir, f'factor-temp-{code}.json'), p.get('batted_drag', 1.0))
         rows.append([code, venue, savant[venue], hr, hr_t, t])
     for k in (3, 4):
         mean = sum(r[k] for r in rows) / len(rows)

@@ -79,7 +79,7 @@ LG와 두산은 2026 시즌을 끝으로 잠실야구장을 떠나, 2027–2031�
 같은 방법으로 MLB 구장들을 계산해 실제와 비교했다. 자세한 수치는 [`physics-model.md`](../physics-model.md) 7절 '구장별 홈런 차이'에 있다.
 
 - **합계는 맞는다.** 29개 구장(탬파베이 제외: 2025년에는 임시 구장에서 경기)의 실제 타구 21,428개를 각자 친 구장에 날리면 홈런 950개, 실제 927개다(+2.5%).
-- **구장별 차이는 잘 맞지 않는다.** 같은 타구 22,107개를 28개 구장에 날려 만든 홈런 지수와 Baseball Savant의 Statcast 구장 계수(2023–2025, 같은 타자의 홈·원정 비교)의 상관은 0.28이다. 차이의 RMS는 15.3점으로, 실제 구장 계수의 퍼짐(표준편차 12.3점)보다 크다. 쿠어스 필드 140(실제 105), 양키 스타디움 86(119), PNC 파크 100(76)처럼 크게 어긋나는 구장이 있다.
+- **구장별 차이는 잘 맞지 않는다.** 같은 타구 22,107개를 28개 구장에 날려 만든 홈런 지수와 Baseball Savant의 Statcast 구장 계수(2023–2025, 같은 타자의 홈·원정 비교)의 상관은 0.28이다. 차이의 RMS는 15.3점으로, 실제 구장 계수의 퍼짐(표준편차 12.3점)보다 크다. 쿠어스 필드 140(실제 105), 양키 스타디움 86(119), PNC 파크 100(76)처럼 크게 어긋나는 구장이 있다. (2026-11-21 갱신: 같은 타구의 실측 비거리로 구장마다 공이 덜·더 뻗는 정도를 재 타구 항력 배수로 넣은 뒤 상관 0.40, RMS 13.9점, 쿠어스 121이다. 남은 차이는 주로 펜스 모양이다. KBO 구장은 측정이 없어 배수가 1이므로 이 시나리오의 값은 바뀌지 않는다. [`physics-model.md`](../physics-model.md) 7절.)
 - **크게 본 차이는 방향은 맞고 크기는 작았다.** 모델이 홈런을 1.4배 이상 많다고 본 구장 쌍 36개 중 33개(92%)는 실제로도 많았지만, 실제 차이는 평균 1.17배(모델 1.58배)였다. 모델이 크게 본 쌍만 골랐으므로 모델 오차가 큰 쌍이 섞여 있다는 점은 감안해야 한다.
 - **담장을 실제로 옮긴 사례에서는 반대로 작게 봤다.** 캠던 야즈는 2022년에 좌측 담장을 최대 26.5 ft(8.1 m) 뒤로 물리고 높이를 7 ft에서 13 ft로 올렸다. Statcast 구장 계수(한 시즌)로 우타자 홈런 지수는 133(2021)에서 81(2022), 90(2024)이 되었다(−39%, −32%). 다섯 점 구장으로 근사해 같은 타구를 날리면 우타자 홈런은 19%만 줄었다. 다섯 점으로 옮긴 방식(좌우중간 111.0 → 117.0 m, 좌측 담장 2.24 → 3.96 m)에 따라 달라지는 대략의 비교다.
 - 접촉의 질은 구장마다 거의 같다(Savant의 강한 타구 지수 표준편차 2.5, 홈런 지수와 상관 −0.1). 구장별 홈런 차이는 공이 맞은 뒤의 일, 즉 이 모델이 다루는 쪽에서 생긴다는 뜻이다. 그런데도 맞지 않는 원인은 확인하지 못했다. 후보는 다섯 점 사이의 실제 펜스 모양(다저 스타디움은 공식 좌우중간 385 ft, 위키백과의 실제 거리 375 ft), 구장마다 다른 바람과 기온, 쿠어스 필드의 공 보관(휴미더), 구장 자료와 계수의 시기 차이(캔자스시티는 2026년에 펜스를 당겼다)다.
@@ -108,6 +108,9 @@ python3 tools/scenarios/jamsil_park.py target/release/bm OUTDIR --balls balls.cs
 python3 tools/scenarios/park_balls_check.py target/release/bm balls.csv weather.json OUTDIR2
 curl -o pf.html 'https://baseballsavant.mlb.com/leaderboard/statcast-park-factors?type=year&year=2025&batSide=&stat=index_wOBA&condition=All&rolling=3'
 python3 tools/scenarios/park_factor_check.py target/release/bm balls.csv weather.json pf.html OUTDIR3
+# 구장별 타구 항력 배수(data/leagues/us.json의 batted_drag, physics-model.md 7절)
+cargo build --release --example carry_by_ball -p bm-physics
+python3 tools/scenarios/park_carry.py target/release/examples/carry_by_ball balls.csv weather.json OUTDIR4 [--write]
 ```
 
 ## 출처

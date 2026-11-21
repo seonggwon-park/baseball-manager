@@ -380,7 +380,7 @@ pub fn park(
 fn park_env(ballpark: &bm_world::league::Ballpark, rules: Rules, tuning: &Tuning, drag: f64, air: &Atmosphere) -> MatchEnv {
     let mut m = MatchEnv::new(air, Wind::CALM, ballpark.field(), rules, tuning.params.clone());
     m.ball = tuning.ball;
-    m.batted_flight.aero.cd0 *= drag;
+    m.batted_flight.aero.cd0 *= drag * ballpark.batted_drag;
     m
 }
 

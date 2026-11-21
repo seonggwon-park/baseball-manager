@@ -826,6 +826,7 @@ fn main() {
                 fence_m: args.fence.expect("bm park needs --fence l,lc,c,rc,r (m)"),
                 wall_m: args.wall.unwrap_or([2.4; 3]),
                 estimated: Vec::new(),
+                batted_drag: 1.0,
             };
             match &args.balls {
                 Some(balls) => level::park_balls(&args.level, &ballpark, balls, args.ev_shift, &args.tuning, drag, args.weather, args.json.as_deref()),

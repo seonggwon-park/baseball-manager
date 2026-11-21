@@ -104,6 +104,17 @@ pub struct Ballpark {
     /// Values that were not published and were filled in.
     #[serde(default)]
     pub estimated: Vec<String>,
+    /// Factor on the batted ball's drag in this park: how far balls carry there beyond what
+    /// its elevation and the game's temperature explain (prevailing wind and the like),
+    /// measured on the 2025 Statcast sample for the major-league parks
+    /// (`tools/scenarios/park_carry.py`, `docs/physics-model.md` 7); 1 where it was not
+    /// measured. It applies to batted balls only, not to pitches.
+    #[serde(default = "unit")]
+    pub batted_drag: f64,
+}
+
+fn unit() -> f64 {
+    1.0
 }
 
 impl Ballpark {
@@ -208,14 +219,15 @@ impl World {
     /// Match conditions in the ballparks of the clubs of the given leagues, in data-file
     /// order: a mild day (24 °C, 760 mmHg, 55 % humidity), no wind, the park's fences and
     /// elevation, with the batted ball's drag multiplied by `drag` (1 = the major-league
-    /// ball). Returns the environments and, for each, the index of its league in `ids`.
+    /// ball) and by the park's measured carry (`Ballpark::batted_drag`). Returns the
+    /// environments and, for each, the index of its league in `ids`.
     pub fn park_envs(&self, ids: &[&str], rules: &Rules, params: &ModelParams, ball: BallSpec, drag: f64) -> (Vec<MatchEnv>, Vec<usize>) {
         let (mut envs, mut league) = (Vec::new(), Vec::new());
         for (li, id) in ids.iter().enumerate() {
             for c in self.clubs().filter(|c| c.league == *id) {
                 let mut env = MatchEnv::new(&Atmosphere::new(24.0, 760.0, 55.0, c.park.elevation()), Wind::CALM, c.park.field(), rules.clone(), params.clone());
                 env.ball = ball;
-                env.batted_flight.aero.cd0 *= drag;
+                env.batted_flight.aero.cd0 *= drag * c.park.batted_drag;
                 envs.push(env);
                 league.push(li);
             }
@@ -268,5 +280,35 @@ mod tests {
             assert!((c.park.fence_m[0] - left).abs() < 1e-9 && (c.park.wall_m[0] - left_wall).abs() < 1e-9, "{}", c.id);
             assert_eq!(field.synthetic, c.park.surface == Surface::Turf);
         }
+    }
+
+    #[test]
+    fn measured_carry_reaches_the_batted_ball_only() {
+        let w = World::bundled();
+        // The major-league parks carry their measured factor; together they leave the league's
+        // carry as it was, and no park is more than a few per cent from the model's air.
+        let major: Vec<&Club> = w.clubs().filter(|c| c.league == "us-major").collect();
+        let measured: Vec<f64> = major.iter().map(|c| c.park.batted_drag).filter(|&d| d != 1.0).collect();
+        assert!(measured.len() >= 25, "{} parks measured", measured.len());
+        let mean = measured.iter().sum::<f64>() / measured.len() as f64;
+        assert!((mean - 1.0).abs() < 0.005, "mean factor {mean}");
+        assert!(measured.iter().all(|d| (0.93..1.07).contains(d)), "{measured:?}");
+        // Denver's thin air carries less than the model's elevation alone says.
+        let denver = major.iter().find(|c| c.city.en == "Denver").unwrap();
+        assert!(denver.park.batted_drag > 1.02, "{}", denver.park.batted_drag);
+        // Parks that were not measured keep the model's air.
+        assert!(w.clubs().filter(|c| c.league != "us-major").all(|c| c.park.batted_drag == 1.0));
+        // The factor reaches the batted ball's drag, not the pitch's.
+        let (envs, _) = w.park_envs(&["us-major"], &Rules::mlb_2025(), &ModelParams::default(), BallSpec::mlb(), 1.0);
+        let plain = MatchEnv::new(
+            &Atmosphere::new(24.0, 760.0, 55.0, denver.park.elevation()),
+            Wind::CALM,
+            denver.park.field(),
+            Rules::mlb_2025(),
+            ModelParams::default(),
+        );
+        let i = major.iter().position(|c| c.city.en == "Denver").unwrap();
+        assert!((envs[i].batted_flight.aero.cd0 - plain.batted_flight.aero.cd0 * denver.park.batted_drag).abs() < 1e-12);
+        assert_eq!(envs[i].pitch_flight.aero.cd0, plain.pitch_flight.aero.cd0);
     }
 }

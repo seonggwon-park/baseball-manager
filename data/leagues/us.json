@@ -454,7 +454,8 @@
      2.13,
      6.4
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 0.991
    }
   },
   {
@@ -501,7 +502,8 @@
      5.49,
      0.91
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 1.016
    }
   },
   {
@@ -548,7 +550,8 @@
      2.59,
      2.44
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 1.01
    }
   },
   {
@@ -642,7 +645,8 @@
      2.44,
      3.83
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 0.984
    }
   },
   {
@@ -689,7 +693,8 @@
      2.44,
      2.44
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 1.039
    }
   },
   {
@@ -736,7 +741,8 @@
      2.74,
      2.74
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 1.023
    }
   },
   {
@@ -783,7 +789,8 @@
      2.13,
      2.13
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 1.0
    }
   },
   {
@@ -830,7 +837,8 @@
      2.59,
      2.59
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 0.993
    }
   },
   {
@@ -877,7 +885,8 @@
      2.44,
      7.01
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 1.008
    }
   },
   {
@@ -926,7 +935,8 @@
     ],
     "estimated": [
      "wall"
-    ]
+    ],
+    "batted_drag": 0.951
    }
   },
   {
@@ -973,7 +983,8 @@
      2.74,
      2.13
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 0.99
    }
   },
   {
@@ -1020,7 +1031,8 @@
      2.44,
      2.44
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 0.977
    }
   },
   {
@@ -1067,7 +1079,8 @@
      2.44,
      2.44
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 0.987
    }
   },
   {
@@ -1114,7 +1127,8 @@
      2.44,
      2.44
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 1.031
    }
   },
   {
@@ -1161,7 +1175,8 @@
      2.44,
      4.88
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 0.992
    }
   },
   {
@@ -1210,7 +1225,8 @@
     ],
     "estimated": [
      "wall"
-    ]
+    ],
+    "batted_drag": 0.979
    }
   },
   {
@@ -1257,7 +1273,8 @@
      2.44,
      2.44
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 1.005
    }
   },
   {
@@ -1304,7 +1321,8 @@
      1.83,
      3.96
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 0.976
    }
   },
   {
@@ -1351,7 +1369,8 @@
      3.66,
      3.66
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 1.009
    }
   },
   {
@@ -1398,7 +1417,8 @@
      3.51,
      3.51
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 1.017
    }
   },
   {
@@ -1445,7 +1465,8 @@
      2.44,
      2.44
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 1.0
    }
   },
   {
@@ -1492,7 +1513,8 @@
      2.44,
      2.44
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 0.985
    }
   },
   {
@@ -1539,7 +1561,8 @@
      3.05,
      6.4
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 0.997
    }
   },
   {
@@ -1586,7 +1609,8 @@
      2.44,
      2.44
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 1.01
    }
   },
   {
@@ -1633,7 +1657,8 @@
      7.62,
      2.44
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 0.987
    }
   },
   {
@@ -1680,7 +1705,8 @@
      2.44,
      5.03
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 1.045
    }
   },
   {
@@ -1727,7 +1753,8 @@
      2.44,
      2.44
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 0.99
    }
   },
   {
@@ -1774,7 +1801,8 @@
      2.13,
      3.05
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 1.014
    }
   },
   {
@@ -1821,7 +1849,8 @@
      2.13,
      7.32
     ],
-    "estimated": []
+    "estimated": [],
+    "batted_drag": 0.998
    }
   },
   {

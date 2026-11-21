@@ -49,9 +49,11 @@ def weather(game):
     return (float(game['temp_f']) - 32) / 1.8, v * math.sin(rad), v * math.cos(rad)
 
 
-def fly(bm, path, fence, wall, elevation, out):
+def fly(bm, path, fence, wall, elevation, out, drag=1.0):
+    """Home runs of the balls of `path` in the park; `drag` is the park's batted-ball drag
+    factor (data/leagues/us.json `batted_drag`, 1 for the average park)."""
     cmd = [bm, 'park', '--level', 'mlb', '--balls', path, '--fence', ','.join(map(str, fence)), '--wall', ','.join(map(str, wall)),
-           '--elevation', str(elevation), '--json', out]
+           '--elevation', str(elevation), '--ball-drag', str(drag), '--json', out]
     subprocess.run(cmd, check=True, capture_output=True)
     return json.load(open(out))['home_runs']
 
@@ -88,8 +90,8 @@ def main():
                 g.write(','.join(x[:4]) + ('' if w is None else ',%.1f,%.2f,%.2f' % w) + '\n')
         p = parks[club]
         elev = p.get('elevation_m') or 0
-        base = fly(bm, plain, p['fence_m'], p['wall_m'], elev, os.path.join(outdir, f'park-{code}.json'))
-        wet = fly(bm, windy, p['fence_m'], p['wall_m'], elev, os.path.join(outdir, f'park-weather-{code}.json'))
+        base = fly(bm, plain, p['fence_m'], p['wall_m'], elev, os.path.join(outdir, f'park-{code}.json'), p.get('batted_drag', 1.0))
+        wet = fly(bm, windy, p['fence_m'], p['wall_m'], elev, os.path.join(outdir, f'park-weather-{code}.json'), p.get('batted_drag', 1.0))
         avg = fly(bm, windy, *AVERAGE_PARK, os.path.join(outdir, f'average-weather-{code}.json'))
         real = sum(1 for x in lines if x[5] == 'home_run')
         rows.append((code, len(lines), real, base, wet, avg, 'wall' in p.get('estimated', [])))
