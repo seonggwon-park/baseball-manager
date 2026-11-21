@@ -1,0 +1,256 @@
+{
+ "_comment": "Contracts, salaries and the yardstick for them (docs/contracts.md). Amounts are in each economy's currency: mlb US dollars (major and minor leagues), kbo won, npb yen. A schedule gives announced values by season and is raised by its economy's rate a year after the last one (decision 2026-11-18: each league's average-salary growth). Sources are named per item; docs/research/world/contracts_*.md hold the detail.",
+ "war": {
+  "replacement_win_pct": 0.294,
+  "hitters_share": 0.57,
+  "basis": "FanGraphs and Baseball-Reference's unified replacement level: a .294 team, 1,000 WAR per 2,430 major-league games (Cameron, FanGraphs 2013-03-28, https://blogs.fangraphs.com/unifying-replacement-level/); 57 % to position players and 43 % to pitchers (FanGraphs Library, https://library.fangraphs.com/misc/war/replacement-level/). The same winning percentage is used for every league."
+ },
+ "market": {
+  "mlb": {
+   "premium": 0.1,
+   "max_bidders": 4,
+   "home": 0.0873,
+   "taste": 0.1,
+   "slack": 0.05,
+   "budget_power": 0.5,
+   "bench_share": 0.1,
+   "displaced": 0.3,
+   "depth_signings": 8,
+   "retirement": 0.5664,
+   "qualifying_offer": 0.9,
+   "revenue_sharing_payees": 15,
+   "compensation_guarantee": 50000000,
+   "basis": "The major-league free-agent market (market.rs, docs/contracts.md stage 2). home and retirement fitted with the careers and the other markets (2026-11-19, docs/data-files.md careers, step 5; again in the full recalibration of 2026-11-21, step 7); budget_power: a regular's offer is multiplied by (the club's budget / the market's median budget)^budget_power, so a richer club outbids a poorer one (decision 2026-11-21; docs/contracts.md); fitted in step 7 with the careers and the markets to the clubs' spread of winning and its correlation with their budgets, where it stayed at the starting 0.5 (seeds 5-8 over 162 games: a talent spread of 8.7 wins, measured 9.8-11.5; budget-winning correlation 0.42); the others are assumptions, not fitted: premium per competing organisation beyond the first and the most that count (competition raises the price, Terry, McGee and Kass 2018); the extra weight on the old organisation's offer and the spread of a player's taste; how far past its budget an organisation may go; a bench player's time; the share of the wins of displaced players counted as lost; minor-league depth signings per organisation; the factor on the retirement chances of careers.json. qualifying_offer: an organisation makes the qualifying offer to a free agent (six years of service, his first) whose price is at least this share of it, and he accepts if his price is below it (measured 2012-2025: 157 offers, 18 accepted; contracts_mlb.md 4.3; fitted later). The compensation for a qualified free agent who signs a major-league contract elsewhere follows BA Art. XX(B)(4): the former organisation gets a pick after the 4th round if it paid the luxury tax, after the 1st round if it receives revenue sharing and he signs for compensation_guarantee or more (raised with the economy), otherwise after Competitive Balance Round B (taken as after the 2nd round); the signing organisation gives up its 3rd-round pick if it receives revenue sharing, its 2nd- and 5th-round picks if it paid the tax, otherwise its 2nd-round pick. The revenue-sharing payees are taken to be the revenue_sharing_payees organisations with the smallest budgets (an assumption: revenue sharing goes to the clubs with the least local revenue)"
+  },
+  "kbo": {
+   "premium": 0.1,
+   "max_bidders": 4,
+   "home": 0.1674,
+   "taste": 0.1,
+   "slack": 0.05,
+   "bench_share": 0.1,
+   "displaced": 0.3,
+   "depth_signings": 4,
+   "retirement": 0.452,
+   "declare": 0.0008,
+   "markup": 0.1748,
+   "abroad": 0.0,
+   "basis": "The KBO market (stage 3), the same rules as the majors' (premium, home, taste, slack, bench share, depth signings, retirement factor; starting values) and declare: a player with the seasons for free agency declares it when the log of the pay he expects on the market (his price raised by the premium of the clubs that would want him as a regular; a bench player's share of it, not below the minimum; the minimum if no club wants him) over the pay his club would set for him, plus his taste, is above it. markup: a free agent's price over the club pay of his WAR, above the minimum (reserved players are paid below what the market pays, Scully 1974; FA contracts pay several times the players' last salaries, contracts_kbo.md 9.2). Measured, 2021-22 to 2025-26: 14-21 of 19-40 eligible players applied, 8-16 re-signed and 3-11 moved (contracts_kbo.md 9.1). home, declare, markup and retirement fitted with the careers and the other markets (2026-11-19, again 2026-11-21); seeds 5-8: 16.2 eligible, 14.3 declared, 4.4 moved a year"
+  },
+  "npb": {
+   "premium": 0.1,
+   "max_bidders": 4,
+   "home": 0.1809,
+   "taste": 0.1,
+   "slack": 0.05,
+   "bench_share": 0.1,
+   "displaced": 0.3,
+   "depth_signings": 4,
+   "retirement": 0.8279,
+   "declare": 0.4399,
+   "markup": 0.0562,
+   "abroad": 0.0,
+   "basis": "The NPB market (stage 3), as the KBO's; the pay a player would get by staying is floored by the reduction limit. Measured, 2020-2025: 3-10 of about 105 qualified players declared a year; of the 42 who declared, 18 stayed, 20 moved within NPB and 4 went to the majors (contracts_npb.md 6A). home, declare, markup and retirement fitted with the careers and the other markets (2026-11-19, again 2026-11-21); seeds 5-8: 6.9 declared a year, 37 % stayed, 57 % moved"
+  }
+ },
+ "options": {
+  "opt_out_multi": 0.31,
+  "opt_out_after": [
+   [1, 0.65],
+   [2, 0.18],
+   [3, 0.17]
+  ],
+  "club_option_multi": 0.17,
+  "club_option_one": 0.11,
+  "no_buyout": 0.29,
+  "buyout": 0.12,
+  "club_lean": 0.2,
+  "player_lean": 0.35,
+  "basis": "Clauses in new major-league free-agent contracts, 2021-22 to 2025-26 (748 signings counted from MLB Trade Rumors' offseason reviews; docs/research/world/contracts_options.md 2.2-2.5): an opt-out in at least 31 % of multi-year deals, after year 1 in 65 % of them and year 2 in 18 %; a club option in 17 % of multi-year and 11 % of one-year deals, at the deal's yearly pay; no buyout in 29 % of club options, otherwise a median 12 % of the option's salary. Player and mutual options (4 % and 7 % of multi-year deals; mutual options exercised by both sides 0 of 84 times) are left out. Decisions: a club exercises an option when the player's price in the place he would take, raised by club_lean (the market premium it would pay to replace him), is at least its salary less the buyout; a player opts out when his price raised by player_lean (the premium he expects) is above his contract's pay (measured: club options exercised 39 %, opt-outs used 41 %). Interim fit on one 30-offseason world: 0.15 and 0.25 gave 28 % and 49 % of club options exercised, a player lean of 0.4 47 % of opt-outs used; the final calibration fits both again"
+ },
+ "economies": {
+  "mlb": {
+   "currency": "USD",
+   "posting": {
+    "bands": [
+     [25000000, 0.2],
+     [50000000, 0.175]
+    ],
+    "above": 0.15,
+    "amateur_age": 25,
+    "amateur_seasons": 6,
+    "basis": "The release fee a major-league organisation pays the KBO or NPB club of a posted player who signs a major-league contract: 20 % of the guaranteed value up to $25M, 17.5 % of the part from $25M to $50M, 15 % above (KBO-MLB agreement of 2018, paragraph 9; NPB-MLB agreement of 2017; contracts_kbo.md 8.1, contracts_npb.md 5A). A player under 25, or with fewer than six seasons in a recognised foreign professional league, signs only a minor-league contract from the international bonus pools (MLB glossary; Roki Sasaki FAQ)"
+   },
+   "raise": {
+    "rate": 0.047,
+    "basis": "Growth of the qualifying offer (the mean salary of the 125 highest-paid players), $18.4M for 2022 to $23.15M for 2027 (MLB Trade Rumors; MLB glossary; contracts_mlb.md 4.2)"
+   },
+   "runs_per_win": {
+    "value": 10.0,
+    "basis": "Measured in the engine: wins above .500 against run differential, 120 major-league team seasons of the 30-offseason world (seeds 21-24); Pythagenpat at the same 9.13 runs a game gives 9.7"
+   },
+   "replacement": {
+    "hitter": -21.51,
+    "pitcher": -8.98,
+    "basis": "Runs per 162 games (ability::value: a position player every day, a pitcher over an average pitcher's share) of the median Triple-A player of the world, the freely available talent (decision 2026-11-18), measured on the world of the full recalibration's careers and market fit (2026-11-21, docs/data-files.md careers step 7; seeds 13-16, offseasons 16-30 after the 20 of the past, at the fitted point). On this scale a major-league season held about 1,520 wins above replacement, 21 % of them pitchers', when last counted (2026-11-19, seeds 5-8). FanGraphs' scale (1,000 WAR a season, 43 % to pitchers; Cameron 2013) gives -8.47 and -12.80 on the same world: the engine's major-league pitchers still differ too little (free-agent starters' WAR spread 0.42 against 1.83 for hitters), and on that scale every pitcher is priced alike and high (docs/contracts.md, known limits)"
+   },
+   "minimum": {
+    "by_year": {"2022": 700000, "2023": 720000, "2024": 740000, "2025": 760000, "2026": 780000},
+    "basis": "2022-2026 Basic Agreement Art. VI(A)(1); carried on after 2026 (decision 2026-11-18: the agreement continues)"
+   },
+   "minor_rate_on_major_contract": {
+    "by_year": {"2022": 57200, "2023": 58800, "2024": 60300, "2025": 62000, "2026": 63600},
+    "basis": "Minimum minor-league rate of a first major-league contract, BA Art. VI(A)(2)"
+   },
+   "minor_weekly": {
+    "aaa": {"2023": 1200, "2024": 1200, "2025": 1225, "2026": 1250, "2027": 1275},
+    "aa": {"2023": 1000, "2024": 1000, "2025": 1020, "2026": 1040, "2027": 1060},
+    "high_a": {"2023": 900, "2024": 900, "2025": 920, "2026": 935, "2027": 955},
+    "single_a": {"2023": 850, "2024": 850, "2025": 870, "2026": 885, "2027": 905},
+    "rookie": {"2023": 675, "2024": 675, "2025": 700, "2026": 710, "2027": 720},
+    "weeks": {"aaa": 24, "aa": 23, "high_a": 22, "single_a": 22, "rookie": 16},
+    "basis": "Weekly championship-season pay of a first minor-league contract and the minimum season lengths, 2023-2027 Minor League Basic Agreement Art. VII(A) and Art. VI(A)(1); the rookie scale for the two development squads"
+   },
+   "price_per_war": {
+    "by_year": {"2026": 3101766},
+    "exponent": 1.26,
+    "basis": "Free-agent pay above the minimum = price x WAR^exponent. The exponent fits FanGraphs' price per projected WAR by quality (Clemens, 2026: $7.4M for 0-1 WAR players, $8.6M for 1-2, $11.8M for 2+; contracts_markets.md 2A) at 0.5 and 3 WAR; on FanGraphs' WAR scale the 2026 price would be $9.4M. Fitted with the careers and the other markets (2026-11-19) and then set again on the measured replacement levels so that the 30-offseason world's payroll met its budgets; fitted again in the full recalibration (2026-11-21: $3.10M, payroll 1.04 of budget on seeds 5-8). The world then signs 171 major-league free agents a year (2021-22 to 2025-26: 157-187); before the placement fix of 2026-11-19 it signed 129 at that payroll and the two could not both be met"
+   },
+   "arbitration_share": {
+    "batter": [0.21, 0.33, 0.55],
+    "starter": [0.21, 0.36, 0.51],
+    "reliever": [0.28, 0.61, 0.86],
+    "basis": "Salary above the minimum in arbitration years 1-3 as a share of free-agent pay above the minimum, 2013-2021 (Clemens, FanGraphs 2022; contracts_markets.md 2D)"
+   },
+   "max_cut": {"previous": 0.2, "two_before": 0.3, "basis": "BA Art. VI(B)(1)(a)"},
+   "service": {
+    "arbitration": 3,
+    "free_agency": 6,
+    "basis": "BA Art. VI(E)(1)(a), XX(B)(1); Super Two needs service in days and is left out until clubs move players during the season"
+   },
+   "tax": {
+    "thresholds": {"2022": 230000000, "2023": 233000000, "2024": 237000000, "2025": 241000000, "2026": 244000000},
+    "brackets": [20000000, 40000000, 60000000],
+    "rates": {
+     "first": [0.2, 0.32, 0.625, 0.8],
+     "second": [0.3, 0.42, 0.75, 0.9],
+     "third": [0.5, 0.62, 0.95, 1.1]
+    },
+    "basis": "Competitive Balance Tax, BA Art. XXIII(B)(2)-(4): marginal rates by the payroll above the base threshold (up to $20M, $20-40M, $40-60M, over $60M) and the club's consecutive years over it; carried on after 2026"
+   },
+   "qualifying_offer": {
+    "by_year": {"2022": 18400000, "2023": 19650000, "2024": 20325000, "2025": 21050000, "2026": 22025000, "2027": 23150000},
+    "basis": "MLB Trade Rumors 2025-10-14; MLB glossary (2027)"
+   }
+  },
+  "kbo": {
+   "currency": "KRW",
+   "usd": {
+    "value": 1421.3963,
+    "basis": "Won per US dollar, 2025 annual average (Federal Reserve statistical release G.5A, Foreign Exchange Rates (Annual), 5 January 2026, https://www.federalreserve.gov/releases/g5a/current/default.htm); fixed (decision 2026-11-18)"
+   },
+   "raise": {
+    "rate": 0.035,
+    "basis": "Average salary (rookies and foreigners excluded) 1억 5,259만 in 2022 to 1억 7,536만 in 2026, KBO releases 8273 and 11861 (contracts_kbo.md 9.3)"
+   },
+   "runs_per_win": {"value": 10.18, "basis": "Pythagenpat (exponent = runs per game^0.287) at the KBO's 2025-2026 official 4.90 runs per team game"},
+   "replacement": {
+    "hitter": -44.28,
+    "pitcher": -19.23,
+    "basis": "FanGraphs' way (Cameron 2013) on the KBO first teams of the same world: a .294 team over 144 games, 296.6 WAR a season, 57 % to position players (bench players at a tenth of a regular's time, pitchers by their share of the innings)"
+   },
+   "minimum": {
+    "by_year": {"2026": 30000000, "2027": 33000000},
+    "basis": "KBO bylaws Art. 71; release 11814 (2027)"
+   },
+   "cap": {
+    "by_year": {"2023": 11426380000, "2024": 11426380000, "2025": 13711650000, "2026": 14397230000, "2027": 15117090000, "2028": 15872940000},
+    "basis": "경쟁균형세 cap on the top 40 salaries per club, foreign players and rookies excluded; releases 8558, 10160, 11687"
+   },
+   "floor": {
+    "by_year": {"2027": 6065380000},
+    "rate": 0.05,
+    "basis": "Payroll floor from 2027, raised 5 % a year; release 11687"
+   },
+   "seasons_for_fa": {"high_school": 8, "college": 7, "again": 4, "days": 145, "basis": "Bylaws Arts. 162-164 (from the end of the 2022 season)"},
+   "pay": {
+    "by_year": {"2026": 200637006},
+    "exponent": 1.26,
+    "shift": -0.391,
+    "basis": "Club-set pay of reserved players: minimum + scale x (WAR - shift)^exponent, the exponent of the major-league price. Shift and the first scale fit the 2026 average salary (rookies and foreigners excluded) of 1억 7,536만 and the average of each club's top 29 of 2억 8,750만 (KBO release 11861; contracts_kbo.md 9.3). The scale was fitted again with the careers and markets (2026-11-19, again 2026-11-21) to the clubs' budgets: payroll 1.09 of budget on seeds 5-8"
+   },
+   "posting_after": {"value": 7, "basis": "Bylaws Art. 104"},
+   "posting_per_club": {"value": 1, "basis": "Bylaws Art. 104: at most one player per club a year"},
+   "foreign_cap_usd": {
+    "new": 1000000,
+    "team": 4000000,
+    "asia_quota": 200000,
+    "asia_raise": 100000,
+    "asia_countries": ["AU", "CN", "JP", "TW"],
+    "basis": "Foreign-player rules Art. 8 (contracts_kbo.md 7; nationality.md 3c): a new foreign player at most $1M (salary, signing bonus, options actually paid and transfer fee), a club's three foreign players together at most $4M; an Asia-quota player at most $200K new, +$100K a year on re-signing. The Asia quota is open to nationals of the Baseball Federation of Asia's members and Australia who played in an Asian league the year before (the KBO's announcements of 22 January 2025 and 26 March 2026); asia_countries holds the world's birthplaces among them (birthplaces.json), as the model knows birthplace, not nationality"
+   },
+   "fa_compensation": {
+    "club_ranks": [3, 10],
+    "league_ranks": [30, 60],
+    "veteran_age": 35,
+    "a": {"with_player": 2.0, "protected": 20, "cash_only": 3.0},
+    "b": {"with_player": 1.0, "protected": 25, "cash_only": 2.0},
+    "c": {"cash_only": 1.5},
+    "outside_limit": [
+     [10, 1],
+     [20, 2],
+     [30, 3],
+     [100000, 4]
+    ],
+    "basis": "KBO bylaws Arts. 172-173 (contracts_kbo.md 3): grades by salary rank in the club (1-3, 4-10, 11+) and in the league (1-30, 31-60, 61+), one grade below the better of the two when they differ; a new free agent aged 35 or more (by birth year) and a third or later free agent are C, a second B. The old club takes 200 % of the last salary and a player outside the signing club's 20 protected (A), or 100 % and a player outside 25 (B), or the cash alone (300 %, 200 %); C brings 150 %. A club may sign 1-4 free agents of other clubs by the number who applied. The model ranks on the last salary instead of the three-year average"
+   }
+  },
+  "npb": {
+   "currency": "JPY",
+   "usd": {
+    "value": 149.5686,
+    "basis": "Yen per US dollar, 2025 annual average (Federal Reserve statistical release G.5A, Foreign Exchange Rates (Annual), 5 January 2026, https://www.federalreserve.gov/releases/g5a/current/default.htm); fixed (decision 2026-11-18)"
+   },
+   "raise": {"rate": 0.037, "basis": "Players' association survey: average salary ¥41.89M in 2020 to ¥52.16M in 2026 (contracts_npb.md 6E)"},
+   "runs_per_win": {"value": 7.91, "basis": "Pythagenpat at NPB's 2025-2026 official 3.44 runs per team game"},
+   "replacement": {"hitter": -41.99, "pitcher": -13.66, "basis": "As for kbo, on the NPB first teams: a .294 team over 143 games, 353.5 WAR a season"},
+   "minimum": {
+    "by_year": {"2025": 4200000, "2026": 4200000},
+    "basis": "支配下 minimum, 野球協約 2025 Art. 89 (the newest edition; no change found for 2026)"
+   },
+   "development_minimum": {
+    "by_year": {"2025": 2300000, "2026": 2300000},
+    "basis": "育成 minimum, 育成規約 2014 Art. 7(2) (the newest edition)"
+   },
+   "pay": {
+    "by_year": {"2026": 25524815},
+    "exponent": 1.26,
+    "shift": -1.809,
+    "basis": "As for kbo: the 2026 survey's average of ¥52.16M and median of ¥20M (Japanese registered players; contracts_npb.md 6E) for the shift and the first scale. NPB pays its farm players well above the minimum, hence the shift below replacement. The scale was fitted again with the careers and markets (2026-11-19, again 2026-11-21): payroll 0.94 of budget on seeds 5-8"
+   },
+   "cut_limit": {"above": 100000000, "high": 0.4, "low": 0.25, "basis": "野球協約 2025 Art. 92: more than 40 % above ¥100M, 25 % at or below it, only with the player's consent"},
+   "seasons_for_fa": {
+    "domestic": 8,
+    "domestic_college": 7,
+    "international": 9,
+    "again": 4,
+    "days": 145,
+    "basis": "FA規約 2009 and NPB's FA page (contracts_npb.md 1B); 7 for players drafted from 2007 on out of university or company teams"
+   },
+   "fa_compensation": {
+    "ranks": [3, 7, 8],
+    "veteran_age": 35,
+    "a": {"pick_round": 2, "cash": 0.8},
+    "b": {"pick_round": 3, "cash": 0.6},
+    "b_last_cash": 0.6,
+    "outside_limit": [
+     [20, 2],
+     [30, 3],
+     [40, 4],
+     [100000, 5]
+    ],
+    "basis": "The rules agreed for the 2027 offseason (contracts_npb.md 2C): rank by salary among the old club's Japanese players; A (1-3) brings an extra 2nd-round pick or 80-130 % of the salary, B (4-7) an extra 3rd-round pick or 60-100 %, the 8th 60 % in cash, C (9+) nothing; nothing for movers aged 35 or more on 1 April. Player compensation is abolished. The old club is taken to choose the pick (an assumption: no outcome is known yet); the model places the extra pick at the end of its round, not in the signing club's slot. outside_limit: a club may sign 2 declared players of other clubs, 3 when 21-30 declared, 4 when 31-40, 5 from 41; C-rank players do not count (FA規約 2009 Art. 11, the last published text; contracts_npb.md 1D)"
+   }
+  }
+ }
+}

@@ -1,0 +1,514 @@
+//! Development and aging: how a player's attributes change from one season to the next.
+//!
+//! Every attribute belongs to a group with its own aging drift by age (for example, a
+//! fastball loses about 3.75 mph between 26 and 38, sprint speed 0.14 ft/s a year from
+//! 23). Before his peak a player also closes a share of the gap to his potential each
+//! year. Each year adds noise of the group's size. Players decline at rates of their own:
+//! every decline is scaled by a factor set by the hidden growth attribute. The curves are
+//! in the editable file `data/people/aging.json`, each with the evidence behind it
+//! (`docs/research/world/aging.md`).
+
+use crate::attr::{Attr, Attributes, N_ATTR};
+use crate::generate::Talent;
+use crate::player::Player;
+use bm_engine::Rng;
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+
+const AGING: &str = include_str!("../../../data/people/aging.json");
+
+#[derive(Clone, Debug, Deserialize)]
+struct GroupFile {
+    attrs: Vec<String>,
+    drift: Vec<f32>,
+    noise: f32,
+    /// Years by which the group's growth towards the ceiling comes later than the others'.
+    #[serde(default)]
+    growth_delay: f32,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+struct AgingFile {
+    from_age: u32,
+    growth: Vec<f32>,
+    remaining_growth: Vec<f32>,
+    /// Spread of a player's growth between attribute groups (relative standard deviation).
+    #[serde(default = "quarter")]
+    group_spread: f32,
+    /// Spread of players' own rates of decline, position players and pitchers.
+    #[serde(default)]
+    decline_spread: DeclineSpread,
+    groups: BTreeMap<String, GroupFile>,
+}
+
+/// Spread (log standard deviation) of the factor on a player's declines.
+#[derive(Clone, Copy, Debug, Default, Deserialize)]
+struct DeclineSpread {
+    hitters: f32,
+    pitchers: f32,
+}
+
+fn quarter() -> f32 {
+    0.25
+}
+
+/// The aging curves of every attribute.
+#[derive(Clone, Debug)]
+pub struct AgingTable {
+    from_age: u32,
+    growth: Vec<f32>,
+    remaining: Vec<f32>,
+    group_spread: f32,
+    decline_spread: DeclineSpread,
+    /// Per attribute: drift by age and yearly noise.
+    drift: Vec<Vec<f32>>,
+    noise: [f32; N_ATTR],
+    /// Group of each attribute, by name (for pitch grades: the `stuff` group).
+    group_of: [String; N_ATTR],
+    /// Per attribute: years by which its growth comes later.
+    delay: [f32; N_ATTR],
+    stuff_drift: Vec<f32>,
+    stuff_noise: f32,
+    stuff_delay: f32,
+}
+
+fn at(v: &[f32], from: u32, age: f64) -> f32 {
+    if v.is_empty() {
+        return 0.0;
+    }
+    let i = (age.floor() as i64 - from as i64).clamp(0, v.len() as i64 - 1) as usize;
+    v[i]
+}
+
+impl AgingTable {
+    pub fn bundled() -> AgingTable {
+        AgingTable::from_json(AGING).unwrap_or_else(|e| panic!("data/people/aging.json: {e}"))
+    }
+
+    pub fn from_json(text: &str) -> Result<AgingTable, String> {
+        let f: AgingFile = serde_json::from_str(text).map_err(|e| e.to_string())?;
+        let mut drift = vec![Vec::new(); N_ATTR];
+        let mut noise = [0.0f32; N_ATTR];
+        let mut group_of: [String; N_ATTR] = std::array::from_fn(|_| String::new());
+        let mut delay = [0.0f32; N_ATTR];
+        for (name, g) in &f.groups {
+            for key in &g.attrs {
+                let a = Attr::ALL.iter().position(|a| a.key() == key).ok_or_else(|| format!("group {name}: unknown attribute '{key}'"))?;
+                if !group_of[a].is_empty() {
+                    return Err(format!("attribute '{key}' is in two groups"));
+                }
+                drift[a] = g.drift.clone();
+                noise[a] = g.noise;
+                delay[a] = g.growth_delay;
+                group_of[a] = name.clone();
+            }
+        }
+        if let Some(a) = group_of.iter().position(String::is_empty) {
+            return Err(format!("attribute '{}' has no aging group", Attr::ALL[a].key()));
+        }
+        let stuff = f.groups.get("stuff").ok_or("no 'stuff' group (pitch grades follow it)")?;
+        Ok(AgingTable {
+            from_age: f.from_age,
+            growth: f.growth,
+            remaining: f.remaining_growth,
+            group_spread: f.group_spread,
+            decline_spread: f.decline_spread,
+            drift,
+            noise,
+            group_of,
+            delay,
+            stuff_drift: stuff.drift.clone(),
+            stuff_noise: stuff.noise,
+            stuff_delay: stuff.growth_delay,
+        })
+    }
+
+    /// Drift of `attr` in the year after a birthday at `age`, standard deviations.
+    pub fn drift(&self, attr: Attr, age: f64) -> f32 {
+        at(&self.drift[attr as usize], self.from_age, age)
+    }
+
+    pub fn noise(&self, attr: Attr) -> f32 {
+        self.noise[attr as usize]
+    }
+
+    pub fn group(&self, attr: Attr) -> &str {
+        &self.group_of[attr as usize]
+    }
+
+    /// Share of the gap to the potential closed in the year after a birthday at `age`.
+    pub fn growth(&self, age: f64) -> f32 {
+        at(&self.growth, self.from_age, age)
+    }
+
+    /// The same for one attribute, whose growth may come later than the others'
+    /// (`growth_delay` of its group: command, for example, keeps improving into the late
+    /// twenties).
+    pub fn growth_of(&self, attr: Attr, age: f64) -> f32 {
+        at(&self.growth, self.from_age, age - self.delay[attr as usize] as f64)
+    }
+
+    /// Mean gap between a player's current attributes and his peak at `age`.
+    pub fn remaining_growth(&self, age: f64) -> f32 {
+        at(&self.remaining, self.from_age, age)
+    }
+
+    /// The factor on every decline of `player` (the negative drifts of his attributes and
+    /// pitch grades): exp(s g - s^2 / 2) for his hidden growth attribute g, a standard score,
+    /// and the spread s of his kind, so that the factor averages 1 over players. Players differ
+    /// in how they age more than one player's career varies (Hakes & Turner 2011), and
+    /// pitchers who keep their velocity hold their fielding-independent pitching from 21 to 38
+    /// (Zimmerman 2012): with one curve for everyone, too few veterans stay good.
+    pub fn decline_rate(&self, player: &Player) -> f32 {
+        let s = if player.is_pitcher() { self.decline_spread.pitchers } else { self.decline_spread.hitters };
+        (s * player.hidden.growth - s * s / 2.0).exp()
+    }
+}
+
+/// A player's ceiling: the attribute values he would reach at his peak.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct Potential {
+    pub attrs: Attributes,
+}
+
+impl Potential {
+    /// A ceiling for a player of `age`: the table's mean remaining growth at that age,
+    /// scaled by a personal factor (`scale`, 1 = typical) and spread a little between
+    /// attribute groups (`group_spread`), in the attributes that grow (`grows`).
+    pub fn draw(player: &Player, age: f64, scale: f32, table: &AgingTable, rng: &mut Rng) -> Potential {
+        let mean = table.remaining_growth(age) * scale.max(0.0);
+        let mut groups: BTreeMap<&str, f32> = BTreeMap::new();
+        let mut attrs = player.attrs;
+        for a in Attr::ALL {
+            let g = *groups.entry(table.group(a)).or_insert_with(|| (1.0 + table.group_spread * rng.gauss(0.0, 1.0) as f32).max(0.0));
+            if grows(a, player.is_pitcher()) {
+                attrs[a] = player.attrs[a] + mean * g;
+            }
+        }
+        Potential { attrs }
+    }
+
+    /// Move the skill balance of the player's level (`from`) towards that of the level he
+    /// is growing into (`to`): minor-leaguers have more raw power than bat-to-ball skill,
+    /// weaker defence and bodies, far worse command and nearly major-league velocity (the
+    /// `power`, `fielding`, `physical`, `command` and `velocity` parts of a level's talent),
+    /// and a Japanese prospect grows into the contact and control of the NPB rather than
+    /// into a major-leaguer. A share `closure` of each difference closes by the peak.
+    pub fn balance(&mut self, player: &Player, from: &Talent, to: &Talent, closure: &Closure) {
+        // Plate discipline sits on top of hitting like power (`Talent::discipline`).
+        use Attr::*;
+        let mut shift = |attrs: &[Attr], by: f32| {
+            for &a in attrs {
+                self.attrs[a] += by;
+            }
+        };
+        const FIELD: [Attr; 11] = [Hands, Range, Reads, ArmAccuracy, Footwork, Baserunning, Stealing, Framing, Blocking, GameCalling, ThrowingOut];
+        if player.is_pitcher() {
+            let rel = |t: &Talent| (t.command, t.velocity, t.fielding - t.pitching, t.physical - t.pitching);
+            let (a, b) = (rel(from), rel(to));
+            shift(&[Control, Command], closure.command * (b.0 - a.0));
+            shift(&[Velocity], closure.velocity * (b.1 - a.1));
+            shift(&FIELD[..5], closure.fielding * (b.2 - a.2));
+            shift(&[Strength, Durability, Agility], closure.physical * (b.3 - a.3));
+        } else {
+            let rel = |t: &Talent| (t.power, t.fielding - t.hitting, t.physical - t.hitting, t.discipline);
+            let (a, b) = (rel(from), rel(to));
+            shift(&[Power], closure.power * (b.0 - a.0));
+            shift(&[Discipline], closure.discipline * (b.3 - a.3));
+            shift(&FIELD, closure.fielding * (b.1 - a.1));
+            shift(&[Strength, Stamina, Durability, Agility, Speed, Acceleration, ArmStrength], closure.physical * (b.2 - a.2));
+        }
+    }
+}
+
+/// Whether a prospect grows into `a`: the attributes in which the levels of play differ
+/// (the generator draws them from the level's talent). Mind, character, holding runners and
+/// bunting are drawn alike at every level, a pitcher's stamina by his role, a pitcher's
+/// batting, running and catching and a position player's pitching as constants; growth
+/// there would lift every newer generation above the scale's major-league anchor.
+pub fn grows(a: Attr, pitcher: bool) -> bool {
+    use Attr::*;
+    match a {
+        Composure | Concentration | BaseballIq | Anticipation | Determination | Leadership | Teamwork | Aggression | HoldRunners | Bunt => false,
+        Velocity | Stuff | Control | Command | Deception => pitcher,
+        Hands | Range | Reads | ArmAccuracy | Footwork | Agility | Strength | Durability => true,
+        Contact | Timing | Power | Discipline | Recognition | BatControl | Baserunning | Stealing | ArmStrength | Framing | Blocking | ThrowingOut
+        | GameCalling | Speed | Acceleration | Stamina => !pitcher,
+    }
+}
+
+/// How the amateur game and the clubs of one league shape their players beyond the run
+/// values every club shares (`careers.json` styles): shifts, in standard deviations, of a new
+/// amateur's hitting power, bat-to-ball skills (contact, timing, bat control) and plate
+/// discipline, or of his stuff (stuff, deception and the grades of his pitches). Choosing
+/// players by value alone gathers power and discipline at the top of every league; these keep
+/// each league's own balance.
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq)]
+pub struct Style {
+    #[serde(default)]
+    pub power: f32,
+    #[serde(default)]
+    pub contact: f32,
+    #[serde(default)]
+    pub discipline: f32,
+    #[serde(default)]
+    pub stuff: f32,
+}
+
+impl Style {
+    /// Shift a new amateur by the style of the league he grows up in, before his ceiling is
+    /// drawn: the ceiling moves with him. Shifting the ceiling alone moved nothing where it
+    /// lies below the player (a player only grows towards it): the NPB's power and the
+    /// majors' plate discipline, whose level gaps close by the peak, kept the values the
+    /// amateurs came in with.
+    pub fn shape(&self, player: &mut Player) {
+        use Attr::*;
+        if player.is_pitcher() {
+            for a in [Stuff, Deception] {
+                player.attrs[a] += self.stuff;
+            }
+            if let Some(p) = player.pitching.as_mut() {
+                for pitch in &mut p.pitches {
+                    pitch.grade += self.stuff;
+                }
+            }
+        } else {
+            player.attrs[Power] += self.power;
+            for a in [Contact, Timing, BatControl] {
+                player.attrs[a] += self.contact;
+            }
+            player.attrs[Discipline] += self.discipline;
+        }
+    }
+}
+
+/// Shares of a level's skill gaps that close by a player's peak (`Potential::balance`).
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
+pub struct Closure {
+    pub power: f32,
+    pub fielding: f32,
+    pub physical: f32,
+    pub command: f32,
+    #[serde(default = "one")]
+    pub velocity: f32,
+    #[serde(default = "one")]
+    pub discipline: f32,
+}
+
+fn one() -> f32 {
+    1.0
+}
+
+impl Closure {
+    pub const NONE: Closure = Closure { power: 0.0, fielding: 0.0, physical: 0.0, command: 0.0, velocity: 0.0, discipline: 0.0 };
+}
+
+/// One year of development for a player who was `age` at his last birthday. The ceiling
+/// ages with the player and takes the same yearly noise, so the gap between them only
+/// closes through growth: a player at his ceiling simply follows the aging curves.
+pub fn develop(player: &mut Player, potential: &mut Potential, age: f64, table: &AgingTable, rng: &mut Rng) {
+    year(player, potential, age, table, rng, true);
+}
+
+/// A year away from the game (military service on active duty): the player ages like
+/// everyone else but does not grow towards his ceiling, which ages with him, so the growth
+/// he missed has to come later, at ages that close less of the gap.
+pub fn develop_idle(player: &mut Player, potential: &mut Potential, age: f64, table: &AgingTable, rng: &mut Rng) {
+    year(player, potential, age, table, rng, false);
+}
+
+fn year(player: &mut Player, potential: &mut Potential, age: f64, table: &AgingTable, rng: &mut Rng, grows: bool) {
+    let grow = if grows { 1.0 } else { 0.0 };
+    let rate = table.decline_rate(player);
+    let own = |drift: f32| if drift < 0.0 { drift * rate } else { drift };
+    let stuff_gap = (potential.attrs[Attr::Stuff] - player.attrs[Attr::Stuff]).max(0.0);
+    for a in Attr::ALL {
+        let gap = (potential.attrs[a] - player.attrs[a]).max(0.0);
+        let shift = own(table.drift(a, age)) + table.noise(a) * rng.gauss(0.0, 1.0) as f32;
+        potential.attrs[a] = (potential.attrs[a] + shift).clamp(-6.0, 4.0);
+        player.attrs[a] = (player.attrs[a] + grow * table.growth_of(a, age) * gap + shift).clamp(-6.0, 4.0);
+    }
+    // Pitch grades age and grow with stuff.
+    let growth = grow * at(&table.growth, table.from_age, age - table.stuff_delay as f64);
+    if let Some(p) = player.pitching.as_mut() {
+        for pitch in &mut p.pitches {
+            let change = growth * stuff_gap + own(at(&table.stuff_drift, table.from_age, age)) + table.stuff_noise * rng.gauss(0.0, 1.0) as f32;
+            pitch.grade = (pitch.grade + change).clamp(-6.0, 4.0);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::convert::spread;
+    use crate::generate::{pitcher, position_player, Talent};
+    use crate::player::{Position, Role};
+
+    #[test]
+    fn every_attribute_ages() {
+        let t = AgingTable::bundled();
+        for a in Attr::ALL {
+            assert!(!t.group(a).is_empty(), "{}", a.key());
+        }
+        // Nothing declines before the mid-20s except speed.
+        assert_eq!(t.drift(Attr::Velocity, 24.0), 0.0);
+        assert!(t.drift(Attr::Speed, 24.0) < 0.0);
+        assert!(t.drift(Attr::Velocity, 35.0) < t.drift(Attr::Velocity, 27.0));
+        assert!(AgingTable::from_json(r#"{"from_age": 16, "growth": [], "remaining_growth": [], "groups": {}}"#).is_err());
+    }
+
+    /// Mean change of an attribute between two ages, in its physical unit, for players
+    /// already at their ceiling.
+    fn mean_change(attr: Attr, from: u32, to: u32, unit: f64, pitchers: bool) -> f64 {
+        let t = AgingTable::bundled();
+        let mut rng = Rng::new(3);
+        let n = 3000;
+        let mut total = 0.0;
+        for i in 0..n {
+            let mut p = if pitchers {
+                pitcher(&mut rng, i, Role::Starter, &Talent::MAJOR)
+            } else {
+                position_player(&mut rng, i, Some(Position::Center), &Talent::MAJOR)
+            };
+            let start = p.attrs[attr];
+            let mut ceiling = Potential { attrs: p.attrs };
+            for age in from..to {
+                develop(&mut p, &mut ceiling, age as f64, &t, &mut rng);
+            }
+            total += (p.attrs[attr] - start) as f64;
+        }
+        total / n as f64 * unit
+    }
+
+    #[test]
+    fn decline_follows_the_published_curves() {
+        // Fastballs: about -3.75 mph from 26 to 38 (Petti & Zimmerman 2012).
+        let v = mean_change(Attr::Velocity, 26, 38, spread::VELOCITY_MPH, true);
+        assert!((-4.2..-3.3).contains(&v), "velocity {v:.2} mph");
+        // Sprint speed: about -0.14 ft/s a year from 23 on.
+        let s = mean_change(Attr::Speed, 25, 35, spread::SPRINT_FT, false) / 10.0;
+        assert!((-0.17..-0.11).contains(&s), "sprint {s:.3} ft/s a year");
+        // Bat speed: flat to 28, then about -0.31 mph a year.
+        let early = mean_change(Attr::Power, 24, 28, spread::BAT_SPEED_MPH, false);
+        let late = mean_change(Attr::Power, 32, 36, spread::BAT_SPEED_MPH, false) / 4.0;
+        assert!(early.abs() < 0.25, "bat speed before 28: {early:.2} mph");
+        assert!((-0.4..-0.22).contains(&late), "bat speed after 31: {late:.2} mph a year");
+    }
+
+    #[test]
+    fn players_decline_at_rates_of_their_own() {
+        // The bundled curves without noise, with decline spreads of 0.6 (position players)
+        // and 0.9 (pitchers).
+        let mut file: serde_json::Value = serde_json::from_str(AGING).unwrap();
+        file["decline_spread"] = serde_json::json!({"hitters": 0.6, "pitchers": 0.9});
+        for g in file["groups"].as_object_mut().unwrap().values_mut() {
+            g["noise"] = serde_json::json!(0.0);
+        }
+        let t = AgingTable::from_json(&file.to_string()).unwrap();
+        let mut rng = Rng::new(6);
+        let base = position_player(&mut rng, 1, Some(Position::Center), &Talent::MAJOR);
+        let year_at = |growth: f32, age: f64, attr: Attr| {
+            let mut p = base.clone();
+            p.hidden.growth = growth;
+            let mut ceiling = Potential { attrs: p.attrs };
+            develop(&mut p, &mut ceiling, age, &t, &mut Rng::new(1));
+            (p.attrs[attr] - base.attrs[attr]) as f64
+        };
+        // At 33 bat speed falls 0.12 SD a year on average: by exp(0.6 g - 0.18) times that.
+        let (fast, slow) = (year_at(1.0, 33.0, Attr::Power), year_at(-1.0, 33.0, Attr::Power));
+        let mean = t.drift(Attr::Power, 33.0) as f64;
+        assert!((fast - mean * (0.6f64 - 0.18).exp()).abs() < 1e-4, "fast {fast:.4}");
+        assert!((slow - mean * (-0.6f64 - 0.18).exp()).abs() < 1e-4, "slow {slow:.4}");
+        // Gains are everyone's: the mind's drift before 32 is the same for both.
+        assert!((year_at(1.0, 25.0, Attr::Composure) - year_at(-1.0, 25.0, Attr::Composure)).abs() < 1e-6);
+        // The factor averages 1 over players.
+        let mut p = base.clone();
+        let n = 20000;
+        let mean_rate: f64 = (0..n)
+            .map(|_| {
+                p.hidden.growth = rng.gauss(0.0, 1.0) as f32;
+                t.decline_rate(&p) as f64
+            })
+            .sum::<f64>()
+            / n as f64;
+        assert!((mean_rate - 1.0).abs() < 0.02, "mean factor {mean_rate:.3}");
+    }
+
+    #[test]
+    fn a_year_away_from_the_game_is_a_year_without_growth() {
+        let t = AgingTable::bundled();
+        let mut rng = Rng::new(4);
+        let (mut grown, mut idle, n) = (0.0, 0.0, 1000);
+        for i in 0..n {
+            let p = position_player(&mut rng, i, Some(Position::Short), &Talent { hitting: -2.0, ..Talent::MAJOR });
+            let ceiling = Potential::draw(&p, 21.0, 1.0, &t, &mut rng);
+            let (mut a, mut ca) = (p.clone(), ceiling.clone());
+            let (mut b, mut cb) = (p.clone(), ceiling);
+            develop(&mut a, &mut ca, 21.0, &t, &mut rng);
+            develop_idle(&mut b, &mut cb, 21.0, &t, &mut rng);
+            grown += (a.attrs[Attr::Contact] - p.attrs[Attr::Contact]) as f64;
+            idle += (b.attrs[Attr::Contact] - p.attrs[Attr::Contact]) as f64;
+            // The ceiling ages with the player either way.
+            assert!((cb.attrs[Attr::Contact] - b.attrs[Attr::Contact]) - (ca.attrs[Attr::Contact] - a.attrs[Attr::Contact]) > -1e-3);
+        }
+        let (grown, idle) = (grown / n as f64, idle / n as f64);
+        assert!(grown > 0.3 && idle.abs() < 0.05, "contact: {grown:.2} growing, {idle:.2} away");
+    }
+
+    #[test]
+    fn young_players_grow_toward_their_potential() {
+        let t = AgingTable::bundled();
+        let mut rng = Rng::new(8);
+        let (mut gained, n) = (0.0, 2000);
+        for i in 0..n {
+            let mut p = position_player(&mut rng, i, Some(Position::Short), &Talent { hitting: -2.0, ..Talent::MAJOR });
+            let start = p.attrs[Attr::Contact];
+            let mut ceiling = Potential::draw(&p, 20.0, 1.0, &t, &mut rng);
+            for age in 20..27 {
+                develop(&mut p, &mut ceiling, age as f64, &t, &mut rng);
+            }
+            gained += (p.attrs[Attr::Contact] - start) as f64;
+        }
+        let mean = gained / n as f64;
+        // Most of the 2.2 standard deviations of remaining growth at 20 arrive by 27.
+        assert!((1.6..2.4).contains(&mean), "contact gained {mean:.2} SD from 20 to 27");
+    }
+
+    #[test]
+    fn a_style_moves_the_amateur_and_his_ceiling() {
+        let t = AgingTable::bundled();
+        let style = Style { power: -0.4, contact: 0.3, discipline: -0.2, stuff: 0.5 };
+        let mut rng = Rng::new(5);
+        let hitter = position_player(&mut rng, 1, Some(Position::Short), &Talent::MAJOR);
+        let mut shaped = hitter.clone();
+        style.shape(&mut shaped);
+        for (a, by) in [
+            (Attr::Power, -0.4),
+            (Attr::Contact, 0.3),
+            (Attr::Timing, 0.3),
+            (Attr::BatControl, 0.3),
+            (Attr::Discipline, -0.2),
+            (Attr::Range, 0.0),
+            (Attr::Stuff, 0.0),
+        ] {
+            assert!((shaped.attrs[a] - hitter.attrs[a] - by).abs() < 1e-5, "{}", a.key());
+        }
+        // The ceiling drawn from the shaped amateur moves with him.
+        let (mut r1, mut r2) = (Rng::new(9), Rng::new(9));
+        let plain = Potential::draw(&hitter, 19.0, 1.0, &t, &mut r1);
+        let moved = Potential::draw(&shaped, 19.0, 1.0, &t, &mut r2);
+        assert!((moved.attrs[Attr::Power] - plain.attrs[Attr::Power] + 0.4).abs() < 1e-5);
+        let arm = pitcher(&mut rng, 2, Role::Starter, &Talent::MAJOR);
+        let mut shaped = arm.clone();
+        style.shape(&mut shaped);
+        for (a, by) in [(Attr::Stuff, 0.5), (Attr::Deception, 0.5), (Attr::Control, 0.0), (Attr::Power, 0.0)] {
+            assert!((shaped.attrs[a] - arm.attrs[a] - by).abs() < 1e-5, "{}", a.key());
+        }
+        let grades = |p: &Player| p.pitching.as_ref().map(|x| x.pitches.iter().map(|s| s.grade).collect::<Vec<_>>()).unwrap_or_default();
+        assert!(!grades(&arm).is_empty());
+        for (g, h) in grades(&shaped).iter().zip(grades(&arm)) {
+            assert!((g - h - 0.5).abs() < 1e-5);
+        }
+    }
+}

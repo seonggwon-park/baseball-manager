@@ -1,0 +1,20 @@
+[build-system]
+requires = ["maturin>=1.7,<2"]
+build-backend = "maturin"
+
+[project]
+name = "bm-gym"
+version = "0.1.0"
+description = "Reinforcement-learning environment on the Baseball Manager match engine: manage a club's offence pitch by pitch"
+requires-python = ">=3.9"
+dependencies = ["numpy>=1.22"]
+
+[project.optional-dependencies]
+gym = ["gymnasium>=0.29"]
+test = ["gymnasium>=0.29", "pytest>=7"]
+
+[tool.maturin]
+manifest-path = "../crates/bm-py/Cargo.toml"
+module-name = "bm_gym._core"
+python-source = "."
+features = ["pyo3/extension-module"]

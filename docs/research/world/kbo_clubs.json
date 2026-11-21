@@ -1,0 +1,609 @@
+{
+  "_meta": {
+    "as_of": "2026-11-16",
+    "scope": "KBO League (10 clubs) and KBO Futures League (12 teams) as played in 2026, with officially announced or reliably reported changes for 2027 in notes.",
+    "capacity_basis": "capacity = largest single-game attendance at that park in the 2026 regular season in KBO official attendance data (= sell-out figure); fixed-seat maxima can be higher.",
+    "dims_basis": "Distances/wall heights are from Namuwiki (namu.moe mirror, pages edited Nov 2026) cross-checked with Korean/English Wikipedia and news; conflicts are stated in notes. null = not published or conflicting.",
+    "elevation_basis": "Approximate. No published ballpark elevation was found; value is a DEM lookup (Open-Meteo elevation API, Copernicus GLO-90 surface model) at the ballpark coordinates from OpenStreetMap. Surface model includes structures, so treat as +/-10 m.",
+    "see_also": "kbo_notes.md in the same directory (rules, formats, sources)"
+  },
+  "first": [
+    {
+      "real_name": "LG 트윈스 (LG Twins)",
+      "city_ko": "서울",
+      "city_en": "Seoul",
+      "ballpark": "서울종합운동장 야구장 (잠실야구장, Jamsil Baseball Stadium)",
+      "capacity": 23750,
+      "elevation_m": 22,
+      "elevation_note": "Approximate. No published ballpark elevation was found; value is a DEM lookup (Open-Meteo elevation API, Copernicus GLO-90 surface model) at the ballpark coordinates from OpenStreetMap. Surface model includes structures, so treat as +/-10 m.",
+      "roof": "open",
+      "surface": "grass",
+      "dims_m": {
+        "lf_line": 100,
+        "lcf": 120,
+        "cf": 125,
+        "rcf": 120,
+        "rf_line": 100
+      },
+      "wall_m": {
+        "lf": 2.6,
+        "cf": 2.6,
+        "rf": 2.6
+      },
+      "second_home": [],
+      "home_games_2026": {
+        "total": 73,
+        "by_park": {
+          "잠실": 73
+        }
+      },
+      "notes": "Shares Jamsil with Doosan. Largest outfield in the KBO. Capacity 23,750 = 2026 sell-out figure in KBO attendance data. Wall 2.6 m per Namuwiki/ko.wikipedia/Dailian 2026-10-21 (an older Seoul city document says 2.7 m). 2026 was the last season at Jamsil Baseball Stadium (last regular-season game 2026-10-12; park to be demolished, closure listed as December 2026). For 2027-2031 LG and Doosan share a temporary ballpark built inside Seoul Olympic Main Stadium (서울올림픽주경기장, same Jamsil sports complex): about 18,000 seats on levels 1-2 for regular-season games, with the 3rd level openable for 30,000+ at big games/postseason (Seoul city, 2024-07-09); reported field size LF/RF 95 m, CF 124 m (Seoul Shinmun 2026-07-15; another report says 124.5 m), fences to be raised to compensate (height not announced); grass type (natural/artificial) NOT confirmed; official name NOT announced; opening planned for March 2027. A new ~30,000-seat dome is planned on the old Jamsil site for 2032.",
+      "sources": [
+        "https://www.koreabaseball.com/Record/Crowd/GraphDaily.aspx",
+        "https://namu.moe/w/서울종합운동장 야구장",
+        "https://ko.wikipedia.org/wiki/서울종합운동장_야구장",
+        "https://mediahub.seoul.go.kr/archives/2011664",
+        "https://m.seoul.co.kr/news/2026/07/15/20260715500228",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=11898",
+        "https://m.dailian.co.kr/news/view/1703870"
+      ]
+    },
+    {
+      "real_name": "두산 베어스 (Doosan Bears)",
+      "city_ko": "서울",
+      "city_en": "Seoul",
+      "ballpark": "서울종합운동장 야구장 (잠실야구장, Jamsil Baseball Stadium)",
+      "capacity": 23750,
+      "elevation_m": 22,
+      "elevation_note": "Approximate. No published ballpark elevation was found; value is a DEM lookup (Open-Meteo elevation API, Copernicus GLO-90 surface model) at the ballpark coordinates from OpenStreetMap. Surface model includes structures, so treat as +/-10 m.",
+      "roof": "open",
+      "surface": "grass",
+      "dims_m": {
+        "lf_line": 100,
+        "lcf": 120,
+        "cf": 125,
+        "rcf": 120,
+        "rf_line": 100
+      },
+      "wall_m": {
+        "lf": 2.6,
+        "cf": 2.6,
+        "rf": 2.6
+      },
+      "second_home": [],
+      "home_games_2026": {
+        "total": 71,
+        "by_park": {
+          "잠실": 71
+        }
+      },
+      "notes": "Shares Jamsil with LG (same field data as the LG record). 2026 was the last season at Jamsil Baseball Stadium (last regular-season game 2026-10-12; park to be demolished, closure listed as December 2026). For 2027-2031 LG and Doosan share a temporary ballpark built inside Seoul Olympic Main Stadium (서울올림픽주경기장, same Jamsil sports complex): about 18,000 seats on levels 1-2 for regular-season games, with the 3rd level openable for 30,000+ at big games/postseason (Seoul city, 2024-07-09); reported field size LF/RF 95 m, CF 124 m (Seoul Shinmun 2026-07-15; another report says 124.5 m), fences to be raised to compensate (height not announced); grass type (natural/artificial) NOT confirmed; official name NOT announced; opening planned for March 2027. A new ~30,000-seat dome is planned on the old Jamsil site for 2032. In the temporary park the clubs keep their current sides (LG third-base side, Doosan first-base side) per Seoul Shinmun 2026-07-15.",
+      "sources": [
+        "https://www.koreabaseball.com/Record/Crowd/GraphDaily.aspx",
+        "https://namu.moe/w/서울종합운동장 야구장",
+        "https://mediahub.seoul.go.kr/archives/2011664",
+        "https://m.seoul.co.kr/news/2026/07/15/20260715500228"
+      ]
+    },
+    {
+      "real_name": "키움 히어로즈 (Kiwoom Heroes)",
+      "city_ko": "서울",
+      "city_en": "Seoul",
+      "ballpark": "고척스카이돔 (Gocheok Sky Dome)",
+      "capacity": 16000,
+      "elevation_m": 16,
+      "elevation_note": "Approximate. No published ballpark elevation was found; value is a DEM lookup (Open-Meteo elevation API, Copernicus GLO-90 surface model) at the ballpark coordinates from OpenStreetMap. Surface model includes structures, so treat as +/-10 m.",
+      "roof": "dome",
+      "surface": "turf",
+      "dims_m": {
+        "lf_line": 99,
+        "lcf": null,
+        "cf": 122,
+        "rcf": null,
+        "rf_line": 99
+      },
+      "wall_m": {
+        "lf": 4.0,
+        "cf": 4.0,
+        "rf": 4.0
+      },
+      "second_home": [],
+      "home_games_2026": {
+        "total": 73,
+        "by_park": {
+          "고척": 73
+        }
+      },
+      "notes": "Only dome in the KBO (fixed roof), artificial turf. Alley distances not published in the sources found (null). Wall 4 m per Seoul city documents and Namuwiki (en.wikipedia says 3.8 m). Capacity 16,000 = 2026 sell-out figure in KBO attendance data (facility maximum for baseball 16,601). Special ground rules for balls hitting the roof are in the KBO league regulations (e.g. a fair ball striking the roof beyond the 3rd catwalk in the outfield is a home run). Also hosts the Futures championship final. No change for 2027 found.",
+      "sources": [
+        "https://www.koreabaseball.com/Record/Crowd/GraphDaily.aspx",
+        "https://namu.moe/w/고척 스카이돔",
+        "https://news.seoul.go.kr/citybuild/archives/228715",
+        "https://6ptotvmi5753.edge.naverncp.com/KBO_FILE/ebook/pdf/2026_리그규정.pdf"
+      ]
+    },
+    {
+      "real_name": "SSG 랜더스 (SSG Landers)",
+      "city_ko": "인천",
+      "city_en": "Incheon",
+      "ballpark": "인천SSG랜더스필드 (Incheon SSG Landers Field, 문학)",
+      "capacity": 23000,
+      "elevation_m": 34,
+      "elevation_note": "Approximate. No published ballpark elevation was found; value is a DEM lookup (Open-Meteo elevation API, Copernicus GLO-90 surface model) at the ballpark coordinates from OpenStreetMap. Surface model includes structures, so treat as +/-10 m.",
+      "roof": "open",
+      "surface": "grass",
+      "dims_m": {
+        "lf_line": 95,
+        "lcf": 115,
+        "cf": 120,
+        "rcf": 115,
+        "rf_line": 95
+      },
+      "wall_m": {
+        "lf": 2.8,
+        "cf": 2.8,
+        "rf": 2.8
+      },
+      "second_home": [],
+      "home_games_2026": {
+        "total": 71,
+        "by_park": {
+          "문학": 71
+        }
+      },
+      "notes": "Short lines (95 m), hitter-friendly. WALL HEIGHT UNCONFIRMED: 2.8 m per Namuwiki and ko/en Wikipedia, but a 2017 Sports Kyunghyang article says 2.42 m (\"lowest in the league\"); no official figure found. Capacity 23,000 = 2026 sell-out figure in KBO attendance data. 2027: club still here; SSG plans to move to the Cheongna dome (스타필드 청라 multi-stadium, about 23,000 seats reported) from the 2028 season, target completion end of 2027; July 2026 reports warned the 2028 opening could slip.",
+      "sources": [
+        "https://www.koreabaseball.com/Record/Crowd/GraphDaily.aspx",
+        "https://namu.moe/w/인천 SSG 랜더스필드",
+        "https://ko.wikipedia.org/wiki/인천SSG랜더스필드",
+        "https://sports.khan.co.kr/article/201708211625003",
+        "https://www.heraldk.com/article/2026071118211427040"
+      ]
+    },
+    {
+      "real_name": "KT 위즈 (KT Wiz)",
+      "city_ko": "수원",
+      "city_en": "Suwon",
+      "ballpark": "수원 케이티 위즈 파크 (Suwon KT Wiz Park)",
+      "capacity": 18700,
+      "elevation_m": 57,
+      "elevation_note": "Approximate. No published ballpark elevation was found; value is a DEM lookup (Open-Meteo elevation API, Copernicus GLO-90 surface model) at the ballpark coordinates from OpenStreetMap. Surface model includes structures, so treat as +/-10 m.",
+      "roof": "open",
+      "surface": "grass",
+      "dims_m": {
+        "lf_line": 98,
+        "lcf": 115,
+        "cf": 120,
+        "rcf": 115,
+        "rf_line": 98
+      },
+      "wall_m": {
+        "lf": 4.0,
+        "cf": 4.0,
+        "rf": 4.0
+      },
+      "second_home": [],
+      "home_games_2026": {
+        "total": 71,
+        "by_park": {
+          "수원": 71
+        }
+      },
+      "notes": "Capacity 18,700 (2023~) = 2026 sell-out figure in KBO attendance data. Alley 115 m per Namuwiki/ko.wikipedia. No change for 2027 found.",
+      "sources": [
+        "https://www.koreabaseball.com/Record/Crowd/GraphDaily.aspx",
+        "https://namu.moe/w/수원 케이티 위즈 파크",
+        "https://ko.wikipedia.org/wiki/수원_케이티_위즈_파크",
+        "https://newstomato.com/ReadNews.aspx?no=542255"
+      ]
+    },
+    {
+      "real_name": "한화 이글스 (Hanwha Eagles)",
+      "city_ko": "대전",
+      "city_en": "Daejeon",
+      "ballpark": "대전 한화생명 볼파크 (Daejeon Hanwha Life Ballpark)",
+      "capacity": 17000,
+      "elevation_m": 60,
+      "elevation_note": "Approximate. No published ballpark elevation was found; value is a DEM lookup (Open-Meteo elevation API, Copernicus GLO-90 surface model) at the ballpark coordinates from OpenStreetMap. Surface model includes structures, so treat as +/-10 m.",
+      "roof": "open",
+      "surface": "grass",
+      "dims_m": {
+        "lf_line": 99,
+        "lcf": 115,
+        "cf": 122,
+        "rcf": 112,
+        "rf_line": 95
+      },
+      "wall_m": {
+        "lf": 2.4,
+        "cf": 2.4,
+        "rf": 8.0
+      },
+      "second_home": [
+        {
+          "ballpark": "청주야구장 (Cheongju Baseball Stadium)",
+          "city_ko": "청주",
+          "city_en": "Cheongju",
+          "games_2026": 0,
+          "notes": "Traditional second home, but no regular-season games in 2025 or 2026 (last used 2024: 5 games). Artificial turf. Published sizes conflict: Namuwiki 99.5 m / CF 114 m, walls 2.3 m (L/R) and 4.5 m (CF), 9,000 seats; ko.wikipedia 100 m / 115 m, walls 2.5 m / 5.8 m, 10,500 seats."
+        }
+      ],
+      "home_games_2026": {
+        "total": 71,
+        "by_park": {
+          "대전": 71
+        }
+      },
+      "notes": "Opened March 2025. Asymmetric: LF 99 m / RF 95 m. Right-field \"Monster Wall\" is 8 m high (length reported as 32 m or 35 m) with a two-level bullpen behind it; the rest of the wall (left to right-center) is 2.4 m. Capacity 17,000 = 2026 sell-out figure in KBO attendance data (maximum incl. standing 20,007). No change for 2027 found.",
+      "sources": [
+        "https://www.koreabaseball.com/Record/Crowd/GraphDaily.aspx",
+        "https://namu.moe/w/대전 한화생명 볼파크",
+        "https://en.wikipedia.org/wiki/Daejeon_Hanwha_Life_Ballpark",
+        "https://osen.co.kr/article/G1112507978",
+        "https://namu.moe/w/청주 야구장"
+      ]
+    },
+    {
+      "real_name": "삼성 라이온즈 (Samsung Lions)",
+      "city_ko": "대구",
+      "city_en": "Daegu",
+      "ballpark": "대구삼성라이온즈파크 (Daegu Samsung Lions Park)",
+      "capacity": 24000,
+      "elevation_m": 63,
+      "elevation_note": "Approximate. No published ballpark elevation was found; value is a DEM lookup (Open-Meteo elevation API, Copernicus GLO-90 surface model) at the ballpark coordinates from OpenStreetMap. Surface model includes structures, so treat as +/-10 m.",
+      "roof": "open",
+      "surface": "grass",
+      "dims_m": {
+        "lf_line": 99.5,
+        "lcf": 107,
+        "cf": 122.5,
+        "rcf": 107,
+        "rf_line": 99.5
+      },
+      "wall_m": {
+        "lf": 3.6,
+        "cf": 3.6,
+        "rf": 3.6
+      },
+      "second_home": [
+        {
+          "ballpark": "포항야구장 (Pohang Baseball Stadium)",
+          "city_ko": "포항",
+          "city_en": "Pohang",
+          "games_2026": 2,
+          "notes": "3-game series vs KT scheduled 2026-05-19~21; 2 played (KBO attendance data, 12,120 each), 1 rained out and made up in Daegu. In 2025 also one 3-game series (May 13-15). Artificial turf; LF/RF 99 m, CF 122 m; wall 3 m (Namuwiki only); 12,120 seats. Since the 2025 schedule the KBO board has excluded second-park (artificial-turf) games in July-August (board decision 2024-09-26)."
+        }
+      ],
+      "home_games_2026": {
+        "total": 73,
+        "by_park": {
+          "대구": 71,
+          "포항": 2
+        }
+      },
+      "notes": "Octagonal outfield: straight walls make the power alleys very short (107 m) while the corners either side of center are about 125 m; the most homer-friendly park in the league. Wall 3.6 m including the protective mesh (Sports Kyunghyang 2023/2024; a 2017 article said 3.2 m). Capacity 24,000 = 2026 sell-out figure in KBO attendance data. No change for 2027 found.",
+      "sources": [
+        "https://www.koreabaseball.com/Record/Crowd/GraphDaily.aspx",
+        "https://namu.moe/w/대구 삼성 라이온즈 파크",
+        "https://sports.khan.co.kr/article/202311231456003",
+        "https://sports.khan.co.kr/article/202410171105006",
+        "https://namu.moe/w/포항 야구장"
+      ]
+    },
+    {
+      "real_name": "KIA 타이거즈 (Kia Tigers)",
+      "city_ko": "광주",
+      "city_en": "Gwangju",
+      "ballpark": "광주-기아 챔피언스 필드 (Gwangju-Kia Champions Field)",
+      "capacity": 20500,
+      "elevation_m": 29,
+      "elevation_note": "Approximate. No published ballpark elevation was found; value is a DEM lookup (Open-Meteo elevation API, Copernicus GLO-90 surface model) at the ballpark coordinates from OpenStreetMap. Surface model includes structures, so treat as +/-10 m.",
+      "roof": "open",
+      "surface": "grass",
+      "dims_m": {
+        "lf_line": 99,
+        "lcf": 117,
+        "cf": 121,
+        "rcf": 117,
+        "rf_line": 99
+      },
+      "wall_m": {
+        "lf": 2.6,
+        "cf": 2.6,
+        "rf": 2.6
+      },
+      "second_home": [],
+      "home_games_2026": {
+        "total": 73,
+        "by_park": {
+          "광주": 73
+        }
+      },
+      "notes": "CF built at 122 m (121.9 m after padding); KBO lists 121 m. WALL HEIGHT UNCONFIRMED: Namuwiki (Nov 2026) says 2.6 m, uniform; ko.wikipedia says 3.4 m (the old figure including the protective net above the wall). Capacity 20,500 = 2026 sell-out figure in KBO attendance data. No change for 2027 found. (Gwangju city and South Jeolla were administratively merged in 2026 per Wikipedia/OpenStreetMap address data; the city name is unchanged.)",
+      "sources": [
+        "https://www.koreabaseball.com/Record/Crowd/GraphDaily.aspx",
+        "https://namu.moe/w/광주-기아 챔피언스 필드",
+        "https://ko.wikipedia.org/wiki/광주기아챔피언스필드",
+        "https://en.wikipedia.org/wiki/Gwangju-Kia_Champions_Field"
+      ]
+    },
+    {
+      "real_name": "롯데 자이언츠 (Lotte Giants)",
+      "city_ko": "부산",
+      "city_en": "Busan",
+      "ballpark": "사직야구장 (Sajik Baseball Stadium)",
+      "capacity": 23200,
+      "elevation_m": 29,
+      "elevation_note": "Approximate. No published ballpark elevation was found; value is a DEM lookup (Open-Meteo elevation API, Copernicus GLO-90 surface model) at the ballpark coordinates from OpenStreetMap. Surface model includes structures, so treat as +/-10 m.",
+      "roof": "open",
+      "surface": "grass",
+      "dims_m": {
+        "lf_line": 95.8,
+        "lcf": null,
+        "cf": 121,
+        "rcf": null,
+        "rf_line": 95.8
+      },
+      "wall_m": {
+        "lf": 4.8,
+        "cf": 6.0,
+        "rf": 4.8
+      },
+      "second_home": [
+        {
+          "ballpark": "울산 문수야구장 (Ulsan Munsu Baseball Stadium)",
+          "city_ko": "울산",
+          "city_en": "Ulsan",
+          "games_2026": 0,
+          "notes": "Designated second home since 2014, but Lotte played all 71 home games at Sajik in 2026 (KBO attendance data); in 2025 two games were moved there (Sept 23, 25). Since 2026 it is the home of the Futures club Ulsan Whales. Artificial turf; LF/RF 101 m, CF 122 m; wall 2.4 m; about 12,000 seats (12,048 Namuwiki / 12,088 Wikipedia); expansion to about 18,000 seats planned by the end of 2027."
+        }
+      ],
+      "home_games_2026": {
+        "total": 71,
+        "by_park": {
+          "사직": 71
+        }
+      },
+      "notes": "Wall history: 4.8 m until 2021, raised to 6 m for 2022-2024, lowered back to 4.8 m from 2025; per Namuwiki the section in center (under the scoreboard) and near the foul poles is still 6 m. Field enlarged in 2022 (lines 95 -> 95.8 m, CF 118 -> 121 m). Alleys: ko.wikipedia lists 113 m but it is unclear whether that predates the 2022 change, so left null. Capacity 23,200 from 2026 (22,669 in 2025) = 2026 sell-out figure in KBO attendance data. 2027: club still at Sajik. Rebuild plan: main works 2028-2030, reopening targeted March 2031, with Busan Asiad Main Stadium converted to a ~20,000-seat temporary ballpark for use from 2028 (design call May 2026); schedule was still being disputed in late 2026.",
+      "sources": [
+        "https://www.koreabaseball.com/Record/Crowd/GraphDaily.aspx",
+        "https://namu.moe/w/사직 야구장",
+        "https://ko.wikipedia.org/wiki/사직야구장",
+        "https://namu.moe/w/울산 문수 야구장",
+        "https://www.twig24.com/news/local_bs/2025/07/03/20250703500192",
+        "https://www.twig24.com/news/local_bs/2026/05/11/20260511019001"
+      ]
+    },
+    {
+      "real_name": "NC 다이노스 (NC Dinos)",
+      "city_ko": "창원",
+      "city_en": "Changwon",
+      "ballpark": "창원NC파크 (Changwon NC Park)",
+      "capacity": 18128,
+      "elevation_m": 11,
+      "elevation_note": "Approximate. No published ballpark elevation was found; value is a DEM lookup (Open-Meteo elevation API, Copernicus GLO-90 surface model) at the ballpark coordinates from OpenStreetMap. Surface model includes structures, so treat as +/-10 m.",
+      "roof": "open",
+      "surface": "grass",
+      "dims_m": {
+        "lf_line": 101,
+        "lcf": null,
+        "cf": 122,
+        "rcf": null,
+        "rf_line": 101
+      },
+      "wall_m": {
+        "lf": 3.3,
+        "cf": 3.3,
+        "rf": 3.3
+      },
+      "second_home": [],
+      "home_games_2026": {
+        "total": 73,
+        "by_park": {
+          "창원": 73
+        }
+      },
+      "notes": "Alleys left null because published figures conflict: news at opening (Seoul Shinmun 2019) and en.wikipedia give \"left-center/right-center 123 m\" (the deepest points, just left and right of center, deeper than the 121.9-122 m center), while Namuwiki lists power alleys 107 m plus \"left/right of center 123 m\". Wall 3.3 m. Capacity 18,128 from 2026 (17,983 in 2025) = 2026 sell-out figure in KBO attendance data. In 2025 the park was closed for weeks after a structural accident and NC used Ulsan Munsu as a temporary home (May 16-22, 2025); not a regular second home. No change for 2027 found.",
+      "sources": [
+        "https://www.koreabaseball.com/Record/Crowd/GraphDaily.aspx",
+        "https://namu.moe/w/창원 NC 파크",
+        "https://en.wikipedia.org/wiki/Changwon_NC_Park",
+        "https://m.go.seoul.co.kr/news/2019/03/15/20190315016013"
+      ]
+    }
+  ],
+  "futures": [
+    {
+      "real_name": "상무 피닉스 야구단 (Sangmu Phoenix, 국군체육부대)",
+      "kbo_label": "상무",
+      "parent": null,
+      "league": "북부리그 (Northern League)",
+      "city_ko": "문경",
+      "city_en": "Mungyeong",
+      "ballpark": "문경 상무야구장 (국군체육부대)",
+      "notes": "Military team (players are KBO players doing national service); not a farm team. Moved from the Southern to the Northern League in 2026. 2026: 1st in North, 62-34-0 (.646), 15th straight division title, and won the Futures championship final 8-3 vs Ulsan (2026-09-28, Gocheok Sky Dome).",
+      "sources": [
+        "https://www.koreabaseball.com/Futures/Schedule/GameList.aspx",
+        "https://www.koreabaseball.com/Futures/TeamRank/North.aspx",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=11841",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=12159"
+      ]
+    },
+    {
+      "real_name": "한화 이글스 퓨처스",
+      "kbo_label": "한화",
+      "parent": "한화 이글스 (Hanwha Eagles)",
+      "league": "북부리그 (Northern League)",
+      "city_ko": "서산",
+      "city_en": "Seosan",
+      "ballpark": "서산 한화 이글스 2군 전용연습구장 (서산야구장)",
+      "notes": "2026: 2nd in North, 55-46-0 (.545); lost championship semifinal at Ulsan.",
+      "sources": [
+        "https://www.koreabaseball.com/Futures/Schedule/GameList.aspx",
+        "https://www.koreabaseball.com/Futures/TeamRank/North.aspx",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=11841",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=12159"
+      ]
+    },
+    {
+      "real_name": "LG 트윈스 퓨처스",
+      "kbo_label": "LG",
+      "parent": "LG 트윈스 (LG Twins)",
+      "league": "북부리그 (Northern League)",
+      "city_ko": "이천",
+      "city_en": "Icheon",
+      "ballpark": "LG 챔피언스파크 (이천, KBO schedule label \"이천(LG)\")",
+      "notes": "2026: 3rd in North, 50-51-1 (.495).",
+      "sources": [
+        "https://www.koreabaseball.com/Futures/Schedule/GameList.aspx",
+        "https://www.koreabaseball.com/Futures/TeamRank/North.aspx",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=11841",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=12159"
+      ]
+    },
+    {
+      "real_name": "두산 베어스 퓨처스",
+      "kbo_label": "두산",
+      "parent": "두산 베어스 (Doosan Bears)",
+      "league": "북부리그 (Northern League)",
+      "city_ko": "이천",
+      "city_en": "Icheon",
+      "ballpark": "두산 베어스파크 (이천, KBO schedule label \"이천(두산)\")",
+      "notes": "2026: 4th in North, 45-59-0 (.433).",
+      "sources": [
+        "https://www.koreabaseball.com/Futures/Schedule/GameList.aspx",
+        "https://www.koreabaseball.com/Futures/TeamRank/North.aspx",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=11841",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=12159"
+      ]
+    },
+    {
+      "real_name": "고양 히어로즈 (Goyang Heroes)",
+      "kbo_label": "고양",
+      "parent": "키움 히어로즈 (Kiwoom Heroes)",
+      "league": "북부리그 (Northern League)",
+      "city_ko": "고양",
+      "city_en": "Goyang",
+      "ballpark": "고양 국가대표 야구훈련장",
+      "notes": "Kiwoom farm team, plays under its own name. 2026: 5th in North, 43-59-0 (.422).",
+      "sources": [
+        "https://www.koreabaseball.com/Futures/Schedule/GameList.aspx",
+        "https://www.koreabaseball.com/Futures/TeamRank/North.aspx",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=11841",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=12159"
+      ]
+    },
+    {
+      "real_name": "SSG 랜더스 퓨처스",
+      "kbo_label": "SSG",
+      "parent": "SSG 랜더스 (SSG Landers)",
+      "league": "북부리그 (Northern League)",
+      "city_ko": "강화 (인천)",
+      "city_en": "Ganghwa (Incheon)",
+      "ballpark": "강화 SSG퓨처스필드",
+      "notes": "2026: 6th in North, 41-60-0 (.406). A new dedicated farm ballpark at Yeongjong (Incheon) was reported in July 2026 as expected to be completed and start operating in 2027; whether 2027 Futures home games move there is NOT confirmed.",
+      "sources": [
+        "https://www.koreabaseball.com/Futures/Schedule/GameList.aspx",
+        "https://www.koreabaseball.com/Futures/TeamRank/North.aspx",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=11841",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=12159"
+      ]
+    },
+    {
+      "real_name": "울산 웨일즈 (Ulsan Whales)",
+      "kbo_label": "울산",
+      "parent": null,
+      "league": "남부리그 (Southern League)",
+      "city_ko": "울산",
+      "city_en": "Ulsan",
+      "ballpark": "울산 문수야구장 (Ulsan Munsu Baseball Stadium)",
+      "notes": "New in 2026: first citizen club, founded and run by Ulsan Metropolitan City (KBO board approval 2025-12-09, founding ceremony 2026-02-02); a \"Futures League participating club\" with no KBO club parent and no draft rights. Squad built from undrafted players, free agents and foreign players (at admission: up to 4 foreigners at max US$100,000 each; limit raised to 6 by the KBO executive committee on 2026-06-02); up to 5 players per season may transfer to KBO clubs. 2026: 1st in South, 58-37-1 (.611); lost the championship final 3-8 to Sangmu. Weekday home games start 18:30. Its status beyond 2026 was being discussed (KBO-Ulsan talks in Sept 2026 on an independent corporation); the club began 2027 preparations in Nov 2026.",
+      "sources": [
+        "https://www.koreabaseball.com/Futures/Schedule/GameList.aspx",
+        "https://www.koreabaseball.com/Futures/TeamRank/South.aspx",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=11841",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=12159"
+      ]
+    },
+    {
+      "real_name": "롯데 자이언츠 퓨처스",
+      "kbo_label": "롯데",
+      "parent": "롯데 자이언츠 (Lotte Giants)",
+      "league": "남부리그 (Southern League)",
+      "city_ko": "김해",
+      "city_en": "Gimhae",
+      "ballpark": "상동야구장 (김해 상동)",
+      "notes": "2026: 2nd in South, 54-39-1 (.581); lost championship semifinal at Sangmu. A few home games are played at Sajik.",
+      "sources": [
+        "https://www.koreabaseball.com/Futures/Schedule/GameList.aspx",
+        "https://www.koreabaseball.com/Futures/TeamRank/South.aspx",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=11841",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=12159"
+      ]
+    },
+    {
+      "real_name": "NC 다이노스 C팀",
+      "kbo_label": "NC",
+      "parent": "NC 다이노스 (NC Dinos)",
+      "league": "남부리그 (Southern League)",
+      "city_ko": "창원",
+      "city_en": "Changwon",
+      "ballpark": "마산야구장 (Masan Baseball Stadium, next to Changwon NC Park)",
+      "notes": "2026: 3rd in South, 58-44-0 (.569). Monday weekday games at Masan start 18:30.",
+      "sources": [
+        "https://www.koreabaseball.com/Futures/Schedule/GameList.aspx",
+        "https://www.koreabaseball.com/Futures/TeamRank/South.aspx",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=11841",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=12159"
+      ]
+    },
+    {
+      "real_name": "KT 위즈 퓨처스",
+      "kbo_label": "KT",
+      "parent": "KT 위즈 (KT Wiz)",
+      "league": "남부리그 (Southern League)",
+      "city_ko": "익산",
+      "city_en": "Iksan",
+      "ballpark": "익산 국가대표 야구훈련장",
+      "notes": "2026: 4th in South, 46-52-1 (.469). Won the inaugural Futures championship in 2025.",
+      "sources": [
+        "https://www.koreabaseball.com/Futures/Schedule/GameList.aspx",
+        "https://www.koreabaseball.com/Futures/TeamRank/South.aspx",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=11841",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=12159"
+      ]
+    },
+    {
+      "real_name": "KIA 타이거즈 퓨처스",
+      "kbo_label": "KIA",
+      "parent": "KIA 타이거즈 (Kia Tigers)",
+      "league": "남부리그 (Southern League)",
+      "city_ko": "함평",
+      "city_en": "Hampyeong",
+      "ballpark": "기아 챌린저스 필드 (함평)",
+      "notes": "2026: 5th in South, 43-55-0 (.439). A few home games are played at Gwangju Champions Field.",
+      "sources": [
+        "https://www.koreabaseball.com/Futures/Schedule/GameList.aspx",
+        "https://www.koreabaseball.com/Futures/TeamRank/South.aspx",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=11841",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=12159"
+      ]
+    },
+    {
+      "real_name": "삼성 라이온즈 퓨처스",
+      "kbo_label": "삼성",
+      "parent": "삼성 라이온즈 (Samsung Lions)",
+      "league": "남부리그 (Southern League)",
+      "city_ko": "경산",
+      "city_en": "Gyeongsan",
+      "ballpark": "삼성 라이온즈 볼파크 (경산)",
+      "notes": "2026: 6th in South, 42-61-0 (.408).",
+      "sources": [
+        "https://www.koreabaseball.com/Futures/Schedule/GameList.aspx",
+        "https://www.koreabaseball.com/Futures/TeamRank/South.aspx",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=11841",
+        "https://www.koreabaseball.com/MediaNews/Notice/View.aspx?bdSe=12159"
+      ]
+    }
+  ]
+}

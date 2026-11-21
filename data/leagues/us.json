@@ -1,0 +1,8217 @@
+{
+ "_comment": "Fictional clubs of the North American structure. Cities, ballpark dimensions, leagues and parent clubs follow the real 2026 structure (no changes announced for 2027); club, league and ballpark names are invented and can be edited. Fields listed in park.estimated were not published and are filled in (alleys 63.5 % of the way from the line to centre field; minor-league walls 8 ft).",
+ "source": "docs/research/world/mlb_clubs.json, milb_clubs.json (researched 2026-11-16)",
+ "country": "US",
+ "leagues": [
+  {
+   "id": "us-major",
+   "level": "top",
+   "name": {
+    "ko": "메이저리그",
+    "en": "Major League"
+   },
+   "games": 162,
+   "groups": [
+    {
+     "id": "american",
+     "name": {
+      "ko": "아메리칸 컨퍼런스",
+      "en": "American Conference"
+     }
+    },
+    {
+     "id": "national",
+     "name": {
+      "ko": "내셔널 컨퍼런스",
+      "en": "National Conference"
+     }
+    }
+   ],
+   "divisions": [
+    {
+     "id": "us-major-american-east",
+     "name": {
+      "ko": "동부",
+      "en": "East"
+     },
+     "group": "american"
+    },
+    {
+     "id": "us-major-american-central",
+     "name": {
+      "ko": "중부",
+      "en": "Central"
+     },
+     "group": "american"
+    },
+    {
+     "id": "us-major-american-west",
+     "name": {
+      "ko": "서부",
+      "en": "West"
+     },
+     "group": "american"
+    },
+    {
+     "id": "us-major-national-east",
+     "name": {
+      "ko": "동부",
+      "en": "East"
+     },
+     "group": "national"
+    },
+    {
+     "id": "us-major-national-central",
+     "name": {
+      "ko": "중부",
+      "en": "Central"
+     },
+     "group": "national"
+    },
+    {
+     "id": "us-major-national-west",
+     "name": {
+      "ko": "서부",
+      "en": "West"
+     },
+     "group": "national"
+    }
+   ],
+   "season_2027": {
+    "opening": "2027-03-24",
+    "last_day": "2027-09-26",
+    "all_star": "2027-07-13",
+    "spring_games_from": "2027-02-19"
+   }
+  },
+  {
+   "id": "us-aaa-east",
+   "level": "aaa",
+   "name": {
+    "ko": "트리플A 동부 리그",
+    "en": "Triple-A East"
+   },
+   "games": 150,
+   "divisions": [
+    {
+     "id": "us-aaa-east-east",
+     "name": {
+      "ko": "동부",
+      "en": "East"
+     },
+     "group": null
+    },
+    {
+     "id": "us-aaa-east-west",
+     "name": {
+      "ko": "서부",
+      "en": "West"
+     },
+     "group": null
+    }
+   ],
+   "season_2027": {
+    "opening": "2027-03-26",
+    "last_day": "2027-09-19"
+   }
+  },
+  {
+   "id": "us-aaa-west",
+   "level": "aaa",
+   "name": {
+    "ko": "트리플A 서부 리그",
+    "en": "Triple-A West"
+   },
+   "games": 150,
+   "divisions": [
+    {
+     "id": "us-aaa-west-east",
+     "name": {
+      "ko": "동부",
+      "en": "East"
+     },
+     "group": null
+    },
+    {
+     "id": "us-aaa-west-west",
+     "name": {
+      "ko": "서부",
+      "en": "West"
+     },
+     "group": null
+    }
+   ],
+   "season_2027": {
+    "opening": "2027-03-26",
+    "last_day": "2027-09-19"
+   }
+  },
+  {
+   "id": "us-aa-northeast",
+   "level": "aa",
+   "name": {
+    "ko": "더블A 북동부 리그",
+    "en": "Double-A Northeast"
+   },
+   "games": 138,
+   "divisions": [
+    {
+     "id": "us-aa-northeast-northeast",
+     "name": {
+      "ko": "북동부",
+      "en": "Northeast"
+     },
+     "group": null
+    },
+    {
+     "id": "us-aa-northeast-southwest",
+     "name": {
+      "ko": "남서부",
+      "en": "Southwest"
+     },
+     "group": null
+    }
+   ],
+   "season_2027": {
+    "opening": "2027-04-02",
+    "last_day": "2027-09-12"
+   }
+  },
+  {
+   "id": "us-aa-south",
+   "level": "aa",
+   "name": {
+    "ko": "더블A 남부 리그",
+    "en": "Double-A South"
+   },
+   "games": 138,
+   "divisions": [
+    {
+     "id": "us-aa-south-north",
+     "name": {
+      "ko": "북부",
+      "en": "North"
+     },
+     "group": null
+    },
+    {
+     "id": "us-aa-south-south",
+     "name": {
+      "ko": "남부",
+      "en": "South"
+     },
+     "group": null
+    }
+   ],
+   "season_2027": {
+    "opening": "2027-04-02",
+    "last_day": "2027-09-12"
+   }
+  },
+  {
+   "id": "us-aa-central",
+   "level": "aa",
+   "name": {
+    "ko": "더블A 중남부 리그",
+    "en": "Double-A Central"
+   },
+   "games": 138,
+   "divisions": [
+    {
+     "id": "us-aa-central-north",
+     "name": {
+      "ko": "북부",
+      "en": "North"
+     },
+     "group": null
+    },
+    {
+     "id": "us-aa-central-south",
+     "name": {
+      "ko": "남부",
+      "en": "South"
+     },
+     "group": null
+    }
+   ],
+   "season_2027": {
+    "opening": "2027-04-02",
+    "last_day": "2027-09-12"
+   }
+  },
+  {
+   "id": "us-higha-midwest",
+   "level": "high_a",
+   "name": {
+    "ko": "하이A 중서부 리그",
+    "en": "High-A Midwest"
+   },
+   "games": 132,
+   "divisions": [
+    {
+     "id": "us-higha-midwest-east",
+     "name": {
+      "ko": "동부",
+      "en": "East"
+     },
+     "group": null
+    },
+    {
+     "id": "us-higha-midwest-west",
+     "name": {
+      "ko": "서부",
+      "en": "West"
+     },
+     "group": null
+    }
+   ],
+   "season_2027": {
+    "opening": "2027-04-02",
+    "last_day": "2027-09-05"
+   }
+  },
+  {
+   "id": "us-higha-northwest",
+   "level": "high_a",
+   "name": {
+    "ko": "하이A 북서부 리그",
+    "en": "High-A Northwest"
+   },
+   "games": 132,
+   "divisions": [],
+   "season_2027": {
+    "opening": "2027-04-02",
+    "last_day": "2027-09-05"
+   }
+  },
+  {
+   "id": "us-higha-atlantic",
+   "level": "high_a",
+   "name": {
+    "ko": "하이A 대서양 리그",
+    "en": "High-A Atlantic"
+   },
+   "games": 132,
+   "divisions": [
+    {
+     "id": "us-higha-atlantic-north",
+     "name": {
+      "ko": "북부",
+      "en": "North"
+     },
+     "group": null
+    },
+    {
+     "id": "us-higha-atlantic-south",
+     "name": {
+      "ko": "남부",
+      "en": "South"
+     },
+     "group": null
+    }
+   ],
+   "season_2027": {
+    "opening": "2027-04-02",
+    "last_day": "2027-09-05"
+   }
+  },
+  {
+   "id": "us-a-california",
+   "level": "single_a",
+   "name": {
+    "ko": "싱글A 캘리포니아 리그",
+    "en": "Single-A California"
+   },
+   "games": 132,
+   "divisions": [
+    {
+     "id": "us-a-california-north",
+     "name": {
+      "ko": "북부",
+      "en": "North"
+     },
+     "group": null
+    },
+    {
+     "id": "us-a-california-south",
+     "name": {
+      "ko": "남부",
+      "en": "South"
+     },
+     "group": null
+    }
+   ],
+   "season_2027": {
+    "opening": "2027-04-02",
+    "last_day": "2027-09-05"
+   }
+  },
+  {
+   "id": "us-a-carolina",
+   "level": "single_a",
+   "name": {
+    "ko": "싱글A 캐롤라이나 리그",
+    "en": "Single-A Carolinas"
+   },
+   "games": 132,
+   "divisions": [
+    {
+     "id": "us-a-carolina-north",
+     "name": {
+      "ko": "북부",
+      "en": "North"
+     },
+     "group": null
+    },
+    {
+     "id": "us-a-carolina-south",
+     "name": {
+      "ko": "남부",
+      "en": "South"
+     },
+     "group": null
+    }
+   ],
+   "season_2027": {
+    "opening": "2027-04-02",
+    "last_day": "2027-09-05"
+   }
+  },
+  {
+   "id": "us-a-florida",
+   "level": "single_a",
+   "name": {
+    "ko": "싱글A 플로리다 리그",
+    "en": "Single-A Florida"
+   },
+   "games": 132,
+   "divisions": [
+    {
+     "id": "us-a-florida-east",
+     "name": {
+      "ko": "동부",
+      "en": "East"
+     },
+     "group": null
+    },
+    {
+     "id": "us-a-florida-west",
+     "name": {
+      "ko": "서부",
+      "en": "West"
+     },
+     "group": null
+    }
+   ],
+   "season_2027": {
+    "opening": "2027-04-02",
+    "last_day": "2027-09-05"
+   }
+  }
+ ],
+ "clubs": [
+  {
+   "id": "baltimore-schooners",
+   "league": "us-major",
+   "division": "us-major-american-east",
+   "parent": null,
+   "city": {
+    "ko": "볼티모어",
+    "en": "Baltimore"
+   },
+   "region": {
+    "ko": "메릴랜드",
+    "en": "Maryland"
+   },
+   "country": "US",
+   "name": {
+    "ko": "스쿠너스",
+    "en": "Schooners"
+   },
+   "abbr": "BAL",
+   "colors": [
+    "#7b451e",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "볼티모어 볼파크",
+     "en": "Baltimore Ballpark"
+    },
+    "capacity": 42455,
+    "elevation_m": 10.1,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     101.5,
+     114.6,
+     121.9,
+     113.7,
+     96.9
+    ],
+    "wall_m": [
+     2.44,
+     2.13,
+     6.4
+    ],
+    "estimated": [],
+    "batted_drag": 0.991
+   }
+  },
+  {
+   "id": "boston-lanterns",
+   "league": "us-major",
+   "division": "us-major-american-east",
+   "parent": null,
+   "city": {
+    "ko": "보스턴",
+    "en": "Boston"
+   },
+   "region": {
+    "ko": "매사추세츠",
+    "en": "Massachusetts"
+   },
+   "country": "US",
+   "name": {
+    "ko": "랜턴스",
+    "en": "Lanterns"
+   },
+   "abbr": "BOS",
+   "colors": [
+    "#1a5c7f",
+    "#e05952"
+   ],
+   "park": {
+    "name": {
+     "ko": "보스턴 볼파크",
+     "en": "Boston Ballpark"
+    },
+    "capacity": 37755,
+    "elevation_m": 6.4,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     94.5,
+     115.5,
+     118.9,
+     115.8,
+     92.0
+    ],
+    "wall_m": [
+     11.28,
+     5.49,
+     0.91
+    ],
+    "estimated": [],
+    "batted_drag": 1.016
+   }
+  },
+  {
+   "id": "new-york-empires",
+   "league": "us-major",
+   "division": "us-major-american-east",
+   "parent": null,
+   "city": {
+    "ko": "뉴욕",
+    "en": "New York"
+   },
+   "region": {
+    "ko": "뉴욕",
+    "en": "New York"
+   },
+   "country": "US",
+   "name": {
+    "ko": "엠파이어스",
+    "en": "Empires"
+   },
+   "abbr": "NYE",
+   "colors": [
+    "#253274",
+    "#e09e52"
+   ],
+   "park": {
+    "name": {
+     "ko": "뉴욕 엠파이어스 볼파크",
+     "en": "New York Empires Ballpark"
+    },
+    "capacity": 46537,
+    "elevation_m": 16.8,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     96.9,
+     121.6,
+     124.4,
+     117.3,
+     95.7
+    ],
+    "wall_m": [
+     2.59,
+     2.59,
+     2.44
+    ],
+    "estimated": [],
+    "batted_drag": 1.01
+   }
+  },
+  {
+   "id": "st-petersburg-herons",
+   "league": "us-major",
+   "division": "us-major-american-east",
+   "parent": null,
+   "city": {
+    "ko": "세인트피터즈버그",
+    "en": "St. Petersburg"
+   },
+   "region": {
+    "ko": "플로리다",
+    "en": "Florida"
+   },
+   "country": "US",
+   "name": {
+    "ko": "헤론스",
+    "en": "Herons"
+   },
+   "abbr": "STP",
+   "colors": [
+    "#294470",
+    "#e07f52"
+   ],
+   "park": {
+    "name": {
+     "ko": "세인트피터즈버그 볼파크",
+     "en": "St. Petersburg Ballpark"
+    },
+    "capacity": 25025,
+    "elevation_m": 4.6,
+    "roof": "fixed",
+    "surface": "turf",
+    "fence_m": [
+     96.0,
+     112.8,
+     123.1,
+     112.8,
+     98.1
+    ],
+    "wall_m": [
+     3.35,
+     2.74,
+     3.35
+    ],
+    "estimated": []
+   }
+  },
+  {
+   "id": "toronto-voyageurs",
+   "league": "us-major",
+   "division": "us-major-american-east",
+   "parent": null,
+   "city": {
+    "ko": "토론토",
+    "en": "Toronto"
+   },
+   "region": {
+    "ko": "온타리오",
+    "en": "Ontario"
+   },
+   "country": "CA",
+   "name": {
+    "ko": "보야저스",
+    "en": "Voyageurs"
+   },
+   "abbr": "TOR",
+   "colors": [
+    "#1b7e48",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "토론토 볼파크",
+     "en": "Toronto Ballpark"
+    },
+    "capacity": 39150,
+    "elevation_m": 82.3,
+    "roof": "retractable",
+    "surface": "turf",
+    "fence_m": [
+     100.0,
+     116.1,
+     121.9,
+     113.4,
+     100.0
+    ],
+    "wall_m": [
+     4.37,
+     2.44,
+     3.83
+    ],
+    "estimated": [],
+    "batted_drag": 0.984
+   }
+  },
+  {
+   "id": "chicago-sentinels",
+   "league": "us-major",
+   "division": "us-major-american-central",
+   "parent": null,
+   "city": {
+    "ko": "시카고",
+    "en": "Chicago"
+   },
+   "region": {
+    "ko": "일리노이",
+    "en": "Illinois"
+   },
+   "country": "US",
+   "name": {
+    "ko": "센티널스",
+    "en": "Sentinels"
+   },
+   "abbr": "CHS",
+   "colors": [
+    "#531f7a",
+    "#ebe6f0"
+   ],
+   "park": {
+    "name": {
+     "ko": "시카고 센티널스 볼파크",
+     "en": "Chicago Sentinels Ballpark"
+    },
+    "capacity": 40615,
+    "elevation_m": 181.4,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     114.9,
+     121.9,
+     113.4,
+     102.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [],
+    "batted_drag": 1.039
+   }
+  },
+  {
+   "id": "cleveland-forgers",
+   "league": "us-major",
+   "division": "us-major-american-central",
+   "parent": null,
+   "city": {
+    "ko": "클리블랜드",
+    "en": "Cleveland"
+   },
+   "region": {
+    "ko": "오하이오",
+    "en": "Ohio"
+   },
+   "country": "US",
+   "name": {
+    "ko": "포저스",
+    "en": "Forgers"
+   },
+   "abbr": "CLE",
+   "colors": [
+    "#782141",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "클리블랜드 볼파크",
+     "en": "Cleveland Ballpark"
+    },
+    "capacity": 33530,
+    "elevation_m": 199.0,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     112.8,
+     123.4,
+     114.3,
+     99.1
+    ],
+    "wall_m": [
+     5.79,
+     2.74,
+     2.74
+    ],
+    "estimated": [],
+    "batted_drag": 1.023
+   }
+  },
+  {
+   "id": "detroit-motormen",
+   "league": "us-major",
+   "division": "us-major-american-central",
+   "parent": null,
+   "city": {
+    "ko": "디트로이트",
+    "en": "Detroit"
+   },
+   "region": {
+    "ko": "미시간",
+    "en": "Michigan"
+   },
+   "country": "US",
+   "name": {
+    "ko": "모터멘",
+    "en": "Motormen"
+   },
+   "abbr": "DET",
+   "colors": [
+    "#757d1c",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "디트로이트 볼파크",
+     "en": "Detroit Ballpark"
+    },
+    "capacity": 41083,
+    "elevation_m": 182.9,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     104.2,
+     112.8,
+     125.6,
+     111.3,
+     100.6
+    ],
+    "wall_m": [
+     2.13,
+     2.13,
+     2.13
+    ],
+    "estimated": [],
+    "batted_drag": 1.0
+   }
+  },
+  {
+   "id": "kansas-city-plainsmen",
+   "league": "us-major",
+   "division": "us-major-american-central",
+   "parent": null,
+   "city": {
+    "ko": "캔자스시티",
+    "en": "Kansas City"
+   },
+   "region": {
+    "ko": "미주리",
+    "en": "Missouri"
+   },
+   "country": "US",
+   "name": {
+    "ko": "플레인스멘",
+    "en": "Plainsmen"
+   },
+   "abbr": "KCP",
+   "colors": [
+    "#188142",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "캔자스시티 볼파크",
+     "en": "Kansas City Ballpark"
+    },
+    "capacity": 38179,
+    "elevation_m": 260.9,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     115.5,
+     125.0,
+     115.5,
+     100.6
+    ],
+    "wall_m": [
+     2.59,
+     2.59,
+     2.59
+    ],
+    "estimated": [],
+    "batted_drag": 0.993
+   }
+  },
+  {
+   "id": "minneapolis-lumberjacks",
+   "league": "us-major",
+   "division": "us-major-american-central",
+   "parent": null,
+   "city": {
+    "ko": "미니애폴리스",
+    "en": "Minneapolis"
+   },
+   "region": {
+    "ko": "미네소타",
+    "en": "Minnesota"
+   },
+   "country": "US",
+   "name": {
+    "ko": "럼버잭스",
+    "en": "Lumberjacks"
+   },
+   "abbr": "MIN",
+   "colors": [
+    "#412772",
+    "#d9e052"
+   ],
+   "park": {
+    "name": {
+     "ko": "미니애폴리스 볼파크",
+     "en": "Minneapolis Ballpark"
+    },
+    "capacity": 38544,
+    "elevation_m": 252.4,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     103.3,
+     114.9,
+     123.1,
+     111.9,
+     100.0
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     7.01
+    ],
+    "estimated": [],
+    "batted_drag": 1.008
+   }
+  },
+  {
+   "id": "sacramento-prospectors",
+   "league": "us-major",
+   "division": "us-major-american-west",
+   "parent": null,
+   "city": {
+    "ko": "새크라멘토",
+    "en": "Sacramento"
+   },
+   "region": {
+    "ko": "캘리포니아",
+    "en": "California"
+   },
+   "country": "US",
+   "name": {
+    "ko": "프로스펙터스",
+    "en": "Prospectors"
+   },
+   "abbr": "SAC",
+   "colors": [
+    "#1e247b",
+    "#e6e6f0"
+   ],
+   "park": {
+    "name": {
+     "ko": "새크라멘토 볼파크",
+     "en": "Sacramento Ballpark"
+    },
+    "capacity": 13416,
+    "elevation_m": 7.3,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     115.8,
+     122.8,
+     115.8,
+     99.1
+    ],
+    "wall_m": [
+     2.6,
+     2.6,
+     2.6
+    ],
+    "estimated": [
+     "wall"
+    ],
+    "batted_drag": 0.951
+   }
+  },
+  {
+   "id": "houston-wildcatters",
+   "league": "us-major",
+   "division": "us-major-american-west",
+   "parent": null,
+   "city": {
+    "ko": "휴스턴",
+    "en": "Houston"
+   },
+   "region": {
+    "ko": "텍사스",
+    "en": "Texas"
+   },
+   "country": "US",
+   "name": {
+    "ko": "와일드캐터스",
+    "en": "Wildcatters"
+   },
+   "abbr": "HOU",
+   "colors": [
+    "#237638",
+    "#d952e0"
+   ],
+   "park": {
+    "name": {
+     "ko": "휴스턴 볼파크",
+     "en": "Houston Ballpark"
+    },
+    "capacity": 41168,
+    "elevation_m": 13.7,
+    "roof": "retractable",
+    "surface": "grass",
+    "fence_m": [
+     96.0,
+     110.3,
+     124.7,
+     113.7,
+     99.4
+    ],
+    "wall_m": [
+     6.4,
+     2.74,
+     2.13
+    ],
+    "estimated": [],
+    "batted_drag": 0.99
+   }
+  },
+  {
+   "id": "anaheim-surfriders",
+   "league": "us-major",
+   "division": "us-major-american-west",
+   "parent": null,
+   "city": {
+    "ko": "애너하임",
+    "en": "Anaheim"
+   },
+   "region": {
+    "ko": "캘리포니아",
+    "en": "California"
+   },
+   "country": "US",
+   "name": {
+    "ko": "서프라이더스",
+    "en": "Surfriders"
+   },
+   "abbr": "ANA",
+   "colors": [
+    "#1c7d3e",
+    "#e052d9"
+   ],
+   "park": {
+    "name": {
+     "ko": "애너하임 볼파크",
+     "en": "Anaheim Ballpark"
+    },
+    "capacity": 45517,
+    "elevation_m": 46.0,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     118.9,
+     120.7,
+     112.8,
+     100.6
+    ],
+    "wall_m": [
+     1.52,
+     2.44,
+     2.44
+    ],
+    "estimated": [],
+    "batted_drag": 0.977
+   }
+  },
+  {
+   "id": "seattle-evergreens",
+   "league": "us-major",
+   "division": "us-major-american-west",
+   "parent": null,
+   "city": {
+    "ko": "시애틀",
+    "en": "Seattle"
+   },
+   "region": {
+    "ko": "워싱턴",
+    "en": "Washington"
+   },
+   "country": "US",
+   "name": {
+    "ko": "에버그린스",
+    "en": "Evergreens"
+   },
+   "abbr": "SEA",
+   "colors": [
+    "#602772",
+    "#ede6f0"
+   ],
+   "park": {
+    "name": {
+     "ko": "시애틀 볼파크",
+     "en": "Seattle Ballpark"
+    },
+    "capacity": 47378,
+    "elevation_m": 3.0,
+    "roof": "retractable",
+    "surface": "grass",
+    "fence_m": [
+     100.9,
+     115.2,
+     122.2,
+     116.1,
+     99.4
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [],
+    "batted_drag": 0.987
+   }
+  },
+  {
+   "id": "arlington-wranglers",
+   "league": "us-major",
+   "division": "us-major-american-west",
+   "parent": null,
+   "city": {
+    "ko": "알링턴",
+    "en": "Arlington"
+   },
+   "region": {
+    "ko": "텍사스",
+    "en": "Texas"
+   },
+   "country": "US",
+   "name": {
+    "ko": "랭글러스",
+    "en": "Wranglers"
+   },
+   "abbr": "ARL",
+   "colors": [
+    "#1f7a25",
+    "#bf52e0"
+   ],
+   "park": {
+    "name": {
+     "ko": "알링턴 볼파크",
+     "en": "Arlington Ballpark"
+    },
+    "capacity": 40300,
+    "elevation_m": 166.1,
+    "roof": "retractable",
+    "surface": "turf",
+    "fence_m": [
+     100.3,
+     113.4,
+     124.1,
+     114.0,
+     99.4
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [],
+    "batted_drag": 1.031
+   }
+  },
+  {
+   "id": "atlanta-firebirds",
+   "league": "us-major",
+   "division": "us-major-national-east",
+   "parent": null,
+   "city": {
+    "ko": "애틀랜타",
+    "en": "Atlanta"
+   },
+   "region": {
+    "ko": "조지아",
+    "en": "Georgia"
+   },
+   "country": "US",
+   "name": {
+    "ko": "파이어버즈",
+    "en": "Firebirds"
+   },
+   "abbr": "ATL",
+   "colors": [
+    "#71285a",
+    "#f0e6ec"
+   ],
+   "park": {
+    "name": {
+     "ko": "애틀랜타 볼파크",
+     "en": "Atlanta Ballpark"
+    },
+    "capacity": 40819,
+    "elevation_m": 305.1,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     102.1,
+     117.3,
+     121.9,
+     114.3,
+     99.1
+    ],
+    "wall_m": [
+     1.83,
+     2.44,
+     4.88
+    ],
+    "estimated": [],
+    "batted_drag": 0.992
+   }
+  },
+  {
+   "id": "miami-flamingos",
+   "league": "us-major",
+   "division": "us-major-national-east",
+   "parent": null,
+   "city": {
+    "ko": "마이애미",
+    "en": "Miami"
+   },
+   "region": {
+    "ko": "플로리다",
+    "en": "Florida"
+   },
+   "country": "US",
+   "name": {
+    "ko": "플라밍고스",
+    "en": "Flamingos"
+   },
+   "abbr": "MIA",
+   "colors": [
+    "#6f2a62",
+    "#62e052"
+   ],
+   "park": {
+    "name": {
+     "ko": "마이애미 볼파크",
+     "en": "Miami Ballpark"
+    },
+    "capacity": 37442,
+    "elevation_m": 3.0,
+    "roof": "retractable",
+    "surface": "turf",
+    "fence_m": [
+     104.9,
+     117.7,
+     121.9,
+     118.0,
+     102.1
+    ],
+    "wall_m": [
+     2.13,
+     2.13,
+     2.13
+    ],
+    "estimated": [
+     "wall"
+    ],
+    "batted_drag": 0.979
+   }
+  },
+  {
+   "id": "new-york-ferrymen",
+   "league": "us-major",
+   "division": "us-major-national-east",
+   "parent": null,
+   "city": {
+    "ko": "뉴욕",
+    "en": "New York"
+   },
+   "region": {
+    "ko": "뉴욕",
+    "en": "New York"
+   },
+   "country": "US",
+   "name": {
+    "ko": "페리멘",
+    "en": "Ferrymen"
+   },
+   "abbr": "NYF",
+   "colors": [
+    "#793c20",
+    "#52dee0"
+   ],
+   "park": {
+    "name": {
+     "ko": "뉴욕 페리멘 볼파크",
+     "en": "New York Ferrymen Ballpark"
+    },
+    "capacity": 41922,
+    "elevation_m": 3.0,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     102.1,
+     112.8,
+     124.4,
+     115.8,
+     100.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [],
+    "batted_drag": 1.005
+   }
+  },
+  {
+   "id": "philadelphia-liberties",
+   "league": "us-major",
+   "division": "us-major-national-east",
+   "parent": null,
+   "city": {
+    "ko": "필라델피아",
+    "en": "Philadelphia"
+   },
+   "region": {
+    "ko": "펜실베이니아",
+    "en": "Pennsylvania"
+   },
+   "country": "US",
+   "name": {
+    "ko": "리버티스",
+    "en": "Liberties"
+   },
+   "abbr": "PHI",
+   "colors": [
+    "#7d1782",
+    "#efe6f0"
+   ],
+   "park": {
+    "name": {
+     "ko": "필라델피아 볼파크",
+     "en": "Philadelphia Ballpark"
+    },
+    "capacity": 42901,
+    "elevation_m": 6.1,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.3,
+     114.0,
+     122.2,
+     112.5,
+     100.6
+    ],
+    "wall_m": [
+     3.35,
+     1.83,
+     3.96
+    ],
+    "estimated": [],
+    "batted_drag": 0.976
+   }
+  },
+  {
+   "id": "washington-statesmen",
+   "league": "us-major",
+   "division": "us-major-national-east",
+   "parent": null,
+   "city": {
+    "ko": "워싱턴",
+    "en": "Washington"
+   },
+   "region": {
+    "ko": "컬럼비아 특별구",
+    "en": "District of Columbia"
+   },
+   "country": "US",
+   "name": {
+    "ko": "스테이츠멘",
+    "en": "Statesmen"
+   },
+   "abbr": "WAS",
+   "colors": [
+    "#85141a",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "워싱턴 볼파크",
+     "en": "Washington Ballpark"
+    },
+    "capacity": 41373,
+    "elevation_m": 10.7,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     102.4,
+     114.9,
+     122.5,
+     112.8,
+     102.1
+    ],
+    "wall_m": [
+     2.44,
+     3.66,
+     3.66
+    ],
+    "estimated": [],
+    "batted_drag": 1.009
+   }
+  },
+  {
+   "id": "chicago-gales",
+   "league": "us-major",
+   "division": "us-major-national-central",
+   "parent": null,
+   "city": {
+    "ko": "시카고",
+    "en": "Chicago"
+   },
+   "region": {
+    "ko": "일리노이",
+    "en": "Illinois"
+   },
+   "country": "US",
+   "name": {
+    "ko": "게일스",
+    "en": "Gales"
+   },
+   "abbr": "CHG",
+   "colors": [
+    "#7d671c",
+    "#529ee0"
+   ],
+   "park": {
+    "name": {
+     "ko": "시카고 게일스 볼파크",
+     "en": "Chicago Gales Ballpark"
+    },
+    "capacity": 41649,
+    "elevation_m": 181.4,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     108.2,
+     112.2,
+     121.9,
+     112.2,
+     107.6
+    ],
+    "wall_m": [
+     3.51,
+     3.51,
+     3.51
+    ],
+    "estimated": [],
+    "batted_drag": 1.017
+   }
+  },
+  {
+   "id": "cincinnati-steamers",
+   "league": "us-major",
+   "division": "us-major-national-central",
+   "parent": null,
+   "city": {
+    "ko": "신시내티",
+    "en": "Cincinnati"
+   },
+   "region": {
+    "ko": "오하이오",
+    "en": "Ohio"
+   },
+   "country": "US",
+   "name": {
+    "ko": "스티머스",
+    "en": "Steamers"
+   },
+   "abbr": "CIN",
+   "colors": [
+    "#7b701e",
+    "#f0efe6"
+   ],
+   "park": {
+    "name": {
+     "ko": "신시내티 볼파크",
+     "en": "Cincinnati Ballpark"
+    },
+    "capacity": 43500,
+    "elevation_m": 163.1,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.0,
+     115.5,
+     123.1,
+     112.8,
+     99.1
+    ],
+    "wall_m": [
+     3.66,
+     2.44,
+     2.44
+    ],
+    "estimated": [],
+    "batted_drag": 1.0
+   }
+  },
+  {
+   "id": "milwaukee-harvesters",
+   "league": "us-major",
+   "division": "us-major-national-central",
+   "parent": null,
+   "city": {
+    "ko": "밀워키",
+    "en": "Milwaukee"
+   },
+   "region": {
+    "ko": "위스콘신",
+    "en": "Wisconsin"
+   },
+   "country": "US",
+   "name": {
+    "ko": "하베스터스",
+    "en": "Harvesters"
+   },
+   "abbr": "MIL",
+   "colors": [
+    "#1b7e4e",
+    "#e052c1"
+   ],
+   "park": {
+    "name": {
+     "ko": "밀워키 볼파크",
+     "en": "Milwaukee Ballpark"
+    },
+    "capacity": 40100,
+    "elevation_m": 182.0,
+    "roof": "retractable",
+    "surface": "grass",
+    "fence_m": [
+     104.2,
+     113.1,
+     121.9,
+     114.0,
+     105.2
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [],
+    "batted_drag": 0.985
+   }
+  },
+  {
+   "id": "pittsburgh-ironclads",
+   "league": "us-major",
+   "division": "us-major-national-central",
+   "parent": null,
+   "city": {
+    "ko": "피츠버그",
+    "en": "Pittsburgh"
+   },
+   "region": {
+    "ko": "펜실베이니아",
+    "en": "Pennsylvania"
+   },
+   "country": "US",
+   "name": {
+    "ko": "아이언클래즈",
+    "en": "Ironclads"
+   },
+   "abbr": "PIT",
+   "colors": [
+    "#7d1c25",
+    "#52e0a7"
+   ],
+   "park": {
+    "name": {
+     "ko": "피츠버그 볼파크",
+     "en": "Pittsburgh Ballpark"
+    },
+    "capacity": 38747,
+    "elevation_m": 237.7,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     118.6,
+     121.6,
+     114.3,
+     97.5
+    ],
+    "wall_m": [
+     1.83,
+     3.05,
+     6.4
+    ],
+    "estimated": [],
+    "batted_drag": 0.997
+   }
+  },
+  {
+   "id": "st-louis-archers",
+   "league": "us-major",
+   "division": "us-major-national-central",
+   "parent": null,
+   "city": {
+    "ko": "세인트루이스",
+    "en": "St. Louis"
+   },
+   "region": {
+    "ko": "미주리",
+    "en": "Missouri"
+   },
+   "country": "US",
+   "name": {
+    "ko": "아처스",
+    "en": "Archers"
+   },
+   "abbr": "STL",
+   "colors": [
+    "#294970",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "세인트루이스 볼파크",
+     "en": "St. Louis Ballpark"
+    },
+    "capacity": 43435,
+    "elevation_m": 140.2,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     102.4,
+     114.3,
+     121.9,
+     114.3,
+     102.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [],
+    "batted_drag": 1.01
+   }
+  },
+  {
+   "id": "phoenix-scorpions",
+   "league": "us-major",
+   "division": "us-major-national-west",
+   "parent": null,
+   "city": {
+    "ko": "피닉스",
+    "en": "Phoenix"
+   },
+   "region": {
+    "ko": "애리조나",
+    "en": "Arizona"
+   },
+   "country": "US",
+   "name": {
+    "ko": "스콜피언스",
+    "en": "Scorpions"
+   },
+   "abbr": "PHX",
+   "colors": [
+    "#5f1a7f",
+    "#ece6f0"
+   ],
+   "park": {
+    "name": {
+     "ko": "피닉스 볼파크",
+     "en": "Phoenix Ballpark"
+    },
+    "capacity": 48263,
+    "elevation_m": 331.0,
+    "roof": "retractable",
+    "surface": "turf",
+    "fence_m": [
+     100.6,
+     114.0,
+     124.1,
+     114.0,
+     101.8
+    ],
+    "wall_m": [
+     2.44,
+     7.62,
+     2.44
+    ],
+    "estimated": [],
+    "batted_drag": 0.987
+   }
+  },
+  {
+   "id": "denver-summits",
+   "league": "us-major",
+   "division": "us-major-national-west",
+   "parent": null,
+   "city": {
+    "ko": "덴버",
+    "en": "Denver"
+   },
+   "region": {
+    "ko": "콜로라도",
+    "en": "Colorado"
+   },
+   "country": "US",
+   "name": {
+    "ko": "서밋츠",
+    "en": "Summits"
+   },
+   "abbr": "DEN",
+   "colors": [
+    "#1a7f7f",
+    "#e0527c"
+   ],
+   "park": {
+    "name": {
+     "ko": "덴버 볼파크",
+     "en": "Denver Ballpark"
+    },
+    "capacity": 46897,
+    "elevation_m": 1581.9,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     105.8,
+     118.9,
+     126.5,
+     114.3,
+     106.7
+    ],
+    "wall_m": [
+     3.96,
+     2.44,
+     5.03
+    ],
+    "estimated": [],
+    "batted_drag": 1.045
+   }
+  },
+  {
+   "id": "los-angeles-palms",
+   "league": "us-major",
+   "division": "us-major-national-west",
+   "parent": null,
+   "city": {
+    "ko": "로스앤젤레스",
+    "en": "Los Angeles"
+   },
+   "region": {
+    "ko": "캘리포니아",
+    "en": "California"
+   },
+   "country": "US",
+   "name": {
+    "ko": "팜스",
+    "en": "Palms"
+   },
+   "abbr": "LAP",
+   "colors": [
+    "#2f1f7a",
+    "#e7e6f0"
+   ],
+   "park": {
+    "name": {
+     "ko": "로스앤젤레스 볼파크",
+     "en": "Los Angeles Ballpark"
+    },
+    "capacity": 56000,
+    "elevation_m": 157.0,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     117.3,
+     120.4,
+     117.3,
+     100.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [],
+    "batted_drag": 0.99
+   }
+  },
+  {
+   "id": "san-diego-navigators",
+   "league": "us-major",
+   "division": "us-major-national-west",
+   "parent": null,
+   "city": {
+    "ko": "샌디에이고",
+    "en": "San Diego"
+   },
+   "region": {
+    "ko": "캘리포니아",
+    "en": "California"
+   },
+   "country": "US",
+   "name": {
+    "ko": "내비게이터스",
+    "en": "Navigators"
+   },
+   "abbr": "SDN",
+   "colors": [
+    "#7f1a1d",
+    "#52e0b1"
+   ],
+   "park": {
+    "name": {
+     "ko": "샌디에이고 볼파크",
+     "en": "San Diego Ballpark"
+    },
+    "capacity": 39860,
+    "elevation_m": 7.0,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     102.4,
+     117.7,
+     120.7,
+     119.2,
+     98.1
+    ],
+    "wall_m": [
+     1.22,
+     2.13,
+     3.05
+    ],
+    "estimated": [],
+    "batted_drag": 1.014
+   }
+  },
+  {
+   "id": "san-francisco-fogcutters",
+   "league": "us-major",
+   "division": "us-major-national-west",
+   "parent": null,
+   "city": {
+    "ko": "샌프란시스코",
+    "en": "San Francisco"
+   },
+   "region": {
+    "ko": "캘리포니아",
+    "en": "California"
+   },
+   "country": "US",
+   "name": {
+    "ko": "포그커터스",
+    "en": "Fogcutters"
+   },
+   "abbr": "SFO",
+   "colors": [
+    "#717326",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "샌프란시스코 볼파크",
+     "en": "San Francisco Ballpark"
+    },
+    "capacity": 41331,
+    "elevation_m": 0.0,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     103.3,
+     121.6,
+     119.2,
+     126.5,
+     94.2
+    ],
+    "wall_m": [
+     2.44,
+     2.13,
+     7.32
+    ],
+    "estimated": [],
+    "batted_drag": 0.998
+   }
+  },
+  {
+   "id": "buffalo-snowhawks",
+   "league": "us-aaa-east",
+   "division": "us-aaa-east-east",
+   "parent": "toronto-voyageurs",
+   "city": {
+    "ko": "버펄로",
+    "en": "Buffalo"
+   },
+   "region": {
+    "ko": "뉴욕",
+    "en": "New York"
+   },
+   "country": "US",
+   "name": {
+    "ko": "스노호크스",
+    "en": "Snowhawks"
+   },
+   "abbr": "BUF",
+   "colors": [
+    "#771f7a",
+    "#efe6f0"
+   ],
+   "park": {
+    "name": {
+     "ko": "버펄로 볼파크",
+     "en": "Buffalo Ballpark"
+    },
+    "capacity": 16600,
+    "elevation_m": 179.5,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     114.3,
+     123.1,
+     114.3,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "charlotte-crowns",
+   "league": "us-aaa-east",
+   "division": "us-aaa-east-east",
+   "parent": "chicago-sentinels",
+   "city": {
+    "ko": "샬럿",
+    "en": "Charlotte"
+   },
+   "region": {
+    "ko": "노스캐롤라이나",
+    "en": "North Carolina"
+   },
+   "country": "US",
+   "name": {
+    "ko": "크라운스",
+    "en": "Crowns"
+   },
+   "abbr": "CHA",
+   "colors": [
+    "#397029",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "샬럿 볼파크",
+     "en": "Charlotte Ballpark"
+    },
+    "capacity": 10200,
+    "elevation_m": 218.5,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     114.1,
+     121.9,
+     112.4,
+     96.0
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "durham-barnstormers",
+   "league": "us-aaa-east",
+   "division": "us-aaa-east-east",
+   "parent": "st-petersburg-herons",
+   "city": {
+    "ko": "더럼",
+    "en": "Durham"
+   },
+   "region": {
+    "ko": "노스캐롤라이나",
+    "en": "North Carolina"
+   },
+   "country": "US",
+   "name": {
+    "ko": "반스토머스",
+    "en": "Barnstormers"
+   },
+   "abbr": "DUR",
+   "colors": [
+    "#247570",
+    "#e05286"
+   ],
+   "park": {
+    "name": {
+     "ko": "더럼 볼파크",
+     "en": "Durham Ballpark"
+    },
+    "capacity": 10000,
+    "elevation_m": 110.3,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     93.0,
+     111.4,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "jacksonville-shorebreakers",
+   "league": "us-aaa-east",
+   "division": "us-aaa-east-east",
+   "parent": "miami-flamingos",
+   "city": {
+    "ko": "잭슨빌",
+    "en": "Jacksonville"
+   },
+   "region": {
+    "ko": "플로리다",
+    "en": "Florida"
+   },
+   "country": "US",
+   "name": {
+    "ko": "쇼어브레이커스",
+    "en": "Shorebreakers"
+   },
+   "abbr": "JAC",
+   "colors": [
+    "#22773c",
+    "#e052e0"
+   ],
+   "park": {
+    "name": {
+     "ko": "잭슨빌 볼파크",
+     "en": "Jacksonville Ballpark"
+    },
+    "capacity": 11000,
+    "elevation_m": 2.1,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     97.8,
+     117.0,
+     128.0,
+     116.5,
+     96.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "allentown-foundrymen",
+   "league": "us-aaa-east",
+   "division": "us-aaa-east-east",
+   "parent": "philadelphia-liberties",
+   "city": {
+    "ko": "앨런타운",
+    "en": "Allentown"
+   },
+   "region": {
+    "ko": "펜실베이니아",
+    "en": "Pennsylvania"
+   },
+   "country": "US",
+   "name": {
+    "ko": "파운드리멘",
+    "en": "Foundrymen"
+   },
+   "abbr": "ALL",
+   "colors": [
+    "#421782",
+    "#eae6f0"
+   ],
+   "park": {
+    "name": {
+     "ko": "앨런타운 볼파크",
+     "en": "Allentown Ballpark"
+    },
+    "capacity": 10178,
+    "elevation_m": 110.3,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     98.5,
+     113.4,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "norfolk-shipwrights",
+   "league": "us-aaa-east",
+   "division": "us-aaa-east-east",
+   "parent": "baltimore-schooners",
+   "city": {
+    "ko": "노퍽",
+    "en": "Norfolk"
+   },
+   "region": {
+    "ko": "버지니아",
+    "en": "Virginia"
+   },
+   "country": "US",
+   "name": {
+    "ko": "십라이츠",
+    "en": "Shipwrights"
+   },
+   "abbr": "NOR",
+   "colors": [
+    "#702969",
+    "#6ee052"
+   ],
+   "park": {
+    "name": {
+     "ko": "노퍽 볼파크",
+     "en": "Norfolk Ballpark"
+    },
+    "capacity": 11856,
+    "elevation_m": 1.5,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     101.5,
+     116.4,
+     125.0,
+     114.7,
+     96.9
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "rochester-lilacs",
+   "league": "us-aaa-east",
+   "division": "us-aaa-east-east",
+   "parent": "washington-statesmen",
+   "city": {
+    "ko": "로체스터",
+    "en": "Rochester"
+   },
+   "region": {
+    "ko": "뉴욕",
+    "en": "New York"
+   },
+   "country": "US",
+   "name": {
+    "ko": "라일락스",
+    "en": "Lilacs"
+   },
+   "abbr": "ROC",
+   "colors": [
+    "#1b3e7e",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "로체스터 볼파크",
+     "en": "Rochester Ballpark"
+    },
+    "capacity": 13500,
+    "elevation_m": 149.4,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     102.1,
+     115.1,
+     122.5,
+     113.6,
+     98.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "scranton-colliers",
+   "league": "us-aaa-east",
+   "division": "us-aaa-east-east",
+   "parent": "new-york-empires",
+   "city": {
+    "ko": "스크랜턴",
+    "en": "Scranton"
+   },
+   "region": {
+    "ko": "펜실베이니아",
+    "en": "Pennsylvania"
+   },
+   "country": "US",
+   "name": {
+    "ko": "콜리어스",
+    "en": "Colliers"
+   },
+   "abbr": "SCR",
+   "colors": [
+    "#845f15",
+    "#52ace0"
+   ],
+   "park": {
+    "name": {
+     "ko": "스크랜턴 볼파크",
+     "en": "Scranton Ballpark"
+    },
+    "capacity": 10000,
+    "elevation_m": 265.2,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.4,
+     115.3,
+     124.4,
+     115.7,
+     100.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "syracuse-saltmen",
+   "league": "us-aaa-east",
+   "division": "us-aaa-east-east",
+   "parent": "new-york-ferrymen",
+   "city": {
+    "ko": "시러큐스",
+    "en": "Syracuse"
+   },
+   "region": {
+    "ko": "뉴욕",
+    "en": "New York"
+   },
+   "country": "US",
+   "name": {
+    "ko": "솔트멘",
+    "en": "Saltmen"
+   },
+   "abbr": "SYR",
+   "colors": [
+    "#1c7d3c",
+    "#e052dc"
+   ],
+   "park": {
+    "name": {
+     "ko": "시러큐스 볼파크",
+     "en": "Syracuse Ballpark"
+    },
+    "capacity": 10815,
+    "elevation_m": 113.1,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     114.1,
+     121.9,
+     114.1,
+     100.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "worcester-canalers",
+   "league": "us-aaa-east",
+   "division": "us-aaa-east-east",
+   "parent": "boston-lanterns",
+   "city": {
+    "ko": "우스터",
+    "en": "Worcester"
+   },
+   "region": {
+    "ko": "매사추세츠",
+    "en": "Massachusetts"
+   },
+   "country": "US",
+   "name": {
+    "ko": "커낼러스",
+    "en": "Canalers"
+   },
+   "abbr": "WOR",
+   "colors": [
+    "#2d2277",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "우스터 볼파크",
+     "en": "Worcester Ballpark"
+    },
+    "capacity": 9508,
+    "elevation_m": 138.4,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.3,
+     114.4,
+     122.5,
+     113.4,
+     97.5
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "columbus-explorers",
+   "league": "us-aaa-east",
+   "division": "us-aaa-east-west",
+   "parent": "cleveland-forgers",
+   "city": {
+    "ko": "콜럼버스",
+    "en": "Columbus"
+   },
+   "region": {
+    "ko": "오하이오",
+    "en": "Ohio"
+   },
+   "country": "US",
+   "name": {
+    "ko": "익스플로러스",
+    "en": "Explorers"
+   },
+   "abbr": "COL",
+   "colors": [
+    "#801929",
+    "#52e0a0"
+   ],
+   "park": {
+    "name": {
+     "ko": "콜럼버스 익스플로러스 볼파크",
+     "en": "Columbus Explorers Ballpark"
+    },
+    "capacity": 10100,
+    "elevation_m": 219.2,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     113.6,
+     121.9,
+     112.8,
+     96.9
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "lawrenceville-copperheads",
+   "league": "us-aaa-east",
+   "division": "us-aaa-east-west",
+   "parent": "atlanta-firebirds",
+   "city": {
+    "ko": "로런스빌",
+    "en": "Lawrenceville"
+   },
+   "region": {
+    "ko": "조지아",
+    "en": "Georgia"
+   },
+   "country": "US",
+   "name": {
+    "ko": "코퍼헤즈",
+    "en": "Copperheads"
+   },
+   "abbr": "LAW",
+   "colors": [
+    "#527326",
+    "#6552e0"
+   ],
+   "park": {
+    "name": {
+     "ko": "로런스빌 볼파크",
+     "en": "Lawrenceville Ballpark"
+    },
+    "capacity": 10115,
+    "elevation_m": 330.7,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     102.1,
+     114.7,
+     121.9,
+     114.7,
+     102.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "indianapolis-racers",
+   "league": "us-aaa-east",
+   "division": "us-aaa-east-west",
+   "parent": "pittsburgh-ironclads",
+   "city": {
+    "ko": "인디애나폴리스",
+    "en": "Indianapolis"
+   },
+   "region": {
+    "ko": "인디애나",
+    "en": "Indiana"
+   },
+   "country": "US",
+   "name": {
+    "ko": "레이서스",
+    "en": "Racers"
+   },
+   "abbr": "IND",
+   "colors": [
+    "#72272f",
+    "#f0e6e7"
+   ],
+   "park": {
+    "name": {
+     "ko": "인디애나폴리스 볼파크",
+     "en": "Indianapolis Ballpark"
+    },
+    "capacity": 14230,
+    "elevation_m": 215.2,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     97.5,
+     113.4,
+     122.5,
+     113.4,
+     97.5
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "des-moines-prairie-dogs",
+   "league": "us-aaa-east",
+   "division": "us-aaa-east-west",
+   "parent": "chicago-gales",
+   "city": {
+    "ko": "디모인",
+    "en": "Des Moines"
+   },
+   "region": {
+    "ko": "아이오와",
+    "en": "Iowa"
+   },
+   "country": "US",
+   "name": {
+    "ko": "프레리독스",
+    "en": "Prairie Dogs"
+   },
+   "abbr": "DES",
+   "colors": [
+    "#821769",
+    "#5be052"
+   ],
+   "park": {
+    "name": {
+     "ko": "디모인 볼파크",
+     "en": "Des Moines Ballpark"
+    },
+    "capacity": 11500,
+    "elevation_m": 244.4,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     102.1,
+     114.7,
+     121.9,
+     114.7,
+     102.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "louisville-thoroughbreds",
+   "league": "us-aaa-east",
+   "division": "us-aaa-east-west",
+   "parent": "cincinnati-steamers",
+   "city": {
+    "ko": "루이빌",
+    "en": "Louisville"
+   },
+   "region": {
+    "ko": "켄터키",
+    "en": "Kentucky"
+   },
+   "country": "US",
+   "name": {
+    "ko": "서러브레즈",
+    "en": "Thoroughbreds"
+   },
+   "abbr": "LOU",
+   "colors": [
+    "#297051",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "루이빌 볼파크",
+     "en": "Louisville Ballpark"
+    },
+    "capacity": 13131,
+    "elevation_m": 137.2,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     114.5,
+     123.4,
+     116.2,
+     103.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "memphis-kingfishers",
+   "league": "us-aaa-east",
+   "division": "us-aaa-east-west",
+   "parent": "st-louis-archers",
+   "city": {
+    "ko": "멤피스",
+    "en": "Memphis"
+   },
+   "region": {
+    "ko": "테네시",
+    "en": "Tennessee"
+   },
+   "country": "US",
+   "name": {
+    "ko": "킹피셔스",
+    "en": "Kingfishers"
+   },
+   "abbr": "MEM",
+   "colors": [
+    "#5a7623",
+    "#ecf0e6"
+   ],
+   "park": {
+    "name": {
+     "ko": "멤피스 볼파크",
+     "en": "Memphis Ballpark"
+    },
+    "capacity": 10000,
+    "elevation_m": 68.9,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     97.2,
+     112.9,
+     121.9,
+     113.2,
+     98.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "nashville-fiddlers",
+   "league": "us-aaa-east",
+   "division": "us-aaa-east-west",
+   "parent": "milwaukee-harvesters",
+   "city": {
+    "ko": "내슈빌",
+    "en": "Nashville"
+   },
+   "region": {
+    "ko": "테네시",
+    "en": "Tennessee"
+   },
+   "country": "US",
+   "name": {
+    "ko": "피들러스",
+    "en": "Fiddlers"
+   },
+   "abbr": "NAS",
+   "colors": [
+    "#541683",
+    "#bae052"
+   ],
+   "park": {
+    "name": {
+     "ko": "내슈빌 볼파크",
+     "en": "Nashville Ballpark"
+    },
+    "capacity": 10000,
+    "elevation_m": 125.0,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     114.7,
+     122.8,
+     112.5,
+     94.5
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "omaha-thunderheads",
+   "league": "us-aaa-east",
+   "division": "us-aaa-east-west",
+   "parent": "kansas-city-plainsmen",
+   "city": {
+    "ko": "오마하",
+    "en": "Omaha"
+   },
+   "region": {
+    "ko": "네브래스카",
+    "en": "Nebraska"
+   },
+   "country": "US",
+   "name": {
+    "ko": "선더헤즈",
+    "en": "Thunderheads"
+   },
+   "abbr": "OMA",
+   "colors": [
+    "#3e6f2a",
+    "#8d52e0"
+   ],
+   "park": {
+    "name": {
+     "ko": "오마하 볼파크",
+     "en": "Omaha Ballpark"
+    },
+    "capacity": 9023,
+    "elevation_m": 350.5,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     94.5,
+     112.3,
+     122.5,
+     112.8,
+     96.0
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "st-paul-freighters",
+   "league": "us-aaa-east",
+   "division": "us-aaa-east-west",
+   "parent": "minneapolis-lumberjacks",
+   "city": {
+    "ko": "세인트폴",
+    "en": "St. Paul"
+   },
+   "region": {
+    "ko": "미네소타",
+    "en": "Minnesota"
+   },
+   "country": "US",
+   "name": {
+    "ko": "프레이터스",
+    "en": "Freighters"
+   },
+   "abbr": "STF",
+   "colors": [
+    "#7f1a4b",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "세인트폴 볼파크",
+     "en": "St. Paul Ballpark"
+    },
+    "capacity": 7210,
+    "elevation_m": 219.8,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     115.1,
+     123.4,
+     113.9,
+     97.5
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "toledo-glassmen",
+   "league": "us-aaa-east",
+   "division": "us-aaa-east-west",
+   "parent": "detroit-motormen",
+   "city": {
+    "ko": "털리도",
+    "en": "Toledo"
+   },
+   "region": {
+    "ko": "오하이오",
+    "en": "Ohio"
+   },
+   "country": "US",
+   "name": {
+    "ko": "글라스멘",
+    "en": "Glassmen"
+   },
+   "abbr": "TOL",
+   "colors": [
+    "#7f1a2b",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "털리도 볼파크",
+     "en": "Toledo Ballpark"
+    },
+    "capacity": 10300,
+    "elevation_m": 178.9,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     97.5,
+     113.0,
+     121.9,
+     113.0,
+     97.5
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "albuquerque-roadrunners",
+   "league": "us-aaa-west",
+   "division": "us-aaa-west-east",
+   "parent": "denver-summits",
+   "city": {
+    "ko": "앨버커키",
+    "en": "Albuquerque"
+   },
+   "region": {
+    "ko": "뉴멕시코",
+    "en": "New Mexico"
+   },
+   "country": "US",
+   "name": {
+    "ko": "로드러너스",
+    "en": "Roadrunners"
+   },
+   "abbr": "ALB",
+   "colors": [
+    "#772260",
+    "#56e052"
+   ],
+   "park": {
+    "name": {
+     "ko": "앨버커키 볼파크",
+     "en": "Albuquerque Ballpark"
+    },
+    "capacity": 13500,
+    "elevation_m": 1565.8,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     103.6,
+     115.2,
+     121.9,
+     115.2,
+     103.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "el-paso-javelinas",
+   "league": "us-aaa-west",
+   "division": "us-aaa-west-east",
+   "parent": "san-diego-navigators",
+   "city": {
+    "ko": "엘패소",
+    "en": "El Paso"
+   },
+   "region": {
+    "ko": "텍사스",
+    "en": "Texas"
+   },
+   "country": "US",
+   "name": {
+    "ko": "하벨리나스",
+    "en": "Javelinas"
+   },
+   "abbr": "ELP",
+   "colors": [
+    "#571a7f",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "엘패소 볼파크",
+     "en": "El Paso Ballpark"
+    },
+    "capacity": 9500,
+    "elevation_m": 1140.9,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     98.1,
+     114.4,
+     123.7,
+     114.4,
+     98.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "oklahoma-city-twisters",
+   "league": "us-aaa-west",
+   "division": "us-aaa-west-east",
+   "parent": "los-angeles-palms",
+   "city": {
+    "ko": "오클라호마시티",
+    "en": "Oklahoma City"
+   },
+   "region": {
+    "ko": "오클라호마",
+    "en": "Oklahoma"
+   },
+   "country": "US",
+   "name": {
+    "ko": "트위스터스",
+    "en": "Twisters"
+   },
+   "abbr": "OKL",
+   "colors": [
+    "#74254a",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "오클라호마시티 볼파크",
+     "en": "Oklahoma City Ballpark"
+    },
+    "capacity": 9000,
+    "elevation_m": 359.1,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     113.6,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "round-rock-stampede",
+   "league": "us-aaa-west",
+   "division": "us-aaa-west-east",
+   "parent": "arlington-wranglers",
+   "city": {
+    "ko": "라운드록",
+    "en": "Round Rock"
+   },
+   "region": {
+    "ko": "텍사스",
+    "en": "Texas"
+   },
+   "country": "US",
+   "name": {
+    "ko": "스탬피드",
+    "en": "Stampede"
+   },
+   "abbr": "ROU",
+   "colors": [
+    "#1f7a63",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "라운드록 볼파크",
+     "en": "Round Rock Ballpark"
+    },
+    "capacity": 11631,
+    "elevation_m": 201.8,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     102.1,
+     114.7,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "sugar-land-satellites",
+   "league": "us-aaa-west",
+   "division": "us-aaa-west-east",
+   "parent": "houston-wildcatters",
+   "city": {
+    "ko": "슈거랜드",
+    "en": "Sugar Land"
+   },
+   "region": {
+    "ko": "텍사스",
+    "en": "Texas"
+   },
+   "country": "US",
+   "name": {
+    "ko": "새틀라이츠",
+    "en": "Satellites"
+   },
+   "abbr": "SUG",
+   "colors": [
+    "#254f74",
+    "#e06952"
+   ],
+   "park": {
+    "name": {
+     "ko": "슈거랜드 볼파크",
+     "en": "Sugar Land Ballpark"
+    },
+    "capacity": 7500,
+    "elevation_m": 23.8,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     114.5,
+     123.4,
+     114.3,
+     98.5
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "las-vegas-high-rollers",
+   "league": "us-aaa-west",
+   "division": "us-aaa-west-west",
+   "parent": "sacramento-prospectors",
+   "city": {
+    "ko": "라스베이거스",
+    "en": "Las Vegas"
+   },
+   "region": {
+    "ko": "네바다",
+    "en": "Nevada"
+   },
+   "country": "US",
+   "name": {
+    "ko": "하이롤러스",
+    "en": "High Rollers"
+   },
+   "abbr": "LAS",
+   "colors": [
+    "#84151e",
+    "#52e0aa"
+   ],
+   "park": {
+    "name": {
+     "ko": "라스베이거스 볼파크",
+     "en": "Las Vegas Ballpark"
+    },
+    "capacity": 10000,
+    "elevation_m": 917.4,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     103.6,
+     118.1,
+     126.5,
+     118.1,
+     103.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "reno-silver-kings",
+   "league": "us-aaa-west",
+   "division": "us-aaa-west-west",
+   "parent": "phoenix-scorpions",
+   "city": {
+    "ko": "리노",
+    "en": "Reno"
+   },
+   "region": {
+    "ko": "네바다",
+    "en": "Nevada"
+   },
+   "country": "US",
+   "name": {
+    "ko": "실버킹스",
+    "en": "Silver Kings"
+   },
+   "abbr": "REN",
+   "colors": [
+    "#578019",
+    "#6052e0"
+   ],
+   "park": {
+    "name": {
+     "ko": "리노 볼파크",
+     "en": "Reno Ballpark"
+    },
+    "capacity": 9013,
+    "elevation_m": 1369.8,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     103.3,
+     117.1,
+     125.0,
+     117.2,
+     103.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "sacramento-goldrushers",
+   "league": "us-aaa-west",
+   "division": "us-aaa-west-west",
+   "parent": "san-francisco-fogcutters",
+   "city": {
+    "ko": "새크라멘토",
+    "en": "Sacramento"
+   },
+   "region": {
+    "ko": "캘리포니아",
+    "en": "California"
+   },
+   "country": "US",
+   "name": {
+    "ko": "골드러셔스",
+    "en": "Goldrushers"
+   },
+   "abbr": "SAG",
+   "colors": [
+    "#6c2871",
+    "#efe6f0"
+   ],
+   "park": {
+    "name": {
+     "ko": "새크라멘토 볼파크",
+     "en": "Sacramento Ballpark"
+    },
+    "capacity": 13416,
+    "elevation_m": 12.8,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     114.7,
+     122.8,
+     114.1,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "salt-lake-city-seagulls",
+   "league": "us-aaa-west",
+   "division": "us-aaa-west-west",
+   "parent": "anaheim-surfriders",
+   "city": {
+    "ko": "솔트레이크시티",
+    "en": "Salt Lake City"
+   },
+   "region": {
+    "ko": "유타",
+    "en": "Utah"
+   },
+   "country": "US",
+   "name": {
+    "ko": "시걸스",
+    "en": "Seagulls"
+   },
+   "abbr": "SAL",
+   "colors": [
+    "#797320",
+    "#5286e0"
+   ],
+   "park": {
+    "name": {
+     "ko": "솔트레이크시티 볼파크",
+     "en": "Salt Lake City Ballpark"
+    },
+    "capacity": 8000,
+    "elevation_m": 1488.0,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     105.2,
+     119.7,
+     128.0,
+     119.7,
+     105.2
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "tacoma-glaciers",
+   "league": "us-aaa-west",
+   "division": "us-aaa-west-west",
+   "parent": "seattle-evergreens",
+   "city": {
+    "ko": "타코마",
+    "en": "Tacoma"
+   },
+   "region": {
+    "ko": "워싱턴",
+    "en": "Washington"
+   },
+   "country": "US",
+   "name": {
+    "ko": "글레이셔스",
+    "en": "Glaciers"
+   },
+   "abbr": "TAC",
+   "colors": [
+    "#81182d",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "타코마 볼파크",
+     "en": "Tacoma Ballpark"
+    },
+    "capacity": 6500,
+    "elevation_m": 100.3,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     118.4,
+     129.5,
+     118.4,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "binghamton-carousels",
+   "league": "us-aa-northeast",
+   "division": "us-aa-northeast-northeast",
+   "parent": "new-york-ferrymen",
+   "city": {
+    "ko": "빙엄턴",
+    "en": "Binghamton"
+   },
+   "region": {
+    "ko": "뉴욕",
+    "en": "New York"
+   },
+   "country": "US",
+   "name": {
+    "ko": "캐러셀스",
+    "en": "Carousels"
+   },
+   "abbr": "BIN",
+   "colors": [
+    "#152484",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "빙엄턴 볼파크",
+     "en": "Binghamton Ballpark"
+    },
+    "capacity": 6012,
+    "elevation_m": 260.3,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     114.1,
+     121.9,
+     114.1,
+     100.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "hartford-oaks",
+   "league": "us-aa-northeast",
+   "division": "us-aa-northeast-northeast",
+   "parent": "denver-summits",
+   "city": {
+    "ko": "하트퍼드",
+    "en": "Hartford"
+   },
+   "region": {
+    "ko": "코네티컷",
+    "en": "Connecticut"
+   },
+   "country": "US",
+   "name": {
+    "ko": "오크스",
+    "en": "Oaks"
+   },
+   "abbr": "HAR",
+   "colors": [
+    "#78213d",
+    "#52e088"
+   ],
+   "park": {
+    "name": {
+     "ko": "하트퍼드 볼파크",
+     "en": "Hartford Ballpark"
+    },
+    "capacity": 6121,
+    "elevation_m": 21.3,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     113.6,
+     121.9,
+     111.7,
+     93.9
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "manchester-millers",
+   "league": "us-aa-northeast",
+   "division": "us-aa-northeast-northeast",
+   "parent": "toronto-voyageurs",
+   "city": {
+    "ko": "맨체스터",
+    "en": "Manchester"
+   },
+   "region": {
+    "ko": "뉴햄프셔",
+    "en": "New Hampshire"
+   },
+   "country": "US",
+   "name": {
+    "ko": "밀러스",
+    "en": "Millers"
+   },
+   "abbr": "MAN",
+   "colors": [
+    "#81182b",
+    "#f0e6e7"
+   ],
+   "park": {
+    "name": {
+     "ko": "맨체스터 볼파크",
+     "en": "Manchester Ballpark"
+    },
+    "capacity": 6500,
+    "elevation_m": 48.5,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.4,
+     113.7,
+     121.9,
+     111.5,
+     93.3
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "portland-lobstermen",
+   "league": "us-aa-northeast",
+   "division": "us-aa-northeast-northeast",
+   "parent": "boston-lanterns",
+   "city": {
+    "ko": "포틀랜드",
+    "en": "Portland"
+   },
+   "region": {
+    "ko": "메인",
+    "en": "Maine"
+   },
+   "country": "US",
+   "name": {
+    "ko": "랍스터멘",
+    "en": "Lobstermen"
+   },
+   "abbr": "POR",
+   "colors": [
+    "#702963",
+    "#f0e6ee"
+   ],
+   "park": {
+    "name": {
+     "ko": "포틀랜드 볼파크",
+     "en": "Portland Ballpark"
+    },
+    "capacity": 7368,
+    "elevation_m": 6.7,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     96.0,
+     112.4,
+     121.9,
+     114.1,
+     100.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "reading-railroaders",
+   "league": "us-aa-northeast",
+   "division": "us-aa-northeast-northeast",
+   "parent": "philadelphia-liberties",
+   "city": {
+    "ko": "레딩",
+    "en": "Reading"
+   },
+   "region": {
+    "ko": "펜실베이니아",
+    "en": "Pennsylvania"
+   },
+   "country": "US",
+   "name": {
+    "ko": "레일로더스",
+    "en": "Railroaders"
+   },
+   "abbr": "REA",
+   "colors": [
+    "#19805a",
+    "#e6f0ec"
+   ],
+   "park": {
+    "name": {
+     "ko": "레딩 볼파크",
+     "en": "Reading Ballpark"
+    },
+    "capacity": 10000,
+    "elevation_m": 72.8,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     114.1,
+     121.9,
+     114.1,
+     100.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "bridgewater-ironbacks",
+   "league": "us-aa-northeast",
+   "division": "us-aa-northeast-northeast",
+   "parent": "new-york-empires",
+   "city": {
+    "ko": "브리지워터",
+    "en": "Bridgewater"
+   },
+   "region": {
+    "ko": "뉴저지",
+    "en": "New Jersey"
+   },
+   "country": "US",
+   "name": {
+    "ko": "아이언백스",
+    "en": "Ironbacks"
+   },
+   "abbr": "BRI",
+   "colors": [
+    "#227748",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "브리지워터 볼파크",
+     "en": "Bridgewater Ballpark"
+    },
+    "capacity": 6100,
+    "elevation_m": 11.6,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     96.6,
+     113.0,
+     122.5,
+     112.8,
+     96.0
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "akron-blimps",
+   "league": "us-aa-northeast",
+   "division": "us-aa-northeast-southwest",
+   "parent": "cleveland-forgers",
+   "city": {
+    "ko": "애크런",
+    "en": "Akron"
+   },
+   "region": {
+    "ko": "오하이오",
+    "en": "Ohio"
+   },
+   "country": "US",
+   "name": {
+    "ko": "블림스",
+    "en": "Blimps"
+   },
+   "abbr": "AKR",
+   "colors": [
+    "#744c25",
+    "#f0ebe6"
+   ],
+   "park": {
+    "name": {
+     "ko": "애크런 볼파크",
+     "en": "Akron Ballpark"
+    },
+    "capacity": 7630,
+    "elevation_m": 294.4,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.9,
+     114.2,
+     121.9,
+     114.9,
+     102.7
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "altoona-horseshoes",
+   "league": "us-aa-northeast",
+   "division": "us-aa-northeast-southwest",
+   "parent": "pittsburgh-ironclads",
+   "city": {
+    "ko": "앨투나",
+    "en": "Altoona"
+   },
+   "region": {
+    "ko": "펜실베이니아",
+    "en": "Pennsylvania"
+   },
+   "country": "US",
+   "name": {
+    "ko": "호스슈스",
+    "en": "Horseshoes"
+   },
+   "abbr": "ALT",
+   "colors": [
+    "#557920",
+    "#6052e0"
+   ],
+   "park": {
+    "name": {
+     "ko": "앨투나 볼파크",
+     "en": "Altoona Ballpark"
+    },
+    "capacity": 7210,
+    "elevation_m": 311.5,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     114.5,
+     123.4,
+     114.5,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "bowie-crabbers",
+   "league": "us-aa-northeast",
+   "division": "us-aa-northeast-southwest",
+   "parent": "baltimore-schooners",
+   "city": {
+    "ko": "보위",
+    "en": "Bowie"
+   },
+   "region": {
+    "ko": "메릴랜드",
+    "en": "Maryland"
+   },
+   "country": "US",
+   "name": {
+    "ko": "크래버스",
+    "en": "Crabbers"
+   },
+   "abbr": "BOW",
+   "colors": [
+    "#205179",
+    "#e06752"
+   ],
+   "park": {
+    "name": {
+     "ko": "보위 볼파크",
+     "en": "Bowie Ballpark"
+    },
+    "capacity": 10000,
+    "elevation_m": 27.1,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     94.2,
+     112.7,
+     123.4,
+     112.7,
+     94.2
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "erie-sturgeons",
+   "league": "us-aa-northeast",
+   "division": "us-aa-northeast-southwest",
+   "parent": "detroit-motormen",
+   "city": {
+    "ko": "이리",
+    "en": "Erie"
+   },
+   "region": {
+    "ko": "펜실베이니아",
+    "en": "Pennsylvania"
+   },
+   "country": "US",
+   "name": {
+    "ko": "스터전스",
+    "en": "Sturgeons"
+   },
+   "abbr": "ERI",
+   "colors": [
+    "#747425",
+    "#f0f0e6"
+   ],
+   "park": {
+    "name": {
+     "ko": "이리 볼파크",
+     "en": "Erie Ballpark"
+    },
+    "capacity": 6000,
+    "elevation_m": 194.8,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     96.6,
+     112.7,
+     121.9,
+     113.9,
+     100.0
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "harrisburg-keystones",
+   "league": "us-aa-northeast",
+   "division": "us-aa-northeast-southwest",
+   "parent": "washington-statesmen",
+   "city": {
+    "ko": "해리스버그",
+    "en": "Harrisburg"
+   },
+   "region": {
+    "ko": "펜실베이니아",
+    "en": "Pennsylvania"
+   },
+   "country": "US",
+   "name": {
+    "ko": "키스톤스",
+    "en": "Keystones"
+   },
+   "abbr": "HAK",
+   "colors": [
+    "#814c18",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "해리스버그 볼파크",
+     "en": "Harrisburg Ballpark"
+    },
+    "capacity": 6187,
+    "elevation_m": 96.0,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     113.6,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "richmond-rapids",
+   "league": "us-aa-northeast",
+   "division": "us-aa-northeast-southwest",
+   "parent": "san-francisco-fogcutters",
+   "city": {
+    "ko": "리치먼드",
+    "en": "Richmond"
+   },
+   "region": {
+    "ko": "버지니아",
+    "en": "Virginia"
+   },
+   "country": "US",
+   "name": {
+    "ko": "래피즈",
+    "en": "Rapids"
+   },
+   "abbr": "RIC",
+   "colors": [
+    "#1d417c",
+    "#e07f52"
+   ],
+   "park": {
+    "name": {
+     "ko": "리치먼드 볼파크",
+     "en": "Richmond Ballpark"
+    },
+    "capacity": 9585,
+    "elevation_m": 61.6,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     113.6,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "birmingham-smelters",
+   "league": "us-aa-south",
+   "division": "us-aa-south-north",
+   "parent": "chicago-sentinels",
+   "city": {
+    "ko": "버밍엄",
+    "en": "Birmingham"
+   },
+   "region": {
+    "ko": "앨라배마",
+    "en": "Alabama"
+   },
+   "country": "US",
+   "name": {
+    "ko": "스멜터스",
+    "en": "Smelters"
+   },
+   "abbr": "BIR",
+   "colors": [
+    "#854114",
+    "#f0eae6"
+   ],
+   "park": {
+    "name": {
+     "ko": "버밍엄 볼파크",
+     "en": "Birmingham Ballpark"
+    },
+    "capacity": 8500,
+    "elevation_m": 178.6,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     97.5,
+     113.0,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "chattanooga-mockingbirds",
+   "league": "us-aa-south",
+   "division": "us-aa-south-north",
+   "parent": "cincinnati-steamers",
+   "city": {
+    "ko": "채터누가",
+    "en": "Chattanooga"
+   },
+   "region": {
+    "ko": "테네시",
+    "en": "Tennessee"
+   },
+   "country": "US",
+   "name": {
+    "ko": "모킹버즈",
+    "en": "Mockingbirds"
+   },
+   "abbr": "CHM",
+   "colors": [
+    "#747a1f",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "채터누가 볼파크",
+     "en": "Chattanooga Ballpark"
+    },
+    "capacity": 8032,
+    "elevation_m": 203.3,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     113.6,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "knoxville-foothills",
+   "league": "us-aa-south",
+   "division": "us-aa-south-north",
+   "parent": "chicago-gales",
+   "city": {
+    "ko": "녹스빌",
+    "en": "Knoxville"
+   },
+   "region": {
+    "ko": "테네시",
+    "en": "Tennessee"
+   },
+   "country": "US",
+   "name": {
+    "ko": "풋힐스",
+    "en": "Foothills"
+   },
+   "abbr": "KNO",
+   "colors": [
+    "#638118",
+    "#edf0e6"
+   ],
+   "park": {
+    "name": {
+     "ko": "녹스빌 볼파크",
+     "en": "Knoxville Ballpark"
+    },
+    "capacity": 6355,
+    "elevation_m": 272.2,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     113.6,
+     121.9,
+     114.7,
+     102.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "huntsville-rocketeers",
+   "league": "us-aa-south",
+   "division": "us-aa-south-north",
+   "parent": "anaheim-surfriders",
+   "city": {
+    "ko": "헌츠빌",
+    "en": "Huntsville"
+   },
+   "region": {
+    "ko": "앨라배마",
+    "en": "Alabama"
+   },
+   "country": "US",
+   "name": {
+    "ko": "로케티어스",
+    "en": "Rocketeers"
+   },
+   "abbr": "HUN",
+   "colors": [
+    "#76236c",
+    "#6ce052"
+   ],
+   "park": {
+    "name": {
+     "ko": "헌츠빌 볼파크",
+     "en": "Huntsville Ballpark"
+    },
+    "capacity": 7000,
+    "elevation_m": 203.6,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.4,
+     113.7,
+     121.9,
+     113.7,
+     99.4
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "biloxi-sea-turtles",
+   "league": "us-aa-south",
+   "division": "us-aa-south-south",
+   "parent": "milwaukee-harvesters",
+   "city": {
+    "ko": "빌럭시",
+    "en": "Biloxi"
+   },
+   "region": {
+    "ko": "미시시피",
+    "en": "Mississippi"
+   },
+   "country": "US",
+   "name": {
+    "ko": "시터틀스",
+    "en": "Sea Turtles"
+   },
+   "abbr": "BIL",
+   "colors": [
+    "#2a406f",
+    "#e6e9f0"
+   ],
+   "park": {
+    "name": {
+     "ko": "빌럭시 볼파크",
+     "en": "Biloxi Ballpark"
+    },
+    "capacity": 6098,
+    "elevation_m": 6.7,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     113.6,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "columbus-pecans",
+   "league": "us-aa-south",
+   "division": "us-aa-south-south",
+   "parent": "atlanta-firebirds",
+   "city": {
+    "ko": "콜럼버스",
+    "en": "Columbus"
+   },
+   "region": {
+    "ko": "조지아",
+    "en": "Georgia"
+   },
+   "country": "US",
+   "name": {
+    "ko": "피칸스",
+    "en": "Pecans"
+   },
+   "abbr": "COP",
+   "colors": [
+    "#4c2673",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "콜럼버스 피칸스 볼파크",
+     "en": "Columbus Pecans Ballpark"
+    },
+    "capacity": 5500,
+    "elevation_m": 57.9,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     113.6,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "montgomery-riverboats",
+   "league": "us-aa-south",
+   "division": "us-aa-south-south",
+   "parent": "st-petersburg-herons",
+   "city": {
+    "ko": "몽고메리",
+    "en": "Montgomery"
+   },
+   "region": {
+    "ko": "앨라배마",
+    "en": "Alabama"
+   },
+   "country": "US",
+   "name": {
+    "ko": "리버보츠",
+    "en": "Riverboats"
+   },
+   "abbr": "MON",
+   "colors": [
+    "#168333",
+    "#e6f0e8"
+   ],
+   "park": {
+    "name": {
+     "ko": "몽고메리 볼파크",
+     "en": "Montgomery Ballpark"
+    },
+    "capacity": 7000,
+    "elevation_m": 46.3,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     95.7,
+     112.3,
+     121.9,
+     114.5,
+     101.5
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "pensacola-sandpipers",
+   "league": "us-aa-south",
+   "division": "us-aa-south-south",
+   "parent": "miami-flamingos",
+   "city": {
+    "ko": "펜서콜라",
+    "en": "Pensacola"
+   },
+   "region": {
+    "ko": "플로리다",
+    "en": "Florida"
+   },
+   "country": "US",
+   "name": {
+    "ko": "샌드파이퍼스",
+    "en": "Sandpipers"
+   },
+   "abbr": "PEN",
+   "colors": [
+    "#5a1f7a",
+    "#ece6f0"
+   ],
+   "park": {
+    "name": {
+     "ko": "펜서콜라 볼파크",
+     "en": "Pensacola Ballpark"
+    },
+    "capacity": 5038,
+    "elevation_m": 4.6,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     113.6,
+     121.9,
+     114.7,
+     102.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "north-little-rock-riverbirds",
+   "league": "us-aa-central",
+   "division": "us-aa-central-north",
+   "parent": "seattle-evergreens",
+   "city": {
+    "ko": "노스리틀록",
+    "en": "North Little Rock"
+   },
+   "region": {
+    "ko": "아칸소",
+    "en": "Arkansas"
+   },
+   "country": "US",
+   "name": {
+    "ko": "리버버즈",
+    "en": "Riverbirds"
+   },
+   "abbr": "NRI",
+   "colors": [
+    "#274b72",
+    "#e07152"
+   ],
+   "park": {
+    "name": {
+     "ko": "노스리틀록 볼파크",
+     "en": "North Little Rock Ballpark"
+    },
+    "capacity": 7300,
+    "elevation_m": 73.5,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     101.2,
+     114.3,
+     121.9,
+     114.1,
+     100.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "springdale-ozarks",
+   "league": "us-aa-central",
+   "division": "us-aa-central-north",
+   "parent": "kansas-city-plainsmen",
+   "city": {
+    "ko": "스프링데일",
+    "en": "Springdale"
+   },
+   "region": {
+    "ko": "아칸소",
+    "en": "Arkansas"
+   },
+   "country": "US",
+   "name": {
+    "ko": "오자크스",
+    "en": "Ozarks"
+   },
+   "abbr": "SPR",
+   "colors": [
+    "#521584",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "스프링데일 볼파크",
+     "en": "Springdale Ballpark"
+    },
+    "capacity": 7305,
+    "elevation_m": 399.3,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     113.6,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "springfield-mules",
+   "league": "us-aa-central",
+   "division": "us-aa-central-north",
+   "parent": "st-louis-archers",
+   "city": {
+    "ko": "스프링필드",
+    "en": "Springfield"
+   },
+   "region": {
+    "ko": "미주리",
+    "en": "Missouri"
+   },
+   "country": "US",
+   "name": {
+    "ko": "뮬스",
+    "en": "Mules"
+   },
+   "abbr": "SPM",
+   "colors": [
+    "#821752",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "스프링필드 볼파크",
+     "en": "Springfield Ballpark"
+    },
+    "capacity": 10486,
+    "elevation_m": 399.6,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     96.0,
+     112.4,
+     121.9,
+     114.1,
+     100.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "tulsa-derricks",
+   "league": "us-aa-central",
+   "division": "us-aa-central-north",
+   "parent": "los-angeles-palms",
+   "city": {
+    "ko": "털사",
+    "en": "Tulsa"
+   },
+   "region": {
+    "ko": "오클라호마",
+    "en": "Oklahoma"
+   },
+   "country": "US",
+   "name": {
+    "ko": "데릭스",
+    "en": "Derricks"
+   },
+   "abbr": "TUL",
+   "colors": [
+    "#255b74",
+    "#e6ecf0"
+   ],
+   "park": {
+    "name": {
+     "ko": "털사 볼파크",
+     "en": "Tulsa Ballpark"
+    },
+    "capacity": 7833,
+    "elevation_m": 214.6,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     114.1,
+     121.9,
+     111.6,
+     93.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "wichita-skyhawks",
+   "league": "us-aa-central",
+   "division": "us-aa-central-north",
+   "parent": "minneapolis-lumberjacks",
+   "city": {
+    "ko": "위치토",
+    "en": "Wichita"
+   },
+   "region": {
+    "ko": "캔자스",
+    "en": "Kansas"
+   },
+   "country": "US",
+   "name": {
+    "ko": "스카이호크스",
+    "en": "Skyhawks"
+   },
+   "abbr": "WIC",
+   "colors": [
+    "#5e2178",
+    "#ede6f0"
+   ],
+   "park": {
+    "name": {
+     "ko": "위치토 볼파크",
+     "en": "Wichita Ballpark"
+    },
+    "capacity": 10025,
+    "elevation_m": 396.5,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     103.6,
+     115.2,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "amarillo-panhandlers",
+   "league": "us-aa-central",
+   "division": "us-aa-central-south",
+   "parent": "phoenix-scorpions",
+   "city": {
+    "ko": "애머릴로",
+    "en": "Amarillo"
+   },
+   "region": {
+    "ko": "텍사스",
+    "en": "Texas"
+   },
+   "country": "US",
+   "name": {
+    "ko": "팬핸들러스",
+    "en": "Panhandlers"
+   },
+   "abbr": "AMA",
+   "colors": [
+    "#691881",
+    "#ede6f0"
+   ],
+   "park": {
+    "name": {
+     "ko": "애머릴로 볼파크",
+     "en": "Amarillo Ballpark"
+    },
+    "capacity": 6631,
+    "elevation_m": 1116.8,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     113.6,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "corpus-christi-sailfish",
+   "league": "us-aa-central",
+   "division": "us-aa-central-south",
+   "parent": "houston-wildcatters",
+   "city": {
+    "ko": "코퍼스크리스티",
+    "en": "Corpus Christi"
+   },
+   "region": {
+    "ko": "텍사스",
+    "en": "Texas"
+   },
+   "country": "US",
+   "name": {
+    "ko": "세일피시",
+    "en": "Sailfish"
+   },
+   "abbr": "COR",
+   "colors": [
+    "#792063",
+    "#f0e6ed"
+   ],
+   "park": {
+    "name": {
+     "ko": "코퍼스크리스티 볼파크",
+     "en": "Corpus Christi Ballpark"
+    },
+    "capacity": 7679,
+    "elevation_m": 4.3,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     96.0,
+     112.4,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "frisco-pioneers",
+   "league": "us-aa-central",
+   "division": "us-aa-central-south",
+   "parent": "arlington-wranglers",
+   "city": {
+    "ko": "프리스코",
+    "en": "Frisco"
+   },
+   "region": {
+    "ko": "텍사스",
+    "en": "Texas"
+   },
+   "country": "US",
+   "name": {
+    "ko": "파이어니어스",
+    "en": "Pioneers"
+   },
+   "abbr": "FRI",
+   "colors": [
+    "#6f372a",
+    "#52e0d0"
+   ],
+   "park": {
+    "name": {
+     "ko": "프리스코 볼파크",
+     "en": "Frisco Ballpark"
+    },
+    "capacity": 10216,
+    "elevation_m": 213.4,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     102.1,
+     116.5,
+     124.7,
+     116.5,
+     102.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "midland-gushers",
+   "league": "us-aa-central",
+   "division": "us-aa-central-south",
+   "parent": "sacramento-prospectors",
+   "city": {
+    "ko": "미들랜드",
+    "en": "Midland"
+   },
+   "region": {
+    "ko": "텍사스",
+    "en": "Texas"
+   },
+   "country": "US",
+   "name": {
+    "ko": "거셔스",
+    "en": "Gushers"
+   },
+   "abbr": "MID",
+   "colors": [
+    "#502772",
+    "#bde052"
+   ],
+   "park": {
+    "name": {
+     "ko": "미들랜드 거셔스 볼파크",
+     "en": "Midland Gushers Ballpark"
+    },
+    "capacity": 6669,
+    "elevation_m": 880.6,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     116.1,
+     125.0,
+     115.2,
+     98.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "san-antonio-vaqueros",
+   "league": "us-aa-central",
+   "division": "us-aa-central-south",
+   "parent": "san-diego-navigators",
+   "city": {
+    "ko": "샌안토니오",
+    "en": "San Antonio"
+   },
+   "region": {
+    "ko": "텍사스",
+    "en": "Texas"
+   },
+   "country": "US",
+   "name": {
+    "ko": "바케로스",
+    "en": "Vaqueros"
+   },
+   "abbr": "SAN",
+   "colors": [
+    "#1d727c",
+    "#e0526e"
+   ],
+   "park": {
+    "name": {
+     "ko": "샌안토니오 볼파크",
+     "en": "San Antonio Ballpark"
+    },
+    "capacity": 9200,
+    "elevation_m": 214.9,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     94.5,
+     112.3,
+     122.5,
+     115.6,
+     103.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "dayton-airmen",
+   "league": "us-higha-midwest",
+   "division": "us-higha-midwest-east",
+   "parent": "cincinnati-steamers",
+   "city": {
+    "ko": "데이턴",
+    "en": "Dayton"
+   },
+   "region": {
+    "ko": "오하이오",
+    "en": "Ohio"
+   },
+   "country": "US",
+   "name": {
+    "ko": "에어멘",
+    "en": "Airmen"
+   },
+   "abbr": "DAY",
+   "colors": [
+    "#1c657d",
+    "#e05259"
+   ],
+   "park": {
+    "name": {
+     "ko": "데이턴 볼파크",
+     "en": "Dayton Ballpark"
+    },
+    "capacity": 7230,
+    "elevation_m": 224.6,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     97.5,
+     113.0,
+     121.9,
+     113.0,
+     97.5
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "fort-wayne-foxes",
+   "league": "us-higha-midwest",
+   "division": "us-higha-midwest-east",
+   "parent": "san-diego-navigators",
+   "city": {
+    "ko": "포트웨인",
+    "en": "Fort Wayne"
+   },
+   "region": {
+    "ko": "인디애나",
+    "en": "Indiana"
+   },
+   "country": "US",
+   "name": {
+    "ko": "폭시스",
+    "en": "Foxes"
+   },
+   "abbr": "FOR",
+   "colors": [
+    "#1e7b59",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "포트웨인 볼파크",
+     "en": "Fort Wayne Ballpark"
+    },
+    "capacity": 6516,
+    "elevation_m": 233.8,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     102.4,
+     114.8,
+     121.9,
+     112.8,
+     96.9
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "midland-snowbirds",
+   "league": "us-higha-midwest",
+   "division": "us-higha-midwest-east",
+   "parent": "los-angeles-palms",
+   "city": {
+    "ko": "미들랜드",
+    "en": "Midland"
+   },
+   "region": {
+    "ko": "미시간",
+    "en": "Michigan"
+   },
+   "country": "US",
+   "name": {
+    "ko": "스노버즈",
+    "en": "Snowbirds"
+   },
+   "abbr": "MIS",
+   "colors": [
+    "#27723b",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "미들랜드 스노버즈 볼파크",
+     "en": "Midland Snowbirds Ballpark"
+    },
+    "capacity": 5500,
+    "elevation_m": 190.2,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     101.2,
+     114.3,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "eastlake-harbormen",
+   "league": "us-higha-midwest",
+   "division": "us-higha-midwest-east",
+   "parent": "cleveland-forgers",
+   "city": {
+    "ko": "이스트레이크",
+    "en": "Eastlake"
+   },
+   "region": {
+    "ko": "오하이오",
+    "en": "Ohio"
+   },
+   "country": "US",
+   "name": {
+    "ko": "하버멘",
+    "en": "Harbormen"
+   },
+   "abbr": "EAS",
+   "colors": [
+    "#141f85",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "이스트레이크 볼파크",
+     "en": "Eastlake Ballpark"
+    },
+    "capacity": 7273,
+    "elevation_m": 192.0,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     97.5,
+     113.0,
+     121.9,
+     113.0,
+     97.5
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "lansing-gearheads",
+   "league": "us-higha-midwest",
+   "division": "us-higha-midwest-east",
+   "parent": "sacramento-prospectors",
+   "city": {
+    "ko": "랜싱",
+    "en": "Lansing"
+   },
+   "region": {
+    "ko": "미시간",
+    "en": "Michigan"
+   },
+   "country": "US",
+   "name": {
+    "ko": "기어헤즈",
+    "en": "Gearheads"
+   },
+   "abbr": "LAN",
+   "colors": [
+    "#1f307a",
+    "#e09b52"
+   ],
+   "park": {
+    "name": {
+     "ko": "랜싱 볼파크",
+     "en": "Lansing Ballpark"
+    },
+    "capacity": 11000,
+    "elevation_m": 252.7,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     93.0,
+     112.1,
+     123.1,
+     112.1,
+     93.0
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "grand-rapids-woodsmen",
+   "league": "us-higha-midwest",
+   "division": "us-higha-midwest-east",
+   "parent": "detroit-motormen",
+   "city": {
+    "ko": "그랜드래피즈",
+    "en": "Grand Rapids"
+   },
+   "region": {
+    "ko": "미시간",
+    "en": "Michigan"
+   },
+   "country": "US",
+   "name": {
+    "ko": "우즈멘",
+    "en": "Woodsmen"
+   },
+   "abbr": "GRA",
+   "colors": [
+    "#632574",
+    "#9be052"
+   ],
+   "park": {
+    "name": {
+     "ko": "그랜드래피즈 볼파크",
+     "en": "Grand Rapids Ballpark"
+    },
+    "capacity": 10923,
+    "elevation_m": 188.7,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     96.6,
+     113.0,
+     122.5,
+     114.2,
+     99.7
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "beloit-stateliners",
+   "league": "us-higha-midwest",
+   "division": "us-higha-midwest-west",
+   "parent": "miami-flamingos",
+   "city": {
+    "ko": "벨로잇",
+    "en": "Beloit"
+   },
+   "region": {
+    "ko": "위스콘신",
+    "en": "Wisconsin"
+   },
+   "country": "US",
+   "name": {
+    "ko": "스테이트라이너스",
+    "en": "Stateliners"
+   },
+   "abbr": "BEL",
+   "colors": [
+    "#651f7a",
+    "#ede6f0"
+   ],
+   "park": {
+    "name": {
+     "ko": "벨로잇 볼파크",
+     "en": "Beloit Ballpark"
+    },
+    "capacity": 3850,
+    "elevation_m": 234.7,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     105.2,
+     115.8,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "cedar-rapids-oatmen",
+   "league": "us-higha-midwest",
+   "division": "us-higha-midwest-west",
+   "parent": "minneapolis-lumberjacks",
+   "city": {
+    "ko": "시더래피즈",
+    "en": "Cedar Rapids"
+   },
+   "region": {
+    "ko": "아이오와",
+    "en": "Iowa"
+   },
+   "country": "US",
+   "name": {
+    "ko": "오트멘",
+    "en": "Oatmen"
+   },
+   "abbr": "CED",
+   "colors": [
+    "#807c19",
+    "#5281e0"
+   ],
+   "park": {
+    "name": {
+     "ko": "시더래피즈 볼파크",
+     "en": "Cedar Rapids Ballpark"
+    },
+    "capacity": 5300,
+    "elevation_m": 233.8,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     96.0,
+     112.4,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "peoria-bulldozers",
+   "league": "us-higha-midwest",
+   "division": "us-higha-midwest-west",
+   "parent": "st-louis-archers",
+   "city": {
+    "ko": "피오리아",
+    "en": "Peoria"
+   },
+   "region": {
+    "ko": "일리노이",
+    "en": "Illinois"
+   },
+   "country": "US",
+   "name": {
+    "ko": "불도저스",
+    "en": "Bulldozers"
+   },
+   "abbr": "PEO",
+   "colors": [
+    "#702277",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "피오리아 볼파크",
+     "en": "Peoria Ballpark"
+    },
+    "capacity": 8500,
+    "elevation_m": 149.0,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     94.5,
+     111.9,
+     121.9,
+     111.9,
+     94.5
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "davenport-paddlewheelers",
+   "league": "us-higha-midwest",
+   "division": "us-higha-midwest-west",
+   "parent": "kansas-city-plainsmen",
+   "city": {
+    "ko": "대븐포트",
+    "en": "Davenport"
+   },
+   "region": {
+    "ko": "아이오와",
+    "en": "Iowa"
+   },
+   "country": "US",
+   "name": {
+    "ko": "패들휠러스",
+    "en": "Paddlewheelers"
+   },
+   "abbr": "DAV",
+   "colors": [
+    "#181881",
+    "#e6e6f0"
+   ],
+   "park": {
+    "name": {
+     "ko": "대븐포트 볼파크",
+     "en": "Davenport Ballpark"
+    },
+    "capacity": 4024,
+    "elevation_m": 171.0,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     104.5,
+     115.5,
+     121.9,
+     112.8,
+     96.9
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "south-bend-bells",
+   "league": "us-higha-midwest",
+   "division": "us-higha-midwest-west",
+   "parent": "chicago-gales",
+   "city": {
+    "ko": "사우스벤드",
+    "en": "South Bend"
+   },
+   "region": {
+    "ko": "인디애나",
+    "en": "Indiana"
+   },
+   "country": "US",
+   "name": {
+    "ko": "벨스",
+    "en": "Bells"
+   },
+   "abbr": "SOU",
+   "colors": [
+    "#178415",
+    "#e6f0e6"
+   ],
+   "park": {
+    "name": {
+     "ko": "사우스벤드 볼파크",
+     "en": "South Bend Ballpark"
+    },
+    "capacity": 10500,
+    "elevation_m": 216.1,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     102.4,
+     115.7,
+     123.4,
+     115.7,
+     102.4
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "appleton-millwrights",
+   "league": "us-higha-midwest",
+   "division": "us-higha-midwest-west",
+   "parent": "milwaukee-harvesters",
+   "city": {
+    "ko": "애플턴",
+    "en": "Appleton"
+   },
+   "region": {
+    "ko": "위스콘신",
+    "en": "Wisconsin"
+   },
+   "country": "US",
+   "name": {
+    "ko": "밀라이츠",
+    "en": "Millwrights"
+   },
+   "abbr": "APP",
+   "colors": [
+    "#308514",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "애플턴 볼파크",
+     "en": "Appleton Ballpark"
+    },
+    "capacity": 6100,
+    "elevation_m": 245.4,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     113.6,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "eugene-otters",
+   "league": "us-higha-northwest",
+   "division": null,
+   "parent": "san-francisco-fogcutters",
+   "city": {
+    "ko": "유진",
+    "en": "Eugene"
+   },
+   "region": {
+    "ko": "오리건",
+    "en": "Oregon"
+   },
+   "country": "US",
+   "name": {
+    "ko": "오터스",
+    "en": "Otters"
+   },
+   "abbr": "EUG",
+   "colors": [
+    "#4e7524",
+    "#ebf0e6"
+   ],
+   "park": {
+    "name": {
+     "ko": "유진 볼파크",
+     "en": "Eugene Ballpark"
+    },
+    "capacity": 4000,
+    "elevation_m": 128.0,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     102.1,
+     114.7,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "everett-jetliners",
+   "league": "us-higha-northwest",
+   "division": null,
+   "parent": "seattle-evergreens",
+   "city": {
+    "ko": "에버렛",
+    "en": "Everett"
+   },
+   "region": {
+    "ko": "워싱턴",
+    "en": "Washington"
+   },
+   "country": "US",
+   "name": {
+    "ko": "제트라이너스",
+    "en": "Jetliners"
+   },
+   "abbr": "EVE",
+   "colors": [
+    "#516f2a",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "에버렛 볼파크",
+     "en": "Everett Ballpark"
+    },
+    "capacity": 3682,
+    "elevation_m": 25.0,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     113.2,
+     120.4,
+     113.2,
+     100.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "hillsboro-cascades",
+   "league": "us-higha-northwest",
+   "division": null,
+   "parent": "phoenix-scorpions",
+   "city": {
+    "ko": "힐즈버러",
+    "en": "Hillsboro"
+   },
+   "region": {
+    "ko": "오리건",
+    "en": "Oregon"
+   },
+   "country": "US",
+   "name": {
+    "ko": "캐스케이즈",
+    "en": "Cascades"
+   },
+   "abbr": "HIL",
+   "colors": [
+    "#1c7d29",
+    "#e6f0e7"
+   ],
+   "park": {
+    "name": {
+     "ko": "힐즈버러 볼파크",
+     "en": "Hillsboro Ballpark"
+    },
+    "capacity": 6000,
+    "elevation_m": 67.7,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     113.6,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "spokane-ospreys",
+   "league": "us-higha-northwest",
+   "division": null,
+   "parent": "denver-summits",
+   "city": {
+    "ko": "스포캔",
+    "en": "Spokane"
+   },
+   "region": {
+    "ko": "워싱턴",
+    "en": "Washington"
+   },
+   "country": "US",
+   "name": {
+    "ko": "오스프리스",
+    "en": "Ospreys"
+   },
+   "abbr": "SPO",
+   "colors": [
+    "#7f1a35",
+    "#f0e6e8"
+   ],
+   "park": {
+    "name": {
+     "ko": "스포캔 볼파크",
+     "en": "Spokane Ballpark"
+    },
+    "capacity": 6803,
+    "elevation_m": 587.0,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     102.1,
+     114.3,
+     121.3,
+     109.9,
+     90.2
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "pasco-tumbleweeds",
+   "league": "us-higha-northwest",
+   "division": null,
+   "parent": "anaheim-surfriders",
+   "city": {
+    "ko": "패스코",
+    "en": "Pasco"
+   },
+   "region": {
+    "ko": "워싱턴",
+    "en": "Washington"
+   },
+   "country": "US",
+   "name": {
+    "ko": "텀블위즈",
+    "en": "Tumbleweeds"
+   },
+   "abbr": "PAS",
+   "colors": [
+    "#145485",
+    "#e06552"
+   ],
+   "park": {
+    "name": {
+     "ko": "패스코 볼파크",
+     "en": "Pasco Ballpark"
+    },
+    "capacity": 3654,
+    "elevation_m": 159.1,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     102.1,
+     114.7,
+     121.9,
+     114.7,
+     102.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "vancouver-orcas",
+   "league": "us-higha-northwest",
+   "division": null,
+   "parent": "toronto-voyageurs",
+   "city": {
+    "ko": "밴쿠버",
+    "en": "Vancouver"
+   },
+   "region": {
+    "ko": "브리티시컬럼비아",
+    "en": "British Columbia"
+   },
+   "country": "CA",
+   "name": {
+    "ko": "오르카스",
+    "en": "Orcas"
+   },
+   "abbr": "VAN",
+   "colors": [
+    "#297062",
+    "#e6f0ee"
+   ],
+   "park": {
+    "name": {
+     "ko": "밴쿠버 볼파크",
+     "en": "Vancouver Ballpark"
+    },
+    "capacity": 6500,
+    "elevation_m": 75.0,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     97.5,
+     110.1,
+     117.3,
+     111.8,
+     102.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "brooklyn-boardwalkers",
+   "league": "us-higha-atlantic",
+   "division": "us-higha-atlantic-north",
+   "parent": "new-york-ferrymen",
+   "city": {
+    "ko": "브루클린",
+    "en": "Brooklyn"
+   },
+   "region": {
+    "ko": "뉴욕",
+    "en": "New York"
+   },
+   "country": "US",
+   "name": {
+    "ko": "보드워커스",
+    "en": "Boardwalkers"
+   },
+   "abbr": "BRO",
+   "colors": [
+    "#1a227f",
+    "#e6e6f0"
+   ],
+   "park": {
+    "name": {
+     "ko": "브루클린 볼파크",
+     "en": "Brooklyn Ballpark"
+    },
+    "capacity": 7000,
+    "elevation_m": 2.1,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     96.0,
+     114.8,
+     125.6,
+     115.9,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "frederick-spires",
+   "league": "us-higha-atlantic",
+   "division": "us-higha-atlantic-north",
+   "parent": "baltimore-schooners",
+   "city": {
+    "ko": "프레더릭",
+    "en": "Frederick"
+   },
+   "region": {
+    "ko": "메릴랜드",
+    "en": "Maryland"
+   },
+   "country": "US",
+   "name": {
+    "ko": "스파이어스",
+    "en": "Spires"
+   },
+   "abbr": "FRE",
+   "colors": [
+    "#294870",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "프레더릭 볼파크",
+     "en": "Frederick Ballpark"
+    },
+    "capacity": 5400,
+    "elevation_m": 93.9,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     113.6,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "greensboro-looms",
+   "league": "us-higha-atlantic",
+   "division": "us-higha-atlantic-north",
+   "parent": "pittsburgh-ironclads",
+   "city": {
+    "ko": "그린즈버러",
+    "en": "Greensboro"
+   },
+   "region": {
+    "ko": "노스캐롤라이나",
+    "en": "North Carolina"
+   },
+   "country": "US",
+   "name": {
+    "ko": "룸스",
+    "en": "Looms"
+   },
+   "abbr": "GRE",
+   "colors": [
+    "#161d83",
+    "#e6e6f0"
+   ],
+   "park": {
+    "name": {
+     "ko": "그린즈버러 볼파크",
+     "en": "Greensboro Ballpark"
+    },
+    "capacity": 7599,
+    "elevation_m": 244.4,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     96.0,
+     112.4,
+     121.9,
+     112.1,
+     95.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "wappingers-falls-sloops",
+   "league": "us-higha-atlantic",
+   "division": "us-higha-atlantic-north",
+   "parent": "new-york-empires",
+   "city": {
+    "ko": "워핑어스폴스",
+    "en": "Wappingers Falls"
+   },
+   "region": {
+    "ko": "뉴욕",
+    "en": "New York"
+   },
+   "country": "US",
+   "name": {
+    "ko": "슬룹스",
+    "en": "Sloops"
+   },
+   "abbr": "WAP",
+   "colors": [
+    "#845f15",
+    "#52ace0"
+   ],
+   "park": {
+    "name": {
+     "ko": "워핑어스폴스 볼파크",
+     "en": "Wappingers Falls Ballpark"
+    },
+    "capacity": 5400,
+    "elevation_m": 48.2,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     113.6,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "lakewood-sandsharks",
+   "league": "us-higha-atlantic",
+   "division": "us-higha-atlantic-north",
+   "parent": "philadelphia-liberties",
+   "city": {
+    "ko": "레이크우드",
+    "en": "Lakewood"
+   },
+   "region": {
+    "ko": "뉴저지",
+    "en": "New Jersey"
+   },
+   "country": "US",
+   "name": {
+    "ko": "샌드샤크스",
+    "en": "Sandsharks"
+   },
+   "abbr": "LAK",
+   "colors": [
+    "#337029",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "레이크우드 볼파크",
+     "en": "Lakewood Ballpark"
+    },
+    "capacity": 6588,
+    "elevation_m": 20.1,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     113.6,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "wilmington-brandywines",
+   "league": "us-higha-atlantic",
+   "division": "us-higha-atlantic-north",
+   "parent": "washington-statesmen",
+   "city": {
+    "ko": "윌밍턴",
+    "en": "Wilmington"
+   },
+   "region": {
+    "ko": "델라웨어",
+    "en": "Delaware"
+   },
+   "country": "US",
+   "name": {
+    "ko": "브랜디와인스",
+    "en": "Brandywines"
+   },
+   "abbr": "WIL",
+   "colors": [
+    "#295870",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "윌밍턴 볼파크",
+     "en": "Wilmington Ballpark"
+    },
+    "capacity": 6404,
+    "elevation_m": 3.0,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     113.6,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "asheville-highlanders",
+   "league": "us-higha-atlantic",
+   "division": "us-higha-atlantic-south",
+   "parent": "houston-wildcatters",
+   "city": {
+    "ko": "애슈빌",
+    "en": "Asheville"
+   },
+   "region": {
+    "ko": "노스캐롤라이나",
+    "en": "North Carolina"
+   },
+   "country": "US",
+   "name": {
+    "ko": "하이랜더스",
+    "en": "Highlanders"
+   },
+   "abbr": "ASH",
+   "colors": [
+    "#168374",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "애슈빌 볼파크",
+     "en": "Asheville Ballpark"
+    },
+    "capacity": 4000,
+    "elevation_m": 646.8,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.4,
+     108.5,
+     113.7,
+     105.2,
+     90.5
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "bowling-green-roadsters",
+   "league": "us-higha-atlantic",
+   "division": "us-higha-atlantic-south",
+   "parent": "st-petersburg-herons",
+   "city": {
+    "ko": "볼링그린",
+    "en": "Bowling Green"
+   },
+   "region": {
+    "ko": "켄터키",
+    "en": "Kentucky"
+   },
+   "country": "US",
+   "name": {
+    "ko": "로드스터스",
+    "en": "Roadsters"
+   },
+   "abbr": "BOR",
+   "colors": [
+    "#7a5d1f",
+    "#52aae0"
+   ],
+   "park": {
+    "name": {
+     "ko": "볼링그린 볼파크",
+     "en": "Bowling Green Ballpark"
+    },
+    "capacity": 4559,
+    "elevation_m": 150.6,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     96.9,
+     112.8,
+     121.9,
+     113.7,
+     99.4
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "greenville-weavers",
+   "league": "us-higha-atlantic",
+   "division": "us-higha-atlantic-south",
+   "parent": "boston-lanterns",
+   "city": {
+    "ko": "그린빌",
+    "en": "Greenville"
+   },
+   "region": {
+    "ko": "사우스캐롤라이나",
+    "en": "South Carolina"
+   },
+   "country": "US",
+   "name": {
+    "ko": "위버스",
+    "en": "Weavers"
+   },
+   "abbr": "GRW",
+   "colors": [
+    "#5f8316",
+    "#ecf0e6"
+   ],
+   "park": {
+    "name": {
+     "ko": "그린빌 볼파크",
+     "en": "Greenville Ballpark"
+    },
+    "capacity": 6700,
+    "elevation_m": 300.2,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     94.5,
+     110.0,
+     118.9,
+     109.1,
+     92.0
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "spartanburg-railyards",
+   "league": "us-higha-atlantic",
+   "division": "us-higha-atlantic-south",
+   "parent": "arlington-wranglers",
+   "city": {
+    "ko": "스파턴버그",
+    "en": "Spartanburg"
+   },
+   "region": {
+    "ko": "사우스캐롤라이나",
+    "en": "South Carolina"
+   },
+   "country": "US",
+   "name": {
+    "ko": "레일야즈",
+    "en": "Railyards"
+   },
+   "abbr": "SPA",
+   "colors": [
+    "#295e70",
+    "#e6edf0"
+   ],
+   "park": {
+    "name": {
+     "ko": "스파턴버그 볼파크",
+     "en": "Spartanburg Ballpark"
+    },
+    "capacity": 5250,
+    "elevation_m": 229.2,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.0,
+     115.9,
+     125.0,
+     115.8,
+     99.7
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "rome-legions",
+   "league": "us-higha-atlantic",
+   "division": "us-higha-atlantic-south",
+   "parent": "atlanta-firebirds",
+   "city": {
+    "ko": "롬",
+    "en": "Rome"
+   },
+   "region": {
+    "ko": "조지아",
+    "en": "Georgia"
+   },
+   "country": "US",
+   "name": {
+    "ko": "리전스",
+    "en": "Legions"
+   },
+   "abbr": "ROM",
+   "colors": [
+    "#1d7f1a",
+    "#b152e0"
+   ],
+   "park": {
+    "name": {
+     "ko": "롬 볼파크",
+     "en": "Rome Ballpark"
+    },
+    "capacity": 5105,
+    "elevation_m": 181.7,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     102.1,
+     114.9,
+     122.2,
+     114.3,
+     100.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "winston-salem-moravians",
+   "league": "us-higha-atlantic",
+   "division": "us-higha-atlantic-south",
+   "parent": "chicago-sentinels",
+   "city": {
+    "ko": "윈스턴세일럼",
+    "en": "Winston-Salem"
+   },
+   "region": {
+    "ko": "노스캐롤라이나",
+    "en": "North Carolina"
+   },
+   "country": "US",
+   "name": {
+    "ko": "모라비안스",
+    "en": "Moravians"
+   },
+   "abbr": "WIN",
+   "colors": [
+    "#1c1d7d",
+    "#e6e6f0"
+   ],
+   "park": {
+    "name": {
+     "ko": "윈스턴세일럼 볼파크",
+     "en": "Winston-Salem Ballpark"
+    },
+    "capacity": 5500,
+    "elevation_m": 261.5,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     96.0,
+     112.3,
+     121.6,
+     113.2,
+     98.5
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "fresno-raisins",
+   "league": "us-a-california",
+   "division": "us-a-california-north",
+   "parent": "denver-summits",
+   "city": {
+    "ko": "프레즈노",
+    "en": "Fresno"
+   },
+   "region": {
+    "ko": "캘리포니아",
+    "en": "California"
+   },
+   "country": "US",
+   "name": {
+    "ko": "레이즌스",
+    "en": "Raisins"
+   },
+   "abbr": "FRR",
+   "colors": [
+    "#17826b",
+    "#e0529b"
+   ],
+   "park": {
+    "name": {
+     "ko": "프레즈노 볼파크",
+     "en": "Fresno Ballpark"
+    },
+    "capacity": 10650,
+    "elevation_m": 88.4,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     98.8,
+     113.8,
+     122.5,
+     115.1,
+     102.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "san-jose-circuits",
+   "league": "us-a-california",
+   "division": "us-a-california-north",
+   "parent": "san-francisco-fogcutters",
+   "city": {
+    "ko": "새너제이",
+    "en": "San Jose"
+   },
+   "region": {
+    "ko": "캘리포니아",
+    "en": "California"
+   },
+   "country": "US",
+   "name": {
+    "ko": "서킷츠",
+    "en": "Circuits"
+   },
+   "abbr": "SCI",
+   "colors": [
+    "#6f2e2a",
+    "#52e0bd"
+   ],
+   "park": {
+    "name": {
+     "ko": "새너제이 볼파크",
+     "en": "San Jose Ballpark"
+    },
+    "capacity": 5208,
+    "elevation_m": 32.6,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     97.5,
+     111.1,
+     118.9,
+     111.1,
+     97.5
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "stockton-deltas",
+   "league": "us-a-california",
+   "division": "us-a-california-north",
+   "parent": "sacramento-prospectors",
+   "city": {
+    "ko": "스톡턴",
+    "en": "Stockton"
+   },
+   "region": {
+    "ko": "캘리포니아",
+    "en": "California"
+   },
+   "country": "US",
+   "name": {
+    "ko": "델타스",
+    "en": "Deltas"
+   },
+   "abbr": "STO",
+   "colors": [
+    "#187081",
+    "#e6eef0"
+   ],
+   "park": {
+    "name": {
+     "ko": "스톡턴 볼파크",
+     "en": "Stockton Ballpark"
+    },
+    "capacity": 5200,
+    "elevation_m": 1.8,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     91.4,
+     110.6,
+     121.6,
+     113.5,
+     99.4
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "visalia-cowhands",
+   "league": "us-a-california",
+   "division": "us-a-california-north",
+   "parent": "phoenix-scorpions",
+   "city": {
+    "ko": "바이세일리아",
+    "en": "Visalia"
+   },
+   "region": {
+    "ko": "캘리포니아",
+    "en": "California"
+   },
+   "country": "US",
+   "name": {
+    "ko": "카우핸즈",
+    "en": "Cowhands"
+   },
+   "abbr": "VIS",
+   "colors": [
+    "#2f8019",
+    "#e8f0e6"
+   ],
+   "park": {
+    "name": {
+     "ko": "바이세일리아 볼파크",
+     "en": "Visalia Ballpark"
+    },
+    "capacity": 2468,
+    "elevation_m": 99.4,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     97.5,
+     113.9,
+     123.4,
+     113.9,
+     97.5
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "san-bernardino-mustangs",
+   "league": "us-a-california",
+   "division": "us-a-california-south",
+   "parent": "seattle-evergreens",
+   "city": {
+    "ko": "샌버너디노",
+    "en": "San Bernardino"
+   },
+   "region": {
+    "ko": "캘리포니아",
+    "en": "California"
+   },
+   "country": "US",
+   "name": {
+    "ko": "머스탱스",
+    "en": "Mustangs"
+   },
+   "abbr": "SAM",
+   "colors": [
+    "#491b7e",
+    "#c9e052"
+   ],
+   "park": {
+    "name": {
+     "ko": "샌버너디노 볼파크",
+     "en": "San Bernardino Ballpark"
+    },
+    "capacity": 8000,
+    "elevation_m": 310.6,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     116.1,
+     125.0,
+     116.1,
+     100.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "lake-elsinore-monsters",
+   "league": "us-a-california",
+   "division": "us-a-california-south",
+   "parent": "san-diego-navigators",
+   "city": {
+    "ko": "레이크엘시노어",
+    "en": "Lake Elsinore"
+   },
+   "region": {
+    "ko": "캘리포니아",
+    "en": "California"
+   },
+   "country": "US",
+   "name": {
+    "ko": "몬스터스",
+    "en": "Monsters"
+   },
+   "abbr": "LAM",
+   "colors": [
+    "#7c361d",
+    "#f0e8e6"
+   ],
+   "park": {
+    "name": {
+     "ko": "레이크엘시노어 볼파크",
+     "en": "Lake Elsinore Ballpark"
+    },
+    "capacity": 7488,
+    "elevation_m": 389.2,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     114.1,
+     121.9,
+     111.9,
+     94.5
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "ontario-airliners",
+   "league": "us-a-california",
+   "division": "us-a-california-south",
+   "parent": "los-angeles-palms",
+   "city": {
+    "ko": "온타리오",
+    "en": "Ontario"
+   },
+   "region": {
+    "ko": "캘리포니아",
+    "en": "California"
+   },
+   "country": "US",
+   "name": {
+    "ko": "에어라이너스",
+    "en": "Airliners"
+   },
+   "abbr": "ONT",
+   "colors": [
+    "#77223c",
+    "#f0e6e9"
+   ],
+   "park": {
+    "name": {
+     "ko": "온타리오 볼파크",
+     "en": "Ontario Ballpark"
+    },
+    "capacity": 6000,
+    "elevation_m": 236.5,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.0,
+     114.1,
+     122.2,
+     113.9,
+     99.4
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "rancho-cucamonga-vintners",
+   "league": "us-a-california",
+   "division": "us-a-california-south",
+   "parent": "anaheim-surfriders",
+   "city": {
+    "ko": "랜초쿠카몽가",
+    "en": "Rancho Cucamonga"
+   },
+   "region": {
+    "ko": "캘리포니아",
+    "en": "California"
+   },
+   "country": "US",
+   "name": {
+    "ko": "빈트너스",
+    "en": "Vintners"
+   },
+   "abbr": "RAN",
+   "colors": [
+    "#1e7b72",
+    "#e0528b"
+   ],
+   "park": {
+    "name": {
+     "ko": "랜초쿠카몽가 볼파크",
+     "en": "Rancho Cucamonga Ballpark"
+    },
+    "capacity": 6615,
+    "elevation_m": 361.8,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     114.3,
+     122.2,
+     114.3,
+     100.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "salisbury-oystermen",
+   "league": "us-a-carolina",
+   "division": "us-a-carolina-north",
+   "parent": "baltimore-schooners",
+   "city": {
+    "ko": "솔즈베리",
+    "en": "Salisbury"
+   },
+   "region": {
+    "ko": "메릴랜드",
+    "en": "Maryland"
+   },
+   "country": "US",
+   "name": {
+    "ko": "오이스터멘",
+    "en": "Oystermen"
+   },
+   "abbr": "SAO",
+   "colors": [
+    "#772271",
+    "#73e052"
+   ],
+   "park": {
+    "name": {
+     "ko": "솔즈베리 볼파크",
+     "en": "Salisbury Ballpark"
+    },
+    "capacity": 5200,
+    "elevation_m": 17.4,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     94.2,
+     112.2,
+     122.5,
+     112.2,
+     94.2
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "fayetteville-sandhills",
+   "league": "us-a-carolina",
+   "division": "us-a-carolina-north",
+   "parent": "houston-wildcatters",
+   "city": {
+    "ko": "페이엣빌",
+    "en": "Fayetteville"
+   },
+   "region": {
+    "ko": "노스캐롤라이나",
+    "en": "North Carolina"
+   },
+   "country": "US",
+   "name": {
+    "ko": "샌드힐스",
+    "en": "Sandhills"
+   },
+   "abbr": "FAY",
+   "colors": [
+    "#357029",
+    "#e7f0e6"
+   ],
+   "park": {
+    "name": {
+     "ko": "페이엣빌 볼파크",
+     "en": "Fayetteville Ballpark"
+    },
+    "capacity": 4786,
+    "elevation_m": 31.1,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     97.2,
+     112.9,
+     121.9,
+     114.1,
+     100.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "fredericksburg-cannons",
+   "league": "us-a-carolina",
+   "division": "us-a-carolina-north",
+   "parent": "washington-statesmen",
+   "city": {
+    "ko": "프레더릭스버그",
+    "en": "Fredericksburg"
+   },
+   "region": {
+    "ko": "버지니아",
+    "en": "Virginia"
+   },
+   "country": "US",
+   "name": {
+    "ko": "캐넌스",
+    "en": "Cannons"
+   },
+   "abbr": "FRC",
+   "colors": [
+    "#17824e",
+    "#e052c1"
+   ],
+   "park": {
+    "name": {
+     "ko": "프레더릭스버그 볼파크",
+     "en": "Fredericksburg Ballpark"
+    },
+    "capacity": 5000,
+    "elevation_m": 63.7,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.4,
+     114.1,
+     122.5,
+     114.2,
+     99.7
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "lynchburg-ridgerunners",
+   "league": "us-a-carolina",
+   "division": "us-a-carolina-north",
+   "parent": "cleveland-forgers",
+   "city": {
+    "ko": "린치버그",
+    "en": "Lynchburg"
+   },
+   "region": {
+    "ko": "버지니아",
+    "en": "Virginia"
+   },
+   "country": "US",
+   "name": {
+    "ko": "리지러너스",
+    "en": "Ridgerunners"
+   },
+   "abbr": "LYN",
+   "colors": [
+    "#227769",
+    "#e05294"
+   ],
+   "park": {
+    "name": {
+     "ko": "린치버그 볼파크",
+     "en": "Lynchburg Ballpark"
+    },
+    "capacity": 4281,
+    "elevation_m": 249.0,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     111.7,
+     118.9,
+     111.7,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "salem-stags",
+   "league": "us-a-carolina",
+   "division": "us-a-carolina-north",
+   "parent": "boston-lanterns",
+   "city": {
+    "ko": "세일럼",
+    "en": "Salem"
+   },
+   "region": {
+    "ko": "버지니아",
+    "en": "Virginia"
+   },
+   "country": "US",
+   "name": {
+    "ko": "스태그스",
+    "en": "Stags"
+   },
+   "abbr": "SAS",
+   "colors": [
+    "#236876",
+    "#e6eef0"
+   ],
+   "park": {
+    "name": {
+     "ko": "세일럼 볼파크",
+     "en": "Salem Ballpark"
+    },
+    "capacity": 6300,
+    "elevation_m": 338.9,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     113.8,
+     122.2,
+     113.8,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "wilson-whirligigs",
+   "league": "us-a-carolina",
+   "division": "us-a-carolina-north",
+   "parent": "milwaukee-harvesters",
+   "city": {
+    "ko": "윌슨",
+    "en": "Wilson"
+   },
+   "region": {
+    "ko": "노스캐롤라이나",
+    "en": "North Carolina"
+   },
+   "country": "US",
+   "name": {
+    "ko": "훨리기그스",
+    "en": "Whirligigs"
+   },
+   "abbr": "WIW",
+   "colors": [
+    "#742550",
+    "#52e067"
+   ],
+   "park": {
+    "name": {
+     "ko": "윌슨 볼파크",
+     "en": "Wilson Ballpark"
+    },
+    "capacity": 5000,
+    "elevation_m": 33.8,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     99.1,
+     113.6,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "north-augusta-azaleas",
+   "league": "us-a-carolina",
+   "division": "us-a-carolina-south",
+   "parent": "atlanta-firebirds",
+   "city": {
+    "ko": "노스오거스타",
+    "en": "North Augusta"
+   },
+   "region": {
+    "ko": "사우스캐롤라이나",
+    "en": "South Carolina"
+   },
+   "country": "US",
+   "name": {
+    "ko": "아잘레아스",
+    "en": "Azaleas"
+   },
+   "abbr": "NOA",
+   "colors": [
+    "#29705e",
+    "#e6f0ed"
+   ],
+   "park": {
+    "name": {
+     "ko": "노스오거스타 볼파크",
+     "en": "North Augusta Ballpark"
+    },
+    "capacity": 5000,
+    "elevation_m": 42.1,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     113.2,
+     120.4,
+     111.8,
+     96.9
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "charleston-palmettos",
+   "league": "us-a-carolina",
+   "division": "us-a-carolina-south",
+   "parent": "st-petersburg-herons",
+   "city": {
+    "ko": "찰스턴",
+    "en": "Charleston"
+   },
+   "region": {
+    "ko": "사우스캐롤라이나",
+    "en": "South Carolina"
+   },
+   "country": "US",
+   "name": {
+    "ko": "팰메토스",
+    "en": "Palmettos"
+   },
+   "abbr": "CHP",
+   "colors": [
+    "#698118",
+    "#525be0"
+   ],
+   "park": {
+    "name": {
+     "ko": "찰스턴 볼파크",
+     "en": "Charleston Ballpark"
+    },
+    "capacity": 6000,
+    "elevation_m": 3.4,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     93.0,
+     111.0,
+     121.3,
+     114.5,
+     102.7
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "columbia-whippoorwills",
+   "league": "us-a-carolina",
+   "division": "us-a-carolina-south",
+   "parent": "kansas-city-plainsmen",
+   "city": {
+    "ko": "컬럼비아",
+    "en": "Columbia"
+   },
+   "region": {
+    "ko": "사우스캐롤라이나",
+    "en": "South Carolina"
+   },
+   "country": "US",
+   "name": {
+    "ko": "위퍼윌스",
+    "en": "Whippoorwills"
+   },
+   "abbr": "COW",
+   "colors": [
+    "#246975",
+    "#e6eef0"
+   ],
+   "park": {
+    "name": {
+     "ko": "컬럼비아 볼파크",
+     "en": "Columbia Ballpark"
+    },
+    "capacity": 9077,
+    "elevation_m": 76.8,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     97.2,
+     112.9,
+     121.9,
+     114.1,
+     100.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "hickory-craftsmen",
+   "league": "us-a-carolina",
+   "division": "us-a-carolina-south",
+   "parent": "arlington-wranglers",
+   "city": {
+    "ko": "히커리",
+    "en": "Hickory"
+   },
+   "region": {
+    "ko": "노스캐롤라이나",
+    "en": "North Carolina"
+   },
+   "country": "US",
+   "name": {
+    "ko": "크래프츠멘",
+    "en": "Craftsmen"
+   },
+   "abbr": "HIC",
+   "colors": [
+    "#7a451f",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "히커리 볼파크",
+     "en": "Hickory Ballpark"
+    },
+    "capacity": 5062,
+    "elevation_m": 334.1,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     114.3,
+     122.2,
+     114.3,
+     100.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "kannapolis-pit-crews",
+   "league": "us-a-carolina",
+   "division": "us-a-carolina-south",
+   "parent": "chicago-sentinels",
+   "city": {
+    "ko": "캐너폴리스",
+    "en": "Kannapolis"
+   },
+   "region": {
+    "ko": "노스캐롤라이나",
+    "en": "North Carolina"
+   },
+   "country": "US",
+   "name": {
+    "ko": "핏크루스",
+    "en": "Pit Crews"
+   },
+   "abbr": "KAN",
+   "colors": [
+    "#1a7f72",
+    "#e6f0ee"
+   ],
+   "park": {
+    "name": {
+     "ko": "캐너폴리스 볼파크",
+     "en": "Kannapolis Ballpark"
+    },
+    "capacity": 4930,
+    "elevation_m": 242.0,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     114.1,
+     121.9,
+     111.9,
+     94.5
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "myrtle-beach-sandcrabs",
+   "league": "us-a-carolina",
+   "division": "us-a-carolina-south",
+   "parent": "chicago-gales",
+   "city": {
+    "ko": "머틀비치",
+    "en": "Myrtle Beach"
+   },
+   "region": {
+    "ko": "사우스캐롤라이나",
+    "en": "South Carolina"
+   },
+   "country": "US",
+   "name": {
+    "ko": "샌드크랩스",
+    "en": "Sandcrabs"
+   },
+   "abbr": "MYR",
+   "colors": [
+    "#436f2a",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "머틀비치 볼파크",
+     "en": "Myrtle Beach Ballpark"
+    },
+    "capacity": 6599,
+    "elevation_m": 7.9,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     93.9,
+     111.7,
+     121.9,
+     113.9,
+     100.0
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "daytona-beach-speedsters",
+   "league": "us-a-florida",
+   "division": "us-a-florida-east",
+   "parent": "cincinnati-steamers",
+   "city": {
+    "ko": "데이토나비치",
+    "en": "Daytona Beach"
+   },
+   "region": {
+    "ko": "플로리다",
+    "en": "Florida"
+   },
+   "country": "US",
+   "name": {
+    "ko": "스피드스터스",
+    "en": "Speedsters"
+   },
+   "abbr": "DAS",
+   "colors": [
+    "#4d7b1e",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "데이토나비치 볼파크",
+     "en": "Daytona Beach Ballpark"
+    },
+    "capacity": 4200,
+    "elevation_m": 1.5,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     96.6,
+     112.7,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "jupiter-moons",
+   "league": "us-a-florida",
+   "division": "us-a-florida-east",
+   "parent": "miami-flamingos",
+   "city": {
+    "ko": "주피터",
+    "en": "Jupiter"
+   },
+   "region": {
+    "ko": "플로리다",
+    "en": "Florida"
+   },
+   "country": "US",
+   "name": {
+    "ko": "문스",
+    "en": "Moons"
+   },
+   "abbr": "JUP",
+   "colors": [
+    "#721584",
+    "#94e052"
+   ],
+   "park": {
+    "name": {
+     "ko": "주피터 볼파크",
+     "en": "Jupiter Ballpark"
+    },
+    "capacity": 6871,
+    "elevation_m": 4.3,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     102.1,
+     114.7,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "jupiter-tritons",
+   "league": "us-a-florida",
+   "division": "us-a-florida-east",
+   "parent": "st-louis-archers",
+   "city": {
+    "ko": "주피터",
+    "en": "Jupiter"
+   },
+   "region": {
+    "ko": "플로리다",
+    "en": "Florida"
+   },
+   "country": "US",
+   "name": {
+    "ko": "트라이턴스",
+    "en": "Tritons"
+   },
+   "abbr": "JUT",
+   "colors": [
+    "#188316",
+    "#e6f0e6"
+   ],
+   "park": {
+    "name": {
+     "ko": "주피터 볼파크",
+     "en": "Jupiter Ballpark"
+    },
+    "capacity": 6871,
+    "elevation_m": 4.3,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     102.1,
+     114.7,
+     121.9,
+     113.6,
+     99.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "port-st-lucie-citrus",
+   "league": "us-a-florida",
+   "division": "us-a-florida-east",
+   "parent": "new-york-ferrymen",
+   "city": {
+    "ko": "포트세인트루시",
+    "en": "Port St. Lucie"
+   },
+   "region": {
+    "ko": "플로리다",
+    "en": "Florida"
+   },
+   "country": "US",
+   "name": {
+    "ko": "시트러스",
+    "en": "Citrus"
+   },
+   "abbr": "POC",
+   "colors": [
+    "#84153a",
+    "#f0e6e9"
+   ],
+   "park": {
+    "name": {
+     "ko": "포트세인트루시 볼파크",
+     "en": "Port St. Lucie Ballpark"
+    },
+    "capacity": 7160,
+    "elevation_m": 8.5,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     103.0,
+     117.0,
+     125.0,
+     117.0,
+     103.0
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "bradenton-manatees",
+   "league": "us-a-florida",
+   "division": "us-a-florida-west",
+   "parent": "pittsburgh-ironclads",
+   "city": {
+    "ko": "브레이든턴",
+    "en": "Bradenton"
+   },
+   "region": {
+    "ko": "플로리다",
+    "en": "Florida"
+   },
+   "country": "US",
+   "name": {
+    "ko": "매너티스",
+    "en": "Manatees"
+   },
+   "abbr": "BRA",
+   "colors": [
+    "#2a8118",
+    "#e7f0e6"
+   ],
+   "park": {
+    "name": {
+     "ko": "브레이든턴 볼파크",
+     "en": "Bradenton Ballpark"
+    },
+    "capacity": 8500,
+    "elevation_m": 6.4,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     102.1,
+     114.7,
+     121.9,
+     114.7,
+     102.1
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "clearwater-beachcombers",
+   "league": "us-a-florida",
+   "division": "us-a-florida-west",
+   "parent": "philadelphia-liberties",
+   "city": {
+    "ko": "클리어워터",
+    "en": "Clearwater"
+   },
+   "region": {
+    "ko": "플로리다",
+    "en": "Florida"
+   },
+   "country": "US",
+   "name": {
+    "ko": "비치코머스",
+    "en": "Beachcombers"
+   },
+   "abbr": "CLB",
+   "colors": [
+    "#705829",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "클리어워터 볼파크",
+     "en": "Clearwater Ballpark"
+    },
+    "capacity": 8500,
+    "elevation_m": 7.0,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.3,
+     115.6,
+     124.4,
+     115.7,
+     100.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "dunedin-pipers",
+   "league": "us-a-florida",
+   "division": "us-a-florida-west",
+   "parent": "toronto-voyageurs",
+   "city": {
+    "ko": "더니든",
+    "en": "Dunedin"
+   },
+   "region": {
+    "ko": "플로리다",
+    "en": "Florida"
+   },
+   "country": "US",
+   "name": {
+    "ko": "파이퍼스",
+    "en": "Pipers"
+   },
+   "abbr": "DUN",
+   "colors": [
+    "#158463",
+    "#e6f0ed"
+   ],
+   "park": {
+    "name": {
+     "ko": "더니든 볼파크",
+     "en": "Dunedin Ballpark"
+    },
+    "capacity": 8500,
+    "elevation_m": 7.3,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     102.1,
+     114.7,
+     121.9,
+     113.8,
+     99.7
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "fort-myers-inventors",
+   "league": "us-a-florida",
+   "division": "us-a-florida-west",
+   "parent": "minneapolis-lumberjacks",
+   "city": {
+    "ko": "포트마이어스",
+    "en": "Fort Myers"
+   },
+   "region": {
+    "ko": "플로리다",
+    "en": "Florida"
+   },
+   "country": "US",
+   "name": {
+    "ko": "인벤터스",
+    "en": "Inventors"
+   },
+   "abbr": "FOI",
+   "colors": [
+    "#552277",
+    "#b6e052"
+   ],
+   "park": {
+    "name": {
+     "ko": "포트마이어스 볼파크",
+     "en": "Fort Myers Ballpark"
+    },
+    "capacity": 9300,
+    "elevation_m": 4.9,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.6,
+     115.1,
+     123.4,
+     115.1,
+     100.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "lakeland-swans",
+   "league": "us-a-florida",
+   "division": "us-a-florida-west",
+   "parent": "detroit-motormen",
+   "city": {
+    "ko": "레이클랜드",
+    "en": "Lakeland"
+   },
+   "region": {
+    "ko": "플로리다",
+    "en": "Florida"
+   },
+   "country": "US",
+   "name": {
+    "ko": "스완스",
+    "en": "Swans"
+   },
+   "abbr": "LSW",
+   "colors": [
+    "#6f612a",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "레이클랜드 볼파크",
+     "en": "Lakeland Ballpark"
+    },
+    "capacity": 8500,
+    "elevation_m": 48.8,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     103.6,
+     119.1,
+     128.0,
+     119.1,
+     103.6
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  },
+  {
+   "id": "tampa-cigarmen",
+   "league": "us-a-florida",
+   "division": "us-a-florida-west",
+   "parent": "new-york-empires",
+   "city": {
+    "ko": "탬파",
+    "en": "Tampa"
+   },
+   "region": {
+    "ko": "플로리다",
+    "en": "Florida"
+   },
+   "country": "US",
+   "name": {
+    "ko": "시가멘",
+    "en": "Cigarmen"
+   },
+   "abbr": "TAM",
+   "colors": [
+    "#762367",
+    "#f0e6ee"
+   ],
+   "park": {
+    "name": {
+     "ko": "탬파 볼파크",
+     "en": "Tampa Ballpark"
+    },
+    "capacity": 11026,
+    "elevation_m": 10.1,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     96.9,
+     114.4,
+     124.4,
+     113.9,
+     95.7
+    ],
+    "wall_m": [
+     2.44,
+     2.44,
+     2.44
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "roof",
+     "surface"
+    ]
+   }
+  }
+ ]
+}

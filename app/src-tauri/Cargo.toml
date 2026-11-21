@@ -1,0 +1,25 @@
+[package]
+name = "baseball-manager"
+description = "Baseball Manager desktop application"
+version = "0.1.0"
+edition = "2021"
+publish = false
+rust-version = "1.82"
+
+# The desktop shell is built on its own (it needs the platform's web view
+# libraries), not as part of the engine workspace.
+[workspace]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+bm-session = { path = "../../crates/bm-session" }
+serde_json = "1"
+tauri = { version = "2", features = [] }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 4
+strip = true

@@ -1,0 +1,24 @@
+[workspace]
+resolver = "2"
+members = ["crates/bm-physics", "crates/bm-engine", "crates/bm-world", "crates/bm-save", "crates/bm-session", "crates/bm-gym", "crates/bm-cli"]
+# The desktop shell and the Python binding have their own lock files and are built separately
+# (app/src-tauri; crates/bm-py through python/pyproject.toml).
+exclude = ["app/src-tauri", "crates/bm-py"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+publish = false
+rust-version = "1.82"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 4
+debug = false
+
+[profile.dev]
+opt-level = 1
+
+[profile.test]
+opt-level = 2

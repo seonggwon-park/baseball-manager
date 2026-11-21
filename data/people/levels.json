@@ -1,0 +1,110 @@
+{
+ "_comment": "Levels of play for generating the world's players. talent: offsets in standard deviations of the major-league attribute distribution, in the order hitting, pitching, fielding, physical, power (on top of hitting), command (on top of pitching), velocity (on top of pitching), discipline (on top of hitting: plate discipline), fitted with `bm level` (2026-11-16) to each level's 2025-2026 official rates relative to the simulated majors, the four-seam and exit-velocity gaps where Statcast tracks them (Triple-A, Florida State League; Double-A and High-A interpolated between them, an assumption), and published translations to the majors (hitters' wRC+ against major-league pitching: Triple-A 65, Double-A 52, High-A 40, Single-A 30, KBO 56, NPB 64). The US minors were refitted (decisions 2026-11-16) with their plate discipline as well: zone %, swing % in the zone and chase % against the majors in 2026 (both on the batter-height zone), whiffs per swing in 2025-2026 (Statcast; Triple-A and the Florida State League, Double-A and High-A interpolated), and with no level above the level over it in hitting, pitching, fielding, command or discipline (measured from the majors). Every level was refitted the same way on 2026-11-17, after the engine changes of that day (new simulated majors as the reference), again on 2026-11-18 after the pitch-type decisions and the velocity term, on 2026-11-19 after the pitcher change of that day (command spread, no random aim height, pitch shapes whose worth is in the attributes), and on 2026-11-20 after contact quality was made to follow the pitch's location. physical is fixed at the Triple-A fit (-0.215) wherever no tracking pins it (decision 2026-11-16). The KBO Futures and NPB farm hitters sit the Triple-A to Double-A gap below their first teams (assumption). The rookie complex and the Dominican academy have no statistics: their talent is the career model's steady state. ball_drag: factor on the batted ball's drag in the level's own games; the lower minors play with a ball of their own (fitted on Single-A, which has Statcast). batters/pitchers: ages on 1 February 2027; the means are Baseball-Reference league averages for 2025-2026 (docs/research/world/levels.md section 4: whole years on 30 June, close to exact ages on 1 February). The US levels' spreads are the MLB Stats API's 2025-2026 lines with Baseball-Reference's weights (section 4.1); the limits of Double-A, High-A and Single-A are the 99th percentiles of those ages, moved to 1 February (decision 2026-11-16: older players who are not prospects do not stay below Triple-A). The rookie complex (Arizona and Florida Complex Leagues) and the Dominican academy (Dominican Summer League) take their means and spreads from the same source, with the oldest 2 % of playing time (major-leaguers' rehabilitation assignments) left out. The KBO's, the NPB's and the NPB farm's spreads are Baseball-Reference's 2025-2026 team pages with the same weights (docs/research/world/kbo_notes.md, age spread). The other limits and the KBO Futures' ages are assumptions. roster: players per club (2026 rules). foreign: the foreign players a KBO or NPB club fields: hitters at wRC+ 88 against major-league pitching (Davenport 2016: EqA .247 against .260), pitchers symmetric (major-leaguers' wRC+ 112 against them; decision 2026-11-16). Edit freely.",
+ "levels": {
+  "mlb": {
+   "talent": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+   "batters": {"mean": 27.85, "sd": 3.67, "min": 20.0, "max": 42.0},
+   "pitchers": {"mean": 29.15, "sd": 3.77, "min": 20.0, "max": 43.0},
+   "birthplaces": "mlb",
+   "roster": 26
+  },
+  "aaa": {
+   "talent": [-1.139, -1.478, -0.853, -0.215, 0.711, 0.705, 1.108, 0.845],
+   "batters": {"mean": 26.44, "sd": 3.03, "min": 19.0, "max": 38.0},
+   "pitchers": {"mean": 27.25, "sd": 3.27, "min": 19.0, "max": 39.0},
+   "birthplaces": "aaa",
+   "roster": 28
+  },
+  "aa": {
+   "talent": [-1.229, -1.54, -0.884, -0.215, 0.598, 0.767, 1.244, 0.935],
+   "batters": {"mean": 23.74, "sd": 1.93, "min": 19.0, "max": 28.7},
+   "pitchers": {"mean": 24.64, "sd": 2.1, "min": 19.0, "max": 30.5},
+   "birthplaces": "aa",
+   "roster": 28,
+   "ball_drag": 1.0164
+  },
+  "high_a": {
+   "talent": [-1.541, -1.54, -1.237, -0.215, 0.602, 0.599, 0.889, 1.247],
+   "batters": {"mean": 22.18, "sd": 1.61, "min": 18.0, "max": 26.2},
+   "pitchers": {"mean": 23.09, "sd": 1.84, "min": 18.0, "max": 27.8},
+   "birthplaces": "high_a",
+   "roster": 30,
+   "ball_drag": 1.0164
+  },
+  "single_a": {
+   "talent": [-2.285, -1.833, -1.582, -0.215, 1.495, 0.846, 0.717, 1.991],
+   "batters": {"mean": 20.79, "sd": 1.68, "min": 17.0, "max": 24.9},
+   "pitchers": {"mean": 21.86, "sd": 1.83, "min": 17.0, "max": 27.1},
+   "birthplaces": "single_a",
+   "roster": 30,
+   "ball_drag": 1.0164
+  },
+  "complex": {
+   "talent": [-1.844, -1.161, -1.453, -0.72, 0.438, -1.087, -0.877, 0.329],
+   "batters": {"mean": 19.4, "sd": 1.45, "min": 17.0, "max": 25.0},
+   "pitchers": {"mean": 20.8, "sd": 2.09, "min": 17.0, "max": 26.0},
+   "birthplaces": "complex",
+   "roster": 35,
+   "ball_drag": 1.0164
+  },
+  "academy": {
+   "talent": [-2.421, -1.556, -1.887, -0.782, 0.987, -0.902, -0.632, 0.872],
+   "batters": {"mean": 17.6, "sd": 0.78, "min": 16.0, "max": 21.0},
+   "pitchers": {"mean": 18.4, "sd": 1.19, "min": 16.0, "max": 22.0},
+   "birthplaces": "academy",
+   "roster": 35,
+   "ball_drag": 1.0164
+  },
+  "kbo": {
+   "talent": [-1.336, -2.585, -1.255, -0.215, 0.427, 1.198],
+   "batters": {"mean": 28.7, "sd": 5.45, "min": 19.0, "max": 42.0},
+   "pitchers": {"mean": 27.3, "sd": 5.1, "min": 19.0, "max": 43.0},
+   "birthplaces": "kbo_domestic",
+   "roster": 28,
+   "foreign": {
+    "talent": [-0.287, -0.136, -0.287, -0.215, 0.0, 0.0],
+    "birthplaces": "kbo_foreign",
+    "asia_quota": "kbo_asia",
+    "starters": 2,
+    "relievers": 0,
+    "hitters": [8]
+   }
+  },
+  "kbo2": {
+   "talent": [-1.426, -1.801, -1.964, -0.215, 0.033, -0.138],
+   "batters": {"mean": 24.5, "sd": 3.5, "min": 18.0, "max": 38.0},
+   "pitchers": {"mean": 25.0, "sd": 3.5, "min": 18.0, "max": 39.0},
+   "birthplaces": "kbo_domestic",
+   "roster": 40
+  },
+  "npb": {
+   "talent": [-0.476, -1.459, -0.172, -0.215, -1.302, 2.83],
+   "batters": {"mean": 27.65, "sd": 3.95, "min": 19.0, "max": 42.0},
+   "pitchers": {"mean": 27.7, "sd": 3.79, "min": 19.0, "max": 43.0},
+   "birthplaces": "npb_domestic",
+   "roster": 29,
+   "foreign": {
+    "talent": [-0.287, -0.136, -0.287, -0.215, 0.0, 0.0],
+    "birthplaces": "npb_foreign",
+    "starters": 2,
+    "relievers": 0,
+    "hitters": [1, 8]
+   }
+  },
+  "npb2": {
+   "talent": [-0.566, -1.189, -1.194, -0.215, -1.23, 1.055],
+   "batters": {"mean": 25.05, "sd": 4.44, "min": 18.0, "max": 40.0},
+   "pitchers": {"mean": 26.2, "sd": 4.36, "min": 18.0, "max": 41.0},
+   "birthplaces": "npb_domestic",
+   "roster": 60,
+   "foreign": {
+    "talent": [-0.566, -1.189, -1.194, -0.215, -1.23, 1.055],
+    "birthplaces": "npb_foreign",
+    "starters": 0,
+    "relievers": 0,
+    "hitters": [],
+    "reserves": 2
+   }
+  }
+ }
+}

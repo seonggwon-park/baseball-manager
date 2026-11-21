@@ -1,0 +1,1369 @@
+{
+ "_comment": "Fictional clubs of the Japanese structure. Cities, ballpark dimensions and the 2026 league layout (one farm league in three divisions, two farm-only clubs) are real; club, league and ballpark names are invented and can be edited.",
+ "source": "docs/research/world/npb_clubs.json, npb_notes.md (researched 2026-11-16)",
+ "country": "JP",
+ "leagues": [
+  {
+   "id": "jp-top",
+   "level": "top",
+   "name": {
+    "ko": "일본 프로야구 리그",
+    "en": "Japan Professional Baseball League"
+   },
+   "games": 143,
+   "groups": [
+    {
+     "id": "central",
+     "name": {
+      "ko": "센트럴 컨퍼런스",
+      "en": "Central Conference"
+     }
+    },
+    {
+     "id": "pacific",
+     "name": {
+      "ko": "퍼시픽 컨퍼런스",
+      "en": "Pacific Conference"
+     }
+    }
+   ],
+   "divisions": [
+    {
+     "id": "jp-top-central",
+     "name": {
+      "ko": "센트럴",
+      "en": "Central"
+     },
+     "group": "central"
+    },
+    {
+     "id": "jp-top-pacific",
+     "name": {
+      "ko": "퍼시픽",
+      "en": "Pacific"
+     },
+     "group": "pacific"
+    }
+   ]
+  },
+  {
+   "id": "jp-second",
+   "level": "second",
+   "name": {
+    "ko": "일본 2군 리그",
+    "en": "Japan Farm League"
+   },
+   "games": 140,
+   "divisions": [
+    {
+     "id": "jp-second-east",
+     "name": {
+      "ko": "동부",
+      "en": "East"
+     },
+     "group": null
+    },
+    {
+     "id": "jp-second-central",
+     "name": {
+      "ko": "중부",
+      "en": "Central"
+     },
+     "group": null
+    },
+    {
+     "id": "jp-second-west",
+     "name": {
+      "ko": "서부",
+      "en": "West"
+     },
+     "group": null
+    }
+   ]
+  }
+ ],
+ "clubs": [
+  {
+   "id": "tokyo-thunderbirds",
+   "league": "jp-top",
+   "division": "jp-top-central",
+   "parent": null,
+   "city": {
+    "ko": "도쿄",
+    "en": "Tokyo"
+   },
+   "region": {
+    "ko": "도쿄도",
+    "en": "Tokyo"
+   },
+   "country": "JP",
+   "name": {
+    "ko": "선더버즈",
+    "en": "Thunderbirds"
+   },
+   "abbr": "TKT",
+   "colors": [
+    "#5c7623",
+    "#ecf0e6"
+   ],
+   "park": {
+    "name": {
+     "ko": "도쿄 선더버즈 돔",
+     "en": "Tokyo Thunderbirds Dome"
+    },
+    "capacity": 43500,
+    "elevation_m": 3.3,
+    "roof": "dome",
+    "surface": "turf",
+    "fence_m": [
+     100.0,
+     110.0,
+     122.0,
+     110.0,
+     100.0
+    ],
+    "wall_m": [
+     4.24,
+     4.24,
+     4.24
+    ],
+    "estimated": []
+   }
+  },
+  {
+   "id": "nishinomiya-panthers",
+   "league": "jp-top",
+   "division": "jp-top-central",
+   "parent": null,
+   "city": {
+    "ko": "니시노미야",
+    "en": "Nishinomiya"
+   },
+   "region": {
+    "ko": "효고현",
+    "en": "Hyogo"
+   },
+   "country": "JP",
+   "name": {
+    "ko": "팬서스",
+    "en": "Panthers"
+   },
+   "abbr": "NSM",
+   "colors": [
+    "#257442",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "니시노미야 볼파크",
+     "en": "Nishinomiya Ballpark"
+    },
+    "capacity": 47359,
+    "elevation_m": 1.5,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     95.0,
+     118.0,
+     118.0,
+     118.0,
+     95.0
+    ],
+    "wall_m": [
+     3.0,
+     3.0,
+     3.0
+    ],
+    "estimated": []
+   }
+  },
+  {
+   "id": "yokohama-seafarers",
+   "league": "jp-top",
+   "division": "jp-top-central",
+   "parent": null,
+   "city": {
+    "ko": "요코하마",
+    "en": "Yokohama"
+   },
+   "region": {
+    "ko": "가나가와현",
+    "en": "Kanagawa"
+   },
+   "country": "JP",
+   "name": {
+    "ko": "시패러스",
+    "en": "Seafarers"
+   },
+   "abbr": "YOK",
+   "colors": [
+    "#847515",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "요코하마 볼파크",
+     "en": "Yokohama Ballpark"
+    },
+    "capacity": 34046,
+    "elevation_m": 1.3,
+    "roof": "open",
+    "surface": "turf",
+    "fence_m": [
+     94.2,
+     111.4,
+     117.7,
+     111.4,
+     94.2
+    ],
+    "wall_m": [
+     5.0,
+     5.0,
+     5.0
+    ],
+    "estimated": []
+   }
+  },
+  {
+   "id": "hiroshima-maples",
+   "league": "jp-top",
+   "division": "jp-top-central",
+   "parent": null,
+   "city": {
+    "ko": "히로시마",
+    "en": "Hiroshima"
+   },
+   "region": {
+    "ko": "히로시마현",
+    "en": "Hiroshima"
+   },
+   "country": "JP",
+   "name": {
+    "ko": "메이플스",
+    "en": "Maples"
+   },
+   "abbr": "HIR",
+   "colors": [
+    "#7c1d30",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "히로시마 볼파크",
+     "en": "Hiroshima Ballpark"
+    },
+    "capacity": 33000,
+    "elevation_m": 2.2,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     101.0,
+     116.0,
+     122.0,
+     116.0,
+     100.0
+    ],
+    "wall_m": [
+     3.6,
+     2.5,
+     3.4
+    ],
+    "estimated": []
+   }
+  },
+  {
+   "id": "tokyo-kestrels",
+   "league": "jp-top",
+   "division": "jp-top-central",
+   "parent": null,
+   "city": {
+    "ko": "도쿄",
+    "en": "Tokyo"
+   },
+   "region": {
+    "ko": "도쿄도",
+    "en": "Tokyo"
+   },
+   "country": "JP",
+   "name": {
+    "ko": "케스트럴스",
+    "en": "Kestrels"
+   },
+   "abbr": "TKK",
+   "colors": [
+    "#762374",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "도쿄 케스트럴스 볼파크",
+     "en": "Tokyo Kestrels Ballpark"
+    },
+    "capacity": 29943,
+    "elevation_m": 30.3,
+    "roof": "open",
+    "surface": "turf",
+    "fence_m": [
+     97.5,
+     112.3,
+     120.0,
+     112.3,
+     97.5
+    ],
+    "wall_m": [
+     3.3,
+     3.3,
+     3.3
+    ],
+    "estimated": []
+   }
+  },
+  {
+   "id": "nagoya-castles",
+   "league": "jp-top",
+   "division": "jp-top-central",
+   "parent": null,
+   "city": {
+    "ko": "나고야",
+    "en": "Nagoya"
+   },
+   "region": {
+    "ko": "아이치현",
+    "en": "Aichi"
+   },
+   "country": "JP",
+   "name": {
+    "ko": "캐슬스",
+    "en": "Castles"
+   },
+   "abbr": "NAG",
+   "colors": [
+    "#20795d",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "나고야 돔",
+     "en": "Nagoya Dome"
+    },
+    "capacity": 36778,
+    "elevation_m": 12.5,
+    "roof": "dome",
+    "surface": "turf",
+    "fence_m": [
+     100.0,
+     110.0,
+     122.0,
+     110.0,
+     100.0
+    ],
+    "wall_m": [
+     3.6,
+     3.6,
+     3.6
+    ],
+    "estimated": []
+   }
+  },
+  {
+   "id": "fukuoka-typhoons",
+   "league": "jp-top",
+   "division": "jp-top-pacific",
+   "parent": null,
+   "city": {
+    "ko": "후쿠오카",
+    "en": "Fukuoka"
+   },
+   "region": {
+    "ko": "후쿠오카현",
+    "en": "Fukuoka"
+   },
+   "country": "JP",
+   "name": {
+    "ko": "타이푼스",
+    "en": "Typhoons"
+   },
+   "abbr": "FUK",
+   "colors": [
+    "#211f7a",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "후쿠오카 볼파크",
+     "en": "Fukuoka Ballpark"
+    },
+    "capacity": 40122,
+    "elevation_m": 3.1,
+    "roof": "retractable",
+    "surface": "turf",
+    "fence_m": [
+     100.0,
+     110.0,
+     122.0,
+     110.0,
+     100.0
+    ],
+    "wall_m": [
+     4.2,
+     4.2,
+     4.2
+    ],
+    "estimated": []
+   }
+  },
+  {
+   "id": "kitahiroshima-frontiers",
+   "league": "jp-top",
+   "division": "jp-top-pacific",
+   "parent": null,
+   "city": {
+    "ko": "기타히로시마",
+    "en": "Kitahiroshima"
+   },
+   "region": {
+    "ko": "홋카이도",
+    "en": "Hokkaido"
+   },
+   "country": "JP",
+   "name": {
+    "ko": "프런티어스",
+    "en": "Frontiers"
+   },
+   "abbr": "KTH",
+   "colors": [
+    "#1c2a7d",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "기타히로시마 볼파크",
+     "en": "Kitahiroshima Ballpark"
+    },
+    "capacity": 35000,
+    "elevation_m": 51,
+    "roof": "retractable",
+    "surface": "grass",
+    "fence_m": [
+     97.0,
+     114.0,
+     122.0,
+     110.0,
+     99.0
+    ],
+    "wall_m": [
+     2.8,
+     2.8,
+     2.8
+    ],
+    "estimated": []
+   }
+  },
+  {
+   "id": "osaka-merchants",
+   "league": "jp-top",
+   "division": "jp-top-pacific",
+   "parent": null,
+   "city": {
+    "ko": "오사카",
+    "en": "Osaka"
+   },
+   "region": {
+    "ko": "오사카부",
+    "en": "Osaka"
+   },
+   "country": "JP",
+   "name": {
+    "ko": "머천츠",
+    "en": "Merchants"
+   },
+   "abbr": "OSA",
+   "colors": [
+    "#7a511f",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "오사카 돔",
+     "en": "Osaka Dome"
+    },
+    "capacity": 36220,
+    "elevation_m": 0.7,
+    "roof": "dome",
+    "surface": "turf",
+    "fence_m": [
+     100.0,
+     116.0,
+     122.0,
+     116.0,
+     100.0
+    ],
+    "wall_m": [
+     4.2,
+     4.2,
+     4.2
+    ],
+    "estimated": []
+   }
+  },
+  {
+   "id": "sendai-crescents",
+   "league": "jp-top",
+   "division": "jp-top-pacific",
+   "parent": null,
+   "city": {
+    "ko": "센다이",
+    "en": "Sendai"
+   },
+   "region": {
+    "ko": "미야기현",
+    "en": "Miyagi"
+   },
+   "country": "JP",
+   "name": {
+    "ko": "크레센츠",
+    "en": "Crescents"
+   },
+   "abbr": "SEN",
+   "colors": [
+    "#2b7722",
+    "#e7f0e6"
+   ],
+   "park": {
+    "name": {
+     "ko": "센다이 볼파크",
+     "en": "Sendai Ballpark"
+    },
+    "capacity": 31272,
+    "elevation_m": 15.9,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.1,
+     110.0,
+     122.0,
+     112.0,
+     100.1
+    ],
+    "wall_m": [
+     2.0,
+     2.0,
+     2.0
+    ],
+    "estimated": []
+   }
+  },
+  {
+   "id": "tokorozawa-wolves",
+   "league": "jp-top",
+   "division": "jp-top-pacific",
+   "parent": null,
+   "city": {
+    "ko": "도코로자와",
+    "en": "Tokorozawa"
+   },
+   "region": {
+    "ko": "사이타마현",
+    "en": "Saitama"
+   },
+   "country": "JP",
+   "name": {
+    "ko": "울브스",
+    "en": "Wolves"
+   },
+   "abbr": "TKR",
+   "colors": [
+    "#188174",
+    "#e0528d"
+   ],
+   "park": {
+    "name": {
+     "ko": "도코로자와 돔",
+     "en": "Tokorozawa Dome"
+    },
+    "capacity": 28104,
+    "elevation_m": 104.1,
+    "roof": "dome",
+    "surface": "turf",
+    "fence_m": [
+     100.0,
+     116.0,
+     122.0,
+     116.0,
+     100.0
+    ],
+    "wall_m": [
+     4.37,
+     3.2,
+     4.37
+    ],
+    "estimated": []
+   }
+  },
+  {
+   "id": "chiba-surfers",
+   "league": "jp-top",
+   "division": "jp-top-pacific",
+   "parent": null,
+   "city": {
+    "ko": "지바",
+    "en": "Chiba"
+   },
+   "region": {
+    "ko": "지바현",
+    "en": "Chiba"
+   },
+   "country": "JP",
+   "name": {
+    "ko": "서퍼스",
+    "en": "Surfers"
+   },
+   "abbr": "CHB",
+   "colors": [
+    "#522178",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "지바 볼파크",
+     "en": "Chiba Ballpark"
+    },
+    "capacity": 29645,
+    "elevation_m": 6.0,
+    "roof": "open",
+    "surface": "turf",
+    "fence_m": [
+     99.5,
+     112.3,
+     122.0,
+     112.3,
+     99.5
+    ],
+    "wall_m": [
+     3.3,
+     3.3,
+     3.3
+    ],
+    "estimated": []
+   }
+  },
+  {
+   "id": "sendai-crescents-farm",
+   "league": "jp-second",
+   "division": "jp-second-east",
+   "parent": "sendai-crescents",
+   "second_team": true,
+   "city": {
+    "ko": "센다이",
+    "en": "Sendai"
+   },
+   "region": null,
+   "country": "JP",
+   "name": {
+    "ko": "크레센츠",
+    "en": "Crescents"
+   },
+   "abbr": "SEN",
+   "colors": [
+    "#2b7722",
+    "#e7f0e6"
+   ],
+   "park": {
+    "name": {
+     "ko": "센다이 2군 구장",
+     "en": "Sendai Farm Park"
+    },
+    "capacity": 200,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     101.5,
+     114.5,
+     122.0,
+     114.5,
+     101.5
+    ],
+    "wall_m": [
+     3.0,
+     3.0,
+     3.0
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "surface",
+     "elevation"
+    ]
+   }
+  },
+  {
+   "id": "niigata-ibis",
+   "league": "jp-second",
+   "division": "jp-second-east",
+   "parent": null,
+   "city": {
+    "ko": "니가타",
+    "en": "Niigata"
+   },
+   "region": {
+    "ko": "니가타현",
+    "en": "Niigata"
+   },
+   "country": "JP",
+   "name": {
+    "ko": "아이비스",
+    "en": "Ibis"
+   },
+   "abbr": "NII",
+   "colors": [
+    "#1f4b7a",
+    "#e07152"
+   ],
+   "park": {
+    "name": {
+     "ko": "니가타 볼파크",
+     "en": "Niigata Ballpark"
+    },
+    "capacity": 30000,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.0,
+     114.0,
+     122.0,
+     114.0,
+     100.0
+    ],
+    "wall_m": [
+     3.0,
+     3.0,
+     3.0
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "surface",
+     "elevation"
+    ]
+   }
+  },
+  {
+   "id": "tokyo-kestrels-farm",
+   "league": "jp-second",
+   "division": "jp-second-east",
+   "parent": "tokyo-kestrels",
+   "second_team": true,
+   "city": {
+    "ko": "도다",
+    "en": "Toda"
+   },
+   "region": null,
+   "country": "JP",
+   "name": {
+    "ko": "케스트럴스",
+    "en": "Kestrels"
+   },
+   "abbr": "TKK",
+   "colors": [
+    "#762374",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "도다 2군 구장",
+     "en": "Toda Farm Park"
+    },
+    "capacity": 270,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.0,
+     114.0,
+     122.0,
+     114.0,
+     100.0
+    ],
+    "wall_m": [
+     3.0,
+     3.0,
+     3.0
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "surface",
+     "elevation"
+    ]
+   }
+  },
+  {
+   "id": "chiba-surfers-farm",
+   "league": "jp-second",
+   "division": "jp-second-east",
+   "parent": "chiba-surfers",
+   "second_team": true,
+   "city": {
+    "ko": "사이타마",
+    "en": "Saitama"
+   },
+   "region": null,
+   "country": "JP",
+   "name": {
+    "ko": "서퍼스",
+    "en": "Surfers"
+   },
+   "abbr": "CHB",
+   "colors": [
+    "#522178",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "사이타마 2군 구장",
+     "en": "Saitama Farm Park"
+    },
+    "capacity": 300,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     96.0,
+     112.5,
+     122.0,
+     112.5,
+     96.0
+    ],
+    "wall_m": [
+     3.0,
+     3.0,
+     3.0
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "surface",
+     "elevation"
+    ]
+   }
+  },
+  {
+   "id": "kitahiroshima-frontiers-farm",
+   "league": "jp-second",
+   "division": "jp-second-east",
+   "parent": "kitahiroshima-frontiers",
+   "second_team": true,
+   "city": {
+    "ko": "가마가야",
+    "en": "Kamagaya"
+   },
+   "region": null,
+   "country": "JP",
+   "name": {
+    "ko": "프런티어스",
+    "en": "Frontiers"
+   },
+   "abbr": "KTH",
+   "colors": [
+    "#1c2a7d",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "가마가야 2군 구장",
+     "en": "Kamagaya Farm Park"
+    },
+    "capacity": 2400,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.0,
+     114.0,
+     122.0,
+     114.0,
+     100.0
+    ],
+    "wall_m": [
+     3.0,
+     3.0,
+     3.0
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "surface",
+     "elevation"
+    ]
+   }
+  },
+  {
+   "id": "tokorozawa-wolves-farm",
+   "league": "jp-second",
+   "division": "jp-second-central",
+   "parent": "tokorozawa-wolves",
+   "second_team": true,
+   "city": {
+    "ko": "도코로자와",
+    "en": "Tokorozawa"
+   },
+   "region": null,
+   "country": "JP",
+   "name": {
+    "ko": "울브스",
+    "en": "Wolves"
+   },
+   "abbr": "TKR",
+   "colors": [
+    "#188174",
+    "#e0528d"
+   ],
+   "park": {
+    "name": {
+     "ko": "도코로자와 2군 구장",
+     "en": "Tokorozawa Farm Park"
+    },
+    "capacity": 300,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.0,
+     114.0,
+     122.0,
+     114.0,
+     100.0
+    ],
+    "wall_m": [
+     3.0,
+     3.0,
+     3.0
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "surface",
+     "elevation"
+    ]
+   }
+  },
+  {
+   "id": "tokyo-thunderbirds-farm",
+   "league": "jp-second",
+   "division": "jp-second-central",
+   "parent": "tokyo-thunderbirds",
+   "second_team": true,
+   "city": {
+    "ko": "이나기",
+    "en": "Inagi"
+   },
+   "region": null,
+   "country": "JP",
+   "name": {
+    "ko": "선더버즈",
+    "en": "Thunderbirds"
+   },
+   "abbr": "TKT",
+   "colors": [
+    "#5c7623",
+    "#ecf0e6"
+   ],
+   "park": {
+    "name": {
+     "ko": "이나기 2군 구장",
+     "en": "Inagi Farm Park"
+    },
+    "capacity": 2900,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.0,
+     114.0,
+     122.0,
+     114.0,
+     100.0
+    ],
+    "wall_m": [
+     3.0,
+     3.0,
+     3.0
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "surface",
+     "elevation"
+    ]
+   }
+  },
+  {
+   "id": "yokohama-seafarers-farm",
+   "league": "jp-second",
+   "division": "jp-second-central",
+   "parent": "yokohama-seafarers",
+   "second_team": true,
+   "city": {
+    "ko": "요코스카",
+    "en": "Yokosuka"
+   },
+   "region": null,
+   "country": "JP",
+   "name": {
+    "ko": "시패러스",
+    "en": "Seafarers"
+   },
+   "abbr": "YOK",
+   "colors": [
+    "#847515",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "요코스카 2군 구장",
+     "en": "Yokosuka Farm Park"
+    },
+    "capacity": 5000,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     98.0,
+     113.2,
+     122.0,
+     113.2,
+     98.0
+    ],
+    "wall_m": [
+     3.0,
+     3.0,
+     3.0
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "surface",
+     "elevation"
+    ]
+   }
+  },
+  {
+   "id": "shizuoka-sunrisers",
+   "league": "jp-second",
+   "division": "jp-second-central",
+   "parent": null,
+   "city": {
+    "ko": "시즈오카",
+    "en": "Shizuoka"
+   },
+   "region": {
+    "ko": "시즈오카현",
+    "en": "Shizuoka"
+   },
+   "country": "JP",
+   "name": {
+    "ko": "선라이저스",
+    "en": "Sunrisers"
+   },
+   "abbr": "SHI",
+   "colors": [
+    "#737920",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "시즈오카 볼파크",
+     "en": "Shizuoka Ballpark"
+    },
+    "capacity": 10000,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.0,
+     114.0,
+     122.0,
+     114.0,
+     100.0
+    ],
+    "wall_m": [
+     3.0,
+     3.0,
+     3.0
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "surface",
+     "elevation"
+    ]
+   }
+  },
+  {
+   "id": "nagoya-castles-farm",
+   "league": "jp-second",
+   "division": "jp-second-central",
+   "parent": "nagoya-castles",
+   "second_team": true,
+   "city": {
+    "ko": "나고야",
+    "en": "Nagoya"
+   },
+   "region": null,
+   "country": "JP",
+   "name": {
+    "ko": "캐슬스",
+    "en": "Castles"
+   },
+   "abbr": "NAG",
+   "colors": [
+    "#20795d",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "나고야 2군 구장",
+     "en": "Nagoya Farm Park"
+    },
+    "capacity": 4500,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.0,
+     114.0,
+     122.0,
+     114.0,
+     100.0
+    ],
+    "wall_m": [
+     3.0,
+     3.0,
+     3.0
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "surface",
+     "elevation"
+    ]
+   }
+  },
+  {
+   "id": "osaka-merchants-farm",
+   "league": "jp-second",
+   "division": "jp-second-west",
+   "parent": "osaka-merchants",
+   "second_team": true,
+   "city": {
+    "ko": "오사카",
+    "en": "Osaka"
+   },
+   "region": null,
+   "country": "JP",
+   "name": {
+    "ko": "머천츠",
+    "en": "Merchants"
+   },
+   "abbr": "OSA",
+   "colors": [
+    "#7a511f",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "오사카 2군 구장",
+     "en": "Osaka Farm Park"
+    },
+    "capacity": 500,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.0,
+     114.0,
+     122.0,
+     114.0,
+     100.0
+    ],
+    "wall_m": [
+     3.0,
+     3.0,
+     3.0
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "surface",
+     "elevation"
+    ]
+   }
+  },
+  {
+   "id": "nishinomiya-panthers-farm",
+   "league": "jp-second",
+   "division": "jp-second-west",
+   "parent": "nishinomiya-panthers",
+   "second_team": true,
+   "city": {
+    "ko": "아마가사키",
+    "en": "Amagasaki"
+   },
+   "region": null,
+   "country": "JP",
+   "name": {
+    "ko": "팬서스",
+    "en": "Panthers"
+   },
+   "abbr": "NSM",
+   "colors": [
+    "#257442",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "아마가사키 2군 구장",
+     "en": "Amagasaki Farm Park"
+    },
+    "capacity": 4400,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     95.0,
+     109.6,
+     118.0,
+     109.6,
+     95.0
+    ],
+    "wall_m": [
+     3.0,
+     3.0,
+     3.0
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "surface",
+     "elevation"
+    ]
+   }
+  },
+  {
+   "id": "hiroshima-maples-farm",
+   "league": "jp-second",
+   "division": "jp-second-west",
+   "parent": "hiroshima-maples",
+   "second_team": true,
+   "city": {
+    "ko": "이와쿠니",
+    "en": "Iwakuni"
+   },
+   "region": null,
+   "country": "JP",
+   "name": {
+    "ko": "메이플스",
+    "en": "Maples"
+   },
+   "abbr": "HIR",
+   "colors": [
+    "#7c1d30",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "이와쿠니 2군 구장",
+     "en": "Iwakuni Farm Park"
+    },
+    "capacity": 3500,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.0,
+     114.0,
+     122.0,
+     114.0,
+     100.0
+    ],
+    "wall_m": [
+     3.0,
+     3.0,
+     3.0
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "surface",
+     "elevation"
+    ]
+   }
+  },
+  {
+   "id": "fukuoka-typhoons-farm",
+   "league": "jp-second",
+   "division": "jp-second-west",
+   "parent": "fukuoka-typhoons",
+   "second_team": true,
+   "city": {
+    "ko": "지쿠고",
+    "en": "Chikugo"
+   },
+   "region": null,
+   "country": "JP",
+   "name": {
+    "ko": "타이푼스",
+    "en": "Typhoons"
+   },
+   "abbr": "FUK",
+   "colors": [
+    "#211f7a",
+    "#eae0c8"
+   ],
+   "park": {
+    "name": {
+     "ko": "지쿠고 2군 구장",
+     "en": "Chikugo Farm Park"
+    },
+    "capacity": 3000,
+    "elevation_m": null,
+    "roof": "open",
+    "surface": "grass",
+    "fence_m": [
+     100.0,
+     114.0,
+     122.0,
+     114.0,
+     100.0
+    ],
+    "wall_m": [
+     3.0,
+     3.0,
+     3.0
+    ],
+    "estimated": [
+     "lcf",
+     "rcf",
+     "wall",
+     "surface",
+     "elevation"
+    ]
+   }
+  }
+ ]
+}
