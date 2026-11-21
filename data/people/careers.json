@@ -1,12 +1,12 @@
 {
- "_comment": "How players come into the world, move between levels and leave it, season to season (crates/bm-world/src/career.rs). classes: kinds of new players, with their age on 1 November of the year they join, the share of pitchers, the level whose talent they start at ('like' a key of levels.json, a level with official statistics) and a shift from it in standard deviations (assumption: about 0.3 SD per year of age between the classes, fitted as a whole with `bm careers`), a factor on the mean growth still ahead of them ('potential', 1 = what aging.json gives for their age), the first-team level whose balance of skills they grow into ('peak'), and the birthplace group. drafts: one national draft per league each autumn, picked in reverse order of the standings; signings: other players each organisation adds every year. positions: primary positions of new position players. retirement: the chance of retiring in the offseason after a season at each age, on top of the players an organisation lets go. keep_potential: how much of the gap between a player's ceiling and his current ability his organisation counts when it decides whom to keep. board_noise: scouting error in the draft order, in standard deviations of ability. Each entry gives its source; 'assumption' marks values without published data. Fitted with CMA-ES (2026-11-16) to each level's attribute means and spreads, ages, the reach rates and each league's rates over a season to 31 May; refitted twice with Levenberg-Marquardt on four seeds: after the league styles, minor-league free agency and the measured age limits (2026-11-16), then after military service and the per-league pitcher shifts and age discounts (2026-11-17), to the leagues' 2025-2026 rates, Baseball-Reference ages and age spreads, the reach rates, the debut age and the majors' power-contact correlation (docs/data-files.md). Edit freely.",
+ "_comment": "How players come into the world, move between levels and leave it, season to season (crates/bm-world/src/career.rs). classes: kinds of new players, with their age on 1 November of the year they join, the share of pitchers, the level whose talent they start at ('like' a key of levels.json, a level with official statistics) and a shift from it in standard deviations (assumption: about 0.3 SD per year of age between the classes, fitted as a whole with `bm careers`), a factor on the mean growth still ahead of them ('potential', 1 = what aging.json gives for their age), the first-team level whose balance of skills they grow into ('peak'), and the birthplace group. drafts: one national draft per league each autumn, picked in reverse order of the standings; signings: other players each organisation adds every year. positions: primary positions of new position players. retirement: the chance of retiring in the offseason after a season at each age, on top of the players an organisation lets go. keep_potential: how much of the gap between a player's ceiling and his current ability his organisation counts when it decides whom to keep. board_noise: scouting error in the draft order, in standard deviations of ability. Each entry gives its source; 'assumption' marks values without published data. Fitted with CMA-ES (2026-11-16) to each level's attribute means and spreads, ages, the reach rates and each league's rates over a season to 31 May; refitted twice with Levenberg-Marquardt on four seeds: after the league styles, minor-league free agency and the measured age limits (2026-11-16), then after military service and the per-league pitcher shifts and age discounts (2026-11-17), to the leagues' 2025-2026 rates, Baseball-Reference ages and age spreads, the reach rates, the debut age and the majors' power-contact correlation (docs/data-files.md); since then jointly with the markets and the aging (2026-11-19, steps 5-6) and once more in the full recalibration of 2026-11-21 (step 7). Edit freely.",
  "classes": {
   "us_college": {
    "ages": {"mean": 22.25, "sd": 0.77, "min": 20.5, "max": 25.5},
    "pitchers": 0.606,
    "like": "single_a",
-   "shift": 0.4159,
-   "potential": 0.6289,
+   "shift": 0.3286,
+   "potential": 0.713,
    "peak": "mlb",
    "birthplaces": "us_draft",
    "basis": "MLB drafts 2021-2025, 2,277 four-year-college picks (MLB Stats API draft endpoint): 21.95 +- 0.77 years on draft day, 60.6 % pitchers. Starting talent and potential: assumption, fitted with `bm careers`"
@@ -15,8 +15,8 @@
    "ages": {"mean": 18.81, "sd": 0.44, "min": 17.8, "max": 20.2},
    "pitchers": 0.439,
    "like": "single_a",
-   "shift": -0.5841,
-   "potential": 0.6289,
+   "shift": -0.6714,
+   "potential": 0.713,
    "peak": "mlb",
    "birthplaces": "us_draft",
    "basis": "MLB drafts 2021-2025, 594 high-school picks: 18.51 +- 0.44 years on draft day, 43.9 % pitchers"
@@ -25,8 +25,8 @@
    "ages": {"mean": 20.89, "sd": 1.06, "min": 19.0, "max": 24.0},
    "pitchers": 0.72,
    "like": "single_a",
-   "shift": -0.0841,
-   "potential": 0.6289,
+   "shift": -0.1714,
+   "potential": 0.713,
    "peak": "mlb",
    "birthplaces": "us_draft",
    "basis": "MLB drafts 2021-2025, 189 junior-college picks: 20.59 +- 1.06 years, 72 % pitchers"
@@ -35,8 +35,8 @@
    "ages": {"mean": 16.6, "sd": 0.4, "min": 16.0, "max": 18.5},
    "pitchers": 0.5,
    "like": "single_a",
-   "shift": -0.6977,
-   "potential": 0.5179,
+   "shift": -0.7174,
+   "potential": 0.5923,
    "peak": "mlb",
    "birthplaces": "international",
    "basis": "Signing rules: 16 before signing, 17 before 1 September of the next year (MLB.com, 2026-01-22). Age spread and share of pitchers: assumption"
@@ -45,8 +45,8 @@
    "ages": {"mean": 18.4, "sd": 0.3, "min": 17.8, "max": 19.5},
    "pitchers": 0.56,
    "like": "kbo2",
-   "shift": -0.7321,
-   "potential": 0.3482,
+   "shift": -0.8049,
+   "potential": 0.3034,
    "peak": "kbo",
    "birthplaces": "kbo_domestic",
    "basis": "2027 KBO draft (2026-09-21): 87 of 110 picks high-school seniors, 62 pitchers (isplus, wikitree). Seniors are born in one calendar year, 17.7-18.7 on draft day"
@@ -55,8 +55,8 @@
    "ages": {"mean": 22.3, "sd": 0.6, "min": 20.8, "max": 25.0},
    "pitchers": 0.56,
    "like": "kbo2",
-   "shift": -0.4321,
-   "potential": 0.3482,
+   "shift": -0.5049,
+   "potential": 0.3034,
    "peak": "kbo",
    "birthplaces": "kbo_domestic",
    "basis": "2027 KBO draft: 22 college players (4 early-draft juniors) and one player from abroad"
@@ -65,8 +65,8 @@
    "ages": {"mean": 18.2, "sd": 0.3, "min": 17.6, "max": 19.2},
    "pitchers": 0.52,
    "like": "npb2",
-   "shift": -0.5017,
-   "potential": 0.0813,
+   "shift": -0.6079,
+   "potential": 0.0661,
    "peak": "npb",
    "birthplaces": "npb_domestic",
    "basis": "2025 NPB draft (2025-10-23): 19 of the 73 main-draft picks from high school, 38 pitchers among the 73 (team lists, spread-sports.jp)"
@@ -75,8 +75,8 @@
    "ages": {"mean": 22.2, "sd": 0.4, "min": 21.3, "max": 24.0},
    "pitchers": 0.52,
    "like": "npb2",
-   "shift": -0.0017,
-   "potential": 0.0813,
+   "shift": -0.1079,
+   "potential": 0.0661,
    "peak": "npb",
    "birthplaces": "npb_domestic",
    "basis": "2025 NPB draft: 40 main-draft picks from universities"
@@ -85,8 +85,8 @@
    "ages": {"mean": 24.0, "sd": 1.2, "min": 22.0, "max": 28.0},
    "pitchers": 0.52,
    "like": "npb2",
-   "shift": 0.2983,
-   "potential": 0.0813,
+   "shift": 0.1921,
+   "potential": 0.0661,
    "peak": "npb",
    "birthplaces": "npb_domestic",
    "basis": "2025 NPB draft: 12 main-draft picks from corporate teams and 2 from independent or other clubs. Ages: assumption (two to six years after high school or university)"
@@ -95,8 +95,8 @@
    "ages": {"mean": 20.6, "sd": 2.2, "min": 17.6, "max": 26.0},
    "pitchers": 0.47,
    "like": "npb2",
-   "shift": -0.6017,
-   "potential": 0.0813,
+   "shift": -0.7079,
+   "potential": 0.0661,
    "peak": "npb",
    "birthplaces": "npb_domestic",
    "basis": "2025 NPB development draft: 43 picks, 14 high school, 14 university, 12 independent league, 3 other; 20 pitchers"
@@ -105,8 +105,8 @@
    "ages": {"mean": 24.5, "sd": 2.5, "min": 19.0, "max": 33.0},
    "pitchers": 0.5,
    "like": "kbo2",
-   "shift": -0.2321,
-   "potential": 0.3482,
+   "shift": -0.3049,
+   "potential": 0.3034,
    "peak": "kbo",
    "birthplaces": "kbo_domestic",
    "basis": "Assumption: the independent Futures club signs players released by KBO clubs and undrafted amateurs"
@@ -115,8 +115,8 @@
    "ages": {"mean": 24.5, "sd": 2.5, "min": 19.0, "max": 33.0},
    "pitchers": 0.5,
    "like": "npb2",
-   "shift": 0.0983,
-   "potential": 0.0813,
+   "shift": -0.0079,
+   "potential": 0.0661,
    "peak": "npb",
    "birthplaces": "npb_domestic",
    "basis": "Assumption: the two independent farm-league clubs sign released NPB players and amateurs"
@@ -202,12 +202,12 @@
  },
  "retirement": {
   "from_age": 33,
-  "chance": [0.0927, 0.1546, 0.2474, 0.371, 0.5564, 0.7729, 0.9537, 0.9537, 0.9537, 0.9537, 0.9537],
+  "chance": [0.0883, 0.1472, 0.2356, 0.3533, 0.5298, 0.736, 0.9081, 0.9081, 0.9081, 0.9081, 0.9081],
   "basis": "Assumption, fitted to the age spread of each level (levels.json): most careers end when no organisation keeps the player; this adds the players who stop on their own"
  },
- "keep_potential": {"value": 3.9899, "basis": "Assumption, fitted to how many draftees of each round reach the majors (Karcher 2017; docs/research/world/aging.md 4B)"},
+ "keep_potential": {"value": 4.2002, "basis": "Assumption, fitted to how many draftees of each round reach the majors (Karcher 2017; docs/research/world/aging.md 4B)"},
  "board_noise": {
-  "value": 0.8357,
+  "value": 0.9189,
   "basis": "Scouting error of the draft board, in standard deviations of ability (one board for pitchers and position players). Assumption, fitted to the same reach rates"
  },
  "foreign_candidates": {
@@ -225,7 +225,7 @@
  "military_service": {
   "deadline_age": 27.0,
   "early_from_age": 20.0,
-  "early_chance": 0.419,
+  "early_chance": 0.435,
   "sangmu_per_year": 26,
   "two_season_share": 0.5,
   "asian_games": {"first": 2030, "every": 4, "team": 24, "pitchers": 11, "wildcards": 3, "max_age": 25.0, "per_club": 3, "gold": 0.778},
@@ -236,7 +236,7 @@
   "basis": "Offseasons without games a new world goes through before its first season (decision 2026-11-18: start from a settled world): the first world is made that many years before the start (2007 for a 2027 start) and the game begins with what the career model makes of it. From the first world itself the major-league first teams' hitters rose from +7 runs per 162 games above their target of -1.0 (offseason 1) to +28 (offseason 7) and settled near +9 from offseason 20 on, and the majors' free-agent market fell from about 177 major-league signings a year to 48-62 (offseasons 6-11) before it came back to 166-178 (offseasons 20-30; seeds 5-8). (these counts are from before the joint careers and market fit of 2026-11-19). The careers were fitted on offseasons 16-30"
  },
  "age_discount": {
-  "value": 0.2118,
+  "value": 0.2415,
   "basis": "Standard deviations of ability taken off a player's worth for each year of age past 30 when his organisation decides whom to keep: older players cost more (no salaries are modelled yet) and have less ahead of them. Assumption, fitted with `bm careers` to the ages of each level"
  },
  "league_age_discount": {
@@ -245,19 +245,19 @@
   "npb": 0.351,
   "basis": "Added to age_discount by the organisations of each league (decision 2026-11-17). KBO clubs keep their veterans far longer than the majors' organisations: Baseball-Reference 2025-2026 gives KBO batters an age spread of 5.45 years and 43.5 % of their playing time at 30 or older (NPB 3.95 years, MLB 3.67), which one discount for every league could not keep. Fitted with the leagues' ages and records"
  },
- "pitcher_potential": {"value": 0.6801, "basis": "Factor on the growth ahead of new pitchers against new position players. Assumption, fitted with `bm careers`"},
+ "pitcher_potential": {"value": 0.5966, "basis": "Factor on the growth ahead of new pitchers against new position players. Assumption, fitted with `bm careers`"},
  "pitcher_shift": {
-  "value": -0.6154,
+  "value": -0.4745,
   "basis": "Standard deviations added to new pitchers' pitching on top of their class's talent: how far behind the position players of their age they start. Assumption, fitted with `bm careers` to the ages of each level"
  },
  "league_pitcher_shift": {
   "mlb": 0.0,
-  "kbo": 0.139,
-  "npb": 0.436,
+  "kbo": 0.095,
+  "npb": 0.424,
   "basis": "Standard deviations added to pitcher_shift for the new pitchers of each kind of league. Introduced when the NPB farm's pitchers sat 1.17 SD below the first team's (the levels of 2026-11-17) where its hitters sat 0.57 below, and thirty offseasons on the first team's pitchers came out 0.7-1.0 SD weaker than its records asked (decision 2026-11-17). Fitted with the leagues' records, last with the careers and markets together (2026-11-19)"
  },
  "prospect_spread": {
-  "value": 0.2179,
+  "value": 0.2454,
   "basis": "Standard deviation of the logarithm of a player's personal growth factor (median 1). Assumption, fitted with `bm careers` to the reach rates by draft round and to each level's talent"
  },
  "balance": {
@@ -270,9 +270,9 @@
   "basis": "Share of a level's skill gaps (more raw power than bat-to-ball skill, weaker defence and bodies, poor command, nearly major-league velocity, plate discipline as good as the majors) that closes by a player's peak. Assumption, fitted with `bm careers` so that each level keeps the skill balance of its 2025-2026 statistics"
  },
  "styles": {
-  "mlb": {"power": -0.058, "contact": -0.265, "discipline": -0.728, "stuff": 1.211},
-  "kbo": {"power": -0.371, "contact": 0.444, "discipline": 0.458, "stuff": 1.395},
-  "npb": {"power": -0.53, "contact": -0.354, "discipline": -0.376, "stuff": -1.169},
+  "mlb": {"power": -0.118, "contact": -0.257, "discipline": -0.711, "stuff": 1.105},
+  "kbo": {"power": -0.236, "contact": 0.326, "discipline": 0.469, "stuff": 1.31},
+  "npb": {"power": -0.409, "contact": -0.392, "discipline": -0.468, "stuff": -1.5},
   "basis": "Shifts of the new amateurs each kind of league takes in (mlb: the major-league organisations, kbo, npb), in standard deviations, applied to their attributes before their ceilings are drawn, so that both move: hitters' power, bat-to-ball skills (contact, timing, bat control) and plate discipline, pitchers' stuff (stuff, deception, pitch grades). The amateur game and the clubs of each league shape this mix; choosing players by value alone gathers power and discipline at the top of every league. Shifting the ceilings alone moved nothing where a ceiling lies below the player (the NPB's power, the majors' plate discipline: +0.4 moved them +0.004 and +0.037 after 30 offseasons; decision 2026-11-16). The first world's players already have their league's balance and are not shifted. Fitted so that the world after 30 offseasons plays each league's 2025-2026 records"
  }
 }
