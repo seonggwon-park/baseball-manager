@@ -106,6 +106,181 @@ pub struct Options<'a> {
     /// Write every game's box-score lines of every season played into this directory
     /// (`batting.csv`, `pitching.csv`; [`GameLogs`]).
     pub game_logs: Option<&'a std::path::Path>,
+    /// Play the first season this many times with the same rosters and schedule instead
+    /// ([`repeat`]); 0 = play the seasons as usual.
+    pub repeat: usize,
+    /// Leagues whose games the repeats play (default: the three first-team leagues).
+    pub leagues: Option<Vec<String>>,
+    /// Write every club's record in every repeat here (CSV).
+    pub standings_out: Option<&'a std::path::Path>,
+}
+
+/// The first-team leagues whose postseason [`postseason`] knows.
+const FIRST_TEAMS: [&str; 3] = ["us-major", "kr-top", "jp-top"];
+
+/// Clubs of the leagues of `world` as `standings` ranks them: first place in each division (or
+/// in the league if it has none) and a place in the postseason, by winning percentage with the
+/// run difference breaking ties (the leagues break them by head-to-head records first; this is
+/// a simplification). The postseason: in MLB, per league, the three division winners and the
+/// three best other records (12 clubs since 2022, MLB.com "MLB's postseason format,
+/// explained"); in the KBO the top five (the fourth and fifth meet in the wild-card games; KBO
+/// press release of 2025-09-28); in NPB the top three of each league (the Climax Series, NPB
+/// 2026 notice). Other leagues get `None`.
+fn postseason(world: &World, clubs: &[&bm_world::league::Club], standings: &BTreeMap<String, bm_world::Standing>) -> Vec<(bool, Option<bool>)> {
+    let key = |i: usize| {
+        let s = standings.get(&clubs[i].id).copied().unwrap_or_default();
+        (s.pct(), s.runs_for as i64 - s.runs_against as i64)
+    };
+    let ranked = |mut v: Vec<usize>| {
+        v.sort_by(|&a, &b| key(b).partial_cmp(&key(a)).unwrap_or(std::cmp::Ordering::Equal));
+        v
+    };
+    let group_of = |i: usize| clubs[i].division.clone().unwrap_or_else(|| clubs[i].league.clone());
+    let mut out = vec![(false, None); clubs.len()];
+    let mut groups: BTreeMap<String, Vec<usize>> = BTreeMap::new();
+    for i in 0..clubs.len() {
+        groups.entry(group_of(i)).or_default().push(i);
+    }
+    for v in groups.into_values() {
+        out[ranked(v)[0]].0 = true;
+    }
+    // Sub-leagues of MLB's divisions (American, National).
+    let sub = |i: usize| {
+        let league = world.league(&clubs[i].league);
+        let div = clubs[i].division.as_deref();
+        league.and_then(|l| l.divisions.iter().find(|d| Some(d.id.as_str()) == div)).and_then(|d| d.group.clone()).unwrap_or_default()
+    };
+    let mut fields: BTreeMap<(String, String), Vec<usize>> = BTreeMap::new();
+    for (i, c) in clubs.iter().enumerate() {
+        let field = match c.league.as_str() {
+            "us-major" => sub(i),
+            "jp-top" => group_of(i),
+            "kr-top" => String::new(),
+            _ => continue,
+        };
+        fields.entry((c.league.clone(), field)).or_default().push(i);
+    }
+    for ((league, _), v) in fields {
+        let order = ranked(v);
+        let mut seats: Vec<usize> = match league.as_str() {
+            "us-major" => {
+                let winners: Vec<usize> = order.iter().copied().filter(|&i| out[i].0).collect();
+                let others = order.iter().copied().filter(|&i| !out[i].0).take(3);
+                winners.into_iter().chain(others).collect()
+            }
+            "kr-top" => order.iter().copied().take(5).collect(),
+            _ => order.iter().copied().take(3).collect(),
+        };
+        seats.sort_unstable();
+        for &i in &order {
+            out[i].1 = Some(seats.binary_search(&i).is_ok());
+        }
+    }
+    out
+}
+
+/// `bm season --repeat N`: the first season played N times with the same rosters, the same
+/// schedule and no offseason, only the games' random numbers changing (each repeat's seed is
+/// the season's seed plus its number), for the leagues of `o.leagues`. Prints each club's
+/// mean record, the spread of its wins, and how often it finished first and reached the
+/// postseason; with `o.standings_out`, every club's record in every repeat.
+fn repeat(world: &World, pop: &bm_world::Population, play: &Play, year: i32, seed: u64, o: &Options) {
+    use std::io::Write;
+    let leagues: Vec<String> = o.leagues.clone().unwrap_or_else(|| FIRST_TEAMS.iter().map(|s| s.to_string()).collect());
+    let mut base = Season::new(world, year, seed);
+    base.fixtures.retain(|f| leagues.contains(&f.league));
+    let clubs: Vec<&bm_world::league::Club> = world.clubs().filter(|c| leagues.contains(&c.league)).collect();
+    let mut out = o.standings_out.map(|p| {
+        let mut f = std::io::BufWriter::new(std::fs::File::create(p).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
+        writeln!(f, "repeat,league,division,club,won,lost,tied,runs_for,runs_against,first,postseason").expect("standings");
+        f
+    });
+    let (mut records, mut firsts, mut posts) = (vec![Vec::new(); clubs.len()], vec![0usize; clubs.len()], vec![0usize; clubs.len()]);
+    let t0 = Instant::now();
+    for r in 0..o.repeat {
+        let mut s = base.clone();
+        s.seed = seed.wrapping_add(r as u64);
+        s.play_out(world, pop, play);
+        let places = postseason(world, &clubs, &s.standings);
+        for (i, c) in clubs.iter().enumerate() {
+            let st = s.standings.get(&c.id).copied().unwrap_or_default();
+            records[i].push(st);
+            firsts[i] += usize::from(places[i].0);
+            posts[i] += usize::from(places[i].1 == Some(true));
+            if let Some(f) = out.as_mut() {
+                let post = places[i].1.map_or(String::new(), |p| u8::from(p).to_string());
+                writeln!(
+                    f,
+                    "{r},{},{},{},{},{},{},{},{},{},{post}",
+                    c.league,
+                    c.division.as_deref().unwrap_or(""),
+                    c.id,
+                    st.won,
+                    st.lost,
+                    st.tied,
+                    st.runs_for,
+                    st.runs_against,
+                    u8::from(places[i].0)
+                )
+                .expect("standings");
+            }
+        }
+    }
+    if let Some(mut f) = out {
+        f.flush().expect("standings");
+    }
+    let n = o.repeat as f64;
+    println!(
+        "{year}: the season played {} times with the same rosters and schedule ({} games each, leagues {}) in {:.1} s",
+        o.repeat,
+        base.fixtures.len(),
+        leagues.join(", "),
+        t0.elapsed().as_secs_f64()
+    );
+    for league in &leagues {
+        let mut idx: Vec<usize> = (0..clubs.len()).filter(|&i| &clubs[i].league == league).collect();
+        if idx.is_empty() {
+            continue;
+        }
+        let wins = |i: usize| records[i].iter().map(|s| s.won as f64).collect::<Vec<_>>();
+        let mean = |v: &[f64]| v.iter().sum::<f64>() / v.len().max(1) as f64;
+        let sd = |v: &[f64]| {
+            let m = mean(v);
+            (v.iter().map(|x| (x - m) * (x - m)).sum::<f64>() / (v.len() as f64 - 1.0).max(1.0)).sqrt()
+        };
+        idx.sort_by(|&a, &b| mean(&wins(b)).partial_cmp(&mean(&wins(a))).unwrap_or(std::cmp::Ordering::Equal));
+        let has_post = FIRST_TEAMS.contains(&league.as_str());
+        println!("\n  {league}: club, mean W-L, SD of wins, 5-95 % of wins, first in division or league %{}", if has_post { ", postseason %" } else { "" });
+        for &i in &idx {
+            let mut w = wins(i);
+            w.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+            let q = |p: f64| w[((p * (w.len() - 1) as f64).round() as usize).min(w.len() - 1)];
+            let lost = mean(&records[i].iter().map(|s| s.lost as f64).collect::<Vec<_>>());
+            println!(
+                "    {:<28} {:5.1}-{:<5.1} {:4.1}  {:3.0}-{:<3.0}  {:5.1}{}",
+                clubs[i].name.en,
+                mean(&w),
+                lost,
+                sd(&w),
+                q(0.05),
+                q(0.95),
+                100.0 * firsts[i] as f64 / n,
+                if has_post { format!("  {:5.1}", 100.0 * posts[i] as f64 / n) } else { String::new() }
+            );
+        }
+        // Luck against talent: the spread of a club's wins over the repeats, and the spread
+        // of the clubs' mean wins. A coin-flip season of G decided games has SD sqrt(G)/2.
+        let luck = (idx.iter().map(|&i| sd(&wins(i)).powi(2)).sum::<f64>() / idx.len() as f64).sqrt();
+        let means: Vec<f64> = idx.iter().map(|&i| mean(&wins(i))).collect();
+        let decided = mean(&idx.iter().map(|&i| mean(&records[i].iter().map(|s| (s.won + s.lost) as f64).collect::<Vec<_>>())).collect::<Vec<_>>());
+        println!(
+            "    wins: SD over the repeats {:.2} (coin flips over {:.0} decided games: {:.2}), SD of the clubs' means {:.2}",
+            luck,
+            decided,
+            decided.sqrt() / 2.0,
+            sd(&means)
+        );
+    }
 }
 
 /// Fielding positions in the order of the engine's `Team::defense`.
@@ -411,6 +586,10 @@ fn level_totals(world: &World, pop: &bm_world::Population, season: &Season) -> B
 }
 
 pub fn run(tuning: &Tuning, seed: u64, threads: usize, o: &Options) {
+    if o.repeat > 0 && (o.seasons > 1 || o.until.is_some() || o.game_logs.is_some() || o.json.is_some() || o.out.is_some()) {
+        eprintln!("--repeat plays the first season again; it does not go with --seasons, --until, --game-logs, --json or --out");
+        std::process::exit(2);
+    }
     let read = |p: &std::path::Path| std::fs::read_to_string(p).unwrap_or_else(|e| panic!("{}: {e}", p.display()));
     let world = World::bundled();
     let levels = o.levels_file.map_or_else(LevelTable::bundled, |p| LevelTable::from_json(&read(p)).unwrap_or_else(|e| panic!("{}: {e}", p.display())));
@@ -439,6 +618,10 @@ pub fn run(tuning: &Tuning, seed: u64, threads: usize, o: &Options) {
         println!("{} offseasons without games: {} players, {} people so far", o.warmup, pop.players().count(), pop.people.len());
     }
     let play = Play { params: tuning.params.clone(), baseline: tuning.baseline.clone(), style: tuning.style, threads, ..Play::default() }.with_balls(&levels);
+    if o.repeat > 0 {
+        repeat(&world, &pop, &play, first, seed, o);
+        return;
+    }
     let (until, seasons) = (o.until, o.seasons);
     let seasons = seasons.max(1);
     let mut logs = o.game_logs.map(GameLogs::create);
@@ -537,5 +720,43 @@ fn standings(world: &World, season: &Season) {
                 println!("    {:<28} {:3}-{:<3} {:.3}  RS {:4} RA {:4}", name, s.won, s.lost, s.pct(), s.runs_for, s.runs_against);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn postseason_takes_twelve_major_league_clubs_five_kbo_and_three_per_npb_league() {
+        let world = World::bundled();
+        let clubs: Vec<&bm_world::league::Club> = world.clubs().filter(|c| FIRST_TEAMS.contains(&c.league.as_str())).collect();
+        // Records falling with the club's place in the list, a tie on winning percentage broken
+        // by run difference.
+        let standings: BTreeMap<String, bm_world::Standing> = clubs
+            .iter()
+            .enumerate()
+            .map(|(i, c)| {
+                let won = 100 - (i as u32 % 40);
+                (c.id.clone(), bm_world::Standing { won, lost: 162 - won, tied: 0, runs_for: 700 + i as u32, runs_against: 700 })
+            })
+            .collect();
+        let places = postseason(&world, &clubs, &standings);
+        type Place = (bool, Option<bool>);
+        let count = |league: &str, f: &dyn Fn(&Place) -> bool| clubs.iter().zip(&places).filter(|(c, p)| c.league == league && f(p)).count();
+        assert_eq!(count("us-major", &|p| p.1 == Some(true)), 12);
+        assert_eq!(count("us-major", &|p| p.0), 6);
+        assert!(clubs.iter().zip(&places).filter(|(c, _)| c.league == "us-major").all(|(_, p)| !p.0 || p.1 == Some(true)), "every division winner plays on");
+        assert_eq!(count("kr-top", &|p| p.1 == Some(true)), 5);
+        assert_eq!(count("kr-top", &|p| p.0), 1);
+        assert_eq!(count("jp-top", &|p| p.1 == Some(true)), 6);
+        assert_eq!(count("jp-top", &|p| p.0), 2);
+        // Six per MLB league.
+        let al = clubs
+            .iter()
+            .zip(&places)
+            .filter(|(c, p)| c.league == "us-major" && c.division.as_deref().is_some_and(|d| d.contains("american")) && p.1 == Some(true))
+            .count();
+        assert_eq!(al, 6);
     }
 }

@@ -110,6 +110,9 @@ cargo run --release --bin bm -- we --games 300000             # 강화학습 보
 cargo run --release --bin bm -- rollout --states 300          # 같은 순간을 복제해 작전(번트·도루 등)의 값을 잼(docs/rl.md 6절)
 cargo run --release --bin bm -- re --games 300000             # 볼카운트를 포함한 득점 기대값 표, 투수 환경의 보상(docs/rl.md 9절)
 cargo run --release --bin bm -- season --seed 1 --game-logs logs # 세계의 모든 리그 한 시즌, 경기별 타자·투수 기록(logs/batting.csv, pitching.csv)
+cargo run --release --bin bm -- season --seed 1 --repeat 100 --standings-out st.csv
+                                                              # 같은 선수단·일정으로 첫 시즌을 100번(운만 바뀜): 구단별 승수 퍼짐,
+                                                              # 1위·포스트시즌 비율(MLB 12팀, KBO 5팀, NPB 리그별 3팀)
 cargo run --release --bin bm -- park --level kbo --fence 95,113.4,124,113.4,95 --wall 4 --elevation 22 --games 20000
                                                               # 구장 실험: 한 구장에서만 치른 KBO 수준 경기
                                                               # (--balls FILE: 경기 대신 실측 타구를 이 구장에 날린다;

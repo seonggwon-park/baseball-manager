@@ -31,6 +31,9 @@
 //!           [--aging FILE] [--contracts FILE] [--json FILE]       without games); --json: each level's rates in the last season;
 //!           [--history H] [--game-logs DIR]                       --history: offseasons of the new world's past (careers.json);
 //!                                                                 --game-logs: every game's batting and pitching lines as CSV
+//!           [--repeat N [--leagues L,..] [--standings-out FILE]] the first season N times with the same rosters and schedule
+//!                                                                 (only the games' luck changes; default leagues us-major,
+//!                                                                 kr-top, jp-top): each club's wins, firsts and postseasons
 //! bm careers [--years N] [--every K] [--from N]                   offseasons back to back: each level's talent and ages (every
 //!            [--levels FILE] [--careers FILE] [--aging FILE]      K years and averaged from offseason N), and how the drafted
 //!            [--contracts FILE] [--json FILE] [--out FILE]        and signed prospects turn out, from a new world with H
@@ -144,6 +147,11 @@ struct Args {
     attrs_out: Option<std::path::PathBuf>,
     /// `bm season`: directory for every game's box-score lines.
     game_logs: Option<std::path::PathBuf>,
+    /// `bm season --repeat`: repeats of the first season, their leagues and where to write
+    /// the records.
+    repeat: usize,
+    leagues: Option<Vec<String>>,
+    standings_out: Option<std::path::PathBuf>,
     invert: Option<std::path::PathBuf>,
     face_lead: f64,
     dir_shift: f64,
@@ -198,6 +206,9 @@ fn parse_args() -> Args {
         out: None,
         attrs_out: None,
         game_logs: None,
+        repeat: 0,
+        leagues: None,
+        standings_out: None,
         invert: None,
         face_lead: 0.0,
         dir_shift: 0.0,
@@ -283,6 +294,9 @@ fn parse_args() -> Args {
             "--out" => a.out = Some(v.into()),
             "--attrs-out" => a.attrs_out = Some(v.into()),
             "--game-logs" => a.game_logs = Some(v.into()),
+            "--repeat" => a.repeat = v.parse().expect("--repeat N"),
+            "--leagues" => a.leagues = Some(v.split(',').map(|s| s.trim().to_string()).collect()),
+            "--standings-out" => a.standings_out = Some(v.into()),
             "--invert" => a.invert = Some(v.into()),
             "--face-lead" => a.face_lead = v.parse().expect("--face-lead DEG"),
             "--dir-shift" => a.dir_shift = v.parse().expect("--dir-shift DEG"),
@@ -803,6 +817,9 @@ fn main() {
                 json: args.json.as_deref(),
                 out: args.out.as_deref(),
                 game_logs: args.game_logs.as_deref(),
+                repeat: args.repeat,
+                leagues: args.leagues.clone(),
+                standings_out: args.standings_out.as_deref(),
             },
         ),
         "careers" => careers::run(
