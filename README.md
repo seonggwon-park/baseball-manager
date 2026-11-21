@@ -99,7 +99,7 @@ MLB 30개 구장(실제 거리·담장 높이·고도)에서 치른 10,000경기
 엔진과 검증 도구는 Rust 1.82 이상만 있으면 된다.
 
 ```sh
-cargo test --workspace                                        # 단위 테스트 175개
+cargo test --workspace                                        # 단위 테스트 176개
 cargo run --release --bin bm -- game --seed 7                 # 한 경기 박스스코어
 cargo run --release --bin bm -- validate --games 10000        # MLB 2025와 비교한 리포트
 cargo run --release --bin bm -- tactics --games 100000        # 득점 기대값 표와 작전의 결과(docs/tactics.md)

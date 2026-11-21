@@ -12,6 +12,7 @@
    "home": 0.0916,
    "taste": 0.1,
    "slack": 0.05,
+   "budget_power": 0.5,
    "bench_share": 0.1,
    "displaced": 0.3,
    "depth_signings": 8,

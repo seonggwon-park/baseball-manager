@@ -283,6 +283,36 @@ fn repeat(world: &World, pop: &bm_world::Population, play: &Play, year: i32, see
     }
 }
 
+/// The major-league clubs' records in `season`: how many, their mean decided games, the
+/// spread of their winning percentages and its correlation with their budgets (the spread of
+/// talent between clubs and how much money buys, for the careers fit; task #99).
+fn mlb_clubs(world: &World, season: &Season, rules: &bm_world::ContractRules, year: i32) -> serde_json::Value {
+    let budgets = bm_world::contract::Budgets::bundled();
+    let rows: Vec<(f64, f64, f64)> = world
+        .clubs()
+        .filter(|c| c.league == "us-major")
+        .filter_map(|c| {
+            let s = season.standings.get(&c.id)?;
+            let games = (s.won + s.lost) as f64;
+            let budget = budgets.of(&c.id, bm_world::contract::Economy::Mlb, year, rules)?;
+            (games > 0.0).then_some((s.won as f64 / games, budget, games))
+        })
+        .collect();
+    let n = rows.len() as f64;
+    if n < 3.0 {
+        return serde_json::json!({"clubs": rows.len()});
+    }
+    let mean = |f: &dyn Fn(&(f64, f64, f64)) -> f64| rows.iter().map(f).sum::<f64>() / n;
+    let (mp, mb) = (mean(&|r| r.0), mean(&|r| r.1));
+    let var = |f: &dyn Fn(&(f64, f64, f64)) -> f64, m: f64| rows.iter().map(|r| (f(r) - m).powi(2)).sum::<f64>() / (n - 1.0);
+    let (vp, vb) = (var(&|r| r.0, mp), var(&|r| r.1, mb));
+    let cov = rows.iter().map(|r| (r.0 - mp) * (r.1 - mb)).sum::<f64>() / (n - 1.0);
+    serde_json::json!({
+        "clubs": rows.len(), "games": mean(&|r| r.2), "win_pct_sd": vp.sqrt(),
+        "budget_corr": if vp > 0.0 && vb > 0.0 { cov / (vp * vb).sqrt() } else { 0.0 },
+    })
+}
+
 /// Fielding positions in the order of the engine's `Team::defense`.
 const POSITIONS: [&str; 9] = ["P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF"];
 
@@ -404,7 +434,7 @@ impl GameLogs {
 fn write_players(path: &std::path::Path, pop: &bm_world::Population, season: &Season) {
     use std::io::Write;
     let mut f = std::io::BufWriter::new(std::fs::File::create(path).unwrap_or_else(|e| panic!("{}: {e}", path.display())));
-    writeln!(f, "id,level,slot,pitcher,age,value,g,pa,ab,h,doubles,triples,hr,bb,hbp,so,sf,r,gp,gs,outs,bf,ph,pr,er,pbb,pso,phr,club,batting")
+    writeln!(f, "id,level,slot,pitcher,age,value,g,pa,ab,h,doubles,triples,hr,bb,hbp,so,sf,r,gp,gs,outs,bf,ph,pr,er,pbb,pso,phr,club,batting,salary")
         .expect("write --out");
     let jun30 = Date::new(season.year, 6, 30);
     for r in &pop.rosters {
@@ -423,7 +453,7 @@ fn write_players(path: &std::path::Path, pop: &bm_world::Population, season: &Se
                 let q = season.pitching.get(&p.id).cloned().unwrap_or_default();
                 writeln!(
                     f,
-                    "{},{},{slot},{},{age:.2},{:.2},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{:.2}",
+                    "{},{},{slot},{},{age:.2},{:.2},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{:.2},{:.0}",
                     p.id,
                     r.level,
                     u8::from(p.is_pitcher()),
@@ -451,7 +481,8 @@ fn write_players(path: &std::path::Path, pop: &bm_world::Population, season: &Se
                     q.so,
                     q.hr,
                     r.club,
-                    if p.is_pitcher() { 0.0 } else { bm_world::ability::batting(p) }
+                    if p.is_pitcher() { 0.0 } else { bm_world::ability::batting(p) },
+                    pop.contracts.get(&p.id).and_then(|c| c.salary.get((season.year - c.from) as usize)).copied().unwrap_or(f64::NAN)
                 )
                 .expect("write --out");
             }
@@ -686,8 +717,8 @@ pub fn run(tuning: &Tuning, seed: u64, threads: usize, o: &Options) {
                         (k, v)
                     })
                     .collect();
-                std::fs::write(path, serde_json::to_string_pretty(&serde_json::json!({"year": year, "levels": levels_json})).unwrap())
-                    .unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+                let doc = serde_json::json!({"year": year, "levels": levels_json, "mlb_clubs": mlb_clubs(&world, &season, &contracts, year)});
+                std::fs::write(path, serde_json::to_string_pretty(&doc).unwrap()).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
             }
             if let Some(path) = o.out {
                 write_players(path, &pop, &season);

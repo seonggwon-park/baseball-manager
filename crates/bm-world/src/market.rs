@@ -34,6 +34,14 @@ pub struct MarketRules {
     pub taste: f64,
     /// Share of its budget an organisation may go past.
     pub slack: f64,
+    /// How much more an organisation with a bigger budget offers a free agent it wants as a
+    /// regular: its offer is the asking price (with the premium for competing bids) times
+    /// (its budget / the market's median budget) ^ `budget_power`, so a richer club outbids a
+    /// poorer one for the same player (decision 2026-11-21: in the majors payroll explains a
+    /// fifth to a third of the variation in winning, Abramowitz 2006). 0: every organisation
+    /// offers the same and the player's taste decides.
+    #[serde(default)]
+    pub budget_power: f64,
     /// A bench player's playing time as a share of a regular's.
     pub bench_share: f64,
     /// How much of the wins of the players a signing pushes down the roster an organisation
@@ -299,6 +307,11 @@ pub fn run(rules: &ContractRules, m: &MarketRules, e: Economy, mut agents: Vec<F
     agents.sort_by(|a, b| rules.war(&b.player, e).total_cmp(&rules.war(&a.player, e)));
     let mut signed = Vec::new();
     let mut left = Vec::new();
+    // The market's median budget, the yardstick of `budget_power`.
+    let mut budgets: Vec<f64> = bidders.iter().filter(|b| !b.depth_only && b.budget > 0.0).map(|b| b.budget).collect();
+    budgets.sort_by(f64::total_cmp);
+    let median = budgets.get(budgets.len() / 2).copied().unwrap_or(1.0);
+    let reach = |b: &Bidder| if m.budget_power == 0.0 || b.budget <= 0.0 { 1.0 } else { (b.budget / median).powf(m.budget_power) };
     for fa in agents {
         let war = rules.war(&fa.player, e);
         let ask = price(war);
@@ -325,8 +338,8 @@ pub fn run(rules: &ContractRules, m: &MarketRules, e: Economy, mut agents: Vec<F
         let offers: Vec<(usize, f64)> = wants
             .iter()
             .filter_map(|&(k, place)| {
-                let pay = if place >= 1.0 { ask * premium } else { (place * ask).max(min) };
                 let b = &bidders[k];
+                let pay = if place >= 1.0 { ask * premium * reach(b) } else { (place * ask).max(min) };
                 // A club signing another's free agent also pays his compensation, or the
                 // posting fee of a posted player.
                 (b.committed + pay + fa.owed(k, pay, years_at(pay), posting) <= b.budget * (1.0 + m.slack)).then_some((k, pay))
@@ -474,6 +487,37 @@ mod tests {
         let p = pitcher(&mut rng, 200, Role::Starter, &Talent::MAJOR);
         // An empty staff takes any pitcher.
         assert_eq!(d.place(&rules, &p, 0.1), 1.0);
+    }
+
+    #[test]
+    fn a_richer_club_outbids_a_poorer_one_when_budgets_count() {
+        let rules = ContractRules::bundled();
+        let roster = || {
+            let mut d = Depth::new(Economy::Mlb);
+            for i in 0..13 {
+                d.add(&rules, &hitter(i, 0.0));
+            }
+            d
+        };
+        // Three clubs with room want him; the richest has three times the median budget.
+        let richest = |power: f64, seed: u64| {
+            let m = MarketRules { budget_power: power, home: 0.0, ..rules.market[&Economy::Mlb].clone() };
+            let mut bidders: Vec<Bidder> = [1.0e8, 1.5e8, 4.5e8]
+                .iter()
+                .map(|&budget| Bidder { depth: roster(), committed: 0.0, budget, depth_signed: 0, outside_left: None, depth_only: false })
+                .collect();
+            let out = run(&rules, &m, Economy::Mlb, vec![FreeAgent::new(hitter(500, 1.0), 29.0, None, Why::Service)], &mut bidders, 2027, &mut Rng::new(seed));
+            (out.signed[0].org == 2, out.signed[0].pay)
+        };
+        let share = |power: f64| (0..200).filter(|&s| richest(power, s).0).count();
+        // Equal offers: the richest club wins about a third of the time; offers that grow with
+        // the budget: nearly always, and he is paid more.
+        let (even, rich) = (share(0.0), share(1.0));
+        assert!((40..100).contains(&even), "{even} of 200 with equal offers");
+        assert!(rich > 180, "{rich} of 200 with budget_power 1");
+        // Three times the median budget, three times the offer.
+        let (won, pay) = richest(1.0, 1);
+        assert!(won && (pay / richest(0.0, 1).1 - 3.0).abs() < 0.01, "{pay}");
     }
 
     #[test]
