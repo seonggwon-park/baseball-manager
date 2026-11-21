@@ -113,6 +113,8 @@ cargo run --release --bin bm -- season --seed 1 --game-logs logs # 세계의 모
 cargo run --release --bin bm -- season --seed 1 --repeat 100 --standings-out st.csv
                                                               # 같은 선수단·일정으로 첫 시즌을 100번(운만 바뀜): 구단별 승수 퍼짐,
                                                               # 1위·포스트시즌 비율(MLB 12팀, KBO 5팀, NPB 리그별 3팀)
+cargo run --release --bin bm -- lineup --games 30000 --permutations 20 # 타순의 값: 같은 상대·같은 난수로 엔진 타순, 역순, 무작위 타순
+                                                              # (--order 2,1,3,...: 엔진 타순의 몇 번째 타자를 어디에 둘지 직접 지정)
 cargo run --release --bin bm -- park --level kbo --fence 95,113.4,124,113.4,95 --wall 4 --elevation 22 --games 20000
                                                               # 구장 실험: 한 구장에서만 치른 KBO 수준 경기
                                                               # (--balls FILE: 경기 대신 실측 타구를 이 구장에 날린다;

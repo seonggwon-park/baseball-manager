@@ -57,6 +57,10 @@
 //!                                                                 tried from copies of N plate appearances each, R rollouts per
 //!                                                                 tactic, the AI managers finishing the game: change of the
 //!                                                                 chance of winning and of the runs to the end of the inning
+//! bm lineup [--level L] [--club K] [--games N] [--seed S]          one club of a level (levels.json talent) with other batting
+//!           [--order p1,..,p9]... [--permutations K] [--json FILE] orders against the same opponents and random numbers: the
+//!                                                                 engine's order, its reverse, given orders (places in the engine's
+//!                                                                 order) and K random ones; runs per game, paired differences
 //! bm game [--seed S]                                              play one game and print the box score
 //! bm bench [--games N]                                            measure simulation speed
 //! bm serve [--port P] [--static DIR]                              session API over HTTP for the interface in a browser
@@ -65,6 +69,7 @@
 mod careers;
 mod contacts;
 mod level;
+mod lineup;
 mod players;
 mod report;
 mod season;
@@ -95,6 +100,8 @@ struct Args {
     only: Option<String>,
     /// `bm level`: the level, its talent offsets and whether to play it against major-leaguers.
     level: String,
+    /// Whether `--level` was given (`bm lineup` defaults to the majors).
+    level_given: bool,
     talent: bm_world::Talent,
     /// Talent of the foreign players of a KBO or NPB club.
     foreign: bm_world::Talent,
@@ -147,6 +154,10 @@ struct Args {
     attrs_out: Option<std::path::PathBuf>,
     /// `bm season`: directory for every game's box-score lines.
     game_logs: Option<std::path::PathBuf>,
+    /// `bm lineup`: the club, batting orders to try and random ones.
+    club: usize,
+    orders: Vec<Vec<usize>>,
+    permutations: usize,
     /// `bm season --repeat`: repeats of the first season, their leagues and where to write
     /// the records.
     repeat: usize,
@@ -172,6 +183,7 @@ fn parse_args() -> Args {
         parks: true,
         only: None,
         level: "aaa".into(),
+        level_given: false,
         talent: bm_world::Talent::MAJOR,
         foreign: bm_world::Talent::MAJOR,
         vs_mlb: false,
@@ -206,6 +218,9 @@ fn parse_args() -> Args {
         out: None,
         attrs_out: None,
         game_logs: None,
+        club: 0,
+        orders: Vec::new(),
+        permutations: 0,
         repeat: 0,
         leagues: None,
         standings_out: None,
@@ -295,6 +310,9 @@ fn parse_args() -> Args {
             "--attrs-out" => a.attrs_out = Some(v.into()),
             "--game-logs" => a.game_logs = Some(v.into()),
             "--repeat" => a.repeat = v.parse().expect("--repeat N"),
+            "--club" => a.club = v.parse().expect("--club K"),
+            "--order" => a.orders.push(v.split(',').map(|x| x.trim().parse().expect("--order p1,...,p9 (places 1-9)")).collect()),
+            "--permutations" => a.permutations = v.parse().expect("--permutations K"),
             "--leagues" => a.leagues = Some(v.split(',').map(|s| s.trim().to_string()).collect()),
             "--standings-out" => a.standings_out = Some(v.into()),
             "--invert" => a.invert = Some(v.into()),
@@ -326,7 +344,10 @@ fn parse_args() -> Args {
                 }
             }
             "--only" => a.only = Some(v),
-            "--level" => a.level = v,
+            "--level" => {
+                a.level = v;
+                a.level_given = true;
+            }
             "--cross-games" => a.cross_games = Some(v.parse().expect("--cross-games N")),
             "--states" => a.states = v.parse::<usize>().expect("--states N").max(1),
             "--rollouts" => a.rollouts = v.parse::<usize>().expect("--rollouts R").max(1),
@@ -767,6 +788,28 @@ fn main() {
         "level" => {
             let vs = args.vs_mlb.then(|| level::VsMlb { games: args.cross_games.unwrap_or(args.games.max(400)), pitchers: args.vs_mlb_pitchers });
             level::run(&args.level, args.talent, args.foreign, args.games, args.seed, args.threads, &args.tuning, vs, args.ball_drag)
+        }
+        "lineup" => {
+            let levels = bm_world::LevelTable::bundled();
+            let name = if args.level_given { args.level.as_str() } else { "mlb" };
+            let profile = levels.levels.get(name).unwrap_or_else(|| panic!("unknown level '{name}'"));
+            let talent = if args.talent_given { args.talent } else { profile.talent() };
+            let foreign = if args.foreign_given { args.foreign } else { profile.foreign.as_ref().map_or(bm_world::Talent::MAJOR, |f| f.talent()) };
+            let drag = if args.ball_drag != 1.0 { args.ball_drag } else { profile.ball_drag };
+            lineup::run(
+                name,
+                talent,
+                foreign,
+                drag,
+                args.club,
+                &args.orders,
+                args.permutations,
+                args.games,
+                args.seed,
+                args.threads,
+                &args.tuning,
+                args.json.as_deref(),
+            );
         }
         "park" => {
             let levels = bm_world::LevelTable::bundled();

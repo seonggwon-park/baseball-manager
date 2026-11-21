@@ -183,11 +183,11 @@ impl Observer for Speeds {
     }
 }
 
-struct Env {
-    clubs: Vec<Club>,
+pub(crate) struct Env {
+    pub(crate) clubs: Vec<Club>,
     /// League index of every club, and one match environment per club (its ballpark).
-    league: Vec<usize>,
-    envs: Vec<MatchEnv>,
+    pub(crate) league: Vec<usize>,
+    pub(crate) envs: Vec<MatchEnv>,
 }
 
 /// One match environment for every club of the given leagues, in the order of the world
@@ -215,7 +215,7 @@ fn foreign_slots(level: &str) -> (usize, usize, &'static [usize]) {
     }
 }
 
-fn build(level: &str, talent: &Talent, foreign: &Talent, tuning: &Tuning, seed: u64, drag: f64) -> Env {
+pub(crate) fn build(level: &str, talent: &Talent, foreign: &Talent, tuning: &Tuning, seed: u64, drag: f64) -> Env {
     let (ids, rules) = leagues(level).unwrap_or_else(|| panic!("unknown level '{level}'"));
     let (envs, league) = park_envs_with(&ids, &tuning.rules(rules), tuning, drag);
     let mut rng = Rng::new(seed ^ 0x1E7E1);
